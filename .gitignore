@@ -1,0 +1,11 @@
+node_modules
+dist
+*.local
+.DS_Store
+playwright-report
+test-results
+e2e/.shots
+
+tsconfig.node.tsbuildinfo
+*.tsbuildinfo
+e2e/real-graph/
