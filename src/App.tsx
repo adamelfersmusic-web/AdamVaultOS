@@ -50,7 +50,7 @@ export default function App() {
   // never see it.
   useEffect(() => {
     if (!session && route.kind !== 'connect') navigate({ kind: 'connect' })
-    if (session && route.kind === 'connect') navigate({ kind: 'scripts' })
+    if (session && route.kind === 'connect') navigate({ kind: 'library' })
   }, [session, route.kind])
 
   if (oauthStatus === 'completing') {

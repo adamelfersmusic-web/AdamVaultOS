@@ -188,7 +188,7 @@ export class VaultApi {
   }
 
   /** Full-text search across the vault (lean shape). */
-  async search(query: string, limit = 80): Promise<Note[]> {
+  async search(query: string, limit = 300): Promise<Note[]> {
     const p = new URLSearchParams({
       search: query,
       limit: String(limit),
@@ -231,8 +231,9 @@ export class VaultApi {
     return notes.sort((a, b) => (b.linkCount ?? 0) - (a.linkCount ?? 0))
   }
 
-  /** Most recently created notes, vault-wide (lean shape). */
-  async listRecent(limit = 60): Promise<Note[]> {
+  /** Most recently created notes, vault-wide (lean shape). The adam vault has
+   * 260+ notes; the limit is high enough that Library loads them all. */
+  async listRecent(limit = 500): Promise<Note[]> {
     const p = new URLSearchParams({
       limit: String(limit),
       sort: 'desc',

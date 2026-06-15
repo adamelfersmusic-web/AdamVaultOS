@@ -13,7 +13,7 @@
 //      endpoint, returning the token response + the pending state.
 //   4. refreshAccessToken(): refresh_token grant with rotation.
 
-const CLIENT_NAME = 'Atelier Vault OS'
+const CLIENT_NAME = 'Adam · Vault OS'
 const PENDING_KEY = 'atelier.oauth.pending'
 const CLIENTS_KEY = 'atelier.oauth.clients' // { [issuer|redirectUri]: client_id }
 

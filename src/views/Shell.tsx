@@ -1,24 +1,22 @@
 import type { ReactNode } from 'react'
 import { disconnect, useStore } from '../lib/store'
 import { navigate, type Route } from '../lib/router'
-import { openNewScript, openPalette } from '../lib/ui'
+import { openPalette } from '../lib/ui'
 import {
   IconDisconnect,
   IconGraph,
   IconLibrary,
   IconPage,
-  IconPlus,
-  IconScripts,
 } from '../components/Icons'
 
 function Wordmark() {
   return (
     <a
       className="wordmark"
-      href="#/scripts"
+      href="#/library"
       onClick={(e) => {
         e.preventDefault()
-        navigate({ kind: 'scripts' })
+        navigate({ kind: 'library' })
       }}
     >
       <svg className="wordmark-gem" width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
@@ -31,7 +29,7 @@ function Wordmark() {
         <circle cx="16" cy="16" r="3" fill="currentColor" />
       </svg>
       <span className="wordmark-text">
-        Atelier
+        Adam
         <span className="wordmark-sub">Vault OS</span>
       </span>
     </a>
@@ -55,19 +53,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
       <aside className="rail">
         <Wordmark />
 
-        <button className="rail-new" onClick={openNewScript}>
-          <IconPlus size={14} />
-          New script
-        </button>
-
         <nav className="rail-nav">
-          <a
-            className={`rail-link${route.kind === 'scripts' || route.kind === 'note' ? ' is-active' : ''}`}
-            href="#/scripts"
-          >
-            <IconScripts size={15} />
-            Scripts
-          </a>
           <a
             className={`rail-link${route.kind === 'pages' ? ' is-active' : ''}`}
             href="#/pages"
@@ -83,7 +69,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
             Graph
           </a>
           <a
-            className={`rail-link${route.kind === 'library' ? ' is-active' : ''}`}
+            className={`rail-link${route.kind === 'library' || route.kind === 'note' ? ' is-active' : ''}`}
             href="#/library"
           >
             <IconLibrary size={15} />

@@ -58,12 +58,12 @@ export function PagesView({ path }: { path?: string }) {
         <div className="pages-sidebar-head">
           <a
             className="pages-wordmark"
-            href="#/scripts"
+            href="#/library"
             onClick={(e) => {
               e.preventDefault()
-              navigate({ kind: 'scripts' })
+              navigate({ kind: 'library' })
             }}
-            title="Back to Atelier"
+            title="Back to Library"
           >
             <svg width="15" height="15" viewBox="0 0 32 32" aria-hidden="true">
               <path

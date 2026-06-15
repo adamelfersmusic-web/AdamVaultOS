@@ -434,7 +434,7 @@ export function GraphView() {
             <path d="M16 4.5 27.5 16 16 27.5 4.5 16Z" fill="none" stroke="var(--gold)" strokeWidth="2.6" />
             <circle cx="16" cy="16" r="3" fill="var(--gold)" />
           </svg>
-          Atelier
+          Adam
         </span>
       </div>
 

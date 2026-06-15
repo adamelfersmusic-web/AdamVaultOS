@@ -1,5 +1,8 @@
-// Minimal hash router. Hash routes keep raw slashes in note paths
-// (#/note/content/scripts/the-fake-map) so vault locations read naturally.
+// Minimal hash router. Note paths contain slashes (e.g. Amanda/00-home), so
+// they are carried as a SINGLE percent-encoded segment (slash → %2F) — the
+// router never mistakes them for nested routes. parseHash also accepts the
+// legacy multi-segment form for backward compatibility, and every segment is
+// decoded defensively so a malformed escape can't throw and blank the app.
 
 import { useSyncExternalStore } from 'react'
 import type { LensKind } from './types'
@@ -12,6 +15,21 @@ export type Route =
   | { kind: 'graph' }
   | { kind: 'pages'; path?: string }
 
+/** Decode a hash path back to a vault path. Accepts the single %2F-encoded
+ * segment form (Amanda%2F00-home) and the legacy per-segment form
+ * (Amanda/00-home); decoding is guarded so a bad escape never throws. */
+function decodePath(segments: string[]): string {
+  return segments
+    .map((s) => {
+      try {
+        return decodeURIComponent(s)
+      } catch {
+        return s
+      }
+    })
+    .join('/')
+}
+
 export function parseHash(hash: string): Route {
   const h = hash.replace(/^#\/?/, '')
   const [head, ...rest] = h.split('/')
@@ -19,17 +37,15 @@ export function parseHash(hash: string): Route {
     case 'connect':
       return { kind: 'connect' }
     case 'note': {
-      const path = rest.map(decodeURIComponent).join('/')
-      return path ? { kind: 'note', path } : { kind: 'scripts' }
+      const path = decodePath(rest)
+      return path ? { kind: 'note', path } : { kind: 'library' }
     }
     case 'library':
       return { kind: 'library' }
     case 'graph':
       return { kind: 'graph' }
     case 'pages': {
-      // Reuse the note case's per-segment decode, keeping raw slashes so the
-      // page's full vault path (pages/<slug>) reads naturally in the hash.
-      const path = rest.map(decodeURIComponent).join('/')
+      const path = decodePath(rest)
       return path ? { kind: 'pages', path } : { kind: 'pages' }
     }
     case 'scripts': {
@@ -40,7 +56,7 @@ export function parseHash(hash: string): Route {
       return { kind: 'scripts' }
     }
     default:
-      return { kind: 'scripts' }
+      return { kind: 'library' }
   }
 }
 
@@ -55,11 +71,11 @@ export function hrefFor(route: Route): string {
     case 'graph':
       return '#/graph'
     case 'pages':
-      return route.path
-        ? `#/pages/${route.path.split('/').map(encodeURIComponent).join('/')}`
-        : '#/pages'
+      // Single %2F-encoded segment so the slashed vault path is opaque to the
+      // splitter (and never re-parsed as a nested route).
+      return route.path ? `#/pages/${encodeURIComponent(route.path)}` : '#/pages'
     case 'note':
-      return `#/note/${route.path.split('/').map(encodeURIComponent).join('/')}`
+      return `#/note/${encodeURIComponent(route.path)}`
   }
 }
 

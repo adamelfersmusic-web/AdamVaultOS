@@ -60,7 +60,7 @@ export function ConnectView() {
     setBusy('token')
     try {
       await connectWithToken(u, token)
-      navigate({ kind: 'scripts' })
+      navigate({ kind: 'library' })
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -82,8 +82,8 @@ export function ConnectView() {
             />
             <circle cx="16" cy="16" r="2.8" fill="var(--gold)" />
           </svg>
-          <h1 className="connect-title">Atelier</h1>
-          <p className="connect-sub">a studio for your vault</p>
+          <h1 className="connect-title">Adam</h1>
+          <p className="connect-sub">a studio for your personal vault</p>
         </div>
 
         <label className="field">
@@ -103,7 +103,7 @@ export function ConnectView() {
           <div className="approve-box" data-testid="approve-box">
             <p className="approve-title">One more step — approve this app</p>
             <p className="approve-text">
-              Your hub hasn’t seen Atelier before. Open the approval page,
+              Your hub hasn’t seen this app before. Open the approval page,
               approve it, then sign in again.
             </p>
             <a
@@ -183,7 +183,7 @@ export function ConnectView() {
         )}
 
         <p className="connect-note">
-          Sign-in happens on your hub — Atelier never sees your password. The
+          Sign-in happens on your hub — this app never sees your password. The
           session (and any pasted token) lives only in this browser’s
           localStorage; Disconnect wipes it.
         </p>

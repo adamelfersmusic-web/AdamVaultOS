@@ -1,5 +1,6 @@
 /* ————————————————————————————————————————————————————————————————
-   Atelier design tokens — warm near-black, hairline rules, gold accent.
+   Adam · Vault OS design tokens — warm near-black, hairline rules, teal
+   accent (deliberately NOT Atelier's gold, so the two apps never look alike).
    ———————————————————————————————————————————————————————————————— */
 
 :root {
@@ -22,9 +23,10 @@
   --ink-3: #877c69;
   --ink-4: #5d5547;
 
-  /* accents */
-  --gold: #c4923a;
-  --gold-bright: #ddb05e;
+  /* accents — teal primary (the --gold token name is kept so every existing
+     reference re-themes from one place; the value is now Adam's teal). */
+  --gold: #2fa39b;
+  --gold-bright: #54c8be;
   --red: #c4445a;
   --blue: #4a7fa5;
   --green: #4a8c5c;
