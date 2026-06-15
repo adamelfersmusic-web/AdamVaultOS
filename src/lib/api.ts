@@ -21,7 +21,7 @@ import {
  * alternate form and remember which one the server accepted.
  */
 type PathStyle = 'segments' | 'whole'
-const PATH_STYLE_KEY = 'atelier.pathStyle'
+const PATH_STYLE_KEY = 'adamvaultos.pathStyle'
 
 function encodeNoteId(id: string, style: PathStyle): string {
   return style === 'whole'

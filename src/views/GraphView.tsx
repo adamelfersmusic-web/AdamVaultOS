@@ -37,7 +37,7 @@ import {
 import { NotePage } from './NotePage'
 import { IconBack, IconClose } from '../components/Icons'
 
-const AXIS_KEY = 'atelier.graph.axis'
+const AXIS_KEY = 'adamvaultos.graph.axis'
 
 type Status = 'loading' | 'ready' | 'error'
 

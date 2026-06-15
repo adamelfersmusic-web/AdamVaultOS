@@ -10,11 +10,14 @@ import './styles/graph.css'
 import './styles/pages.css'
 import { init } from './lib/store'
 import App from './App'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 init()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )

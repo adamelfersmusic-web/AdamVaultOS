@@ -20,11 +20,11 @@ export interface EditorSettings {
 }
 
 const KEYS: Record<keyof EditorSettings, string> = {
-  anthropicKey: 'atelier.anthropicKey',
-  scribeUrl: 'atelier.scribeUrl',
-  scribeToken: 'atelier.scribeToken',
-  scribeModel: 'atelier.scribeModel',
-  scribeCleanup: 'atelier.scribeCleanup',
+  anthropicKey: 'adamvaultos.anthropicKey',
+  scribeUrl: 'adamvaultos.scribeUrl',
+  scribeToken: 'adamvaultos.scribeToken',
+  scribeModel: 'adamvaultos.scribeModel',
+  scribeCleanup: 'adamvaultos.scribeCleanup',
 }
 
 const DEFAULTS: EditorSettings = {
@@ -93,7 +93,7 @@ export function useEditorSettings(): EditorSettings {
 }
 
 // ——— cross-component bridge: open the Pages settings panel from anywhere ———
-export const PAGES_SETTINGS_EVENT = 'atelier:pages-settings'
+export const PAGES_SETTINGS_EVENT = 'adamvaultos:pages-settings'
 export function openPagesSettings(): void {
   window.dispatchEvent(new Event(PAGES_SETTINGS_EVENT))
 }

@@ -43,9 +43,9 @@ export interface LensProps {
 type SortState = { key: string; dir: 1 | -1 }
 type Filters = Record<string, string[]>
 
-const lensKey = (db: string) => `atelier.${db}.lens`
-const sortKey = (db: string) => `atelier.${db}.sort`
-const filterKey = (db: string) => `atelier.${db}.filters`
+const lensKey = (db: string) => `adamvaultos.${db}.lens`
+const sortKey = (db: string) => `adamvaultos.${db}.sort`
+const filterKey = (db: string) => `adamvaultos.${db}.filters`
 
 function readJson<T>(key: string, fallback: T): T {
   try {

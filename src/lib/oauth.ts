@@ -14,8 +14,11 @@
 //   4. refreshAccessToken(): refresh_token grant with rotation.
 
 const CLIENT_NAME = 'Adam · Vault OS'
-const PENDING_KEY = 'atelier.oauth.pending'
-const CLIENTS_KEY = 'atelier.oauth.clients' // { [issuer|redirectUri]: client_id }
+// Namespaced per-app (see store.ts): AdamVaultOS must not share OAuth pending
+// state or its dynamic-client registration with AtelierVaultOS on the same
+// github.io origin, or it could inherit a client/session bound to another vault.
+const PENDING_KEY = 'adamvaultos.oauth.pending'
+const CLIENTS_KEY = 'adamvaultos.oauth.clients' // { [issuer|redirectUri]: client_id }
 
 export type TokenScope = string
 export const DEFAULT_SCOPE: TokenScope = 'vault:read vault:write'

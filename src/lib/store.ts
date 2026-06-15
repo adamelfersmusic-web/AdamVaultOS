@@ -32,9 +32,15 @@ import {
 import { SCRIPTS_DB } from '../domain/scripts'
 import { NEW_PAGE, newPageContent, TASK_TAG } from '../domain/pages'
 
-const SESSION_KEY = 'atelier.session.v1'
-const LEGACY_CONFIG_KEY = 'atelier.vault' // v1 token-paste config, migrated on load
-const LAST_URL_KEY = 'atelier.lastVaultUrl'
+// Storage keys are namespaced per-app. AdamVaultOS shares ONE origin with
+// AtelierVaultOS on github.io (localStorage is keyed by origin, not by the
+// /AdamVaultOS/ vs /AtelierVaultOS/ path), so a generic "atelier.*" key would
+// let the two apps read each other's saved session and silently cross-wire
+// vaults (Adam's app showing Jonathan's notes). The "adamvaultos." prefix keeps
+// them fully isolated; we never read or write AtelierVaultOS's keys.
+const SESSION_KEY = 'adamvaultos.session.v1'
+const LEGACY_CONFIG_KEY = 'adamvaultos.vault' // v1 token-paste config, migrated on load
+const LAST_URL_KEY = 'adamvaultos.lastVaultUrl'
 
 export type ConnectionState = 'idle' | 'ok' | 'auth-error'
 

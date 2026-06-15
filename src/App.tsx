@@ -20,7 +20,7 @@ const PagesView = lazy(() =>
 )
 
 export default function App() {
-  const { session, oauthStatus } = useStore()
+  const { session, oauthStatus, oauthError } = useStore()
   const ui = useUi()
   const route = useRoute()
   const ranReturn = useRef(false)
@@ -66,7 +66,10 @@ export default function App() {
     )
   }
 
-  if (!session || route.kind === 'connect') {
+  // Show the connect screen when signed out, on the connect route, OR whenever
+  // an OAuth error is pending — so a failed exchange surfaces a readable message
+  // instead of being hidden behind a (possibly stale) session or a blank screen.
+  if (!session || route.kind === 'connect' || oauthError) {
     return (
       <>
         <ConnectView />
