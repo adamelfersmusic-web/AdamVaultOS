@@ -64,7 +64,18 @@ function emit(): void {
 }
 
 export function getSettings(): EditorSettings {
-  return snapshot
+  // Defensive: guarantee every string field is a real string (never undefined),
+  // so a caller can do settings.x.includes(...) / .startsWith(...) without a
+  // crash even if a field is somehow missing from the snapshot. With no API key
+  // the /ai block degrades gracefully (it shows an "add your key" prompt) — it
+  // never throws on startup.
+  return {
+    anthropicKey: snapshot.anthropicKey ?? '',
+    scribeUrl: snapshot.scribeUrl ?? DEFAULTS.scribeUrl,
+    scribeToken: snapshot.scribeToken ?? '',
+    scribeModel: snapshot.scribeModel ?? DEFAULTS.scribeModel,
+    scribeCleanup: !!snapshot.scribeCleanup,
+  }
 }
 
 export function setSetting<K extends keyof EditorSettings>(

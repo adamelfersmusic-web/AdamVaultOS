@@ -742,7 +742,7 @@ export async function loadPages(): Promise<void> {
     // Server-side excludes tag:task; the client-side filter is a backstop in
     // case a deployment ignores the param, so a task can never leak into Pages.
     const list = (await requireApi().listAll({ excludeTags: [TASK_TAG] })).filter(
-      (n) => !n.tags.includes(TASK_TAG),
+      (n) => !(n.tags ?? []).includes(TASK_TAG),
     )
     mergeNotes(list)
     const sorted = [...list].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))

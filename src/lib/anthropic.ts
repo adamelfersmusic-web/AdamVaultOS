@@ -72,7 +72,8 @@ function contextBlock(notes: Note[]): string {
   }
   return notes
     .map((n) => {
-      const tags = n.tags.length ? n.tags.join(', ') : '—'
+      const nt = n.tags ?? []
+      const tags = nt.length ? nt.join(', ') : '—'
       let body = (n.content ?? '').trim()
       if (body.length > MAX_BODY_CHARS) body = `${body.slice(0, MAX_BODY_CHARS)}…`
       return `## ${titleFromPath(n.path)}\nPath: ${n.path}\nTags: ${tags}\n\n${body}`

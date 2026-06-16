@@ -55,6 +55,25 @@ test.beforeEach(async ({ page }) => {
   await reset(page)
 })
 
+test('Startup — boots Library → Pages with zero uncaught errors', async ({ page }) => {
+  // The default seed includes logs/raw-orphan-no-metadata — a note with NO tags
+  // field, exactly the shape behind the "Cannot read properties of undefined
+  // (reading 'includes')" startup crash. Booting through both note-list views
+  // must surface zero uncaught page errors and never trip the ErrorBoundary.
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+
+  await connectViaStorage(page)
+  await page.goto('/#/library')
+  await expect(page.locator('.lib-row').first()).toBeVisible()
+  await page.goto('/#/pages')
+  await expect(page.getByTestId('pages')).toBeVisible()
+  await expect(page.locator('.pages-item').first()).toBeVisible()
+
+  await expect(page.getByTestId('error-boundary')).toHaveCount(0)
+  expect(errors, `uncaught errors:\n${errors.join('\n')}`).toEqual([])
+})
+
 test('Fix 1 — a slashed note path opens in the block editor and edits persist', async ({
   page,
 }) => {

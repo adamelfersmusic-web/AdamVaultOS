@@ -130,8 +130,17 @@ export class VaultApi {
    * Normalizing once at the boundary makes the type honest everywhere.
    */
   private static normalize(n: Note): Note {
-    if (n.tags && n.metadata) return n
-    return { ...n, tags: n.tags ?? [], metadata: n.metadata ?? {} }
+    // Guarantee a well-formed shape: `tags` is ALWAYS an array and `metadata`
+    // ALWAYS an object, whatever the vault returned (missing, null, or even a
+    // non-array). Every list/get response is mapped through this, so no
+    // downstream `note.tags.includes(...)` / `note.metadata[k]` can ever read
+    // off undefined — that was the "Cannot read properties of undefined
+    // (reading 'includes')" startup crash.
+    return {
+      ...n,
+      tags: Array.isArray(n.tags) ? n.tags : [],
+      metadata: n.metadata && typeof n.metadata === 'object' ? n.metadata : {},
+    }
   }
 
   /** Cheap connectivity + auth probe. */

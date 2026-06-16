@@ -220,7 +220,7 @@ export function fieldByKey(key: string): FieldDef | undefined {
 export function isScriptNote(note: Note): boolean {
   return (
     note.path.startsWith(SCRIPTS_DB.pathPrefix) ||
-    note.tags.includes('content/script')
+    (note.tags ?? []).includes('content/script')
   )
 }
 
@@ -234,15 +234,16 @@ const PROTECTED_TAGS = ['do-not-alter', 'transcript', 'brand-brain']
 
 export function isProtectedNote(note: Note): boolean {
   return (
-    note.tags.some((t) => PROTECTED_TAGS.includes(t)) ||
-    note.metadata['voice'] === 'canon'
+    (note.tags ?? []).some((t) => PROTECTED_TAGS.includes(t)) ||
+    note.metadata?.['voice'] === 'canon'
   )
 }
 
 export function protectionReason(note: Note): string {
-  if (note.tags.includes('do-not-alter')) return 'do-not-alter'
-  if (note.tags.includes('transcript')) return 'transcript'
-  if (note.tags.includes('brand-brain')) return 'brand canon'
-  if (note.metadata['voice'] === 'canon') return 'canon voice'
+  const tags = note.tags ?? []
+  if (tags.includes('do-not-alter')) return 'do-not-alter'
+  if (tags.includes('transcript')) return 'transcript'
+  if (tags.includes('brand-brain')) return 'brand canon'
+  if (note.metadata?.['voice'] === 'canon') return 'canon voice'
   return 'protected'
 }
