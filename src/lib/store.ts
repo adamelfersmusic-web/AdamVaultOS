@@ -450,6 +450,19 @@ export async function recentNotes(): Promise<Note[]> {
   }
 }
 
+/** Every note WITH content — the Library browser loads this once for its tag
+ * rail and instant client-side full-text search (title + path + tags + body). */
+export async function fetchAllNotes(): Promise<Note[]> {
+  try {
+    const results = await requireApi().listAllWithContent()
+    mergeNotes(results)
+    return results
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
 export async function fetchGraphNotes(): Promise<Note[]> {
   try {
     const results = await requireApi().graphNotes()

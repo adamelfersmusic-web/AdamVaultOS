@@ -199,6 +199,22 @@ export class VaultApi {
     )
   }
 
+  /**
+   * Every note WITH content — one upfront fetch that powers the Library
+   * browser's tag rail and instant client-side full-text search (the vault's
+   * own ?search= is title-biased and misses words inside note bodies).
+   */
+  async listAllWithContent(limit = 500): Promise<Note[]> {
+    const p = new URLSearchParams({
+      limit: String(limit),
+      include_content: 'true',
+      sort: 'desc',
+    })
+    return (await this.request<Note[]>('GET', `/notes?${p.toString()}`)).map(
+      VaultApi.normalize,
+    )
+  }
+
   /** Full-text search across the vault (lean shape). */
   async search(query: string, limit = 300): Promise<Note[]> {
     const p = new URLSearchParams({

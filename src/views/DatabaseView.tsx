@@ -328,7 +328,7 @@ export function DatabaseView({
     void setMetadata(path, { [key]: value }, { undo: { [key]: prev ?? null } })
   }
 
-  const onOpen = (path: string) => navigate({ kind: 'note', path })
+  const onOpen = (path: string) => navigate({ kind: 'pages', path })
 
   const lensProps: LensProps = { def, rows, observed, saving, onOpen, setField }
   const statusFilters = filters[def.board.field] ?? []

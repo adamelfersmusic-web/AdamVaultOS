@@ -31,7 +31,7 @@ export function NewScriptModal() {
       const note = await createScript({ title: title.trim(), body, metadata: meta })
       closeNewScript()
       toast('success', `Captured — ${note.path}`)
-      navigate({ kind: 'note', path: note.path })
+      navigate({ kind: 'pages', path: note.path })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

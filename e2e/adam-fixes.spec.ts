@@ -65,13 +65,55 @@ test('Startup — boots Library → Pages with zero uncaught errors', async ({ p
 
   await connectViaStorage(page)
   await page.goto('/#/library')
-  await expect(page.locator('.lib-row').first()).toBeVisible()
+  await expect(page.locator('.note-row').first()).toBeVisible()
   await page.goto('/#/pages')
   await expect(page.getByTestId('pages')).toBeVisible()
   await expect(page.locator('.pages-item').first()).toBeVisible()
 
   await expect(page.getByTestId('error-boundary')).toHaveCount(0)
   expect(errors, `uncaught errors:\n${errors.join('\n')}`).toEqual([])
+})
+
+test('Note browser — tag filter, body search, sort, and open-in-block-editor', async ({
+  page,
+}) => {
+  await seedNote(page, 'Amanda/00-home', AMANDA_CONTENT, ['amanda', 'pinned'])
+  // Title/path do NOT contain "work log" — only the BODY does. Proves a body match.
+  await seedNote(
+    page,
+    'Amanda/02-work-log',
+    '# Amanda Bridges — Tracker\n\nThe weekly work log: what is done, in progress, and next.\n',
+    ['amanda'],
+  )
+  await connectViaStorage(page)
+  await page.goto('/#/library')
+  await expect(page.getByTestId('browser')).toBeVisible()
+  await expect(page.locator('.note-row').first()).toBeVisible()
+
+  // #1 — click #amanda in the tag rail → only Amanda notes appear.
+  await page.locator('.tag-rail-item', { hasText: 'amanda' }).first().click()
+  await expect(page.locator('.note-row')).toHaveCount(2)
+  for (const p of await page.locator('.note-row-path').allTextContents()) {
+    expect(p.startsWith('Amanda/')).toBeTruthy()
+  }
+  await expect(page.getByText('The Fake Map')).toHaveCount(0) // no Jonathan scripts
+
+  // #4 — "All notes" clears the filter → full list, and it's sortable.
+  await page.locator('.tag-rail-item', { hasText: 'All notes' }).click()
+  expect(await page.locator('.note-row').count()).toBeGreaterThan(2)
+  await page.locator('.sort-toggle button', { hasText: 'A–Z' }).click()
+  await expect(page.locator('.sort-toggle button.is-on')).toHaveText('A–Z')
+  await page.locator('.sort-toggle button', { hasText: 'Recent' }).click()
+
+  // #3 — search "work log" finds Amanda/02-work-log via a BODY match.
+  await page.fill('.browser-search', 'work log')
+  await expect(page.locator('.note-row-path', { hasText: 'Amanda/02-work-log' })).toBeVisible()
+
+  // #2 — click the note → opens in the Pages TipTap block editor (no raw markdown).
+  await page.locator('.note-row', { hasText: 'Tracker' }).click()
+  await expect(page).toHaveURL(/#\/pages\/Amanda(%2F|\/)02-work-log$/)
+  await expect(page.locator('.page-prose h1')).toHaveText(/Amanda Bridges — Tracker/)
+  await expect(page.locator('.page-prose')).not.toContainText('# Amanda Bridges')
 })
 
 test('Fix 1 — a slashed note path opens in the block editor and edits persist', async ({
@@ -128,8 +170,8 @@ test('Fix 4 — Library loads well past the old 60-note cap', async ({ page }) =
   await connectViaStorage(page)
   await page.goto('/#/library')
 
-  await expect(page.locator('.lib-row').first()).toBeVisible()
-  const rows = await page.locator('.lib-row').count()
+  await expect(page.locator('.note-row').first()).toBeVisible()
+  const rows = await page.locator('.note-row').count()
   expect(rows).toBeGreaterThan(60)
 })
 
@@ -174,7 +216,7 @@ test('Bug 1 — OAuth round-trip signs in without a blank crash', async ({ page 
   // Back in the app, signed in: the rail + Library render (not blank, not connect).
   await expect(page.locator('.rail')).toBeVisible()
   await expect(page).not.toHaveURL(/#\/connect/)
-  await expect(page.locator('.lib-row').first()).toBeVisible()
+  await expect(page.locator('.note-row').first()).toBeVisible()
 
   // Session persisted under the namespaced key; the shared atelier key is untouched.
   const session = await page.evaluate((k) => localStorage.getItem(k), SESSION_KEY)

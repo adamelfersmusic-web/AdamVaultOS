@@ -103,7 +103,7 @@ export function CommandPalette() {
         hint: status || undefined,
         dot: chip.empty ? undefined : chip.color,
         icon: <IconScripts size={14} />,
-        run: () => navigate({ kind: 'note', path }),
+        run: () => navigate({ kind: 'pages', path }),
       }
     })
 
