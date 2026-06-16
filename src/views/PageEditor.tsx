@@ -30,6 +30,8 @@ import { transcribe } from '../lib/scribe'
 import { Modal } from '../components/Modal'
 import { IconMic, IconPage, IconPlus, IconTrash } from '../components/Icons'
 import { SubPageLink, convertPageLinks } from '../editor/extensions/SubPageLink'
+import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
+import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
 import { AiBlock } from '../editor/extensions/AiBlock'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
 
@@ -63,7 +65,9 @@ export function PageEditor({ path }: { path: string }) {
       TaskItem.configure({ nested: true }),
       Image, // URL-based only — allowBase64 stays false (no base64 inlining)
       Markdown,
+      MarkdownLiteral,
       SubPageLink,
+      WikiLink,
       AiBlock,
       SlashCommand.configure({
         onPickSubPage: (_editor, at) => setSubPageAt(at),
@@ -124,8 +128,9 @@ export function PageEditor({ path }: { path: string }) {
 
     const apply = (content: string, updatedAt: string) => {
       editor.commands.setContent(content, { contentType: 'markdown' })
-      const { doc, changed } = convertPageLinks(editor.getJSON())
-      if (changed) editor.commands.setContent(doc)
+      const page = convertPageLinks(editor.getJSON())
+      const wiki = convertWikiLinks(page.doc)
+      if (page.changed || wiki.changed) editor.commands.setContent(wiki.doc)
       baseRef.current = { content: editor.getMarkdown(), updatedAt }
       loadingRef.current = false
       setStatus('ready')
@@ -274,8 +279,9 @@ export function PageEditor({ path }: { path: string }) {
     if (!conflict || !editor) return
     loadingRef.current = true
     editor.commands.setContent(conflict.content ?? '', { contentType: 'markdown' })
-    const { doc, changed } = convertPageLinks(editor.getJSON())
-    if (changed) editor.commands.setContent(doc)
+    const page = convertPageLinks(editor.getJSON())
+    const wiki = convertWikiLinks(page.doc)
+    if (page.changed || wiki.changed) editor.commands.setContent(wiki.doc)
     baseRef.current = { content: editor.getMarkdown(), updatedAt: conflict.updatedAt }
     loadingRef.current = false
     setConflict(null)
