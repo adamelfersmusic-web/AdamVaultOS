@@ -58,6 +58,23 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="connect-error" style={{ whiteSpace: 'pre-wrap' }}>
             {error.message || String(error)}
           </div>
+          {error.stack && (
+            <pre
+              data-testid="error-stack"
+              style={{
+                maxHeight: 220,
+                overflow: 'auto',
+                fontSize: 11,
+                lineHeight: 1.5,
+                opacity: 0.7,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                margin: '4px 0 0',
+              }}
+            >
+              {error.stack}
+            </pre>
+          )}
           <button className="btn btn-gold connect-btn" onClick={this.reload}>
             Reload
           </button>

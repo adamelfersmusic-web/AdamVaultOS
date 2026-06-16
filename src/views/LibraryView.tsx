@@ -40,7 +40,8 @@ export function LibraryView() {
   const grouped = useMemo(() => {
     const groups = new Map<string, Note[]>()
     for (const n of results ?? []) {
-      const top = n.path.includes('/') ? n.path.split('/')[0]! : '·root'
+      const path = n.path ?? ''
+      const top = path.includes('/') ? path.split('/')[0]! : '·root'
       const list = groups.get(top) ?? []
       list.push(n)
       groups.set(top, list)

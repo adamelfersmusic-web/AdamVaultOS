@@ -138,6 +138,9 @@ export class VaultApi {
     // (reading 'includes')" startup crash.
     return {
       ...n,
+      // `path` is the app's primary key and is read unguarded in list views
+      // (e.g. `note.path.includes('/')`), so guarantee it's a non-empty string.
+      path: typeof n.path === 'string' && n.path ? n.path : (n.id ?? ''),
       tags: Array.isArray(n.tags) ? n.tags : [],
       metadata: n.metadata && typeof n.metadata === 'object' ? n.metadata : {},
     }
