@@ -43,7 +43,8 @@ type Rec = 'idle' | 'recording' | 'transcribing'
 const SAVE_DEBOUNCE = 900
 
 export function PageEditor({ path }: { path: string }) {
-  const { saving } = useStore()
+  const { saving, notes } = useStore()
+  const note = notes[path]
   const [status, setStatus] = useState<Status>('loading')
   const [loadError, setLoadError] = useState<string | null>(null)
   const [conflict, setConflict] = useState<Note | null>(null)
@@ -448,6 +449,26 @@ export function PageEditor({ path }: { path: string }) {
           </button>
         </div>
       </div>
+
+      {note && (note.tags?.length || path) && (
+        <div className="page-meta" data-testid="page-meta">
+          <span className="page-meta-path" title={path}>{path}</span>
+          {note.tags?.length ? (
+            <span className="page-meta-tags">
+              {note.tags.map((t) => (
+                <a
+                  key={t}
+                  className="page-meta-tag"
+                  href={`#/library`}
+                  title={`Filter Library by #${t}`}
+                >
+                  #{t}
+                </a>
+              ))}
+            </span>
+          ) : null}
+        </div>
+      )}
 
       {rec !== 'idle' && (
         <div className={`voice-bar voice-${rec}`} role="status">
