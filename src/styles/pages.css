@@ -1019,3 +1019,31 @@
   border: 1px solid var(--border, #2c2d31); transition: background 0.12s;
 }
 .page-meta-tag:hover { background: var(--accent, #46b3a6); color: #06231f; }
+
+/* #19 — callouts: a `> [!type] …` blockquote rendered as a colored box (read view).
+   Zero round-trip risk — the raw markdown stays a plain blockquote. */
+.callout {
+  --cl: #46b3a6;
+  border-left: 3px solid var(--cl);
+  background: color-mix(in srgb, var(--cl) 12%, transparent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 0.7rem 0;
+}
+.callout::before {
+  content: attr(data-callout);
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cl);
+  margin-bottom: 4px;
+}
+.callout > :first-child { margin-top: 0; }
+.callout > :last-child { margin-bottom: 0; }
+.callout-note, .callout-info { --cl: #4a9eda; }
+.callout-tip, .callout-success { --cl: #46b3a6; }
+.callout-warning, .callout-warn, .callout-caution { --cl: #d99a2b; }
+.callout-danger, .callout-error, .callout-bug { --cl: #d9534f; }
+.callout-quote, .callout-cite { --cl: #8a8a8a; }

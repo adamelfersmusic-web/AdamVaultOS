@@ -18,11 +18,27 @@ function stageVaultImages(src: string): string {
   )
 }
 
+// Obsidian-style callouts: a blockquote whose first line is `[!type] …` renders
+// as a colored callout box. This is a READ-VIEW styling pass only — in the raw
+// markdown a callout stays an ordinary `> [!type] …` blockquote, so it survives
+// the vault round-trip with ZERO corruption risk (if the regex ever misses, it
+// just renders as a normal blockquote). Recognized types: note/info/tip/success/
+// warning/danger/quote (anything else falls back to the generic callout style).
+function styleCallouts(html: string): string {
+  return html.replace(
+    /<blockquote>(\s*<p>)\s*\[!([a-zA-Z]+)\]\s*/g,
+    (_m, pOpen: string, type: string) => {
+      const t = type.toLowerCase()
+      return `<blockquote class="callout callout-${t}" data-callout="${t}">${pOpen}`
+    },
+  )
+}
+
 export function renderMarkdown(src: string): string {
-  const html = marked.parse(stageVaultImages(src)) as string
+  const html = styleCallouts(marked.parse(stageVaultImages(src)) as string)
   return DOMPurify.sanitize(html, {
     USE_PROFILES: { html: true },
     FORBID_TAGS: ['style'],
-    ADD_ATTR: ['target', 'data-vault-src'],
+    ADD_ATTR: ['target', 'data-vault-src', 'data-callout'],
   })
 }
