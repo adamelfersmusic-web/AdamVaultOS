@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskList, TaskItem } from '@tiptap/extension-list'
-import Image from '@tiptap/extension-image'
 import { Markdown } from '@tiptap/markdown'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
 import type { Note } from '../lib/types'
@@ -32,6 +31,7 @@ import { IconMic, IconPage, IconPlus, IconTrash } from '../components/Icons'
 import { SubPageLink, convertPageLinks } from '../editor/extensions/SubPageLink'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
 import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
+import { VaultImage } from '../editor/extensions/VaultImage'
 import { AiBlock } from '../editor/extensions/AiBlock'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
 
@@ -63,7 +63,7 @@ export function PageEditor({ path }: { path: string }) {
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       TaskList,
       TaskItem.configure({ nested: true }),
-      Image, // URL-based only — allowBase64 stays false (no base64 inlining)
+      VaultImage, // resolves /api/storage vault paths (auth-safe); no base64
       Markdown,
       MarkdownLiteral,
       SubPageLink,
