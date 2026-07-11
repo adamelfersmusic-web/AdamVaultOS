@@ -4,11 +4,23 @@
 
 export type NoteMetadata = Record<string, unknown>
 
-/** A vault link edge (hydrated endpoint summaries omitted — ids suffice). */
+/** A link endpoint the vault hydrates alongside an edge (include_links=true):
+ * enough to render a card without a second fetch. */
+export interface VaultLinkEndpoint {
+  id: string
+  path: string
+  tags?: string[]
+  metadata?: NoteMetadata
+}
+
+/** A vault link edge. With include_links=true the vault also hydrates the
+ * source/target endpoints (path + tags + metadata) — used for backlink cards. */
 export interface VaultLink {
   sourceId: string
   targetId: string
   relationship: string
+  sourceNote?: VaultLinkEndpoint
+  targetNote?: VaultLinkEndpoint
 }
 
 export interface Note {
@@ -116,6 +128,12 @@ export interface DatabaseDef {
   title: string
   /** Dataset scope: notes whose path starts with this prefix. */
   pathPrefix: string
+  /**
+   * Derive each row's title from the note's content (first line) rather than
+   * its path slug. True for datasets where the body IS the title (tasks); the
+   * dataset must then be loaded WITH content.
+   */
+  titleFromContent?: boolean
   fields: FieldDef[]
   tableColumns: string[]
   board: {
@@ -125,6 +143,12 @@ export interface DatabaseDef {
     dimLanes: string[]
   }
   gallery: { fields: string[] }
+  /**
+   * Optional completion overview: group rows by `field` (e.g. phase) and show
+   * a per-group done-ratio bar, driven by the boolean `doneField` (e.g. done).
+   * Rendered above the lenses. Omit to hide (Scripts has no such axis).
+   */
+  progress?: { field: string; doneField: string }
   /** Tags + metadata applied to notes created from this database. */
   newNote: {
     pathPrefix: string

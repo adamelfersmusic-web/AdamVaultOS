@@ -3,7 +3,9 @@ import { disconnect, useStore } from '../lib/store'
 import { navigate, type Route } from '../lib/router'
 import { openPalette } from '../lib/ui'
 import {
+  IconBoard,
   IconDisconnect,
+  IconGallery,
   IconGraph,
   IconLibrary,
   IconPage,
@@ -60,6 +62,20 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           >
             <IconPage size={15} />
             Pages
+          </a>
+          <a
+            className={`rail-link${route.kind === 'tracker' ? ' is-active' : ''}`}
+            href="#/tracker"
+          >
+            <IconBoard size={15} />
+            Tracker
+          </a>
+          <a
+            className={`rail-link${route.kind === 'canvas' ? ' is-active' : ''}`}
+            href="#/canvas"
+          >
+            <IconGallery size={15} />
+            Canvas
           </a>
           <a
             className={`rail-link${route.kind === 'graph' ? ' is-active' : ''}`}

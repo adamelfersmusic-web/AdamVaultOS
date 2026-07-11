@@ -10,6 +10,8 @@ import type { LensKind } from './types'
 export type Route =
   | { kind: 'connect' }
   | { kind: 'scripts'; lens?: LensKind }
+  | { kind: 'tracker'; lens?: LensKind }
+  | { kind: 'canvas' }
   | { kind: 'note'; path: string }
   | { kind: 'library' }
   | { kind: 'graph' }
@@ -42,6 +44,8 @@ export function parseHash(hash: string): Route {
     }
     case 'library':
       return { kind: 'library' }
+    case 'canvas':
+      return { kind: 'canvas' }
     case 'graph':
       return { kind: 'graph' }
     case 'pages': {
@@ -55,6 +59,13 @@ export function parseHash(hash: string): Route {
       }
       return { kind: 'scripts' }
     }
+    case 'tracker': {
+      const lens = rest[0]
+      if (lens === 'table' || lens === 'board' || lens === 'gallery') {
+        return { kind: 'tracker', lens }
+      }
+      return { kind: 'tracker' }
+    }
     default:
       return { kind: 'library' }
   }
@@ -66,8 +77,12 @@ export function hrefFor(route: Route): string {
       return '#/connect'
     case 'scripts':
       return route.lens ? `#/scripts/${route.lens}` : '#/scripts'
+    case 'tracker':
+      return route.lens ? `#/tracker/${route.lens}` : '#/tracker'
     case 'library':
       return '#/library'
+    case 'canvas':
+      return '#/canvas'
     case 'graph':
       return '#/graph'
     case 'pages':

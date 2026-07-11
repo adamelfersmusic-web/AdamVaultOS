@@ -109,11 +109,15 @@ test('Note browser — tag filter, body search, sort, and open-in-block-editor',
   await page.fill('.browser-search', 'work log')
   await expect(page.locator('.note-row-path', { hasText: 'Amanda/02-work-log' })).toBeVisible()
 
-  // #2 — click the note → opens in the Pages TipTap block editor (no raw markdown).
+  // #2 — click the note → opens the master-detail preview (rendered, not raw
+  // markdown). "Open ↗" then takes it full-screen.
   await page.locator('.note-row', { hasText: 'Tracker' }).click()
-  await expect(page).toHaveURL(/#\/pages\/Amanda(%2F|\/)02-work-log$/)
-  await expect(page.locator('.page-prose h1')).toHaveText(/Amanda Bridges — Tracker/)
-  await expect(page.locator('.page-prose')).not.toContainText('# Amanda Bridges')
+  const detail = page.locator('.browser-detail')
+  await expect(detail).toBeVisible()
+  await expect(detail.locator('.browser-detail-path')).toHaveText('Amanda/02-work-log')
+  const notePage = detail.locator('[data-testid="note-page"]')
+  await expect(notePage).toContainText('Amanda Bridges — Tracker') // rendered heading
+  await expect(notePage).not.toContainText('# Amanda Bridges') // …not raw markdown
 })
 
 test('Fix 1 — a slashed note path opens in the block editor and edits persist', async ({

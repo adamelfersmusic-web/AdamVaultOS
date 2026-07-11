@@ -7,11 +7,14 @@ import { ConnectView } from './views/ConnectView'
 import { DatabaseView } from './views/DatabaseView'
 import { NotePage } from './views/NotePage'
 import { LibraryView } from './views/LibraryView'
+import { CanvasView } from './views/CanvasView'
 import { GraphView } from './views/GraphView'
 import { NewScriptModal } from './views/NewScriptModal'
 import { CommandPalette } from './components/CommandPalette'
+import { CaptureDock } from './components/CaptureDock'
 import { ToastHost } from './components/Toast'
 import { SCRIPTS_DB } from './domain/scripts'
+import { TRACKER_DB } from './domain/tracker'
 
 // Pages pulls in the whole Tiptap/ProseMirror editor — keep it out of the
 // initial bundle so Scripts/Graph/Library stay light. It loads on first visit.
@@ -84,6 +87,7 @@ export default function App() {
       <>
         <GraphView />
         {ui.paletteOpen && <CommandPalette />}
+        <CaptureDock />
         <ToastHost />
       </>
     )
@@ -103,6 +107,7 @@ export default function App() {
           <PagesView path={route.path} />
         </Suspense>
         {ui.paletteOpen && <CommandPalette />}
+        <CaptureDock />
         <ToastHost />
       </>
     )
@@ -114,11 +119,16 @@ export default function App() {
         {route.kind === 'scripts' && (
           <DatabaseView def={SCRIPTS_DB} lensOverride={route.lens} />
         )}
+        {route.kind === 'tracker' && (
+          <DatabaseView def={TRACKER_DB} dataset="tracker" lensOverride={route.lens} />
+        )}
         {route.kind === 'note' && <NotePage path={route.path} key={route.path} />}
         {route.kind === 'library' && <LibraryView />}
+        {route.kind === 'canvas' && <CanvasView />}
       </Shell>
       {ui.newScriptOpen && <NewScriptModal />}
       {ui.paletteOpen && <CommandPalette />}
+      <CaptureDock />
       <ToastHost />
     </>
   )

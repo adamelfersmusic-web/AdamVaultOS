@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { DatabaseDef, FieldDef, LensKind, Note } from '../lib/types'
-import { loadScripts, setMetadata, useStore } from '../lib/store'
+import { loadScripts, loadTracker, setMetadata, useStore } from '../lib/store'
 import { navigate } from '../lib/router'
 import { openNewScript } from '../lib/ui'
 import { titleFromPath } from '../lib/format'
@@ -29,6 +29,20 @@ export interface Row {
   path: string
   title: string
   note: Note
+}
+
+/** Row title: the note's first content line for content-titled datasets
+ * (tasks), else the de-slugged path. Falls back to the path if content is
+ * absent or blank. */
+function rowTitle(note: Note, def: DatabaseDef): string {
+  if (def.titleFromContent) {
+    const first = (note.content ?? '')
+      .split('\n')
+      .map((s) => s.trim())
+      .find(Boolean)
+    if (first) return first.replace(/^#{1,6}\s+/, '').slice(0, 140)
+  }
+  return titleFromPath(note.path)
 }
 
 export interface LensProps {
@@ -153,7 +167,7 @@ function Pipeline({
             key={lane}
             className={`pipe-seg pipe-${color}${isActive ? ' is-active' : ''}${active.length > 0 && !isActive ? ' is-muted' : ''}`}
             style={{ flexGrow: Math.max(n, 0.45) * (100 / total) + 1 }}
-            title={`${lane} — ${n} ${n === 1 ? 'script' : 'scripts'}`}
+            title={`${lane} — ${n} ${n === 1 ? 'item' : 'items'}`}
             onClick={() => onToggle(lane)}
           >
             <span className="pipe-label">{lane}</span>
@@ -161,6 +175,72 @@ function Pipeline({
           </button>
         )
       })}
+    </div>
+  )
+}
+
+function ProgressOverview({ def, rows }: { def: DatabaseDef; rows: Row[] }) {
+  const cfg = def.progress!
+  const field = def.fields.find((f) => f.key === cfg.field)
+  if (!field) return null
+  const isDone = (n: Note) => n.metadata[cfg.doneField] === true
+
+  const groups = new Map<string, { total: number; done: number }>()
+  for (const r of rows) {
+    const v = filterValueOf(field, r.note)
+    if (!v) continue
+    const g = groups.get(v) ?? { total: 0, done: 0 }
+    g.total++
+    if (isDone(r.note)) g.done++
+    groups.set(v, g)
+  }
+  if (groups.size === 0) return null
+
+  const order = field.rank ?? [...groups.keys()]
+  const phases = [...groups.keys()].sort((a, b) => {
+    const ia = order.indexOf(a)
+    const ib = order.indexOf(b)
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib)
+  })
+  const total = rows.length
+  const done = rows.filter((r) => isDone(r.note)).length
+  const pct = total ? Math.round((done / total) * 100) : 0
+
+  return (
+    <div className="progress-overview" data-testid="progress-overview">
+      <div className="progress-overall" title={`${done} of ${total} tasks done`}>
+        <span className="progress-overall-pct">{pct}%</span>
+        <span className="progress-overall-label">
+          {done}<span className="progress-overall-sep">/</span>{total} done
+        </span>
+      </div>
+      <div className="progress-phases">
+        {phases.map((p) => {
+          const g = groups.get(p)!
+          const { color } = chipFor(field, p)
+          const ratio = g.total ? g.done / g.total : 0
+          return (
+            <div
+              key={p}
+              className={`progress-phase${g.done === g.total ? ' is-complete' : ''}`}
+              title={`${field.label} ${p} — ${g.done}/${g.total} done`}
+            >
+              <div className="progress-phase-head">
+                <span className="progress-phase-name">{p}</span>
+                <span className="progress-phase-count">
+                  {g.done}/{g.total}
+                </span>
+              </div>
+              <div className="progress-phase-track">
+                <i
+                  className={`progress-phase-fill fill-${color}`}
+                  style={{ width: `${Math.round(ratio * 100)}%` }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -187,7 +267,9 @@ function FilterMenu({
     return (
       <Popover anchor={anchor} onClose={onClose} width={200}>
         <div className="menu-label">Filter by</div>
-        {def.fields.map((f) => (
+        {def.fields
+          .filter((f) => f.kind !== 'text')
+          .map((f) => (
           <button key={f.key} className="menu-item" onClick={() => setFieldKey(f.key)}>
             <span className="menu-item-text">{f.label}</span>
             {filters[f.key]?.length ? (
@@ -243,14 +325,26 @@ function FilterMenu({
 
 // ---------------------------------------------------------------------------
 
+export type DatasetKind = 'scripts' | 'tracker'
+
 export function DatabaseView({
   def,
   lensOverride,
+  dataset = 'scripts',
 }: {
   def: DatabaseDef
   lensOverride?: LensKind
+  dataset?: DatasetKind
 }) {
-  const { notes, scripts, scriptsStatus, scriptsError, saving } = useStore()
+  const store = useStore()
+  const { notes, saving } = store
+  // Select the dataset's slice. Both boards share the same chrome; only the
+  // source list, loader, and route kind differ.
+  const paths = dataset === 'tracker' ? store.tracker : store.scripts
+  const dataStatus = dataset === 'tracker' ? store.trackerStatus : store.scriptsStatus
+  const dataError = dataset === 'tracker' ? store.trackerError : store.scriptsError
+  const reload = dataset === 'tracker' ? loadTracker : loadScripts
+  const isScripts = dataset === 'scripts'
   const [lens, setLensState] = useState<LensKind>(
     () => lensOverride ?? readJson<LensKind>(lensKey(def.key), 'table'),
   )
@@ -274,7 +368,7 @@ export function DatabaseView({
   const setLens = (l: LensKind) => {
     setLensState(l)
     localStorage.setItem(lensKey(def.key), JSON.stringify(l))
-    navigate({ kind: 'scripts', lens: l })
+    navigate({ kind: dataset, lens: l })
   }
 
   const setFilters = (f: Filters) => {
@@ -288,12 +382,12 @@ export function DatabaseView({
   }
 
   const allRows = useMemo<Row[]>(() => {
-    if (!scripts) return []
-    return scripts
+    if (!paths) return []
+    return paths
       .map((path) => notes[path])
       .filter((n): n is Note => Boolean(n))
-      .map((note) => ({ path: note.path, note, title: titleFromPath(note.path) }))
-  }, [scripts, notes])
+      .map((note) => ({ path: note.path, note, title: rowTitle(note, def) }))
+  }, [paths, notes, def])
 
   const observed = useMemo(() => {
     const map = new Map<string, Set<string>>()
@@ -339,31 +433,33 @@ export function DatabaseView({
         <div className="db-title-row">
           <h1 className="db-title">{def.title}</h1>
           <span className="db-count">
-            {scriptsStatus === 'ready'
+            {dataStatus === 'ready'
               ? `${rows.length}${rows.length !== allRows.length ? ` of ${allRows.length}` : ''}`
               : ''}
           </span>
           <button
             className="icon-btn db-refresh"
             title="Refresh from vault"
-            onClick={() => void loadScripts()}
+            onClick={() => void reload()}
           >
             <IconRefresh size={14} />
           </button>
           <div className="db-actions">
-            <a
-              className="btn btn-brand"
-              href={BRAND_BRAIN_URL}
-              target="_blank"
-              rel="noreferrer"
-              title="Open the Brand Brain project in a new tab"
-            >
-              <IconSpark size={13} />
-              Brand Brain
-            </a>
+            {isScripts && (
+              <a
+                className="btn btn-brand"
+                href={BRAND_BRAIN_URL}
+                target="_blank"
+                rel="noreferrer"
+                title="Open the Brand Brain project in a new tab"
+              >
+                <IconSpark size={13} />
+                Brand Brain
+              </a>
+            )}
             <input
               className="db-search"
-              placeholder="Search scripts…"
+              placeholder={`Search ${def.title.toLowerCase()}…`}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -376,10 +472,12 @@ export function DatabaseView({
               Filter
             </button>
             <LensSwitch lens={lens} onPick={setLens} />
-            <button className="btn btn-gold" onClick={openNewScript}>
-              <IconPlus size={13} />
-              New script
-            </button>
+            {isScripts && (
+              <button className="btn btn-gold" onClick={openNewScript}>
+                <IconPlus size={13} />
+                New script
+              </button>
+            )}
           </div>
         </div>
 
@@ -398,6 +496,10 @@ export function DatabaseView({
             setFilters(f)
           }}
         />
+
+        {def.progress && allRows.length > 0 && (
+          <ProgressOverview def={def} rows={allRows} />
+        )}
 
         {Object.keys(filters).length > 0 && (
           <div className="filter-bar">
@@ -444,15 +546,15 @@ export function DatabaseView({
         />
       )}
 
-      {scriptsStatus === 'error' ? (
+      {dataStatus === 'error' ? (
         <div className="db-state">
           <p className="db-state-title">Couldn’t load the vault</p>
-          <p className="db-state-msg">{scriptsError}</p>
-          <button className="btn btn-gold" onClick={() => void loadScripts()}>
+          <p className="db-state-msg">{dataError}</p>
+          <button className="btn btn-gold" onClick={() => void reload()}>
             Try again
           </button>
         </div>
-      ) : scriptsStatus !== 'ready' ? (
+      ) : dataStatus !== 'ready' ? (
         <div className="db-skeleton" aria-label="Loading">
           {Array.from({ length: 6 }, (_, i) => (
             <div className="skel-row" key={i} style={{ animationDelay: `${i * 90}ms` }} />
@@ -460,14 +562,16 @@ export function DatabaseView({
         </div>
       ) : allRows.length === 0 ? (
         <div className="db-state">
-          <p className="db-state-title">No scripts yet</p>
+          <p className="db-state-title">Nothing here yet</p>
           <p className="db-state-msg">
-            Capture the first one — it lands in the vault at{' '}
+            {isScripts ? 'Capture the first one' : 'Tasks land'} in the vault at{' '}
             <code>{def.pathPrefix}…</code>
           </p>
-          <button className="btn btn-gold" onClick={openNewScript}>
-            <IconPlus size={13} /> New script
-          </button>
+          {isScripts && (
+            <button className="btn btn-gold" onClick={openNewScript}>
+              <IconPlus size={13} /> New script
+            </button>
+          )}
         </div>
       ) : (
         <>

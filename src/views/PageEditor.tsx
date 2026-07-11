@@ -26,6 +26,8 @@ import {
 } from '../lib/store'
 import { navigate, setRouteGuard } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
+import { databaseForPath } from '../domain/databases'
+import { RecordProperties } from '../components/RecordProperties'
 import { getSettings } from '../lib/editorSettings'
 import { transcribe } from '../lib/scribe'
 import { Modal } from '../components/Modal'
@@ -43,7 +45,8 @@ type Rec = 'idle' | 'recording' | 'transcribing'
 const SAVE_DEBOUNCE = 900
 
 export function PageEditor({ path }: { path: string }) {
-  const { saving } = useStore()
+  const { saving, notes } = useStore()
+  const note = notes[path]
   const [status, setStatus] = useState<Status>('loading')
   const [loadError, setLoadError] = useState<string | null>(null)
   const [conflict, setConflict] = useState<Note | null>(null)
@@ -136,6 +139,16 @@ export function PageEditor({ path }: { path: string }) {
     }
   }
   flushRef.current = flushSave
+
+  // A property-panel edit (setMetadata) advances the vault's updatedAt without
+  // touching the body. When there are no unsaved body changes, adopt the new
+  // stamp so the next body save doesn't false-conflict on a stale precondition.
+  useEffect(() => {
+    const b = baseRef.current
+    if (b && !dirty && note && note.updatedAt !== b.updatedAt) {
+      baseRef.current = { content: b.content, updatedAt: note.updatedAt }
+    }
+  }, [note?.updatedAt, dirty])
 
   // Keep the (stable) onUpdate handler pointed at the latest closure.
   useEffect(() => {
@@ -448,6 +461,30 @@ export function PageEditor({ path }: { path: string }) {
           </button>
         </div>
       </div>
+
+      {note && (note.tags?.length || path) && (
+        <div className="page-meta" data-testid="page-meta">
+          <span className="page-meta-path" title={path}>{path}</span>
+          {note.tags?.length ? (
+            <span className="page-meta-tags">
+              {note.tags.map((t) => (
+                <a
+                  key={t}
+                  className="page-meta-tag"
+                  href={`#/library`}
+                  title={`Filter Library by #${t}`}
+                >
+                  #{t}
+                </a>
+              ))}
+            </span>
+          ) : null}
+        </div>
+      )}
+
+      {note && databaseForPath(path) && (
+        <RecordProperties note={note} def={databaseForPath(path)!} />
+      )}
 
       {rec !== 'idle' && (
         <div className={`voice-bar voice-${rec}`} role="status">

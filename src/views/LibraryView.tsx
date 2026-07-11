@@ -12,7 +12,9 @@ import { fetchAllNotes } from '../lib/store'
 import { navigate } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
 import { isProtectedNote } from '../domain/scripts'
+import { inferNoteType, summaryOf, TYPE_META } from '../domain/noteType'
 import { IconShield } from '../components/Icons'
+import { NotePage } from './NotePage'
 
 type Sort = 'recent' | 'alpha'
 
@@ -52,13 +54,23 @@ function previewOf(n: Note, title: string): string {
   return body.replace(/\s+/g, ' ').trim().slice(0, 180)
 }
 
+/** Escape a string for use inside a RegExp. */
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 export function LibraryView() {
   const [notes, setNotes] = useState<Note[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [sort, setSort] = useState<Sort>('recent')
+  const [selected, setSelected] = useState<string | null>(null)
   const seq = useRef(0)
+
+  // Open the selected note full-screen in its proper editor/view.
+  const openFull = (path: string) =>
+    navigate(path.startsWith('pages/') ? { kind: 'pages', path } : { kind: 'note', path })
 
   // Load every note (with content) once, upfront — the corpus for the rail,
   // the list, and instant client-side search.
@@ -89,19 +101,45 @@ export function LibraryView() {
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (q) {
+      // Relevance ranking. Each query term must appear SOMEWHERE (AND search),
+      // and hits are weighted by field: title/slug >> path/tags >> body. Bonuses
+      // for the exact phrase, all-terms-in-title, and start-of-word matches so
+      // e.g. "canonical scoring engine" surfaces the note actually named that,
+      // not a note that merely mentions the words in its body. Recency breaks ties.
+      const terms = q.split(/\s+/).filter(Boolean)
       const scored: { n: Note; score: number }[] = []
       for (const n of all) {
         const title = noteTitle(n).toLowerCase()
+        const slug = (n.path ?? '').split('/').pop()?.toLowerCase() ?? ''
         const path = (n.path ?? '').toLowerCase()
         const tags = (n.tags ?? []).join(' ').toLowerCase()
         const body = (n.content ?? '').toLowerCase()
-        let score = -1
-        if (title.includes(q)) score = 0 // title match ranks first
-        else if (path.includes(q) || tags.includes(q)) score = 1
-        else if (body.includes(q)) score = 2 // then anywhere in the body
-        if (score >= 0) scored.push({ n, score })
+
+        let score = 0
+        let allTerms = true
+        for (const term of terms) {
+          let t = 0
+          if (title.includes(term)) t += 12
+          if (slug.includes(term)) t += 8
+          if (path.includes(term)) t += 6
+          if (tags.includes(term)) t += 6
+          if (body.includes(term)) t += 2
+          if (new RegExp(`(^|[\\s/_-])${escapeRe(term)}`).test(title)) t += 4
+          if (t === 0) allTerms = false
+          score += t
+        }
+        if (!allTerms) continue // every term must land somewhere
+
+        // Whole-phrase + all-in-title bonuses.
+        if (title === q) score += 40
+        else if (title.includes(q)) score += 20
+        if (slug.includes(q)) score += 12
+        else if (path.includes(q)) score += 8
+        if (terms.length > 1 && terms.every((tm) => title.includes(tm))) score += 15
+
+        scored.push({ n, score })
       }
-      scored.sort((a, b) => a.score - b.score || ts(b.n) - ts(a.n))
+      scored.sort((a, b) => b.score - a.score || ts(b.n) - ts(a.n))
       return scored.map((s) => s.n)
     }
     const list = activeTag
@@ -126,7 +164,7 @@ export function LibraryView() {
   const allActive = !activeTag && !query.trim()
 
   return (
-    <div className="browser" data-testid="browser">
+    <div className={`browser${selected ? ' has-detail' : ''}`} data-testid="browser">
       <aside className="tag-rail">
         <button
           className={`tag-rail-item${allActive ? ' is-active' : ''}`}
@@ -203,23 +241,74 @@ export function LibraryView() {
         ) : (
           <div className="browser-list">
             {rows.map((n) => (
-              <NoteRow key={n.path} note={n} onOpen={() => navigate({ kind: 'pages', path: n.path })} />
+              <NoteRow
+                key={n.path}
+                note={n}
+                active={selected === n.path}
+                onOpen={() => setSelected(n.path)}
+              />
             ))}
           </div>
         )}
       </main>
+
+      {selected && (
+        <section className="browser-detail" data-testid="browser-detail">
+          <div className="browser-detail-bar">
+            <span className="browser-detail-path" title={selected}>
+              {selected}
+            </span>
+            <div className="browser-detail-actions">
+              <button
+                className="detail-btn"
+                onClick={() => openFull(selected)}
+                title="Open full-screen editor"
+              >
+                Open ↗
+              </button>
+              <button
+                className="detail-btn"
+                onClick={() => setSelected(null)}
+                title="Close"
+                aria-label="Close detail"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <div className="browser-detail-body">
+            <NotePage path={selected} key={selected} />
+          </div>
+        </section>
+      )}
     </div>
   )
 }
 
-function NoteRow({ note, onOpen }: { note: Note; onOpen: () => void }) {
+function NoteRow({
+  note,
+  onOpen,
+  active,
+}: {
+  note: Note
+  onOpen: () => void
+  active?: boolean
+}) {
   const title = noteTitle(note)
-  const preview = previewOf(note, title)
+  // Prefer the note's own summary (the vault has these on most real notes) —
+  // it reads far better than a stripped-body preview. Fall back to the body.
+  const preview = summaryOf(note) ?? previewOf(note, title)
   const tags = note.tags ?? []
+  const tmeta = TYPE_META[inferNoteType(note)]
   return (
-    <button className="note-row" onClick={onOpen}>
+    <button className={`note-row${active ? ' is-selected' : ''}`} onClick={onOpen}>
       <div className="note-row-head">
         <span className="note-row-title">
+          <span
+            className={`type-dot type-dot-${tmeta.color}`}
+            title={tmeta.label}
+            aria-label={tmeta.label}
+          />
           {title}
           {isProtectedNote(note) && (
             <span className="canon-mini" title="Founder canon — human-gated">

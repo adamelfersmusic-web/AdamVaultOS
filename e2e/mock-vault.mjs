@@ -70,6 +70,38 @@ function resolvedLinks() {
   return out
 }
 
+/** Every edge: static seed linkDefs PLUS [[wikilinks]] parsed live from note
+ * bodies (matched by exact path), mirroring how the real vault registers
+ * wikilink edges. Used to answer include_links queries. */
+function allLinks() {
+  const out = [...resolvedLinks()]
+  for (const n of notes) {
+    const re = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g
+    let m
+    while ((m = re.exec(n.content ?? ''))) {
+      const target = findNote(m[1].trim())
+      if (target && target.id !== n.id) {
+        out.push({ sourceId: n.id, targetId: target.id, relationship: 'wikilink' })
+      }
+    }
+  }
+  return out
+}
+
+const endpoint = (n) =>
+  n ? { id: n.id, path: n.path, tags: n.tags ?? [], metadata: n.metadata ?? {} } : undefined
+
+/** Hydrated edges touching a note (both directions), like the real vault. */
+function linksTouching(noteId) {
+  return allLinks()
+    .filter((l) => l.sourceId === noteId || l.targetId === noteId)
+    .map((l) => ({
+      ...l,
+      sourceNote: endpoint(notes.find((n) => n.id === l.sourceId)),
+      targetNote: endpoint(notes.find((n) => n.id === l.targetId)),
+    }))
+}
+
 // ——— OAuth issuer state (mirrors the Parachute hub's protocol surface) ———
 const freshOAuth = () => ({
   clients: new Map(), // client_id → { redirect_uris, registration }
@@ -337,7 +369,9 @@ const server = http.createServer(async (req, res) => {
         const n = findNote(id)
         if (!n) return json(res, 404, { error: 'Note not found', id })
         const includeContent = url.searchParams.get('include_content') !== 'false'
-        return json(res, 200, includeContent ? n : lean(n))
+        const shaped = includeContent ? { ...n } : lean(n)
+        if (url.searchParams.get('include_links') === 'true') shaped.links = linksTouching(n.id)
+        return json(res, 200, shaped)
       }
       let out = [...notes]
       const prefix = url.searchParams.get('path_prefix')

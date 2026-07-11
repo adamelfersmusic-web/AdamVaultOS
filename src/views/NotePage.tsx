@@ -13,6 +13,7 @@ import { setRouteGuard } from '../lib/router'
 import { fullTime, relativeTime, titleFromPath } from '../lib/format'
 import { renderMarkdown } from '../lib/markdown'
 import { useVaultImages } from '../lib/useVaultImages'
+import { Backlinks } from '../components/Backlinks'
 import {
   FIELDS,
   isProtectedNote,
@@ -332,6 +333,7 @@ export function NotePage({ path }: { path: string }) {
             data-testid="note-body"
             dangerouslySetInnerHTML={{ __html: renderMarkdown(note.content ?? '') }}
           />
+          <Backlinks path={path} />
         </div>
       )}
 

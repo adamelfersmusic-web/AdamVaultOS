@@ -127,6 +127,23 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
         editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
     },
     {
+      id: 'callout',
+      title: 'Callout',
+      subtitle: 'Highlighted note / warning / tip box',
+      icon: <IconQuote />,
+      keywords: ['callout', 'admonition', 'note', 'warning', 'tip', 'info', 'box'],
+      // A callout is just a blockquote whose first line is `[!type]` — perfect
+      // markdown round-trip. Read view styles it; type the label you want.
+      run: ({ editor, range }) =>
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .toggleBlockquote()
+          .insertContent('[!note] ')
+          .run(),
+    },
+    {
       id: 'image',
       title: 'Image',
       subtitle: 'Upload from your device',
