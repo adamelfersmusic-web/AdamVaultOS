@@ -58,6 +58,55 @@ const TASKS: Array<[string, string, Record<string, unknown>]> = [
   ['collect-performance', 'Collect performance — sticker to blue', { phase: '9', track: 'analytics', owner: 'Adam', state: 'next', done: false }],
 ]
 
+test('walkthrough — cockpit: project cards and a world', async ({ page }) => {
+  await reset(page)
+  const projects: Array<[string, string, Record<string, unknown>]> = [
+    ['projects/escensus', '# Escensus', { key: 'escensus', tag: 'escensus', status: 'active', order: 1, summary: 'The sales-performance OS venture with Jonathan — Signalcraft pilot with Bree Starr: training, practice, weekly real-call scoring.' }],
+    ['projects/jonathan', '# Jonathan Gaietto', { key: 'jonathan', tag: 'jonathan', status: 'active', order: 2, summary: 'Brand + recruiting intelligence system on his Parachute vault: Brand Brain, content engine, weekly ops.' }],
+    ['projects/amanda', '# Amanda Bridges', { key: 'amanda', tag: 'amanda', status: 'active', order: 3, home: 'Amanda/00-home', summary: "'This World Needs You' fundraiser: brand system, 20-post calendar, DTC videos + photos; campaign runs on the Tracker." }],
+    ['projects/parachute', '# Parachute', { key: 'parachute', tag: 'parachute', status: 'active', order: 4, summary: "Content delivery for Aaron's Parachute: Boulder session footage → backup → edit → deliver." }],
+  ]
+  for (const [path, content, meta] of projects) await seed(page, path, content, ['project'], meta)
+  await seed(page, 'Amanda/00-home', '# Amanda Bridges — Home\n\nFront door. See [[Amanda/01-campaign-overview]] and [[Amanda/02-work-log]].', ['amanda', 'client'], { summary: 'Front door for the Amanda Bridges project — orientation + link index only.' })
+  await seed(page, 'Amanda/01-campaign-overview', '# Campaign Overview', ['amanda'], { summary: 'Strategy layer — goal, two engines, four pillars.' })
+  await seed(page, 'Amanda/02-work-log', '# Work Log', ['amanda'], { summary: 'Master work log — every completed phase in order.' })
+  const tasks: Array<[string, string, string, string, boolean]> = [
+    ['caption-pass', 'Caption pass — all 20 posts', '4', 'next', false],
+    ['build-posts', 'Build the 20 posts in Planable', '1', 'done', true],
+    ['send-video-8', 'Send Amanda video 8', '5b', 'active', false],
+    ['taste-pass', "Taste pass over Cassy's cull", '5a', 'blocked', false],
+    ['import-captions', "Import Amanda's captions", '3', 'done', true],
+  ]
+  for (const [slug, text, phase, state, done] of tasks) {
+    await seed(page, `tasks/amanda/${slug}`, text, ['task'], { project: 'amanda', phase, track: 'planable', owner: 'Adam', state, done })
+  }
+  await connect(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  await expect(page.getByTestId('cockpit')).toBeVisible()
+  await expect(page.getByTestId('project-card')).toHaveCount(4)
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: `${SHOTS}/07-cockpit.png` })
+
+  await page.getByTestId('project-card').filter({ hasText: 'Amanda Bridges' }).click()
+  await expect(page.locator('.world-overview')).toContainText('Amanda Bridges — Home')
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: `${SHOTS}/08-world-overview.png` })
+
+  await page.locator('.world-tab', { hasText: 'Board' }).click()
+  await page.locator('.lens-btn', { hasText: 'Board' }).click()
+  await expect(page.locator('.lane').first()).toBeVisible()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: `${SHOTS}/09-world-board.png` })
+
+  await page.locator('.world-tab', { hasText: 'Notes' }).click()
+  await expect(page.locator('.world-notes .note-row').first()).toBeVisible()
+  await page.locator('.world-notes .note-row', { hasText: '00 Home' }).click()
+  await expect(page.locator('.world-detail')).toBeVisible()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: `${SHOTS}/10-world-notes.png` })
+})
+
 test('walkthrough — tracker board, table, and row-as-page', async ({ page }) => {
   await reset(page)
   for (const [slug, text, meta] of TASKS) {

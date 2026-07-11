@@ -3,7 +3,8 @@
 // settings gear. Right: the block editor for the open page, or an invitation
 // to start one.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { Note } from '../lib/types'
 import {
   createPage,
   loadPages,
@@ -22,10 +23,35 @@ import { Modal } from '../components/Modal'
 import { IconPlus, IconSettings } from '../components/Icons'
 import { PageEditor } from './PageEditor'
 
+/** Sidebar label: the doc's real H1 once its content is cached (i.e. it's been
+ * opened/created this session), else the de-slugged path. Fixes "my doc shows
+ * as Untitled-10" — a renamed doc reads by its actual title. */
+function sideTitle(p: string, n?: Note): string {
+  const c = n?.content
+  if (c) {
+    const m = c.match(/^\s{0,3}#{1,6}[ \t]+(.+?)[ \t]*$/m)
+    if (m?.[1]) {
+      const t = m[1].replace(/[*_`#\[\]]/g, '').trim()
+      if (t) return t
+    }
+  }
+  return titleFromPath(p)
+}
+
 export function PagesView({ path }: { path?: string }) {
   const { pages, pagesStatus, pagesError, notes } = useStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [creating, setCreating] = useState(false)
+
+  // Live order: newest-touched first, from the note cache — so the doc you're
+  // saving bubbles to the top instead of drifting down a stale list.
+  const ordered = useMemo(() => {
+    const ts = (p: string) => {
+      const t = new Date(notes[p]?.updatedAt ?? 0).getTime()
+      return Number.isNaN(t) ? 0 : t
+    }
+    return [...(pages ?? [])].sort((a, b) => ts(b) - ts(a))
+  }, [pages, notes])
 
   // Lazy-load the dataset when the view first opens.
   useEffect(() => {
@@ -112,13 +138,13 @@ export function PagesView({ path }: { path?: string }) {
           ) : (pages ?? []).length === 0 ? (
             <p className="pages-side-empty">No pages yet.</p>
           ) : (
-            (pages ?? []).map((p) => (
+            ordered.map((p) => (
               <a
                 key={p}
                 className={`pages-item${p === path ? ' is-active' : ''}`}
                 href={hrefFor({ kind: 'pages', path: p })}
               >
-                <span className="pages-item-title">{titleFromPath(p)}</span>
+                <span className="pages-item-title">{sideTitle(p, notes[p])}</span>
                 <span className="pages-item-time">
                   {relativeTime(notes[p]?.updatedAt)}
                 </span>

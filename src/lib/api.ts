@@ -184,6 +184,22 @@ export class VaultApi {
     }
   }
 
+  /**
+   * Lean list of every note carrying a tag (e.g. `project`). Server-side
+   * tag filter with a client-side backstop, in case a deployment ignores the
+   * param — same defensive pattern as listAll's excludeTags.
+   */
+  async listByTag(tag: string, limit = 500, includeContent = false): Promise<Note[]> {
+    const p = new URLSearchParams({
+      tag,
+      limit: String(limit),
+      include_content: String(includeContent),
+    })
+    return (await this.request<Note[]>('GET', `/notes?${p.toString()}`))
+      .map(VaultApi.normalize)
+      .filter((n) => (n.tags ?? []).some((t) => t === tag || t.startsWith(`${tag}/`)))
+  }
+
   /** Lean list (no content) of every note under a path prefix. */
   async listByPrefix(prefix: string, limit = 500, includeContent = false): Promise<Note[]> {
     const p = new URLSearchParams({

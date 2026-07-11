@@ -71,7 +71,7 @@ test('Backlinks — a note shows what it cites and what cites it', async ({ page
   await page.goto(noteUrl('Amanda/01-overview'))
   const back2 = page.getByTestId('backlinks')
   await expect(back2).toBeVisible()
-  await expect(back2).toContainText('Linked from')
+  await expect(back2).toContainText('Links to this note')
   await expect(back2.locator('.link-card', { hasText: 'Home' })).toBeVisible()
 
   expect(errors, errors.join('\n')).toEqual([])

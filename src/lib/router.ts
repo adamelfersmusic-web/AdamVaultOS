@@ -12,6 +12,8 @@ export type Route =
   | { kind: 'scripts'; lens?: LensKind }
   | { kind: 'tracker'; lens?: LensKind }
   | { kind: 'canvas' }
+  | { kind: 'projects' }
+  | { kind: 'project'; path: string }
   | { kind: 'note'; path: string }
   | { kind: 'library' }
   | { kind: 'graph' }
@@ -46,6 +48,12 @@ export function parseHash(hash: string): Route {
       return { kind: 'library' }
     case 'canvas':
       return { kind: 'canvas' }
+    case 'projects':
+      return { kind: 'projects' }
+    case 'project': {
+      const path = decodePath(rest)
+      return path ? { kind: 'project', path } : { kind: 'projects' }
+    }
     case 'graph':
       return { kind: 'graph' }
     case 'pages': {
@@ -67,7 +75,8 @@ export function parseHash(hash: string): Route {
       return { kind: 'tracker' }
     }
     default:
-      return { kind: 'library' }
+      // The Cockpit is the app's front door — a calm deck of project cards.
+      return { kind: 'projects' }
   }
 }
 
@@ -83,6 +92,10 @@ export function hrefFor(route: Route): string {
       return '#/library'
     case 'canvas':
       return '#/canvas'
+    case 'projects':
+      return '#/projects'
+    case 'project':
+      return `#/project/${encodeURIComponent(route.path)}`
     case 'graph':
       return '#/graph'
     case 'pages':
