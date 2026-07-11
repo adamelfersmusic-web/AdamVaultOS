@@ -52,6 +52,11 @@ function previewOf(n: Note, title: string): string {
   return body.replace(/\s+/g, ' ').trim().slice(0, 180)
 }
 
+/** Escape a string for use inside a RegExp. */
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 export function LibraryView() {
   const [notes, setNotes] = useState<Note[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -89,19 +94,45 @@ export function LibraryView() {
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (q) {
+      // Relevance ranking. Each query term must appear SOMEWHERE (AND search),
+      // and hits are weighted by field: title/slug >> path/tags >> body. Bonuses
+      // for the exact phrase, all-terms-in-title, and start-of-word matches so
+      // e.g. "canonical scoring engine" surfaces the note actually named that,
+      // not a note that merely mentions the words in its body. Recency breaks ties.
+      const terms = q.split(/\s+/).filter(Boolean)
       const scored: { n: Note; score: number }[] = []
       for (const n of all) {
         const title = noteTitle(n).toLowerCase()
+        const slug = (n.path ?? '').split('/').pop()?.toLowerCase() ?? ''
         const path = (n.path ?? '').toLowerCase()
         const tags = (n.tags ?? []).join(' ').toLowerCase()
         const body = (n.content ?? '').toLowerCase()
-        let score = -1
-        if (title.includes(q)) score = 0 // title match ranks first
-        else if (path.includes(q) || tags.includes(q)) score = 1
-        else if (body.includes(q)) score = 2 // then anywhere in the body
-        if (score >= 0) scored.push({ n, score })
+
+        let score = 0
+        let allTerms = true
+        for (const term of terms) {
+          let t = 0
+          if (title.includes(term)) t += 12
+          if (slug.includes(term)) t += 8
+          if (path.includes(term)) t += 6
+          if (tags.includes(term)) t += 6
+          if (body.includes(term)) t += 2
+          if (new RegExp(`(^|[\\s/_-])${escapeRe(term)}`).test(title)) t += 4
+          if (t === 0) allTerms = false
+          score += t
+        }
+        if (!allTerms) continue // every term must land somewhere
+
+        // Whole-phrase + all-in-title bonuses.
+        if (title === q) score += 40
+        else if (title.includes(q)) score += 20
+        if (slug.includes(q)) score += 12
+        else if (path.includes(q)) score += 8
+        if (terms.length > 1 && terms.every((tm) => title.includes(tm))) score += 15
+
+        scored.push({ n, score })
       }
-      scored.sort((a, b) => a.score - b.score || ts(b.n) - ts(a.n))
+      scored.sort((a, b) => b.score - a.score || ts(b.n) - ts(a.n))
       return scored.map((s) => s.n)
     }
     const list = activeTag
