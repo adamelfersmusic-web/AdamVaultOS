@@ -179,6 +179,72 @@ function Pipeline({
   )
 }
 
+function ProgressOverview({ def, rows }: { def: DatabaseDef; rows: Row[] }) {
+  const cfg = def.progress!
+  const field = def.fields.find((f) => f.key === cfg.field)
+  if (!field) return null
+  const isDone = (n: Note) => n.metadata[cfg.doneField] === true
+
+  const groups = new Map<string, { total: number; done: number }>()
+  for (const r of rows) {
+    const v = filterValueOf(field, r.note)
+    if (!v) continue
+    const g = groups.get(v) ?? { total: 0, done: 0 }
+    g.total++
+    if (isDone(r.note)) g.done++
+    groups.set(v, g)
+  }
+  if (groups.size === 0) return null
+
+  const order = field.rank ?? [...groups.keys()]
+  const phases = [...groups.keys()].sort((a, b) => {
+    const ia = order.indexOf(a)
+    const ib = order.indexOf(b)
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib)
+  })
+  const total = rows.length
+  const done = rows.filter((r) => isDone(r.note)).length
+  const pct = total ? Math.round((done / total) * 100) : 0
+
+  return (
+    <div className="progress-overview" data-testid="progress-overview">
+      <div className="progress-overall" title={`${done} of ${total} tasks done`}>
+        <span className="progress-overall-pct">{pct}%</span>
+        <span className="progress-overall-label">
+          {done}<span className="progress-overall-sep">/</span>{total} done
+        </span>
+      </div>
+      <div className="progress-phases">
+        {phases.map((p) => {
+          const g = groups.get(p)!
+          const { color } = chipFor(field, p)
+          const ratio = g.total ? g.done / g.total : 0
+          return (
+            <div
+              key={p}
+              className={`progress-phase${g.done === g.total ? ' is-complete' : ''}`}
+              title={`${field.label} ${p} — ${g.done}/${g.total} done`}
+            >
+              <div className="progress-phase-head">
+                <span className="progress-phase-name">{p}</span>
+                <span className="progress-phase-count">
+                  {g.done}/{g.total}
+                </span>
+              </div>
+              <div className="progress-phase-track">
+                <i
+                  className={`progress-phase-fill fill-${color}`}
+                  style={{ width: `${Math.round(ratio * 100)}%` }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function FilterMenu({
   def,
   observed,
@@ -428,6 +494,10 @@ export function DatabaseView({
             setFilters(f)
           }}
         />
+
+        {def.progress && allRows.length > 0 && (
+          <ProgressOverview def={def} rows={allRows} />
+        )}
 
         {Object.keys(filters).length > 0 && (
           <div className="filter-bar">

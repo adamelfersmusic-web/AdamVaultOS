@@ -131,6 +131,12 @@ export interface DatabaseDef {
     dimLanes: string[]
   }
   gallery: { fields: string[] }
+  /**
+   * Optional completion overview: group rows by `field` (e.g. phase) and show
+   * a per-group done-ratio bar, driven by the boolean `doneField` (e.g. done).
+   * Rendered above the lenses. Omit to hide (Scripts has no such axis).
+   */
+  progress?: { field: string; doneField: string }
   /** Tags + metadata applied to notes created from this database. */
   newNote: {
     pathPrefix: string

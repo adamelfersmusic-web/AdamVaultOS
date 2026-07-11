@@ -145,6 +145,7 @@ export const TRACKER_DB: DatabaseDef = {
     dimLanes: ['done'], // completed work recedes
   },
   gallery: { fields: ['state', 'phase', 'owner'] },
+  progress: { field: 'phase', doneField: 'done' },
   newNote: {
     pathPrefix: 'tasks/amanda/',
     tags: ['task'],

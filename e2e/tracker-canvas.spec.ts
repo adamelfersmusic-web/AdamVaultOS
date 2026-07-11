@@ -63,6 +63,11 @@ test('Tracker — renders seeded Amanda tasks and switches to a board', async ({
   await expect(page.getByText('Caption pass — all 20 posts')).toBeVisible()
   await expect(page.getByText('Build the 20 posts')).toBeVisible()
 
+  // Campaign progress: 1 of 3 done overall (33%), phase 1 shows 1/1 complete.
+  const progress = page.getByTestId('progress-overview')
+  await expect(progress.locator('.progress-overall-pct')).toHaveText('33%')
+  await expect(progress.locator('.progress-phase.is-complete')).toHaveCount(1)
+
   // Board lens groups by state — the lanes should appear.
   await page.goto('http://127.0.0.1:4173/#/tracker/board')
   await expect(page.locator('.lane-name', { hasText: 'active' })).toBeVisible()
