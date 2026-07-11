@@ -13,6 +13,7 @@ import { navigate } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
 import { isProtectedNote } from '../domain/scripts'
 import { IconShield } from '../components/Icons'
+import { NotePage } from './NotePage'
 
 type Sort = 'recent' | 'alpha'
 
@@ -63,7 +64,12 @@ export function LibraryView() {
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [sort, setSort] = useState<Sort>('recent')
+  const [selected, setSelected] = useState<string | null>(null)
   const seq = useRef(0)
+
+  // Open the selected note full-screen in its proper editor/view.
+  const openFull = (path: string) =>
+    navigate(path.startsWith('pages/') ? { kind: 'pages', path } : { kind: 'note', path })
 
   // Load every note (with content) once, upfront — the corpus for the rail,
   // the list, and instant client-side search.
@@ -157,7 +163,7 @@ export function LibraryView() {
   const allActive = !activeTag && !query.trim()
 
   return (
-    <div className="browser" data-testid="browser">
+    <div className={`browser${selected ? ' has-detail' : ''}`} data-testid="browser">
       <aside className="tag-rail">
         <button
           className={`tag-rail-item${allActive ? ' is-active' : ''}`}
@@ -234,21 +240,64 @@ export function LibraryView() {
         ) : (
           <div className="browser-list">
             {rows.map((n) => (
-              <NoteRow key={n.path} note={n} onOpen={() => navigate({ kind: 'pages', path: n.path })} />
+              <NoteRow
+                key={n.path}
+                note={n}
+                active={selected === n.path}
+                onOpen={() => setSelected(n.path)}
+              />
             ))}
           </div>
         )}
       </main>
+
+      {selected && (
+        <section className="browser-detail" data-testid="browser-detail">
+          <div className="browser-detail-bar">
+            <span className="browser-detail-path" title={selected}>
+              {selected}
+            </span>
+            <div className="browser-detail-actions">
+              <button
+                className="detail-btn"
+                onClick={() => openFull(selected)}
+                title="Open full-screen editor"
+              >
+                Open ↗
+              </button>
+              <button
+                className="detail-btn"
+                onClick={() => setSelected(null)}
+                title="Close"
+                aria-label="Close detail"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <div className="browser-detail-body">
+            <NotePage path={selected} key={selected} />
+          </div>
+        </section>
+      )}
     </div>
   )
 }
 
-function NoteRow({ note, onOpen }: { note: Note; onOpen: () => void }) {
+function NoteRow({
+  note,
+  onOpen,
+  active,
+}: {
+  note: Note
+  onOpen: () => void
+  active?: boolean
+}) {
   const title = noteTitle(note)
   const preview = previewOf(note, title)
   const tags = note.tags ?? []
   return (
-    <button className="note-row" onClick={onOpen}>
+    <button className={`note-row${active ? ' is-selected' : ''}`} onClick={onOpen}>
       <div className="note-row-head">
         <span className="note-row-title">
           {title}
