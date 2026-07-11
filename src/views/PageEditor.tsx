@@ -18,8 +18,10 @@ import {
   fetchNote,
   forceContent,
   getState,
+  linkNoteAttachment,
   saveContent,
   toast,
+  uploadImage,
   useStore,
 } from '../lib/store'
 import { navigate, setRouteGuard } from '../lib/router'
@@ -57,6 +59,10 @@ export function PageEditor({ path }: { path: string }) {
   const flushRef = useRef<() => void>(() => {})
   const recRef = useRef<{ recorder: MediaRecorder; stream: MediaStream } | null>(null)
   const voiceStartRef = useRef<() => void>(() => {})
+  // Image upload: handleDrop/handlePaste and the /image picker all funnel here.
+  const uploadImageRef = useRef<(file: File, at?: number) => void>(() => {})
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const pendingImageAt = useRef<number | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -72,9 +78,38 @@ export function PageEditor({ path }: { path: string }) {
       SlashCommand.configure({
         onPickSubPage: (_editor, at) => setSubPageAt(at),
         onVoice: () => voiceStartRef.current(),
+        onUploadImage: (_editor, at) => {
+          pendingImageAt.current = at
+          fileInputRef.current?.click()
+        },
       }),
     ],
-    editorProps: { attributes: { class: 'page-prose' } },
+    editorProps: {
+      attributes: { class: 'page-prose' },
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved) return false
+        const files = Array.from(event.dataTransfer?.files ?? []).filter((f) =>
+          f.type.startsWith('image/'),
+        )
+        if (files.length === 0) return false
+        event.preventDefault()
+        const at = view.posAtCoords({
+          left: event.clientX,
+          top: event.clientY,
+        })?.pos
+        for (const f of files) uploadImageRef.current(f, at)
+        return true
+      },
+      handlePaste: (_view, event) => {
+        const files = Array.from(event.clipboardData?.files ?? []).filter((f) =>
+          f.type.startsWith('image/'),
+        )
+        if (files.length === 0) return false
+        event.preventDefault()
+        for (const f of files) uploadImageRef.current(f)
+        return true
+      },
+    },
     content: '',
     onUpdate: () => onUpdateRef.current(),
   })
@@ -262,6 +297,33 @@ export function PageEditor({ path }: { path: string }) {
   }
   voiceStartRef.current = startVoice
 
+  // ——— image upload (drop / paste / picker) ———
+  const uploadAndInsert = async (file: File, at?: number) => {
+    if (!editor) return
+    if (!file.type.startsWith('image/')) {
+      toast('error', `${file.name} isn’t an image`)
+      return
+    }
+    toast('info', `Uploading ${file.name}…`)
+    try {
+      const { path: assetPath, mimeType } = await uploadImage(file)
+      const src = `/api/storage/${assetPath}`
+      const node = { type: 'image', attrs: { src, alt: file.name } }
+      if (typeof at === 'number') {
+        editor.chain().insertContentAt(at, node).run()
+      } else {
+        editor.chain().focus().insertContent(node).run()
+      }
+      // Best-effort: also record it as a note attachment so it appears in the
+      // note's Attachments in the Parachute app. Never blocks the inline embed.
+      void linkNoteAttachment(path, assetPath, mimeType).catch(() => {})
+      toast('success', `${file.name} added`)
+    } catch (e) {
+      toast('error', `Upload failed — ${e instanceof Error ? e.message : e}`)
+    }
+  }
+  uploadImageRef.current = (file, at) => void uploadAndInsert(file, at)
+
   // ——— sub-page insertion ———
   const insertSubPage = (pagePath: string) => {
     if (editor && subPageAt != null) {
@@ -422,6 +484,21 @@ export function PageEditor({ path }: { path: string }) {
         )}
         <EditorContent editor={editor} className="page-content" />
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? [])
+          const at = pendingImageAt.current ?? undefined
+          pendingImageAt.current = null
+          for (const f of files) uploadImageRef.current(f, at)
+          e.target.value = ''
+        }}
+      />
 
       {subPageAt != null && (
         <SubPagePicker

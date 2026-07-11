@@ -301,6 +301,62 @@ export class VaultApi {
     return URL.createObjectURL(await res.blob())
   }
 
+  /**
+   * Upload a file to vault storage. `POST /api/storage/upload`, multipart with
+   * a `file` field (the browser sets the multipart boundary — no Content-Type
+   * header). Returns `{ path, size, mimeType }` where `path` is `<date>/<file>`
+   * (embed it as `/api/storage/<path>`). Max 100MB; active-content extensions
+   * (html/svg/js…) are rejected server-side.
+   */
+  async uploadStorageFile(
+    file: File,
+    signal?: AbortSignal,
+  ): Promise<{ path: string; size: number; mimeType: string }> {
+    const doUpload = (token: string) => {
+      const form = new FormData()
+      form.append('file', file)
+      return fetch(`${this.baseUrl}/api/storage/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+        signal,
+      })
+    }
+    let token = await this.auth.getAccessToken()
+    let res = await doUpload(token)
+    if (res.status === 401 && (await this.auth.tryRefresh())) {
+      token = await this.auth.getAccessToken()
+      res = await doUpload(token)
+    }
+    const data = await res.json().catch(() => null)
+    if (!res.ok) {
+      const message =
+        data?.error || data?.message || `${res.status} ${res.statusText}`
+      if (res.status === 401 || res.status === 403) {
+        throw new VaultAuthError(res.status, message)
+      }
+      throw new VaultError(res.status, message, data?.error_type)
+    }
+    return data as { path: string; size: number; mimeType: string }
+  }
+
+  /**
+   * Attach an already-uploaded storage file to a note so it shows in the
+   * note's Attachments. `POST /api/notes/:id/attachments` with `{ path, mimeType }`.
+   */
+  async linkAttachment(
+    noteId: string,
+    path: string,
+    mimeType: string,
+  ): Promise<void> {
+    await this.withNoteRoute(noteId, (enc) =>
+      this.request<unknown>('POST', `/notes/${enc}/attachments`, {
+        path,
+        mimeType,
+      }),
+    )
+  }
+
   async listTags(): Promise<TagInfo[]> {
     return this.request<TagInfo[]>('GET', '/tags')
   }
