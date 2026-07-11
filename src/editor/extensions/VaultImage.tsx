@@ -1,16 +1,20 @@
-// Vault-aware image node. Vault attachments are stored in note bodies as
-// root-relative paths (`/api/storage/<date>/<file>`); a plain <img src> resolves
-// those against the APP origin, not the vault, so they 404 and show broken. This
-// extends the base Image node with a view that resolves such paths against the
-// vault — fetching WITH the bearer token (an <img> can't send one) and showing a
-// blob URL, with a plain absolute-URL fallback if the authed fetch fails (public
-// storage). The node's `src` attribute is never mutated, so markdown round-trips
-// the original relative path unchanged.
+// Vault-aware image node with resize + alignment.
+//
+// Vault attachments are stored in note bodies as root-relative paths
+// (`/api/storage/<date>/<file>`); a plain <img src> resolves those against the
+// APP origin, not the vault, so they 404. The node view resolves such paths
+// against the vault (authed blob, absolute-URL fallback).
+//
+// On top of that: a drag handle (bottom-right) resizes the image (sets a `width`
+// attr), and a toolbar on the selected image sets `align` (left/center/right).
+// Width/align round-trip through markdown as an HTML `<img src alt width
+// data-align>` (markdown allows raw HTML, and Parachute renders it the same); a
+// plain image with no width/align still serializes as `![alt](src)`.
 
 import Image from '@tiptap/extension-image'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
 import type { NodeViewProps } from '@tiptap/core'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchVaultAsset, vaultAssetUrl } from '../../lib/store'
 
 /** Root-relative vault path (needs resolving). http(s)/data/blob srcs are fine
@@ -19,10 +23,12 @@ function needsResolving(src: string): boolean {
   return src.startsWith('/')
 }
 
-function VaultImageView({ node }: NodeViewProps) {
+function VaultImageView({ node, updateAttributes, selected }: NodeViewProps) {
   const src = (node.attrs.src as string) || ''
   const alt = (node.attrs.alt as string) || ''
-  const title = (node.attrs.title as string) || ''
+  const width = (node.attrs.width as number | string | null) ?? null
+  const align = (node.attrs.align as string | null) ?? null
+  const imgRef = useRef<HTMLImageElement>(null)
   const [resolved, setResolved] = useState<string | null>(
     src && !needsResolving(src) ? src : null,
   )
@@ -49,8 +55,6 @@ function VaultImageView({ node }: NodeViewProps) {
       })
       .catch(() => {
         if (cancelled) return
-        // Authed fetch failed — fall back to the plain absolute URL (works if
-        // storage is public / doesn't require the token).
         try {
           setResolved(vaultAssetUrl(src))
         } catch {
@@ -63,28 +67,134 @@ function VaultImageView({ node }: NodeViewProps) {
     }
   }, [src])
 
+  // Drag the bottom-right handle to resize (pointer events → width attr).
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const img = imgRef.current
+    if (!img) return
+    const startX = e.clientX
+    const startW = img.getBoundingClientRect().width
+    const onMove = (ev: PointerEvent) => {
+      const next = Math.max(60, Math.round(startW + (ev.clientX - startX)))
+      updateAttributes({ width: next })
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  const frameStyle =
+    width != null
+      ? { width: typeof width === 'number' ? `${width}px` : String(width) }
+      : undefined
+
   return (
-    <NodeViewWrapper className="vault-image-wrap" contentEditable={false}>
-      {resolved && !failed ? (
-        <img
-          src={resolved}
-          alt={alt}
-          title={title || alt}
-          className="vault-image"
-          draggable={false}
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <span className="vault-image-fallback" title={src}>
-          {failed ? `\u{1F5BC} ${alt || 'image unavailable'}` : '\u{1F5BC} …'}
-        </span>
-      )}
+    <NodeViewWrapper
+      className={`vault-image-wrap${selected ? ' is-selected' : ''}`}
+      data-align={align || undefined}
+      contentEditable={false}
+    >
+      <span className="vault-image-frame" style={frameStyle}>
+        {resolved && !failed ? (
+          <img
+            ref={imgRef}
+            src={resolved}
+            alt={alt}
+            title={alt}
+            className="vault-image"
+            draggable={false}
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <span className="vault-image-fallback" title={src}>
+            {failed ? `\u{1F5BC} ${alt || 'image unavailable'}` : '\u{1F5BC} …'}
+          </span>
+        )}
+
+        {selected && resolved && !failed && (
+          <>
+            <span
+              className="vault-image-resize"
+              onPointerDown={startResize}
+              title="Drag to resize"
+            />
+            <span className="vault-image-toolbar" contentEditable={false}>
+              {(['left', 'center', 'right'] as const).map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  className="vimg-btn"
+                  data-active={align === a || undefined}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => updateAttributes({ align: align === a ? null : a })}
+                  title={`Align ${a}`}
+                >
+                  {a === 'left' ? '⇤' : a === 'center' ? '↔' : '⇥'}
+                </button>
+              ))}
+              {width != null && (
+                <button
+                  type="button"
+                  className="vimg-btn"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => updateAttributes({ width: null })}
+                  title="Reset size"
+                >
+                  ⤢
+                </button>
+              )}
+            </span>
+          </>
+        )}
+      </span>
     </NodeViewWrapper>
   )
 }
 
 export const VaultImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: (el) =>
+          el.getAttribute('width') || (el as HTMLElement).style?.width || null,
+        renderHTML: (attrs) => (attrs.width ? { width: attrs.width } : {}),
+      },
+      align: {
+        default: null,
+        parseHTML: (el) => el.getAttribute('data-align') || null,
+        renderHTML: (attrs) =>
+          attrs.align ? { 'data-align': attrs.align } : {},
+      },
+    }
+  },
+
   addNodeView() {
     return ReactNodeViewRenderer(VaultImageView)
+  },
+
+  // Persist width/align by emitting HTML when either is set (markdown image
+  // syntax can't carry them); otherwise stay plain `![alt](src)`.
+  renderMarkdown(node: {
+    attrs?: { src?: string; alt?: string; width?: unknown; align?: unknown }
+  }) {
+    const src = node.attrs?.src ?? ''
+    if (!src) return ''
+    const alt = node.attrs?.alt ?? ''
+    const width = node.attrs?.width
+    const align = node.attrs?.align
+    if (width || align) {
+      const parts = [`src="${src}"`]
+      if (alt) parts.push(`alt="${alt}"`)
+      if (width) parts.push(`width="${width}"`)
+      if (align) parts.push(`data-align="${align}"`)
+      return `<img ${parts.join(' ')}>`
+    }
+    return `![${alt}](${src})`
   },
 })

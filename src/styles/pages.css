@@ -967,3 +967,36 @@
   color: var(--text-dim, #888);
   font-size: 0.85rem;
 }
+
+/* #23 — image resize + alignment (VaultImage node view) */
+.vault-image-wrap[data-align='center'] { text-align: center; }
+.vault-image-wrap[data-align='left'] {
+  float: left; margin: 0.3rem 1rem 0.6rem 0; max-width: 62%;
+}
+.vault-image-wrap[data-align='right'] {
+  float: right; margin: 0.3rem 0 0.6rem 1rem; max-width: 62%;
+}
+.vault-image-frame {
+  position: relative; display: inline-block; max-width: 100%; line-height: 0;
+}
+.vault-image-wrap.is-selected .vault-image-frame {
+  outline: 2px solid var(--accent, #46b3a6); outline-offset: 2px; border-radius: 9px;
+}
+.vault-image-resize {
+  position: absolute; right: -6px; bottom: -6px; width: 14px; height: 14px;
+  background: var(--accent, #46b3a6); border: 2px solid #fff; border-radius: 50%;
+  cursor: nwse-resize; touch-action: none; z-index: 4;
+}
+.vault-image-toolbar {
+  position: absolute; top: -36px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 2px; padding: 3px; border-radius: 9px;
+  background: var(--panel, #17181b); border: 1px solid var(--border, #333);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); z-index: 6;
+}
+.vimg-btn {
+  border: 0; background: transparent; color: var(--text-dim, #b9b9b9);
+  width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 14px;
+  line-height: 1;
+}
+.vimg-btn:hover { background: var(--hover, #2a2b2f); color: var(--text, #eee); }
+.vimg-btn[data-active] { background: var(--accent, #46b3a6); color: #06231f; }
