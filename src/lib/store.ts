@@ -886,6 +886,51 @@ export async function createCapture(text: string): Promise<Note> {
 }
 
 // ---------------------------------------------------------------------------
+// Backlinks — the link graph around one note (#10). Real [[wikilinks]] register
+// vault edges; this reads them so a note can show what it CITES (outgoing) and
+// what CITES it (incoming). One request — the vault hydrates both endpoints.
+// ---------------------------------------------------------------------------
+
+export interface LinkedNote {
+  path: string
+  relationship: string
+  tags: string[]
+  metadata: NoteMetadata
+}
+
+function toLinked(ep: { path: string; tags?: string[]; metadata?: NoteMetadata }, rel: string): LinkedNote {
+  return { path: ep.path, relationship: rel, tags: ep.tags ?? [], metadata: ep.metadata ?? {} }
+}
+
+export async function fetchNoteLinks(
+  path: string,
+): Promise<{ outgoing: LinkedNote[]; incoming: LinkedNote[] }> {
+  const anchor = await requireApi().getNoteWithLinks(path)
+  const id = anchor?.id
+  const links = anchor?.links ?? []
+  const outgoing: LinkedNote[] = []
+  const incoming: LinkedNote[] = []
+  const seenOut = new Set<string>()
+  const seenIn = new Set<string>()
+  for (const l of links) {
+    if (id && l.sourceId === id && l.targetNote) {
+      const t = l.targetNote
+      if (t.path && t.path !== path && !seenOut.has(t.path)) {
+        seenOut.add(t.path)
+        outgoing.push(toLinked(t, l.relationship))
+      }
+    } else if (id && l.targetId === id && l.sourceNote) {
+      const s = l.sourceNote
+      if (s.path && s.path !== path && !seenIn.has(s.path)) {
+        seenIn.add(s.path)
+        incoming.push(toLinked(s, l.relationship))
+      }
+    }
+  }
+  return { outgoing, incoming }
+}
+
+// ---------------------------------------------------------------------------
 // Canvas layer — freeform boards. Each board and each card is a real vault note
 // under `canvas/`, tagged `canvas` (excluded from the knowledge graph like
 // tasks). A board is `canvas/<id>`; its cards are `canvas/<id>/<cardId>`, with

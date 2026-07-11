@@ -12,6 +12,7 @@ import { fetchAllNotes } from '../lib/store'
 import { navigate } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
 import { isProtectedNote } from '../domain/scripts'
+import { inferNoteType, summaryOf, TYPE_META } from '../domain/noteType'
 import { IconShield } from '../components/Icons'
 import { NotePage } from './NotePage'
 
@@ -294,12 +295,20 @@ function NoteRow({
   active?: boolean
 }) {
   const title = noteTitle(note)
-  const preview = previewOf(note, title)
+  // Prefer the note's own summary (the vault has these on most real notes) —
+  // it reads far better than a stripped-body preview. Fall back to the body.
+  const preview = summaryOf(note) ?? previewOf(note, title)
   const tags = note.tags ?? []
+  const tmeta = TYPE_META[inferNoteType(note)]
   return (
     <button className={`note-row${active ? ' is-selected' : ''}`} onClick={onOpen}>
       <div className="note-row-head">
         <span className="note-row-title">
+          <span
+            className={`type-dot type-dot-${tmeta.color}`}
+            title={tmeta.label}
+            aria-label={tmeta.label}
+          />
           {title}
           {isProtectedNote(note) && (
             <span className="canon-mini" title="Founder canon — human-gated">

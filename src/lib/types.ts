@@ -4,11 +4,23 @@
 
 export type NoteMetadata = Record<string, unknown>
 
-/** A vault link edge (hydrated endpoint summaries omitted — ids suffice). */
+/** A link endpoint the vault hydrates alongside an edge (include_links=true):
+ * enough to render a card without a second fetch. */
+export interface VaultLinkEndpoint {
+  id: string
+  path: string
+  tags?: string[]
+  metadata?: NoteMetadata
+}
+
+/** A vault link edge. With include_links=true the vault also hydrates the
+ * source/target endpoints (path + tags + metadata) — used for backlink cards. */
 export interface VaultLink {
   sourceId: string
   targetId: string
   relationship: string
+  sourceNote?: VaultLinkEndpoint
+  targetNote?: VaultLinkEndpoint
 }
 
 export interface Note {

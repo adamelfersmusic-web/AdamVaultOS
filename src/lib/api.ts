@@ -168,6 +168,22 @@ export class VaultApi {
     }
   }
 
+  /** Single note WITH its link graph (inbound + outbound edges, hydrated
+   * endpoints). Powers the backlinks panel. Returns null when missing. */
+  async getNoteWithLinks(idOrPath: string): Promise<Note | null> {
+    try {
+      return VaultApi.normalize(
+        await this.request<Note>(
+          'GET',
+          `/notes?id=${encodeURIComponent(idOrPath)}&include_content=false&include_links=true`,
+        ),
+      )
+    } catch (e) {
+      if (e instanceof VaultError && e.status === 404) return null
+      throw e
+    }
+  }
+
   /** Lean list (no content) of every note under a path prefix. */
   async listByPrefix(prefix: string, limit = 500, includeContent = false): Promise<Note[]> {
     const p = new URLSearchParams({
