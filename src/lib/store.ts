@@ -30,6 +30,7 @@ import {
   type TagInfo,
 } from './types'
 import { SCRIPTS_DB } from '../domain/scripts'
+import { TRACKER_DB } from '../domain/tracker'
 import { NEW_PAGE, newPageContent, TASK_TAG } from '../domain/pages'
 
 // Storage keys are namespaced per-app. AdamVaultOS shares ONE origin with
@@ -65,6 +66,10 @@ export interface StoreState {
   scripts: string[] | null
   scriptsStatus: 'idle' | 'loading' | 'ready' | 'error'
   scriptsError: string | null
+  /** Paths of the tracker (tasks) dataset, in vault order. */
+  tracker: string[] | null
+  trackerStatus: 'idle' | 'loading' | 'ready' | 'error'
+  trackerError: string | null
   /** Paths of the pages dataset, newest-first. */
   pages: string[] | null
   pagesStatus: 'idle' | 'loading' | 'ready' | 'error'
@@ -141,6 +146,9 @@ let state: StoreState = {
   scripts: null,
   scriptsStatus: 'idle',
   scriptsError: null,
+  tracker: null,
+  trackerStatus: 'idle',
+  trackerError: null,
   pages: null,
   pagesStatus: 'idle',
   pagesError: null,
@@ -220,11 +228,13 @@ function adoptSession(session: AuthSession): void {
     oauthError: null,
     approveUrl: null,
     scriptsStatus: 'idle',
+    trackerStatus: 'idle',
     pages: null,
     pagesStatus: 'idle',
     notes: {},
   })
   void loadScripts()
+  void loadTracker()
   void loadTags()
 }
 
@@ -325,6 +335,9 @@ export function disconnect(): void {
     scripts: null,
     scriptsStatus: 'idle',
     scriptsError: null,
+    tracker: null,
+    trackerStatus: 'idle',
+    trackerError: null,
     pages: null,
     pagesStatus: 'idle',
     pagesError: null,
@@ -386,6 +399,26 @@ export async function loadScripts(): Promise<void> {
     set({
       scriptsStatus: 'error',
       scriptsError: e instanceof Error ? e.message : String(e),
+    })
+  }
+}
+
+export async function loadTracker(): Promise<void> {
+  if (!api || state.trackerStatus === 'loading') return
+  set({ trackerStatus: 'loading', trackerError: null })
+  try {
+    // WITH content: task bodies are one-liners and become the row titles.
+    const list = await requireApi().listByPrefix(TRACKER_DB.pathPrefix, 500, true)
+    mergeNotes(list)
+    set({
+      tracker: list.map((n) => n.path),
+      trackerStatus: 'ready',
+    })
+  } catch (e) {
+    handleAuthFailure(e)
+    set({
+      trackerStatus: 'error',
+      trackerError: e instanceof Error ? e.message : String(e),
     })
   }
 }
@@ -850,6 +883,132 @@ export async function createCapture(text: string): Promise<Note> {
     handleAuthFailure(e)
     throw e
   }
+}
+
+// ---------------------------------------------------------------------------
+// Canvas layer — freeform boards. Each board and each card is a real vault note
+// under `canvas/`, tagged `canvas` (excluded from the knowledge graph like
+// tasks). A board is `canvas/<id>`; its cards are `canvas/<id>/<cardId>`, with
+// position/size carried in metadata (x/y/w/h). Nothing is auto-written — every
+// drag/resize/edit is an explicit user action.
+// ---------------------------------------------------------------------------
+
+const CANVAS_PREFIX = 'canvas/'
+
+function slugStamp(): string {
+  return new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
+}
+
+/** Load every canvas note (boards + cards) in one lean pass, WITH content
+ * (cards are tiny) so the board renders immediately without per-card fetches. */
+export async function loadCanvasNotes(): Promise<Note[]> {
+  try {
+    const list = await requireApi().listByPrefix(CANVAS_PREFIX)
+    // listByPrefix is content-lean. Board titles live in metadata (no body
+    // needed); only card bodies must be hydrated to render their markdown.
+    const withContent = await Promise.all(
+      list.map(async (n) => {
+        if (n.metadata?.['ckind'] !== 'card' || n.content !== undefined) return n
+        const full = await requireApi().getNote(n.path)
+        return full ?? n
+      }),
+    )
+    mergeNotes(withContent)
+    return withContent
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+export async function createCanvasBoard(title: string): Promise<Note> {
+  const a = requireApi()
+  const base = `${CANVAS_PREFIX}${slugStamp()}`
+  let path = base
+  for (let n = 2; (await a.getNote(path)) !== null; n++) {
+    path = `${base}-${n}`
+    if (n > 30) break
+  }
+  try {
+    const note = await a.createNote({
+      path,
+      content: title.trim() || 'Untitled canvas',
+      tags: ['canvas'],
+      metadata: { ckind: 'board', title: title.trim() || 'Untitled canvas' },
+    })
+    mergeNote(note)
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+export async function createCanvasCard(
+  boardId: string,
+  card: { x: number; y: number; w: number; h: number; content?: string },
+): Promise<Note> {
+  const a = requireApi()
+  const cardId = `${slugStamp()}-${Math.random().toString(36).slice(2, 6)}`
+  try {
+    const note = await a.createNote({
+      path: `${CANVAS_PREFIX}${boardId}/${cardId}`,
+      content: card.content ?? '',
+      tags: ['canvas'],
+      metadata: { ckind: 'card', board: boardId, x: card.x, y: card.y, w: card.w, h: card.h },
+    })
+    mergeNote(note)
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+export async function updateCanvasNote(
+  path: string,
+  ifUpdatedAt: string,
+  patch: { content?: string; metadata?: NoteMetadata },
+): Promise<Note> {
+  try {
+    const note = await requireApi().updateNote(path, { ...patch, ifUpdatedAt })
+    mergeNote(note)
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+/** Delete a board and every card filed beneath it. */
+export async function deleteCanvasBoard(boardId: string): Promise<void> {
+  const a = requireApi()
+  try {
+    const list = await a.listByPrefix(`${CANVAS_PREFIX}${boardId}`)
+    await Promise.all(list.map((n) => a.deleteNote(n.path)))
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+  const notes = { ...state.notes }
+  for (const p of Object.keys(notes)) {
+    if (p === `${CANVAS_PREFIX}${boardId}` || p.startsWith(`${CANVAS_PREFIX}${boardId}/`)) {
+      delete notes[p]
+    }
+  }
+  set({ notes })
+}
+
+export async function deleteCanvasCard(path: string): Promise<void> {
+  try {
+    await requireApi().deleteNote(path)
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+  const notes = { ...state.notes }
+  delete notes[path]
+  set({ notes })
 }
 
 export async function deletePage(path: string): Promise<void> {

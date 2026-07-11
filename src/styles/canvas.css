@@ -1,0 +1,266 @@
+/* ── Canvas tab ─────────────────────────────────────────────────────────────
+   Freeform boards. A gallery of canvases, and the board surface itself with
+   draggable / resizable markdown cards on a dot grid. */
+
+/* ── Gallery of canvases ── */
+.canvas-home {
+  padding: 28px 32px 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+.canvas-home-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.canvas-home-sub {
+  color: var(--ink-3);
+  font-size: 13px;
+  margin-top: 4px;
+  max-width: 52ch;
+}
+.canvas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.canvas-tile {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.14s, transform 0.14s, box-shadow 0.14s;
+}
+.canvas-tile:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lift);
+}
+.canvas-tile-preview {
+  height: 96px;
+  background:
+    radial-gradient(circle, var(--line-2) 1px, transparent 1.4px) 0 0 / 16px 16px,
+    var(--surface-2);
+  border-bottom: 1px solid var(--line);
+}
+.canvas-tile-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  padding: 12px 14px 2px;
+  color: var(--ink);
+}
+.canvas-tile-meta {
+  font-size: 12px;
+  color: var(--ink-4);
+  padding: 0 14px 12px;
+}
+
+/* ── Board surface ── */
+.canvas-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.canvas-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-rail);
+  flex: 0 0 auto;
+}
+.canvas-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--r-sm);
+}
+.canvas-back:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+.canvas-title-input {
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--ink);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 3px 8px;
+  min-width: 160px;
+}
+.canvas-title-input:hover {
+  border-color: var(--line);
+}
+.canvas-title-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: var(--surface);
+}
+.canvas-bar-count {
+  font-size: 12px;
+  color: var(--ink-4);
+}
+.canvas-bar-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.canvas-danger:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.canvas-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background:
+    radial-gradient(circle, var(--line-2) 1px, transparent 1.5px) 0 0 / 20px 20px,
+    var(--bg);
+}
+.canvas-plane {
+  position: relative;
+  width: 3000px;
+  height: 2200px;
+}
+.canvas-empty-hint {
+  position: absolute;
+  top: 48px;
+  left: 48px;
+  color: var(--ink-4);
+  font-size: 13px;
+  max-width: 42ch;
+}
+.canvas-empty-hint b {
+  color: var(--ink-2);
+}
+
+/* ── Card ── */
+.canvas-card {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: box-shadow 0.14s;
+}
+.canvas-card.is-live {
+  box-shadow: var(--shadow-pop);
+  border-color: var(--gold);
+  user-select: none;
+  z-index: 5;
+}
+.canvas-card.is-editing {
+  border-color: var(--gold);
+  z-index: 6;
+}
+.canvas-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 26px;
+  padding: 0 6px 0 8px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  cursor: grab;
+  flex: 0 0 auto;
+  touch-action: none;
+}
+.canvas-card.is-live .canvas-card-head {
+  cursor: grabbing;
+}
+.canvas-card-grip {
+  color: var(--ink-4);
+  font-size: 12px;
+  letter-spacing: -1px;
+}
+.canvas-card-tools {
+  display: flex;
+  gap: 2px;
+}
+.canvas-card-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+}
+.canvas-card-btn:hover {
+  color: var(--ink);
+  background: var(--surface-3);
+}
+.canvas-card-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.canvas-card-body.is-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.canvas-card-placeholder {
+  color: var(--ink-4);
+  font-size: 12px;
+}
+.canvas-card-body > :first-child { margin-top: 0; }
+.canvas-card-body > :last-child { margin-bottom: 0; }
+.canvas-card-body h1,
+.canvas-card-body h2,
+.canvas-card-body h3 { font-size: 14px; margin: 6px 0 4px; }
+.canvas-card-body p { margin: 0 0 6px; }
+.canvas-card-body ul,
+.canvas-card-body ol { margin: 0 0 6px; padding-left: 18px; }
+.canvas-card-body a { color: var(--blue); }
+
+.canvas-card-textarea {
+  flex: 1 1 auto;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--surface);
+}
+.canvas-card-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  touch-action: none;
+  background:
+    linear-gradient(135deg, transparent 50%, var(--line-strong) 50%, var(--line-strong) 62%, transparent 62%, transparent 74%, var(--line-strong) 74%, var(--line-strong) 86%, transparent 86%);
+}

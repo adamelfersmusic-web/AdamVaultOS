@@ -169,11 +169,11 @@ export class VaultApi {
   }
 
   /** Lean list (no content) of every note under a path prefix. */
-  async listByPrefix(prefix: string, limit = 500): Promise<Note[]> {
+  async listByPrefix(prefix: string, limit = 500, includeContent = false): Promise<Note[]> {
     const p = new URLSearchParams({
       path_prefix: prefix,
       limit: String(limit),
-      include_content: 'false',
+      include_content: String(includeContent),
     })
     return (await this.request<Note[]>('GET', `/notes?${p.toString()}`)).map(
       VaultApi.normalize,

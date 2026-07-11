@@ -116,6 +116,12 @@ export interface DatabaseDef {
   title: string
   /** Dataset scope: notes whose path starts with this prefix. */
   pathPrefix: string
+  /**
+   * Derive each row's title from the note's content (first line) rather than
+   * its path slug. True for datasets where the body IS the title (tasks); the
+   * dataset must then be loaded WITH content.
+   */
+  titleFromContent?: boolean
   fields: FieldDef[]
   tableColumns: string[]
   board: {

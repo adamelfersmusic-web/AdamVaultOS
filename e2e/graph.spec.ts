@@ -15,7 +15,7 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(
     ([url, token]) => {
       localStorage.setItem(
-        'atelier.session.v1',
+        'adamvaultos.session.v1',
         JSON.stringify({ vaultUrl: url, mode: 'token', token: { accessToken: token } }),
       )
     },
@@ -49,7 +49,7 @@ test('graph nav: sidebar entry, full-bleed canvas, all notes load as nodes', asy
     page.locator('.gnode[data-path="brand/05-content-pillars"] .gnode-bloom'),
   ).toHaveCount(1)
   // Wordmark + back affordance present.
-  await expect(page.locator('.graph-wordmark')).toContainText('Atelier')
+  await expect(page.locator('.graph-wordmark')).toContainText('Adam')
   await page.waitForTimeout(2400) // settle + blooms + edges
   await page.screenshot({ path: `${SHOTS}/20-graph-seed.png` })
 })
