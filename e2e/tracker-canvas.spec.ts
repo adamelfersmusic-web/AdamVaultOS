@@ -77,6 +77,40 @@ test('Tracker — renders seeded Amanda tasks and switches to a board', async ({
   expect(errors, errors.join('\n')).toEqual([])
 })
 
+test('Row-as-page — a task opens with an editable property panel', async ({ page }) => {
+  await seedTask(page, 'caption-pass', 'Caption pass — all 20 posts', {
+    project: 'amanda', phase: '4', track: 'captions', owner: 'Adam', state: 'next', done: false,
+  })
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto(
+    'http://127.0.0.1:4173/#/pages/' + encodeURIComponent('tasks/amanda/caption-pass'),
+  )
+  const props = page.getByTestId('record-props')
+  await expect(props).toBeVisible()
+
+  // The State property shows the seeded value…
+  const stateRow = props.locator('.prop-row', { hasText: 'State' })
+  await expect(stateRow.locator('.chip')).toContainText('next')
+  // …and changes via the popover.
+  await stateRow.locator('.prop-chip-btn').click()
+  await page.locator('.menu-item', { hasText: 'blocked' }).click()
+  await expect(stateRow.locator('.chip')).toContainText('blocked')
+
+  // The URL field saves and survives a reload.
+  const urlInput = () =>
+    page.getByTestId('record-props').locator('.prop-row', { hasText: 'URL' }).locator('.prop-input')
+  await urlInput().fill('https://planable.io/x')
+  await props.locator('.record-props-label').click() // blur → save
+  await page.reload()
+  await expect(urlInput()).toHaveValue('https://planable.io/x')
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
 test('Canvas — create a canvas, add a card, write to it', async ({ page }) => {
   await connectViaStorage(page)
 

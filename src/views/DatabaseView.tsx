@@ -267,7 +267,9 @@ function FilterMenu({
     return (
       <Popover anchor={anchor} onClose={onClose} width={200}>
         <div className="menu-label">Filter by</div>
-        {def.fields.map((f) => (
+        {def.fields
+          .filter((f) => f.kind !== 'text')
+          .map((f) => (
           <button key={f.key} className="menu-item" onClick={() => setFieldKey(f.key)}>
             <span className="menu-item-text">{f.label}</span>
             {filters[f.key]?.length ? (

@@ -26,6 +26,8 @@ import {
 } from '../lib/store'
 import { navigate, setRouteGuard } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
+import { databaseForPath } from '../domain/databases'
+import { RecordProperties } from '../components/RecordProperties'
 import { getSettings } from '../lib/editorSettings'
 import { transcribe } from '../lib/scribe'
 import { Modal } from '../components/Modal'
@@ -137,6 +139,16 @@ export function PageEditor({ path }: { path: string }) {
     }
   }
   flushRef.current = flushSave
+
+  // A property-panel edit (setMetadata) advances the vault's updatedAt without
+  // touching the body. When there are no unsaved body changes, adopt the new
+  // stamp so the next body save doesn't false-conflict on a stale precondition.
+  useEffect(() => {
+    const b = baseRef.current
+    if (b && !dirty && note && note.updatedAt !== b.updatedAt) {
+      baseRef.current = { content: b.content, updatedAt: note.updatedAt }
+    }
+  }, [note?.updatedAt, dirty])
 
   // Keep the (stable) onUpdate handler pointed at the latest closure.
   useEffect(() => {
@@ -468,6 +480,10 @@ export function PageEditor({ path }: { path: string }) {
             </span>
           ) : null}
         </div>
+      )}
+
+      {note && databaseForPath(path) && (
+        <RecordProperties note={note} def={databaseForPath(path)!} />
       )}
 
       {rec !== 'idle' && (

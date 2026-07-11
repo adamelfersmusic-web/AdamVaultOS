@@ -130,6 +130,12 @@ export const FIELDS: FieldDef[] = [
       { value: 'true', label: 'done', color: 'green' },
     ],
   },
+  {
+    key: 'url',
+    label: 'URL',
+    kind: 'text',
+    indexed: false, // free-text link out to wherever the task lives
+  },
 ]
 
 export const TRACKER_DB: DatabaseDef = {
