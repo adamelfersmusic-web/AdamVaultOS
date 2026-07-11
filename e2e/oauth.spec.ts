@@ -41,7 +41,8 @@ async function signInWithOAuth(page: Page) {
   await page.waitForURL(/oauth\/authorize/)
   await expect(page.locator('h1')).toHaveText('Mock Parachute Hub')
   await page.click('#approve')
-  await expect(page.locator('.db-table tbody tr').first()).toBeVisible()
+  // Signed in: the app lands on the Cockpit (Projects front door).
+  await expect(page.getByTestId('cockpit')).toBeVisible()
 }
 
 test('full OAuth journey: sign in on the hub, read, write, reload-restore', async ({ page }) => {
@@ -65,18 +66,19 @@ test('full OAuth journey: sign in on the hub, read, write, reload-restore', asyn
 
   // Session persisted with refresh material; client_id cached per issuer.
   const session = JSON.parse(
-    (await page.evaluate(() => localStorage.getItem('atelier.session.v1')))!,
+    (await page.evaluate(() => localStorage.getItem('adamvaultos.session.v1')))!,
   )
   expect(session.mode).toBe('oauth')
   expect(session.vaultUrl).toBe(MOCK) // resolved via the token's services catalog
   expect(session.token.refreshToken).toBeTruthy()
   expect(session.token.expiresAt).toBeGreaterThan(Date.now())
   expect(session.clientId).toMatch(/^mock-client-/)
-  const clients = await page.evaluate(() => localStorage.getItem('atelier.oauth.clients'))
+  const clients = await page.evaluate(() => localStorage.getItem('adamvaultos.oauth.clients'))
   expect(clients).toContain(session.clientId)
 
-  // A write lands in the vault under the OAuth access token.
-  await page.click('[role="tab"]:has-text("Board")')
+  // A write lands in the vault under the OAuth access token (Scripts board —
+  // still routable even though it left the rail in the AdamVaultOS redesign).
+  await page.goto('/#/scripts/board')
   const card = page.locator('.card', { hasText: 'The Fake Map' })
   const target = page.locator('.lane[data-lane="approved"] .lane-head')
   const from = (await card.boundingBox())!
@@ -108,6 +110,7 @@ test('reactive refresh: a 401 triggers refresh-token rotation and a replay', asy
   await page.request.post(`${MOCK}/__test/oauth`, { data: { revokeAccess: true } })
 
   // A cell edit must silently refresh + replay — no visible failure.
+  await page.goto('/#/scripts/table')
   const row = page.locator('.db-table tbody tr', { hasText: 'The Fake Map' })
   await row.locator('.chip-btn[data-field="conviction"]').click()
   await page.click('.popover .menu-item:has(.chip:text-is("strong"))')
@@ -120,7 +123,7 @@ test('reactive refresh: a 401 triggers refresh-token rotation and a replay', asy
 
   // The rotation was persisted: the stored refresh token is the current one.
   const session = JSON.parse(
-    (await page.evaluate(() => localStorage.getItem('atelier.session.v1')))!,
+    (await page.evaluate(() => localStorage.getItem('adamvaultos.session.v1')))!,
   )
   expect(session.token.refreshToken).toBe(after.currentRefreshToken)
 })
@@ -135,9 +138,10 @@ test('proactive refresh: tokens near expiry rotate before requests, silently', a
 
   // Still fully functional after rotation, and the rotation was persisted.
   const session = JSON.parse(
-    (await page.evaluate(() => localStorage.getItem('atelier.session.v1')))!,
+    (await page.evaluate(() => localStorage.getItem('adamvaultos.session.v1')))!,
   )
   expect(session.token.refreshToken).toBe(state.currentRefreshToken)
+  await page.goto('/#/scripts/table')
   await page.fill('.db-search', 'fake map')
   await expect(page.locator('.db-table tbody tr')).toHaveCount(1)
 })
@@ -163,7 +167,7 @@ test('pending approval: the hub approve_url is surfaced as a clickable link', as
   await page.getByTestId('approve-retry').click()
   await page.waitForURL(/oauth\/authorize/)
   await page.click('#approve')
-  await expect(page.locator('.db-table tbody tr').first()).toBeVisible()
+  await expect(page.getByTestId('cockpit')).toBeVisible()
 })
 
 test('hub-denied sign-in (?error=) lands back with a readable error', async ({ page }) => {
@@ -175,7 +179,7 @@ test('hub-denied sign-in (?error=) lands back with a readable error', async ({ p
 test('v1 token-paste config migrates to the new session format', async ({ page }) => {
   await page.addInitScript(
     ([url, token]) => {
-      localStorage.setItem('atelier.vault', JSON.stringify({ url, token }))
+      localStorage.setItem('adamvaultos.vault', JSON.stringify({ url, token }))
     },
     [MOCK, STATIC_TOKEN] as const,
   )
@@ -183,14 +187,14 @@ test('v1 token-paste config migrates to the new session format', async ({ page }
   await expect(page.locator('.db-table tbody tr').first()).toBeVisible()
 
   const migrated = JSON.parse(
-    (await page.evaluate(() => localStorage.getItem('atelier.session.v1')))!,
+    (await page.evaluate(() => localStorage.getItem('adamvaultos.session.v1')))!,
   )
   expect(migrated).toEqual({
     vaultUrl: MOCK,
     mode: 'token',
     token: { accessToken: STATIC_TOKEN },
   })
-  expect(await page.evaluate(() => localStorage.getItem('atelier.vault'))).toBeNull()
+  expect(await page.evaluate(() => localStorage.getItem('adamvaultos.vault'))).toBeNull()
 })
 
 test('disconnect clears session, refresh material, and cached client ids', async ({ page }) => {
@@ -199,10 +203,10 @@ test('disconnect clears session, refresh material, and cached client ids', async
   await expect(page).toHaveURL(/#\/connect/)
 
   const storage = await page.evaluate(() => ({
-    session: localStorage.getItem('atelier.session.v1'),
-    legacy: localStorage.getItem('atelier.vault'),
-    clients: localStorage.getItem('atelier.oauth.clients'),
-    pending: sessionStorage.getItem('atelier.oauth.pending'),
+    session: localStorage.getItem('adamvaultos.session.v1'),
+    legacy: localStorage.getItem('adamvaultos.vault'),
+    clients: localStorage.getItem('adamvaultos.oauth.clients'),
+    pending: sessionStorage.getItem('adamvaultos.oauth.pending'),
   }))
   expect(storage.session).toBeNull()
   expect(storage.legacy).toBeNull()

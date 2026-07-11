@@ -31,6 +31,7 @@ import {
 } from './types'
 import { SCRIPTS_DB } from '../domain/scripts'
 import { TRACKER_DB } from '../domain/tracker'
+import { PROJECT_TAG } from '../domain/projects'
 import { NEW_PAGE, newPageContent, TASK_TAG } from '../domain/pages'
 
 // Storage keys are namespaced per-app. AdamVaultOS shares ONE origin with
@@ -70,6 +71,10 @@ export interface StoreState {
   tracker: string[] | null
   trackerStatus: 'idle' | 'loading' | 'ready' | 'error'
   trackerError: string | null
+  /** Paths of the project notes (tag:project) — the Cockpit's card deck. */
+  projects: string[] | null
+  projectsStatus: 'idle' | 'loading' | 'ready' | 'error'
+  projectsError: string | null
   /** Paths of the pages dataset, newest-first. */
   pages: string[] | null
   pagesStatus: 'idle' | 'loading' | 'ready' | 'error'
@@ -149,6 +154,9 @@ let state: StoreState = {
   tracker: null,
   trackerStatus: 'idle',
   trackerError: null,
+  projects: null,
+  projectsStatus: 'idle',
+  projectsError: null,
   pages: null,
   pagesStatus: 'idle',
   pagesError: null,
@@ -229,12 +237,14 @@ function adoptSession(session: AuthSession): void {
     approveUrl: null,
     scriptsStatus: 'idle',
     trackerStatus: 'idle',
+    projectsStatus: 'idle',
     pages: null,
     pagesStatus: 'idle',
     notes: {},
   })
   void loadScripts()
   void loadTracker()
+  void loadProjects()
   void loadTags()
 }
 
@@ -338,6 +348,9 @@ export function disconnect(): void {
     tracker: null,
     trackerStatus: 'idle',
     trackerError: null,
+    projects: null,
+    projectsStatus: 'idle',
+    projectsError: null,
     pages: null,
     pagesStatus: 'idle',
     pagesError: null,
@@ -420,6 +433,67 @@ export async function loadTracker(): Promise<void> {
       trackerStatus: 'error',
       trackerError: e instanceof Error ? e.message : String(e),
     })
+  }
+}
+
+export async function loadProjects(): Promise<void> {
+  if (!api || state.projectsStatus === 'loading') return
+  set({ projectsStatus: 'loading', projectsError: null })
+  try {
+    // WITH content — project notes are small and their H1/body feed the cards
+    // and the world Overview fallback.
+    const list = await requireApi().listByTag(PROJECT_TAG, 100, true)
+    mergeNotes(list)
+    set({ projects: list.map((n) => n.path), projectsStatus: 'ready' })
+  } catch (e) {
+    handleAuthFailure(e)
+    set({
+      projectsStatus: 'error',
+      projectsError: e instanceof Error ? e.message : String(e),
+    })
+  }
+}
+
+/** Lean notes carrying a project's knowledge tag (the world's Notes section).
+ * Tasks are excluded — they live on the world's Board, not among the notes. */
+export async function fetchProjectNotes(tag: string): Promise<Note[]> {
+  try {
+    const list = (await requireApi().listByTag(tag, 500)).filter(
+      (n) => !(n.tags ?? []).includes(TASK_TAG),
+    )
+    mergeNotes(list)
+    return [...list].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+/** Create a task inside a project's world: tasks/<key>/<slug>, tagged `task`,
+ * carrying the tracker defaults. Returns the note (caller opens row-as-page). */
+export async function createTask(projectKey: string, title: string): Promise<Note> {
+  const a = requireApi()
+  const slug = slugify(title) || 'task'
+  let path = `tasks/${projectKey}/${slug}`
+  for (let n = 2; (await a.getNote(path)) !== null; n++) {
+    path = `tasks/${projectKey}/${slug}-${n}`
+    if (n > 30) throw new Error('Could not find a free path for this task')
+  }
+  try {
+    const note = await a.createNote({
+      path,
+      content: title.trim(),
+      tags: [TASK_TAG],
+      metadata: { project: projectKey, state: 'next', done: false },
+    })
+    mergeNote(note)
+    if (state.tracker && !state.tracker.includes(note.path)) {
+      set({ tracker: [...state.tracker, note.path] })
+    }
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
   }
 }
 
@@ -829,7 +903,12 @@ export async function loadPages(): Promise<void> {
   }
 }
 
-export async function createPage(input: { title: string }): Promise<Note> {
+export async function createPage(input: {
+  title: string
+  /** Extra tags stamped on creation — e.g. a project's knowledge tag when the
+   * page is born inside a Cockpit world. */
+  extraTags?: string[]
+}): Promise<Note> {
   const a = requireApi()
   const slug = slugify(input.title) || 'untitled'
   const prefix = NEW_PAGE.pathPrefix
@@ -842,7 +921,7 @@ export async function createPage(input: { title: string }): Promise<Note> {
     const note = await a.createNote({
       path,
       content: newPageContent(input.title),
-      tags: [...NEW_PAGE.tags],
+      tags: [...new Set([...NEW_PAGE.tags, ...(input.extraTags ?? [])])],
       metadata: { ...NEW_PAGE.metadata },
     })
     mergeNote(note)

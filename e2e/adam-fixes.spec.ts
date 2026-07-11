@@ -217,10 +217,10 @@ test('Bug 1 — OAuth round-trip signs in without a blank crash', async ({ page 
   await page.waitForURL(/oauth\/authorize/)
   await page.click('#approve')
 
-  // Back in the app, signed in: the rail + Library render (not blank, not connect).
+  // Back in the app, signed in: the rail + Cockpit render (not blank, not connect).
   await expect(page.locator('.rail')).toBeVisible()
   await expect(page).not.toHaveURL(/#\/connect/)
-  await expect(page.locator('.note-row').first()).toBeVisible()
+  await expect(page.getByTestId('cockpit')).toBeVisible()
 
   // Session persisted under the namespaced key; the shared atelier key is untouched.
   const session = await page.evaluate((k) => localStorage.getItem(k), SESSION_KEY)

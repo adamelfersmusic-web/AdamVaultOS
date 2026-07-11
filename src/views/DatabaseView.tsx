@@ -331,10 +331,18 @@ export function DatabaseView({
   def,
   lensOverride,
   dataset = 'scripts',
+  presetFilter,
+  embedded = false,
 }: {
   def: DatabaseDef
   lensOverride?: LensKind
   dataset?: DatasetKind
+  /** Fixed scope applied before user filters (e.g. {project:['amanda']} inside
+   * a Cockpit world) — never shown as a removable chip. */
+  presetFilter?: Record<string, string[]>
+  /** True when hosted inside another view (a world): lens switches stay local
+   * instead of navigating to the global route. */
+  embedded?: boolean
 }) {
   const store = useStore()
   const { notes, saving } = store
@@ -368,7 +376,7 @@ export function DatabaseView({
   const setLens = (l: LensKind) => {
     setLensState(l)
     localStorage.setItem(lensKey(def.key), JSON.stringify(l))
-    navigate({ kind: dataset, lens: l })
+    if (!embedded) navigate({ kind: dataset, lens: l })
   }
 
   const setFilters = (f: Filters) => {
@@ -383,11 +391,22 @@ export function DatabaseView({
 
   const allRows = useMemo<Row[]>(() => {
     if (!paths) return []
-    return paths
+    let rows = paths
       .map((path) => notes[path])
       .filter((n): n is Note => Boolean(n))
       .map((note) => ({ path: note.path, note, title: rowTitle(note, def) }))
-  }, [paths, notes, def])
+    // Fixed scope (a world's slice) applies before any user filtering, so
+    // counts, pipeline, and progress all reflect just this scope.
+    if (presetFilter) {
+      for (const [key, vals] of Object.entries(presetFilter)) {
+        if (vals.length === 0) continue
+        const field = def.fields.find((f) => f.key === key)
+        if (!field) continue
+        rows = rows.filter((r) => vals.includes(filterValueOf(field, r.note)))
+      }
+    }
+    return rows
+  }, [paths, notes, def, presetFilter])
 
   const observed = useMemo(() => {
     const map = new Map<string, Set<string>>()

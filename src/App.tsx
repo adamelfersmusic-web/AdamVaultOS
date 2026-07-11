@@ -8,6 +8,8 @@ import { DatabaseView } from './views/DatabaseView'
 import { NotePage } from './views/NotePage'
 import { LibraryView } from './views/LibraryView'
 import { CanvasView } from './views/CanvasView'
+import { ProjectsView } from './views/ProjectsView'
+import { ProjectWorld } from './views/ProjectWorld'
 import { GraphView } from './views/GraphView'
 import { NewScriptModal } from './views/NewScriptModal'
 import { CommandPalette } from './components/CommandPalette'
@@ -53,7 +55,7 @@ export default function App() {
   // never see it.
   useEffect(() => {
     if (!session && route.kind !== 'connect') navigate({ kind: 'connect' })
-    if (session && route.kind === 'connect') navigate({ kind: 'library' })
+    if (session && route.kind === 'connect') navigate({ kind: 'projects' })
   }, [session, route.kind])
 
   if (oauthStatus === 'completing') {
@@ -125,6 +127,8 @@ export default function App() {
         {route.kind === 'note' && <NotePage path={route.path} key={route.path} />}
         {route.kind === 'library' && <LibraryView />}
         {route.kind === 'canvas' && <CanvasView />}
+        {route.kind === 'projects' && <ProjectsView />}
+        {route.kind === 'project' && <ProjectWorld path={route.path} key={route.path} />}
       </Shell>
       {ui.newScriptOpen && <NewScriptModal />}
       {ui.paletteOpen && <CommandPalette />}

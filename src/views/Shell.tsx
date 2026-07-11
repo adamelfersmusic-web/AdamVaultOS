@@ -9,16 +9,17 @@ import {
   IconGraph,
   IconLibrary,
   IconPage,
+  IconSpark,
 } from '../components/Icons'
 
 function Wordmark() {
   return (
     <a
       className="wordmark"
-      href="#/library"
+      href="#/projects"
       onClick={(e) => {
         e.preventDefault()
-        navigate({ kind: 'library' })
+        navigate({ kind: 'projects' })
       }}
     >
       <svg className="wordmark-gem" width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
@@ -56,6 +57,13 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         <Wordmark />
 
         <nav className="rail-nav">
+          <a
+            className={`rail-link${route.kind === 'projects' || route.kind === 'project' ? ' is-active' : ''}`}
+            href="#/projects"
+          >
+            <IconSpark size={15} />
+            Projects
+          </a>
           <a
             className={`rail-link${route.kind === 'pages' ? ' is-active' : ''}`}
             href="#/pages"

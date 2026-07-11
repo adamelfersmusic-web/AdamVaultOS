@@ -34,8 +34,24 @@ function styleCallouts(html: string): string {
   )
 }
 
+// Wikilinks become real in-app links in the read view: `[[path|alias]]` →
+// an <a href="#/note/<encoded>"> the hash router understands. Applied on the
+// raw markdown BEFORE marked runs (same staging trick as images), so the
+// stored note keeps its plain [[...]] — zero round-trip risk. The `[^![`
+// guard skips image-embeds (![[..]]) and already-bracketed forms.
+function linkWikilinks(src: string): string {
+  return src.replace(
+    /(^|[^![])\[\[([^\]|#\n]+)(?:\|([^\]\n]+))?\]\]/g,
+    (_m, lead: string, target: string, alias?: string) => {
+      const t = target.trim()
+      const label = (alias ?? t.split('/').pop() ?? t).trim()
+      return `${lead}<a class="wikilink" href="#/note/${encodeURIComponent(t)}">${label}</a>`
+    },
+  )
+}
+
 export function renderMarkdown(src: string): string {
-  const html = styleCallouts(marked.parse(stageVaultImages(src)) as string)
+  const html = styleCallouts(marked.parse(stageVaultImages(linkWikilinks(src))) as string)
   return DOMPurify.sanitize(html, {
     USE_PROFILES: { html: true },
     FORBID_TAGS: ['style'],

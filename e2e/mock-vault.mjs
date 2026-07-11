@@ -380,6 +380,13 @@ const server = http.createServer(async (req, res) => {
           n.path.toLowerCase().startsWith(prefix.toLowerCase()),
         )
       }
+      const tag = url.searchParams.get('tag')
+      if (tag) {
+        // Tag filter incl. hierarchical descendants — like the real vault.
+        out = out.filter((n) =>
+          (n.tags ?? []).some((t) => t === tag || t.startsWith(`${tag}/`)),
+        )
+      }
       const search = url.searchParams.get('search')
       if (search) {
         const q = search.toLowerCase()

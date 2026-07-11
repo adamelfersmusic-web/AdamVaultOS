@@ -56,6 +56,7 @@ export function PageEditor({ path }: { path: string }) {
   const [dirty, setDirty] = useState(false)
 
   const baseRef = useRef<{ content: string; updatedAt: string } | null>(null)
+  const editorRootRef = useRef<HTMLDivElement>(null)
   const loadingRef = useRef(true)
   const saveTimer = useRef<number | null>(null)
   const onUpdateRef = useRef<() => void>(() => {})
@@ -427,7 +428,7 @@ export function PageEditor({ path }: { path: string }) {
         : ''
 
   return (
-    <div className="page-editor">
+    <div className="page-editor" ref={editorRootRef}>
       <div className="page-topbar">
         <span
           className={`page-save${dirty || isSaving ? ' is-active' : ''}`}
@@ -436,6 +437,17 @@ export function PageEditor({ path }: { path: string }) {
           {saveLabel}
         </span>
         <div className="page-tools">
+          <button
+            className="page-tool"
+            title="Fullscreen (Esc to exit)"
+            aria-label="Fullscreen"
+            onClick={() => {
+              if (document.fullscreenElement) void document.exitFullscreen()
+              else void editorRootRef.current?.requestFullscreen()
+            }}
+          >
+            ⛶
+          </button>
           <button
             className={`page-tool${rec === 'recording' ? ' is-recording' : ''}`}
             title={
