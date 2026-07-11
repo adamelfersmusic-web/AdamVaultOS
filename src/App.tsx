@@ -10,6 +10,7 @@ import { LibraryView } from './views/LibraryView'
 import { GraphView } from './views/GraphView'
 import { NewScriptModal } from './views/NewScriptModal'
 import { CommandPalette } from './components/CommandPalette'
+import { CaptureDock } from './components/CaptureDock'
 import { ToastHost } from './components/Toast'
 import { SCRIPTS_DB } from './domain/scripts'
 
@@ -84,6 +85,7 @@ export default function App() {
       <>
         <GraphView />
         {ui.paletteOpen && <CommandPalette />}
+        <CaptureDock />
         <ToastHost />
       </>
     )
@@ -103,6 +105,7 @@ export default function App() {
           <PagesView path={route.path} />
         </Suspense>
         {ui.paletteOpen && <CommandPalette />}
+        <CaptureDock />
         <ToastHost />
       </>
     )
@@ -119,6 +122,7 @@ export default function App() {
       </Shell>
       {ui.newScriptOpen && <NewScriptModal />}
       {ui.paletteOpen && <CommandPalette />}
+      <CaptureDock />
       <ToastHost />
     </>
   )

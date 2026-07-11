@@ -824,6 +824,34 @@ export async function createPage(input: { title: string }): Promise<Note> {
   }
 }
 
+/**
+ * Quick capture — drop a raw thought straight into the vault, tagged
+ * `capture/quick`. Stays raw (the inbox layer); filed/synthesized later. Powers
+ * the global CaptureDock.
+ */
+export async function createCapture(text: string): Promise<Note> {
+  const a = requireApi()
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
+  let path = `capture/${stamp}`
+  for (let n = 2; (await a.getNote(path)) !== null; n++) {
+    path = `capture/${stamp}-${n}`
+    if (n > 30) break
+  }
+  try {
+    const note = await a.createNote({
+      path,
+      content: text.trim(),
+      tags: ['capture/quick'],
+      metadata: {},
+    })
+    mergeNote(note)
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
 export async function deletePage(path: string): Promise<void> {
   try {
     await requireApi().deleteNote(path)
