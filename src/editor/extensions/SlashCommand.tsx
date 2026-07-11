@@ -30,6 +30,8 @@ export interface SlashCommandOptions {
   onPickSubPage?: (editor: Editor, at: number) => void
   /** Start the mic/voice flow; text is inserted at the cursor on transcription. */
   onVoice?: (editor: Editor) => void
+  /** Open the image file picker to upload an attachment; `at` is the slash pos. */
+  onUploadImage?: (editor: Editor, at: number) => void
 }
 
 interface SlashItem {
@@ -127,14 +129,12 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
     {
       id: 'image',
       title: 'Image',
-      subtitle: 'Embed an image by URL',
+      subtitle: 'Upload from your device',
       icon: <IconImage />,
-      keywords: ['image', 'img', 'picture', 'photo'],
+      keywords: ['image', 'img', 'picture', 'photo', 'upload', 'attach'],
       run: ({ editor, range }) => {
-        const url = window.prompt('Image URL')?.trim()
-        const chain = editor.chain().focus().deleteRange(range)
-        if (url) chain.setImage({ src: url }).run()
-        else chain.run()
+        editor.chain().focus().deleteRange(range).run()
+        options.onUploadImage?.(editor, range.from)
       },
     },
     {

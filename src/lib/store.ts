@@ -449,6 +449,23 @@ export function fetchVaultAsset(relPath: string): Promise<string> {
   return requireApi().fetchAssetObjectUrl(relPath)
 }
 
+/** Upload a file to vault storage → `{ path, size, mimeType }`. */
+export function uploadImage(
+  file: File,
+  signal?: AbortSignal,
+): Promise<{ path: string; size: number; mimeType: string }> {
+  return requireApi().uploadStorageFile(file, signal)
+}
+
+/** Attach an uploaded storage file to a note (shows in its Attachments). */
+export function linkNoteAttachment(
+  noteId: string,
+  path: string,
+  mimeType: string,
+): Promise<void> {
+  return requireApi().linkAttachment(noteId, path, mimeType)
+}
+
 export async function recentNotes(): Promise<Note[]> {
   try {
     const results = await requireApi().listRecent()
