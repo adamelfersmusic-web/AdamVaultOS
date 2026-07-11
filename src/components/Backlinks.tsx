@@ -71,7 +71,7 @@ export function Backlinks({ path }: { path: string }) {
       {incoming.length > 0 && (
         <div className="backlinks-group">
           <h3 className="backlinks-head">
-            Linked from <span className="backlinks-count">{incoming.length}</span>
+            Links to this note <span className="backlinks-count">{incoming.length}</span>
           </h3>
           <div className="backlinks-list">
             {incoming.map((l) => (
