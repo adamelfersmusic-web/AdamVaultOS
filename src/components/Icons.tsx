@@ -126,6 +126,15 @@ export const IconSort = (p: IconProps = {}) =>
 export const IconCheck = (p: IconProps = {}) =>
   svg(<path d="m3.2 8.6 3 3 6.6-7.2" />, p)
 
+export const IconSun = (p: IconProps = {}) =>
+  svg(
+    <path d="M8 5.4a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2ZM8 1.6v1.5M8 12.9v1.5M1.6 8h1.5M12.9 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" />,
+    p,
+  )
+
+export const IconMoon = (p: IconProps = {}) =>
+  svg(<path d="M13.2 9.6A5.6 5.6 0 0 1 6.4 2.8a5.6 5.6 0 1 0 6.8 6.8Z" />, p)
+
 export const IconSpark = (p: IconProps = {}) =>
   svg(
     <path d="M8 2.2 9.5 6.5 13.8 8 9.5 9.5 8 13.8 6.5 9.5 2.2 8 6.5 6.5z" />,

@@ -19,8 +19,9 @@ import {
   useEditorSettings,
 } from '../lib/editorSettings'
 import { listScribeModels } from '../lib/scribe'
+import { toggleTheme, useTheme } from '../lib/theme'
 import { Modal } from '../components/Modal'
-import { IconPlus, IconSettings } from '../components/Icons'
+import { IconMoon, IconPlus, IconSettings, IconSun } from '../components/Icons'
 import { WorkTabs } from '../components/WorkTabs'
 import { PageEditor } from './PageEditor'
 
@@ -43,6 +44,7 @@ const RECENT_COUNT = 8
 
 export function PagesView({ path }: { path?: string }) {
   const { pages, pagesStatus, pagesError, notes } = useStore()
+  const theme = useTheme()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [sideQuery, setSideQuery] = useState('')
@@ -130,14 +132,25 @@ export function PagesView({ path }: { path?: string }) {
             </svg>
             Pages
           </a>
-          <button
-            className="icon-btn"
-            title="Editor settings"
-            aria-label="Editor settings"
-            onClick={() => setSettingsOpen(true)}
-          >
-            <IconSettings size={15} />
-          </button>
+          <div className="pages-head-tools">
+            <button
+              className="icon-btn"
+              data-testid="theme-toggle-pages"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label="Toggle light / dark mode"
+              onClick={toggleTheme}
+            >
+              {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+            </button>
+            <button
+              className="icon-btn"
+              title="Editor settings"
+              aria-label="Editor settings"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <IconSettings size={15} />
+            </button>
+          </div>
         </div>
 
         <button

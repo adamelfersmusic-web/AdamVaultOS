@@ -2,14 +2,17 @@ import type { ReactNode } from 'react'
 import { disconnect, useStore } from '../lib/store'
 import { navigate, type Route } from '../lib/router'
 import { openPalette } from '../lib/ui'
+import { toggleTheme, useTheme } from '../lib/theme'
 import {
   IconBoard,
   IconDisconnect,
   IconGallery,
   IconGraph,
   IconLibrary,
+  IconMoon,
   IconPage,
   IconSpark,
+  IconSun,
 } from '../components/Icons'
 
 function Wordmark() {
@@ -41,6 +44,7 @@ function Wordmark() {
 
 export function Shell({ route, children }: { route: Route; children: ReactNode }) {
   const { session, connection } = useStore()
+  const theme = useTheme()
   let host = ''
   try {
     if (session) {
@@ -107,6 +111,15 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         </button>
 
         <div className="rail-foot">
+          <button
+            className="rail-theme"
+            data-testid="theme-toggle"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={toggleTheme}
+          >
+            {theme === 'dark' ? <IconSun size={13} /> : <IconMoon size={13} />}
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
           {connection === 'auth-error' ? (
             <div className="vault-status vault-status-error">
               <i className="status-dot status-dot-error" />
