@@ -2798,3 +2798,25 @@ tr:hover .row-peek { opacity: 1; }
 .rail.is-collapsed .vault-status { justify-content: center; }
 /* Expand affordance when collapsed: the whole wordmark gem re-opens it. */
 .rail.is-collapsed .wordmark { cursor: pointer; }
+
+/* Canvas card right-click menu — promote a card to page-hood by CHOICE. */
+.card-menu {
+  z-index: 400;
+  min-width: 220px;
+  padding: 4px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--bg-rail);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+}
+.card-menu-item {
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  font-size: 12.5px;
+  color: var(--ink-2);
+  transition: 0.1s ease;
+}
+.card-menu-item:hover { background: var(--surface); color: var(--ink); }

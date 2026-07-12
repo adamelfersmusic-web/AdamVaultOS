@@ -160,3 +160,43 @@ test('Canvas v2 — double-click adds a card in the BLOCK editor; /todo + Tab ne
 
   expect(errors, errors.join('\n')).toEqual([])
 })
+
+test('PR2 — right-click a canvas card: open as full page, or move it into Pages', async ({ page }) => {
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.getByRole('button', { name: 'New canvas' }).first().click()
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 500, y: 300 } })
+  await expect(page.locator('.card-prose')).toBeVisible() // editor mounted + focused
+  await page.keyboard.type('# Merch ideas')
+  await page.locator('.canvas-title-input').click() // blur → save
+  await expect(page.locator('.canvas-card-body')).toContainText('Merch ideas') // save landed
+
+  // Right-click → the promote menu.
+  await page.locator('.canvas-card').click({ button: 'right' })
+  await expect(page.getByTestId('card-menu')).toBeVisible()
+
+  // Open as full page: navigates to the Pages editor for the SAME note (stays on canvas).
+  await page.getByTestId('card-open-page').click()
+  await expect(page).toHaveURL(/#\/pages\/canvas%2F/)
+  await expect(page.locator('.page-prose')).toContainText('Merch ideas')
+
+  // Back to the canvas — the card is still there (opening ≠ moving).
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.locator('.canvas-tile').first().click()
+  await expect(page.locator('.canvas-card')).toHaveCount(1)
+
+  // Turn into a page: MOVES the note out of canvas/ into pages/.
+  await page.locator('.canvas-card').click({ button: 'right' })
+  await page.getByTestId('card-move-pages').click()
+  await expect(page).toHaveURL(/#\/pages\/pages%2Fmerch-ideas/)
+  await expect(page.locator('.canvas-card')).toHaveCount(0)
+
+  const res = await page.request.get(`${MOCK}/api/notes?id=${encodeURIComponent('pages/merch-ideas')}`, { headers: AUTH })
+  expect(res.ok()).toBe(true)
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
