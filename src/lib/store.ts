@@ -583,7 +583,7 @@ export async function fetchLinkTargets(): Promise<Note[]> {
     return linkTargetsCache.list
   }
   try {
-    const list = await requireApi().listAll({ limit: 1000 })
+    const list = await requireApi().listAll({ limit: 2000 })
     linkTargetsCache = { at: Date.now(), list }
     return list
   } catch (e) {

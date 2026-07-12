@@ -1238,6 +1238,12 @@
   font-variant-numeric: tabular-nums;
 }
 .pages-item-indent { padding-left: 22px; }
+.pages-subgroup-head {
+  padding-left: 22px;
+}
+.pages-item-deep {
+  padding-left: 34px;
+}
 
 /* N5 — fullscreen: the fullscreened editor leaves its scrolling parent
    (.pages-main) behind, so it must scroll itself or the content below the
