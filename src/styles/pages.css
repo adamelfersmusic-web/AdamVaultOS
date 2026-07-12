@@ -1399,6 +1399,29 @@
   background: var(--line);
   margin: 0 3px;
 }
+.fmt-group {
+  display: flex;
+  align-items: center;
+}
+.fmt-hl-colors {
+  display: none;
+  align-items: center;
+  gap: 3px;
+  margin-left: 3px;
+}
+.fmt-group:hover .fmt-hl-colors,
+.fmt-group:focus-within .fmt-hl-colors {
+  display: flex;
+}
+.fmt-swatch-hl {
+  width: auto;
+  height: auto;
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 11px;
+  color: var(--ink);
+  border: none;
+}
 .fmt-clear { font-size: 10px; }
 
 /* #18 toggles — the Details node inside the editor */
@@ -1410,19 +1433,22 @@
 }
 .page-prose [data-type='details'] > button {
   flex: none;
-  width: 20px;
-  height: 24px;
-  margin-top: 1px;
-  background: none;
-  border: none;
+  width: 26px;
+  height: 26px;
+  margin-top: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   cursor: pointer;
-  color: var(--ink-3);
-  font-size: 11px;
+  color: var(--gold);
+  font-size: 15px;
+  line-height: 1;
   border-radius: var(--r-sm);
+  transition: 0.12s ease;
 }
 .page-prose [data-type='details'] > button:hover {
-  background: var(--surface-2);
-  color: var(--ink);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+  color: var(--gold-bright);
 }
 .page-prose [data-type='details'] > button::before { content: '▸'; }
 .page-prose [data-type='details'].is-open > button::before { content: '▾'; }

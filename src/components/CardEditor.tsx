@@ -11,9 +11,9 @@ import { useEffect, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskList, TaskItem } from '@tiptap/extension-list'
-import { Highlight } from '@tiptap/extension-highlight'
 import { Markdown } from '@tiptap/markdown'
 import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
+import { MarkSpanParser, RichHighlight } from '../editor/extensions/RichHighlight'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
 import { WikiLinkSuggest } from '../editor/extensions/WikiLinkSuggest'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
@@ -38,7 +38,8 @@ export function CardEditor({
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       TaskList,
       TaskItem.configure({ nested: true }),
-      Highlight,
+      RichHighlight,
+      MarkSpanParser,
       Markdown,
       MarkdownLiteral,
       WikiLink,

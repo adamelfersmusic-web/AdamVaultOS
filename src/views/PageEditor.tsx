@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskList, TaskItem } from '@tiptap/extension-list'
-import { Highlight } from '@tiptap/extension-highlight'
 import { Color } from '@tiptap/extension-text-style'
 import { Markdown } from '@tiptap/markdown'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
@@ -50,6 +49,7 @@ import { VaultImage } from '../editor/extensions/VaultImage'
 import { AiBlock } from '../editor/extensions/AiBlock'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
 import { ColorText } from '../editor/extensions/ColorText'
+import { MarkSpanParser, RichHighlight } from '../editor/extensions/RichHighlight'
 import {
   ToggleContent,
   ToggleDetails,
@@ -97,9 +97,10 @@ export function PageEditor({ path }: { path: string }) {
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       TaskList,
       TaskItem.configure({ nested: true }),
-      // E1 — ==highlight==: first-party markdown round-trip (==…== both ways),
-      // toggled with ⌘⇧H or by typing ==text==.
-      Highlight,
+      // E1 — highlight: plain amber round-trips as ==…==; colored highlights
+      // (the format-bar swatches) as <mark style>. ⌘⇧H / ==typing== still work.
+      RichHighlight,
+      MarkSpanParser,
       // #20 — colored text: ColorText carries the custom <span style> markdown
       // round-trip; Color supplies the setColor/unsetColor commands.
       ColorText,
