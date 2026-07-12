@@ -1657,3 +1657,24 @@
   text-decoration: none;
   font-size: 13px;
 }
+
+.board-embed-lenses {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 2px;
+  margin-left: 10px;
+}
+.board-embed-lenses button {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 5px;
+  color: var(--ink-3);
+}
+.board-embed-lenses button.is-on {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+.board-embed-head { gap: 8px; }
+.board-embed-open { margin-left: auto; }

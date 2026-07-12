@@ -345,6 +345,12 @@ test('T3/T4/T6 — table bar grows tables; fold wraps selection; /board embeds a
   await page.reload()
   await expect(page.getByTestId('board-embed')).toBeVisible()
 
+  // The embed's lens switch writes the view INTO the marker and persists.
+  await page.getByTestId('board-embed-lenses').getByText('table', { exact: true }).click()
+  await expect.poll(() => savedContent(page, 'pages/rich')).toContain('![[board:amanda:table]]')
+  await page.reload()
+  await expect(page.locator('.board-embed table tr').first()).toBeVisible()
+
   // T4 — select text, fold it into a toggle from the format bar.
   await selectWord(page, 'alpha line', 'alpha line here')
   await expect(page.getByTestId('format-bar')).toBeVisible()
@@ -363,7 +369,7 @@ test('T3/T4/T6 — table bar grows tables; fold wraps selection; /board embeds a
   await page.keyboard.press('Enter')
   await expect(page.getByTestId('table-bar')).toBeVisible()
   await page.getByTestId('table-bar').getByText('＋ row').click()
-  await expect(page.locator('.page-prose table tr')).toHaveCount(4)
+  await expect(page.locator('.page-prose .tableWrapper table tr')).toHaveCount(4)
 
   expect(errors, errors.join('\n')).toEqual([])
 })

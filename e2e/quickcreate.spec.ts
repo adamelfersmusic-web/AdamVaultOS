@@ -71,7 +71,21 @@ test('Tracker ＋ New task — project picker, lands in row-as-page', async ({ p
   await form.locator('.db-newtask-title').fill('Wire the pitch deck')
   await page.keyboard.press('Enter')
 
-  // Row-as-page opens with the tracker property panel.
+  // STAYS in the tracker (no auto-navigation) — the row appears inline.
+  await expect(page).toHaveURL(/#\/tracker/)
+  const row = page.locator('tr', { hasText: 'Wire the pitch deck' })
+  await expect(row).toBeVisible()
+
+  // Notion-style side peek: 📄 on the row opens the task BESIDE the tracker.
+  await row.hover()
+  await row.getByTestId('row-peek').click()
+  const peek = page.getByTestId('db-peek')
+  await expect(peek).toBeVisible()
+  await expect(page.locator('.db-title')).toBeVisible() // tracker still on screen
+  await expect(peek.locator('[data-testid="record-props"]')).toBeVisible()
+
+  // Open ↗ promotes to the full page.
+  await peek.locator('.detail-btn', { hasText: 'Open' }).click()
   await expect(page).toHaveURL(/tasks%2Fescensus%2Fwire-the-pitch-deck/)
   await expect(page.getByTestId('record-props')).toBeVisible()
 

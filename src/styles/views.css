@@ -2613,3 +2613,79 @@ body.is-dragging .card {
   flex-direction: column;
   gap: 8px;
 }
+
+/* ── Notion-style side peek on the global Tracker ── */
+.db-wrap {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+.db-wrap > .db {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.db-peek {
+  position: relative;
+  z-index: 20;
+  flex: 0 0 min(600px, 46%);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--line-strong);
+  background: var(--bg);
+  animation: peek-in 0.16s ease;
+}
+@keyframes peek-in {
+  from { transform: translateX(24px); opacity: 0.4; }
+  to { transform: none; opacity: 1; }
+}
+.db-peek-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-rail);
+  flex: 0 0 auto;
+}
+.db-peek-path {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.db-peek-actions { display: flex; gap: 6px; flex: none; }
+.db-peek-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.db-peek-body .page-editor {
+  height: 100%;
+  min-height: 0;
+}
+
+/* 📄 per-row peek icon — quiet until the row is hovered (Notion-style) */
+.row-peek {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 4px;
+  border-radius: var(--r-sm);
+  color: var(--ink-4);
+  opacity: 0.35;
+  transition: 0.12s ease;
+}
+tr:hover .row-peek { opacity: 1; }
+.row-peek:hover {
+  color: var(--gold-bright);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+}
