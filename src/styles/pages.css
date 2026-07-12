@@ -1540,3 +1540,120 @@
   background: color-mix(in srgb, var(--gold) 14%, transparent);
   pointer-events: none;
 }
+
+/* wikilink chips keep body size even inside headings */
+.page-prose h1 .wikilink,
+.page-prose h2 .wikilink,
+.page-prose h3 .wikilink,
+.md h1 .wikilink,
+.md h2 .wikilink,
+.md h3 .wikilink {
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+/* ── T3 table bar ── */
+.table-bar {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  margin: 0 0 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  width: fit-content;
+}
+.table-bar-label {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-right: 4px;
+}
+.table-bar button {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  padding: 3px 9px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+.table-bar button:hover {
+  color: var(--ink);
+  background: var(--surface-3);
+}
+.table-bar .table-bar-danger:hover {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+}
+
+/* ── T6 board embed ── */
+.board-embed-wrap { margin: 0.8em 0; }
+.board-embed {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--bg-rail);
+  overflow: hidden;
+}
+.board-embed-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.board-embed-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--ink);
+}
+.board-embed-open {
+  font-size: 11.5px;
+  color: var(--gold);
+  text-decoration: none;
+}
+.board-embed-body {
+  max-height: 460px;
+  overflow: auto;
+}
+/* slim down the embedded DatabaseView chrome inside a page */
+.board-embed-body .db { padding: 0; }
+.board-embed-body .db-head { padding: 10px 14px 0; }
+.board-embed-body .db-title { font-size: 15px; }
+.board-embed-picker {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.board-embed-choices {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.board-embed-choices button {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.board-embed-choices button:hover {
+  border-color: var(--gold);
+  color: var(--ink);
+}
+.board-embed-none { font-size: 12px; color: var(--ink-4); }
+.md .board-embed-link,
+.note-body .board-embed-link {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  color: var(--gold);
+  text-decoration: none;
+  font-size: 13px;
+}

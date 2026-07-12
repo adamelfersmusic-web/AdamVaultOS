@@ -142,6 +142,12 @@ function place(el: HTMLElement, clientRect?: (() => DOMRect | null) | null): voi
 export const WikiLinkSuggest = Extension.create({
   name: 'wikiLinkSuggest',
 
+  // Navigating away mid-suggestion destroys the editor before onExit runs,
+  // stranding the floating menu on document.body ("No notes match" ghost box).
+  onDestroy() {
+    document.querySelectorAll('.slash-menu').forEach((el) => el.remove())
+  },
+
   addProseMirrorPlugins() {
     return [
       Suggestion<WikiItem, WikiItem>({

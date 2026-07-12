@@ -13,6 +13,7 @@ import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion'
 import {
+  IconBoard,
   IconTable,
   IconText,
   IconHeading,
@@ -204,6 +205,20 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
       run: ({ editor, range }) => insertToggle(editor, range, 'h2'),
     },
     {
+      id: 'board',
+      title: 'Board',
+      subtitle: 'Live kanban of a project, right here',
+      icon: <IconBoard size={15} />,
+      keywords: ['board', 'kanban', 'tracker', 'tasks', 'database'],
+      run: ({ editor, range }) =>
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({ type: 'boardEmbed', attrs: { project: '' } })
+          .run(),
+    },
+    {
       id: 'table',
       title: 'Table',
       subtitle: 'A markdown pipe table (3×3)',
@@ -346,6 +361,12 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
 
   addOptions() {
     return { onPickSubPage: undefined, onVoice: undefined }
+  },
+
+  // Navigating away mid-suggestion destroys the editor before onExit runs,
+  // stranding the floating menu on document.body ("No notes match" ghost box).
+  onDestroy() {
+    document.querySelectorAll('.slash-menu').forEach((el) => el.remove())
   },
 
   addProseMirrorPlugins() {

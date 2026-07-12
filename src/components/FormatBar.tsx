@@ -78,6 +78,35 @@ export function FormatBar({ editor }: { editor: Editor }) {
             <span className="fmt-swatch" style={{ background: c.value }} />
           </button>
         ))}
+        <span className="fmt-sep" />
+        <button
+          className="fmt-btn fmt-fold"
+          title="Wrap selection in a toggle"
+          data-testid="fmt-fold"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .setDetails()
+              .command(({ tr }) => {
+                // open the wrapping details so the content stays visible
+                const { $from } = tr.selection
+                for (let d = $from.depth; d > 0; d--) {
+                  if ($from.node(d).type.name === 'details') {
+                    const pos = $from.before(d)
+                    const node = tr.doc.nodeAt(pos)
+                    if (node) tr.setNodeMarkup(pos, undefined, { ...node.attrs, open: true })
+                    break
+                  }
+                }
+                return true
+              })
+              .run()
+          }
+        >
+          ⌄
+        </button>
         <button
           className="fmt-btn fmt-clear"
           title="Clear color + highlight"

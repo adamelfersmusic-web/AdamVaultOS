@@ -49,6 +49,7 @@ import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
 import { VaultImage } from '../editor/extensions/VaultImage'
 import { AiBlock } from '../editor/extensions/AiBlock'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
+import { BoardEmbed, convertBoardEmbeds } from '../editor/extensions/BoardEmbed'
 import { ColorText } from '../editor/extensions/ColorText'
 import { MarkSpanParser, RichHighlight } from '../editor/extensions/RichHighlight'
 import {
@@ -58,6 +59,7 @@ import {
   ToggleSummary,
 } from '../editor/extensions/ToggleDetails'
 import { FormatBar } from '../components/FormatBar'
+import { TableBar } from '../components/TableBar'
 
 type Status = 'loading' | 'ready' | 'missing' | 'error'
 type Rec = 'idle' | 'recording' | 'transcribing'
@@ -118,6 +120,8 @@ export function PageEditor({ path }: { path: string }) {
       // Tables — GFM pipe tables, first-party markdown round-trip (Adam's
       // "renders perfectly in markdown" law). /table inserts 3×3.
       TableKit.configure({ table: { resizable: false } }),
+      // T6 — ![[board:key]] renders the live project board inside the page.
+      BoardEmbed,
       VaultImage, // resolves /api/storage vault paths (auth-safe); no base64
       Markdown,
       MarkdownLiteral,
@@ -232,7 +236,7 @@ export function PageEditor({ path }: { path: string }) {
     const apply = (content: string, updatedAt: string) => {
       editor.commands.setContent(content, { contentType: 'markdown' })
       const page = convertPageLinks(editor.getJSON())
-      const wiki = convertWikiLinks(page.doc)
+      const wiki = convertWikiLinks(convertBoardEmbeds(page.doc).doc)
       if (page.changed || wiki.changed) editor.commands.setContent(wiki.doc)
       baseRef.current = { content: editor.getMarkdown(), updatedAt }
       loadingRef.current = false
@@ -410,7 +414,7 @@ export function PageEditor({ path }: { path: string }) {
     loadingRef.current = true
     editor.commands.setContent(conflict.content ?? '', { contentType: 'markdown' })
     const page = convertPageLinks(editor.getJSON())
-    const wiki = convertWikiLinks(page.doc)
+    const wiki = convertWikiLinks(convertBoardEmbeds(page.doc).doc)
     if (page.changed || wiki.changed) editor.commands.setContent(wiki.doc)
     baseRef.current = { content: editor.getMarkdown(), updatedAt: conflict.updatedAt }
     loadingRef.current = false
@@ -662,6 +666,8 @@ export function PageEditor({ path }: { path: string }) {
       {note && databaseForPath(path) && (
         <RecordProperties note={note} def={databaseForPath(path)!} />
       )}
+
+      {editor && <TableBar editor={editor} />}
 
       {editor && <FormatBar editor={editor} />}
 

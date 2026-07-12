@@ -310,3 +310,60 @@ test('toggle sizes — /toggle H1 stores data-size, renders big, round-trips', a
     .poll(() => savedContent(page, 'pages/rich'))
     .toBe(before.replace('end line', 'end line ping'))
 })
+
+test('T3/T4/T6 — table bar grows tables; fold wraps selection; /board embeds a live board', async ({ page }) => {
+  const AUTH2 = { Authorization: `Bearer ${TOKEN}` }
+  await page.request.post(`${MOCK}/api/notes`, {
+    headers: AUTH2,
+    data: { path: 'projects/amanda', content: '# Amanda', tags: ['project'], metadata: { key: 'amanda', tag: 'amanda', status: 'active', order: 1, summary: 'x' } },
+  })
+  await page.request.post(`${MOCK}/api/notes`, {
+    headers: AUTH2,
+    data: { path: 'tasks/amanda/ship-batch', content: 'Ship batch one', tags: ['task'], metadata: { project: 'amanda', state: 'active', phase: '5b', track: 'DTC videos', owner: 'Adam', done: false } },
+  })
+  await seed(page, 'pages/rich', '# Rich\n\nalpha line here\n\nend line')
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await openPage(page, 'pages/rich')
+
+  // T6 — /board → project picker → live board with the real task card.
+  await page.locator('.page-prose').getByText('end line').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/board')
+  await expect(page.locator('.slash-menu')).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('board-embed-picker')).toBeVisible()
+  await page.locator('.board-embed-choices button', { hasText: 'Amanda' }).click()
+  await expect(page.getByTestId('board-embed')).toBeVisible()
+  await expect(page.locator('.board-embed .card', { hasText: 'Ship batch one' })).toBeVisible()
+  await expect.poll(() => savedContent(page, 'pages/rich')).toContain('![[board:amanda]]')
+
+  // Board survives a reload (parsed straight from the marker).
+  await page.reload()
+  await expect(page.getByTestId('board-embed')).toBeVisible()
+
+  // T4 — select text, fold it into a toggle from the format bar.
+  await selectWord(page, 'alpha line', 'alpha line here')
+  await expect(page.getByTestId('format-bar')).toBeVisible()
+  await page.getByTestId('fmt-fold').click()
+  await expect(page.locator('.page-prose [data-type="details"].is-open')).toHaveCount(1)
+  await expect
+    .poll(() => savedContent(page, 'pages/rich'))
+    .toMatch(/<details>\n<summary><\/summary>\n\nalpha line here\n<\/details>/)
+
+  // T3 — table bar appears inside a table; ＋ row grows it.
+  await page.locator('.page-prose').getByText('end line').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/table')
+  await expect(page.locator('.slash-menu')).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('table-bar')).toBeVisible()
+  await page.getByTestId('table-bar').getByText('＋ row').click()
+  await expect(page.locator('.page-prose table tr')).toHaveCount(4)
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
