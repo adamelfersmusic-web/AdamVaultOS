@@ -60,3 +60,63 @@
 
   --ease-spring: cubic-bezier(0.32, 1.25, 0.5, 1);
 }
+
+:root {
+  /* Mix base for "toward-foreground" color-mixes (chips, tinted text):
+     white on the dark theme, deep coffee on light — so tinted text always
+     moves toward readability, never away. */
+  --mix-fg: white;
+
+  /* Aliases — several surfaces (dock, pages chrome, property panels) were
+     written against --text/--hover/--border/--accent with dark literal
+     fallbacks. Defining them here routes ALL of it through the theme. */
+  --text: var(--ink);
+  --text-dim: var(--ink-3);
+  --hover: var(--surface-2);
+  --border: var(--line);
+  --accent: var(--gold);
+  --panel: var(--surface);
+}
+
+/* ————————————————————————— light · "latte" ——————————————————————————
+   Adam's spec (build log PART 30): off-white paper, chocolate/coffee-brown
+   ink, the turquoise accent kept. Toggle lives in the rail + Pages. */
+[data-theme='light'] {
+  --bg: #f6f1e7;
+  --bg-rail: #efe8d9;
+  --surface: #fbf7ee;
+  --surface-2: #f0e9da;
+  --surface-3: #e7ddc9;
+  --overlay-bg: rgba(59, 45, 33, 0.35);
+
+  --line: #e2d8c3;
+  --line-2: #d5c8ae;
+  --line-strong: #c2b192;
+
+  /* coffee-brown ink ramp */
+  --ink: #3b2d21;
+  --ink-2: #5c493a;
+  --ink-3: #83705c;
+  --ink-4: #a3907a;
+
+  /* turquoise deepened for contrast on cream; "bright" darkens here */
+  --gold: #17877f;
+  --gold-bright: #0d716a;
+  --red: #ab3950;
+  --blue: #38688d;
+  --green: #397347;
+  --purple: #654a87;
+  --neutral: #7c7161;
+
+  --tint: 13%;
+  --tint-text: 92%;
+
+  --mix-fg: #2c2015;
+
+  --shadow-pop:
+    0 1px 2px rgba(59, 45, 33, 0.16), 0 10px 32px rgba(59, 45, 33, 0.16),
+    0 0 0 1px var(--line-strong);
+  --shadow-card: 0 1px 2px rgba(59, 45, 33, 0.1);
+  --shadow-lift:
+    0 2px 6px rgba(59, 45, 33, 0.12), 0 16px 40px rgba(59, 45, 33, 0.14);
+}

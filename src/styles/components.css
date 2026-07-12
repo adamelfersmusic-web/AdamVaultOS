@@ -22,11 +22,11 @@
   flex: none;
 }
 
-.chip-gold    { color: color-mix(in srgb, var(--gold) var(--tint-text), white);   background: color-mix(in srgb, var(--gold) var(--tint), transparent);   border-color: color-mix(in srgb, var(--gold) 26%, transparent); }
-.chip-red     { color: color-mix(in srgb, var(--red) var(--tint-text), white);    background: color-mix(in srgb, var(--red) var(--tint), transparent);    border-color: color-mix(in srgb, var(--red) 26%, transparent); }
-.chip-blue    { color: color-mix(in srgb, var(--blue) var(--tint-text), white);   background: color-mix(in srgb, var(--blue) var(--tint), transparent);   border-color: color-mix(in srgb, var(--blue) 26%, transparent); }
-.chip-green   { color: color-mix(in srgb, var(--green) var(--tint-text), white);  background: color-mix(in srgb, var(--green) var(--tint), transparent);  border-color: color-mix(in srgb, var(--green) 26%, transparent); }
-.chip-purple  { color: color-mix(in srgb, var(--purple) var(--tint-text), white); background: color-mix(in srgb, var(--purple) var(--tint), transparent); border-color: color-mix(in srgb, var(--purple) 26%, transparent); }
+.chip-gold    { color: color-mix(in srgb, var(--gold) var(--tint-text), var(--mix-fg));   background: color-mix(in srgb, var(--gold) var(--tint), transparent);   border-color: color-mix(in srgb, var(--gold) 26%, transparent); }
+.chip-red     { color: color-mix(in srgb, var(--red) var(--tint-text), var(--mix-fg));    background: color-mix(in srgb, var(--red) var(--tint), transparent);    border-color: color-mix(in srgb, var(--red) 26%, transparent); }
+.chip-blue    { color: color-mix(in srgb, var(--blue) var(--tint-text), var(--mix-fg));   background: color-mix(in srgb, var(--blue) var(--tint), transparent);   border-color: color-mix(in srgb, var(--blue) 26%, transparent); }
+.chip-green   { color: color-mix(in srgb, var(--green) var(--tint-text), var(--mix-fg));  background: color-mix(in srgb, var(--green) var(--tint), transparent);  border-color: color-mix(in srgb, var(--green) 26%, transparent); }
+.chip-purple  { color: color-mix(in srgb, var(--purple) var(--tint-text), var(--mix-fg)); background: color-mix(in srgb, var(--purple) var(--tint), transparent); border-color: color-mix(in srgb, var(--purple) 26%, transparent); }
 .chip-neutral { color: var(--ink-2); background: color-mix(in srgb, var(--neutral) 14%, transparent); border-color: color-mix(in srgb, var(--neutral) 24%, transparent); }
 .chip-dim     { color: var(--ink-3); background: color-mix(in srgb, var(--neutral) 8%, transparent);  border-color: var(--line); }
 
@@ -120,7 +120,7 @@
 
 .btn-danger {
   background: color-mix(in srgb, var(--red) 24%, transparent);
-  color: color-mix(in srgb, var(--red) 80%, white);
+  color: color-mix(in srgb, var(--red) 80%, var(--mix-fg));
   border-color: color-mix(in srgb, var(--red) 45%, transparent);
 }
 .btn-danger:hover {
@@ -504,7 +504,7 @@
   font-size: 12.5px;
 }
 .conflict-text strong {
-  color: color-mix(in srgb, var(--red) 70%, white);
+  color: color-mix(in srgb, var(--red) 70%, var(--mix-fg));
 }
 .conflict-text span {
   color: var(--ink-2);
@@ -525,7 +525,7 @@
   font-weight: 640;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--purple) 75%, white);
+  color: color-mix(in srgb, var(--purple) 75%, var(--mix-fg));
   background: color-mix(in srgb, var(--purple) 16%, transparent);
   border: 1px solid color-mix(in srgb, var(--purple) 34%, transparent);
   border-radius: 999px;
@@ -534,7 +534,7 @@
 
 .canon-mini {
   display: inline-flex;
-  color: color-mix(in srgb, var(--purple) 72%, white);
+  color: color-mix(in srgb, var(--purple) 72%, var(--mix-fg));
   opacity: 0.85;
   margin-left: 6px;
   vertical-align: -1px;

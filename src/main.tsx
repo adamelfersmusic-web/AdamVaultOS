@@ -10,9 +10,11 @@ import './styles/graph.css'
 import './styles/pages.css'
 import './styles/canvas.css'
 import { init } from './lib/store'
+import { initTheme } from './lib/theme'
 import App from './App'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
+initTheme() // before first paint — no dark flash on light mode
 init()
 
 createRoot(document.getElementById('root')!).render(
