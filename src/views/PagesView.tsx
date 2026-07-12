@@ -21,6 +21,7 @@ import {
 import { listScribeModels } from '../lib/scribe'
 import { Modal } from '../components/Modal'
 import { IconPlus, IconSettings } from '../components/Icons'
+import { WorkTabs } from '../components/WorkTabs'
 import { PageEditor } from './PageEditor'
 
 /** Sidebar label: the doc's real H1 once its content is cached (i.e. it's been
@@ -218,7 +219,17 @@ export function PagesView({ path }: { path?: string }) {
 
       <main className="pages-main">
         {path ? (
-          <PageEditor key={path} path={path} />
+          path.startsWith('desk/') ? (
+            // Work docs get the tab rail (W1) — daily notes + project docs.
+            <div className="workdoc">
+              <WorkTabs path={path} />
+              <div className="workdoc-editor">
+                <PageEditor key={path} path={path} />
+              </div>
+            </div>
+          ) : (
+            <PageEditor key={path} path={path} />
+          )
         ) : (
           <div className="page-empty">
             <p className="page-empty-title">A clean page</p>

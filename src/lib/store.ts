@@ -658,6 +658,68 @@ export async function setTaskToday(path: string, on: boolean): Promise<boolean> 
   )
 }
 
+// ---------------------------------------------------------------------------
+// Work docs (W1, build log PART 30) — Google-Docs-style tabbed workspaces.
+// A WORKSPACE is a spot under desk/: the daily note (desk/<date>) or a
+// project's doc folder (desk/<project-key>). TABS are its sub-notes
+// (desk/<x>/<tab>), plus the root note itself when it exists.
+// ---------------------------------------------------------------------------
+
+/** The workspace root for a path under desk/, else null. */
+export function workspaceRootFor(path: string): string | null {
+  if (!path.startsWith('desk/')) return null
+  const segs = path.split('/')
+  if (segs.length < 2 || !segs[1]) return null
+  return `desk/${segs[1]}`
+}
+
+export async function fetchWorkspaceTabs(
+  root: string,
+): Promise<{ root: Note | null; children: Note[] }> {
+  const a = requireApi()
+  try {
+    const [rootNote, children] = await Promise.all([
+      a.getNote(root),
+      a.listByPrefix(`${root}/`),
+    ])
+    if (rootNote) mergeNote(rootNote)
+    mergeNotes(children)
+    // Tab order = creation order, like Google Docs.
+    const sorted = [...children].sort((x, y) => (x.createdAt < y.createdAt ? -1 : 1))
+    return { root: rootNote, children: sorted }
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+/** Add a tab (sub-note) to a workspace; returns the new note. */
+export async function createWorkTab(root: string, title: string): Promise<Note> {
+  const a = requireApi()
+  const slug = slugify(title) || 'tab'
+  let path = `${root}/${slug}`
+  for (let n = 2; (await a.getNote(path)) !== null; n++) {
+    path = `${root}/${slug}-${n}`
+    if (n > 30) throw new Error('Could not find a free path for this tab')
+  }
+  try {
+    const note = await a.createNote({
+      path,
+      content: `# ${title.trim()}\n\n`,
+      tags: ['desk'],
+      metadata: { type: 'note' },
+    })
+    mergeNote(note)
+    if (state.pages && !state.pages.includes(note.path)) {
+      set({ pages: [note.path, ...state.pages] })
+    }
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
 export async function loadTags(): Promise<void> {
   if (!api) return
   try {

@@ -2408,3 +2408,18 @@ body.is-dragging .card {
   text-decoration: line-through;
   color: var(--ink-4);
 }
+
+/* W1 — the world's Docs section */
+.world-docs {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 22px 30px;
+  max-width: 720px;
+}
+.world-docs-hint { margin: 10px 0 14px; }
+.world-docs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
