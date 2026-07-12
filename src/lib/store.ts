@@ -728,6 +728,23 @@ export async function ensureTodayNote(): Promise<string> {
   return path
 }
 
+/** Dock Pad "⤢ Open as doc" (#15 remnant): the jot graduates from ephemeral
+ * localStorage into TODAY's daily note (appended), where it's backed up,
+ * searchable, and linkable. Returns the daily note's path for navigation. */
+export async function promotePadToToday(text: string): Promise<string> {
+  const a = requireApi()
+  const path = await ensureTodayNote()
+  const fresh = await a.getNote(path)
+  if (!fresh) throw new Error('daily note vanished mid-promote')
+  const body = (fresh.content ?? '').replace(/\s+$/, '')
+  const updated = await a.updateNote(path, {
+    content: `${body}\n\n${text.trim()}\n`,
+    ifUpdatedAt: fresh.updatedAt,
+  })
+  mergeNote(updated)
+  return path
+}
+
 /** Promote a task onto today's list (when:"today") or send it back to later. */
 export async function setTaskToday(path: string, on: boolean): Promise<boolean> {
   return setMetadata(

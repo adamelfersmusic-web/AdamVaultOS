@@ -471,6 +471,41 @@
   width: 210px;
 }
 
+/* Saved views (#4) — quiet preset chips above the pipeline */
+.db-views {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.db-views-label {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-right: 3px;
+}
+.db-view {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 11px;
+  cursor: pointer;
+  transition: 0.12s ease;
+}
+.db-view:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+.db-view.is-on {
+  color: var(--gold-bright);
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
+
 .lens-switch {
   position: relative;
   display: grid;

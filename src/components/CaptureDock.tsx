@@ -7,7 +7,8 @@
 // (⌘K is the command palette).
 
 import { useEffect, useRef, useState } from 'react'
-import { createCapture, toast } from '../lib/store'
+import { createCapture, promotePadToToday, toast } from '../lib/store'
+import { navigate } from '../lib/router'
 
 type Tab = 'capture' | 'todos' | 'pad'
 interface Todo {
@@ -37,6 +38,7 @@ export function CaptureDock() {
   const [todos, setTodos] = useState<Todo[]>(readTodos)
   const [newTodo, setNewTodo] = useState('')
   const [pad, setPad] = useState(() => localStorage.getItem(PAD_KEY) ?? '')
+  const [promoting, setPromoting] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const captureRef = useRef<HTMLTextAreaElement>(null)
 
@@ -87,6 +89,26 @@ export function CaptureDock() {
       toast('error', `Capture failed — ${e instanceof Error ? e.message : e}`)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const promotePad = async () => {
+    const text = pad.trim()
+    if (!text || promoting) return
+    setPromoting(true)
+    try {
+      const path = await promotePadToToday(text)
+      setPad('')
+      // Also write through synchronously — navigation can remount the dock
+      // before the persist effect fires, resurrecting the old jot.
+      localStorage.setItem(PAD_KEY, '')
+      setOpen(false)
+      toast('success', 'Pad moved into today’s note')
+      navigate({ kind: 'pages', path })
+    } catch (e) {
+      toast('error', `Couldn’t move the pad — ${e instanceof Error ? e.message : e}`)
+    } finally {
+      setPromoting(false)
     }
   }
 
@@ -209,6 +231,15 @@ export function CaptureDock() {
                 onChange={(e) => setPad(e.target.value)}
                 rows={10}
               />
+              <button
+                className="dock-send"
+                data-testid="pad-promote"
+                disabled={promoting || !pad.trim()}
+                title="Append this to today's daily note and open it — backed up, searchable, linkable"
+                onClick={() => void promotePad()}
+              >
+                {promoting ? 'Moving…' : '⤢ Open as doc — into today’s note'}
+              </button>
             </div>
           )}
         </div>
