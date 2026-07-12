@@ -1,0 +1,112 @@
+// Phase D — the small sweep: create things where you're standing.
+// 1) Global Tracker "＋ New task" with a project picker.
+// 2) Library "＋ New note" that inherits the tag you're filtered on.
+
+import { test, expect, type Page } from '@playwright/test'
+
+const MOCK = 'http://127.0.0.1:8787'
+const TOKEN = 'atelier-test-token'
+const AUTH = { Authorization: `Bearer ${TOKEN}` }
+const SESSION_KEY = 'adamvaultos.session.v1'
+
+async function reset(page: Page) {
+  await page.request.post(`${MOCK}/__test/reset`)
+}
+async function seed(
+  page: Page,
+  path: string,
+  content: string,
+  tags: string[],
+  metadata: Record<string, unknown> = {},
+) {
+  const res = await page.request.post(`${MOCK}/api/notes`, {
+    headers: AUTH,
+    data: { path, content, tags, metadata },
+  })
+  expect(res.status(), await res.text()).toBe(201)
+}
+async function connectViaStorage(page: Page) {
+  await page.addInitScript(
+    ([key, url, token]) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({ vaultUrl: url, mode: 'token', token: { accessToken: token } }),
+      )
+    },
+    [SESSION_KEY, MOCK, TOKEN] as const,
+  )
+}
+async function mockNote(page: Page, path: string) {
+  const res = await page.request.get(`${MOCK}/api/notes?id=${encodeURIComponent(path)}`, {
+    headers: AUTH,
+  })
+  return res.ok() ? ((await res.json()) as { path: string; tags?: string[]; metadata?: Record<string, unknown> }) : null
+}
+
+test.beforeEach(async ({ page }) => {
+  await reset(page)
+})
+
+test('Tracker ＋ New task — project picker, lands in row-as-page', async ({ page }) => {
+  await seed(page, 'projects/amanda', '# Amanda', ['project'], {
+    key: 'amanda', tag: 'amanda', status: 'active', order: 1, summary: 'x',
+  })
+  await seed(page, 'projects/escensus', '# Escensus', ['project'], {
+    key: 'escensus', tag: 'escensus', status: 'active', order: 2, summary: 'y',
+  })
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('http://127.0.0.1:4173/#/tracker')
+  await expect(page.locator('.db-title')).toHaveText('Tracker')
+
+  await page.getByTestId('tracker-new-task').click()
+  const form = page.getByTestId('tracker-new-task-form')
+  await expect(form).toBeVisible()
+
+  // Both worlds are in the picker; pick the second one.
+  await form.locator('.db-newtask-project').selectOption('escensus')
+  await form.locator('.db-newtask-title').fill('Wire the pitch deck')
+  await page.keyboard.press('Enter')
+
+  // Row-as-page opens with the tracker property panel.
+  await expect(page).toHaveURL(/tasks%2Fescensus%2Fwire-the-pitch-deck/)
+  await expect(page.getByTestId('record-props')).toBeVisible()
+
+  // The vault note carries the picked project + task defaults.
+  const note = await mockNote(page, 'tasks/escensus/wire-the-pitch-deck')
+  expect(note).not.toBeNull()
+  expect(note!.tags).toContain('task')
+  expect(note!.metadata?.project).toBe('escensus')
+  expect(note!.metadata?.state).toBe('next')
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
+test('Library ＋ New note — inherits the active tag filter', async ({ page }) => {
+  await seed(page, 'escensus/pitch-notes', '# Pitch notes\n\nBody.', ['escensus'], {})
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('http://127.0.0.1:4173/#/library')
+  await expect(page.getByTestId('library-new-note')).toBeVisible()
+
+  // Stand inside #escensus, then create.
+  await page.getByTestId('tag-tree').getByRole('button', { name: /#escensus/ }).first().click()
+  await expect(page.getByTestId('library-new-note')).toContainText('#escensus')
+  await page.getByTestId('library-new-note').click()
+
+  // Opens in the Pages editor as a fresh untitled page…
+  await expect(page).toHaveURL(/#\/pages\/pages%2Funtitled/)
+
+  // …and the note is already filed under the tag it was born in.
+  const note = await mockNote(page, 'pages/untitled')
+  expect(note).not.toBeNull()
+  expect(note!.tags).toContain('escensus')
+
+  expect(errors, errors.join('\n')).toEqual([])
+})

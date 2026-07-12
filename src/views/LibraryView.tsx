@@ -8,12 +8,12 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Note } from '../lib/types'
-import { fetchAllNotes } from '../lib/store'
+import { createPage, fetchAllNotes, toast } from '../lib/store'
 import { navigate } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
 import { isProtectedNote } from '../domain/scripts'
 import { inferNoteType, summaryOf, TYPE_META } from '../domain/noteType'
-import { IconShield } from '../components/Icons'
+import { IconPlus, IconShield } from '../components/Icons'
 import { NotePage } from './NotePage'
 
 type Sort = 'recent' | 'alpha'
@@ -114,7 +114,25 @@ export function LibraryView() {
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [sort, setSort] = useState<Sort>('recent')
   const [selected, setSelected] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
   const seq = useRef(0)
+
+  // ＋ New note born IN CONTEXT (L1): the page inherits the tag you're
+  // standing in, so it's already filed the moment it exists.
+  const newNote = async () => {
+    if (creating) return
+    setCreating(true)
+    try {
+      const note = await createPage({
+        title: 'Untitled',
+        extraTags: activeTag ? [activeTag] : [],
+      })
+      navigate({ kind: 'pages', path: note.path })
+    } catch (e) {
+      toast('error', `Couldn’t create note — ${e instanceof Error ? e.message : e}`)
+      setCreating(false)
+    }
+  }
 
   // Open the selected note full-screen in its proper editor/view.
   const openFull = (path: string) =>
@@ -295,6 +313,20 @@ export function LibraryView() {
               {rows.length} {rows.length === 1 ? 'note' : 'notes'}
               {activeTag ? ` · #${activeTag}` : ''}
             </span>
+            <button
+              className="btn btn-gold browser-new"
+              data-testid="library-new-note"
+              title={
+                activeTag
+                  ? `New note, tagged #${activeTag} — filed where you're standing`
+                  : 'New note'
+              }
+              disabled={creating}
+              onClick={() => void newNote()}
+            >
+              <IconPlus size={13} />
+              New note{activeTag ? ` in #${activeTag}` : ''}
+            </button>
             {!query.trim() && (
               <div className="sort-toggle" role="group" aria-label="Sort">
                 <button

@@ -447,6 +447,30 @@
   color: var(--ink-4);
 }
 
+/* ＋ New task from the global Tracker: project picker + title inline */
+.db-newtask {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.db-newtask-project {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  padding: 5.5px 8px;
+  font-size: 12.5px;
+  font-family: inherit;
+  max-width: 140px;
+}
+.db-newtask-project:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+}
+.db-newtask-title {
+  width: 210px;
+}
+
 .lens-switch {
   position: relative;
   display: grid;
@@ -1397,6 +1421,10 @@ body.is-dragging .card {
 .browser-count {
   font-size: 11.5px;
   color: var(--ink-4);
+  margin-right: auto;
+}
+.browser-new {
+  white-space: nowrap;
 }
 .sort-toggle {
   display: inline-flex;
