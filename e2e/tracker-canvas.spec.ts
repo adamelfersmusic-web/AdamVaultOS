@@ -203,3 +203,68 @@ test('PR2 — right-click a canvas card: open as full page, or move it into Page
 
   expect(errors, errors.join('\n')).toEqual([])
 })
+
+test('kanban survives the canvas — badge in read view, chip in card edit, NO deletion on save', async ({ page }) => {
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  // A canvas card, opened as a full page, gains a kanban.
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.getByRole('button', { name: 'New canvas' }).first().click()
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 500, y: 300 } })
+  await expect(page.locator('.card-prose')).toBeVisible()
+  await page.keyboard.type('Test')
+  await page.locator('.canvas-title-input').click()
+  await expect(page.locator('.canvas-card-body')).toContainText('Test')
+
+  await page.locator('.canvas-card').click({ button: 'right' })
+  await page.getByTestId('card-open-page').click()
+  await expect(page.locator('.page-prose')).toContainText('Test')
+  await page.locator('.page-prose').getByText('Test').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/kanban')
+  await expect(page.locator('.slash-menu')).toBeVisible()
+  await page.keyboard.press('Enter')
+  await page.getByTestId('kanban-add-card').first().click()
+  await page.keyboard.type('Jah')
+  await page.keyboard.press('Enter')
+
+  // Saved to the vault with the board in it.
+  const cardPath = decodeURIComponent(page.url().split('#/pages/')[1])
+  await expect.poll(() => savedNote(page, cardPath)).toContain('<!--kanban-->')
+
+  // ← Canvas: the card's READ view shows the BADGE (bold title + lanes), not a raw table.
+  await page.getByTestId('back-to-canvas').click()
+  const badge = page.locator('.canvas-card-body .kanban-badge')
+  await expect(badge).toBeVisible()
+  await expect(badge.locator('strong')).toHaveText('📋 Kanban board')
+  await expect(badge.locator('span')).toContainText('To do · Doing · Done')
+  await expect(page.locator('.canvas-card-body table')).toHaveCount(0)
+
+  // THE BUG: pencil-edit the card on the canvas, then blur-save. The board
+  // must SURVIVE — in edit it shows as a chip, and the markdown is untouched.
+  await page.locator('.canvas-card-btn[title="Edit"]').click()
+  await expect(page.getByTestId('kanban-chip')).toBeVisible()
+  await page.locator('.card-prose').getByText('Test').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' edited')
+  await page.locator('.canvas-title-input').click() // blur → save
+  await expect(page.locator('.canvas-card-body')).toContainText('Test edited')
+
+  const after = await savedNote(page, cardPath)
+  expect(after).toContain('<!--kanban-->')
+  expect(after).toContain('| To do | Doing | Done |')
+  expect(after).toContain('| Jah |  |  |')
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
+async function savedNote(page: Page, path: string): Promise<string> {
+  const res = await page.request.get(`${MOCK}/api/notes?id=${encodeURIComponent(path)}`, {
+    headers: AUTH,
+  })
+  return ((await res.json()) as { content?: string }).content ?? ''
+}

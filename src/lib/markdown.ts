@@ -92,8 +92,35 @@ function stageBoardEmbeds(src: string): string {
   )
 }
 
+/** In read views a stored kanban (<!--kanban--> + GFM table) shows as a BADGE
+ * — bold "Kanban board" + the lane titles — never the raw table. The board
+ * itself is a page-editor thing; external renderers still see a plain table
+ * (storage never changes, only our read-side rendering). */
+function stageKanbanBadges(src: string): string {
+  return src.replace(
+    /^<!--kanban-->\n(\|[^\n]*\|)\n\|[ \-|]*\|\n?((?:\|[^\n]*\|\n?)*)/gm,
+    (_m, header: string, body: string) => {
+      const lanes = header
+        .replace(/^\|/, '')
+        .replace(/\|$/, '')
+        .split('|')
+        .map((s) => s.replace(/\\\|/g, '|').trim())
+        .filter(Boolean)
+      const rows = body
+        .split('\n')
+        .filter((l) => l.trim().startsWith('|'))
+        .flatMap((l) => l.replace(/^\|/, '').replace(/\|$/, '').split('|'))
+        .map((c) => c.trim())
+        .filter(Boolean).length
+      return `<div class="kanban-badge"><strong>📋 Kanban board</strong><span>${lanes.join(' · ')}${rows ? ` — ${rows} card${rows === 1 ? '' : 's'}` : ''}</span></div>\n`
+    },
+  )
+}
+
 export function renderMarkdown(src: string): string {
-  const html = styleCallouts(marked.parse(stageVaultImages(linkWikilinks(stageBoardEmbeds(src)))) as string)
+  const html = styleCallouts(
+    marked.parse(stageVaultImages(linkWikilinks(stageBoardEmbeds(stageKanbanBadges(src))))) as string,
+  )
   return DOMPurify.sanitize(html, {
     USE_PROFILES: { html: true },
     FORBID_TAGS: ['style'],

@@ -252,6 +252,25 @@ function KanbanView({ node, updateAttributes }: NodeViewProps) {
   )
 }
 
+// ——— the chip variant (canvas cards) ———————————————————————————————————————
+// Inside a little canvas card the board does NOT render — Adam's spec: "it'd
+// be cool if it just said Kanban board." Same node name, same byte-identical
+// markdown round-trip; only the nodeview differs. This is what makes editing
+// a card on the canvas SAFE for notes that contain a board.
+
+function KanbanChipView({ node }: NodeViewProps) {
+  const lanes = (node.attrs.lanes as KanbanLane[]) ?? []
+  const count = lanes.reduce((n, l) => n + l.cards.length, 0)
+  return (
+    <NodeViewWrapper className="kanban-chip-wrap" contentEditable={false}>
+      <span className="kanban-chip" data-testid="kanban-chip">
+        📋 Kanban board · {count} {count === 1 ? 'card' : 'cards'}
+        <em>open as page to edit</em>
+      </span>
+    </NodeViewWrapper>
+  )
+}
+
 // ——— the node + markdown round-trip ————————————————————————————————————————
 
 const KANBAN_RE = /^<!--kanban-->\n((?:\|[^\n]*\|(?:\n|$))+)(?:\n+|$)/
@@ -318,5 +337,12 @@ export const Kanban = Node.create({
         lanes: markdownToLanes(match[1]),
       } as KanbanToken
     },
+  },
+})
+
+/** Canvas-card variant: identical storage, chip-only rendering. */
+export const KanbanChip = Kanban.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(KanbanChipView)
   },
 })
