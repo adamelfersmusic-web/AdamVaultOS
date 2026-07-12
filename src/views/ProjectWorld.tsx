@@ -12,7 +12,9 @@ import type { Note } from '../lib/types'
 import {
   createPage,
   createTask,
+  createWorkTab,
   fetchProjectNotes,
+  fetchWorkspaceTabs,
   loadProjects,
   setMetadata,
   toast,
@@ -30,7 +32,7 @@ import { NotePage } from './NotePage'
 // The LANDING is the default (build log PART 28/29, Adam's 1+2 pick): dead
 // simple first — Continue + milestone + next 3 checkboxes — with overview/
 // board/notes as quiet doors. Complexity is a room you walk into.
-type Section = 'landing' | 'overview' | 'board' | 'notes'
+type Section = 'landing' | 'overview' | 'board' | 'notes' | 'docs'
 
 export function ProjectWorld({ path }: { path: string }) {
   const { notes, projectsStatus, tracker } = useStore()
@@ -89,7 +91,7 @@ export function ProjectWorld({ path }: { path: string }) {
         )}
         {section !== 'landing' && (
           <nav className="world-tabs" role="tablist" aria-label="Project sections">
-            {(['landing', 'overview', 'board', 'notes'] as Section[]).map((s) => (
+            {(['landing', 'overview', 'board', 'notes', 'docs'] as Section[]).map((s) => (
               <button
                 key={s}
                 role="tab"
@@ -103,7 +105,9 @@ export function ProjectWorld({ path }: { path: string }) {
                     ? 'Overview'
                     : s === 'board'
                       ? 'Board'
-                      : 'Notes'}
+                      : s === 'notes'
+                        ? 'Notes'
+                        : 'Docs'}
               </button>
             ))}
           </nav>
@@ -133,6 +137,101 @@ export function ProjectWorld({ path }: { path: string }) {
       )}
 
       {section === 'notes' && <WorldNotes project={project} notesCache={notes} />}
+
+      {section === 'docs' && <WorldDocs projectKey={project.key} />}
+    </div>
+  )
+}
+
+// ——— the project's WORK DOCS (W1): tabbed working documents under desk/<key> ———
+
+function WorldDocs({ projectKey }: { projectKey: string }) {
+  const root = `desk/${projectKey}`
+  const [docs, setDocs] = useState<Note[] | null>(null)
+  const [newOpen, setNewOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const seq = useRef(0)
+
+  useEffect(() => {
+    const id = ++seq.current
+    fetchWorkspaceTabs(root)
+      .then((t) => {
+        if (seq.current === id) setDocs(t.children)
+      })
+      .catch(() => {
+        if (seq.current === id) setDocs([])
+      })
+  }, [root])
+
+  const create = async () => {
+    const title =
+      name.trim() ||
+      new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric' })
+    if (busy) return
+    setBusy(true)
+    try {
+      const note = await createWorkTab(root, title)
+      navigate({ kind: 'pages', path: note.path }) // opens with the tab rail
+    } catch (e) {
+      toast('error', `Couldn’t create doc — ${e instanceof Error ? e.message : e}`)
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="world-docs" data-testid="world-docs">
+      <div className="world-new-row">
+        {newOpen ? (
+          <>
+            <input
+              autoFocus
+              className="db-search world-new-input"
+              placeholder="Doc name (empty = today's date)…"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void create()
+                if (e.key === 'Escape') setNewOpen(false)
+              }}
+            />
+            <button className="btn btn-gold" disabled={busy} onClick={() => void create()}>
+              Create
+            </button>
+          </>
+        ) : (
+          <button className="btn btn-gold" onClick={() => setNewOpen(true)} data-testid="world-new-doc">
+            <IconPlus size={13} /> New work doc
+          </button>
+        )}
+        <span className="world-notes-count">
+          {docs ? `${docs.length} ${docs.length === 1 ? 'doc' : 'docs'}` : ''}
+        </span>
+      </div>
+      <p className="today-empty world-docs-hint">
+        Simple working docs — nested to-dos (<code>/todo</code>, Tab to nest), tabs on the left.
+      </p>
+      {docs === null ? (
+        <div className="db-skeleton">
+          <div className="skel-row" />
+        </div>
+      ) : docs.length === 0 ? null : (
+        <div className="world-docs-list">
+          {docs.map((d) => (
+            <button
+              key={d.path}
+              className="note-row"
+              onClick={() => navigate({ kind: 'pages', path: d.path })}
+            >
+              <div className="note-row-head">
+                <span className="note-row-title">{titleFromPath(d.path)}</span>
+                <span className="note-row-time">{relativeTime(d.updatedAt)}</span>
+              </div>
+              <div className="note-row-path">{d.path}</div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -293,6 +392,8 @@ function WorldLanding({
         <button onClick={() => onDoor('board')}>board</button>
         <span>·</span>
         <button onClick={() => onDoor('notes')}>notes</button>
+        <span>·</span>
+        <button onClick={() => onDoor('docs')}>docs</button>
       </div>
     </div>
   )
