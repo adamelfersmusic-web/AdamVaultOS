@@ -84,10 +84,19 @@ test('Tracker ＋ New task — project picker, lands in row-as-page', async ({ p
   await expect(page.locator('.db-title')).toBeVisible() // tracker still on screen
   await expect(peek.locator('[data-testid="record-props"]')).toBeVisible()
 
+  // Inside the peek there's no back button — the tracker is already on screen.
+  await expect(peek.getByTestId('back-to-tracker')).toHaveCount(0)
+
   // Open ↗ promotes to the full page.
   await peek.locator('.detail-btn', { hasText: 'Open' }).click()
   await expect(page).toHaveURL(/tasks%2Fescensus%2Fwire-the-pitch-deck/)
   await expect(page.getByTestId('record-props')).toBeVisible()
+
+  // …and even in FULL PAGE mode, one click gets you back to the tracker.
+  await page.getByTestId('back-to-tracker').click()
+  await expect(page).toHaveURL(/#\/tracker/)
+  await expect(page.locator('.db-title')).toHaveText('Tracker')
+  await expect(page.locator('tr', { hasText: 'Wire the pitch deck' })).toBeVisible()
 
   // The vault note carries the picked project + task defaults.
   const note = await mockNote(page, 'tasks/escensus/wire-the-pitch-deck')

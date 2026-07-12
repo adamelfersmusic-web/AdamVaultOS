@@ -66,7 +66,7 @@ type Rec = 'idle' | 'recording' | 'transcribing'
 
 const SAVE_DEBOUNCE = 900
 
-export function PageEditor({ path }: { path: string }) {
+export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: boolean }) {
   const { saving, notes } = useStore()
   const note = notes[path]
   const [status, setStatus] = useState<Status>('loading')
@@ -558,6 +558,16 @@ export function PageEditor({ path }: { path: string }) {
   return (
     <div className="page-editor" ref={editorRootRef}>
       <div className="page-topbar">
+        {path.startsWith('tasks/') && !inPeek && (
+          <button
+            className="page-back-tracker"
+            data-testid="back-to-tracker"
+            title="Back to the Tracker"
+            onClick={() => navigate({ kind: 'tracker' })}
+          >
+            ← Tracker
+          </button>
+        )}
         <span
           className={`page-save${dirty || isSaving ? ' is-active' : ''}`}
           data-testid="page-save"
