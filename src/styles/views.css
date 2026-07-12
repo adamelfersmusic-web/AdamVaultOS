@@ -2017,3 +2017,73 @@ body.is-dragging .card {
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   background: var(--surface);
 }
+
+/* N4 — hierarchical tag tree + rail search */
+.tag-rail-search {
+  margin-top: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 5px 9px;
+  font-size: 12px;
+  color: var(--ink);
+}
+.tag-rail-search:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+}
+.tag-rail-search::placeholder { color: var(--ink-4); }
+.tag-rail-empty {
+  color: var(--ink-4);
+  font-size: 12px;
+  padding: 8px 10px;
+}
+.tag-tree-item {
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-right: 4px;
+  gap: 2px;
+  justify-content: flex-start;
+}
+.tag-tree-chevron {
+  flex: none;
+  width: 16px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--ink-4);
+  font-size: 9px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.tag-tree-chevron:hover { color: var(--ink); background: var(--surface-2); }
+.tag-tree-chevron-none { cursor: default; }
+.tag-tree-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  text-align: left;
+  padding: 5px 0;
+  cursor: pointer;
+}
+
+/* Cockpit header actions + the 6-cap note */
+.cockpit-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cockpit-cap {
+  font-size: 11px;
+  color: var(--ink-4);
+}

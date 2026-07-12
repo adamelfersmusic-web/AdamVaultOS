@@ -497,6 +497,46 @@ export async function createTask(projectKey: string, title: string): Promise<Not
   }
 }
 
+/**
+ * Create a project (a `project`-tagged note under projects/). The Cockpit
+ * caps the deck at 6 — a deliberate constraint so the front door stays calm —
+ * enforced here as well as in the UI.
+ */
+export async function createProject(name: string): Promise<Note> {
+  const a = requireApi()
+  if ((state.projects?.length ?? 0) >= 6) {
+    throw new Error('The Cockpit holds 6 projects max — finish or park one first.')
+  }
+  const slug = slugify(name) || 'project'
+  let path = `projects/${slug}`
+  for (let n = 2; (await a.getNote(path)) !== null; n++) {
+    path = `projects/${slug}-${n}`
+    if (n > 30) throw new Error('Could not find a free path for this project')
+  }
+  const order =
+    Math.max(
+      0,
+      ...(state.projects ?? []).map((p) => {
+        const v = state.notes[p]?.metadata['order']
+        return typeof v === 'number' ? v : 0
+      }),
+    ) + 1
+  try {
+    const note = await a.createNote({
+      path,
+      content: `# ${name.trim()}\n`,
+      tags: ['project'],
+      metadata: { type: 'project', key: slug, tag: slug, status: 'active', order, summary: '' },
+    })
+    mergeNote(note)
+    set({ projects: [...(state.projects ?? []), note.path] })
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
 export async function loadTags(): Promise<void> {
   if (!api) return
   try {

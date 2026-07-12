@@ -59,6 +59,54 @@ function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+/** A note carries `tag` if it has the tag itself or any descendant of it —
+ * the vault's own hierarchical-tag semantic (escensus ⊇ escensus/strategy). */
+function hasTagDeep(n: Note, tag: string): boolean {
+  return (n.tags ?? []).some((t) => t === tag || t.startsWith(`${tag}/`))
+}
+
+interface TagNode {
+  /** Segment shown at this depth ("strategy"). */
+  seg: string
+  /** Full tag name ("escensus/strategy"). */
+  full: string
+  /** Notes carrying this tag or any descendant. */
+  total: number
+  children: TagNode[]
+}
+
+function buildTagTree(all: Note[]): TagNode[] {
+  interface Build {
+    seg: string
+    full: string
+    notes: Set<string>
+    children: Map<string, Build>
+  }
+  const roots = new Map<string, Build>()
+  for (const n of all) {
+    for (const t of n.tags ?? []) {
+      const segs = t.split('/').filter(Boolean)
+      let level = roots
+      let prefix = ''
+      for (const seg of segs) {
+        prefix = prefix ? `${prefix}/${seg}` : seg
+        let node = level.get(seg)
+        if (!node) {
+          node = { seg, full: prefix, notes: new Set(), children: new Map() }
+          level.set(seg, node)
+        }
+        node.notes.add(n.path) // every ancestor counts this note
+        level = node.children
+      }
+    }
+  }
+  const finish = (m: Map<string, Build>): TagNode[] =>
+    [...m.values()]
+      .map((b) => ({ seg: b.seg, full: b.full, total: b.notes.size, children: finish(b.children) }))
+      .sort((a, b) => b.total - a.total || a.seg.localeCompare(b.seg))
+  return finish(roots)
+}
+
 export function LibraryView() {
   const [notes, setNotes] = useState<Note[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -88,14 +136,29 @@ export function LibraryView() {
 
   const all = notes ?? []
 
-  // Tag rail: occurrence counts across all notes, most-used first.
-  const tagRail = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const n of all) for (const t of n.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1)
-    return [...counts.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
-  }, [all])
+  // Tag rail: a HIERARCHICAL tree (N4). The vault's tags are already nested
+  // (escensus/strategy, health/labs, capture/voice…) — the rail renders that
+  // structure as collapsible parent ▸ children instead of flattening it.
+  // A parent's count = notes carrying it OR any descendant.
+  const [tagQuery, setTagQuery] = useState('')
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
+
+  const tagTree = useMemo(() => buildTagTree(all), [all])
+
+  // Flat search over tag names (auto-flattens the tree while filtering).
+  const tagMatches = useMemo(() => {
+    const q = tagQuery.trim().toLowerCase()
+    if (!q) return null
+    const out: { name: string; count: number }[] = []
+    const walk = (nodes: TagNode[]) => {
+      for (const n of nodes) {
+        if (n.full.toLowerCase().includes(q)) out.push({ name: n.full, count: n.total })
+        walk(n.children)
+      }
+    }
+    walk(tagTree)
+    return out.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+  }, [tagQuery, tagTree])
 
   // Right pane: client-side full-text search (ranked) OR tag filter, then sort.
   const rows = useMemo(() => {
@@ -143,7 +206,7 @@ export function LibraryView() {
       return scored.map((s) => s.n)
     }
     const list = activeTag
-      ? all.filter((n) => (n.tags ?? []).includes(activeTag))
+      ? all.filter((n) => hasTagDeep(n, activeTag)) // parent tag ⊇ descendants
       : [...all]
     if (sort === 'alpha') {
       list.sort((a, b) => noteTitle(a).localeCompare(noteTitle(b)))
@@ -173,17 +236,48 @@ export function LibraryView() {
           <span className="tag-rail-name">All notes</span>
           <span className="tag-rail-count">{all.length}</span>
         </button>
-        <div className="tag-rail-list">
-          {tagRail.map((t) => (
-            <button
-              key={t.name}
-              className={`tag-rail-item${activeTag === t.name ? ' is-active' : ''}`}
-              onClick={() => selectTag(activeTag === t.name ? null : t.name)}
-            >
-              <span className="tag-rail-name">#{t.name}</span>
-              <span className="tag-rail-count">{t.count}</span>
-            </button>
-          ))}
+        <input
+          className="tag-rail-search"
+          placeholder="Filter tags…"
+          value={tagQuery}
+          onChange={(e) => setTagQuery(e.target.value)}
+        />
+        <div className="tag-rail-list" data-testid="tag-tree">
+          {tagMatches ? (
+            tagMatches.length === 0 ? (
+              <p className="tag-rail-empty">No tag matches</p>
+            ) : (
+              tagMatches.map((t) => (
+                <button
+                  key={t.name}
+                  className={`tag-rail-item${activeTag === t.name ? ' is-active' : ''}`}
+                  onClick={() => selectTag(activeTag === t.name ? null : t.name)}
+                >
+                  <span className="tag-rail-name">#{t.name}</span>
+                  <span className="tag-rail-count">{t.count}</span>
+                </button>
+              ))
+            )
+          ) : (
+            tagTree.map((node) => (
+              <TagTreeRow
+                key={node.full}
+                node={node}
+                depth={0}
+                activeTag={activeTag}
+                expanded={expanded}
+                onToggle={(full) =>
+                  setExpanded((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(full)) next.delete(full)
+                    else next.add(full)
+                    return next
+                  })
+                }
+                onSelect={(full) => selectTag(activeTag === full ? null : full)}
+              />
+            ))
+          )}
         </div>
       </aside>
 
@@ -282,6 +376,66 @@ export function LibraryView() {
         </section>
       )}
     </div>
+  )
+}
+
+function TagTreeRow({
+  node,
+  depth,
+  activeTag,
+  expanded,
+  onToggle,
+  onSelect,
+}: {
+  node: TagNode
+  depth: number
+  activeTag: string | null
+  expanded: Set<string>
+  onToggle: (full: string) => void
+  onSelect: (full: string) => void
+}) {
+  const hasKids = node.children.length > 0
+  const open = expanded.has(node.full)
+  return (
+    <>
+      <div
+        className={`tag-rail-item tag-tree-item${activeTag === node.full ? ' is-active' : ''}`}
+        style={{ paddingLeft: 10 + depth * 14 }}
+      >
+        {hasKids ? (
+          <button
+            className="tag-tree-chevron"
+            aria-label={open ? 'Collapse' : 'Expand'}
+            aria-expanded={open}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle(node.full)
+            }}
+          >
+            {open ? '▾' : '▸'}
+          </button>
+        ) : (
+          <span className="tag-tree-chevron tag-tree-chevron-none" />
+        )}
+        <button className="tag-tree-name" onClick={() => onSelect(node.full)}>
+          <span className="tag-rail-name">#{depth === 0 ? node.full : node.seg}</span>
+          <span className="tag-rail-count">{node.total}</span>
+        </button>
+      </div>
+      {hasKids &&
+        open &&
+        node.children.map((c) => (
+          <TagTreeRow
+            key={c.full}
+            node={c}
+            depth={depth + 1}
+            activeTag={activeTag}
+            expanded={expanded}
+            onToggle={onToggle}
+            onSelect={onSelect}
+          />
+        ))}
+    </>
   )
 }
 
