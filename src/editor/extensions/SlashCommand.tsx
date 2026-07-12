@@ -206,16 +206,39 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
     },
     {
       id: 'board',
-      title: 'Board',
-      subtitle: 'Live kanban of a project, right here',
+      title: 'Board — from a project',
+      subtitle: 'Live project board (table · board · gallery)',
       icon: <IconBoard size={15} />,
-      keywords: ['board', 'kanban', 'tracker', 'tasks', 'database'],
+      keywords: ['board', 'tracker', 'tasks', 'database', 'project'],
       run: ({ editor, range }) =>
         editor
           .chain()
           .focus()
           .deleteRange(range)
           .insertContent({ type: 'boardEmbed', attrs: { project: '' } })
+          .run(),
+    },
+    {
+      id: 'kanban',
+      title: 'Kanban — new board',
+      subtitle: 'A fresh little board, lives in this page as markdown',
+      icon: <IconBoard size={15} />,
+      keywords: ['kanban', 'board', 'new', 'lanes', 'columns', 'todo'],
+      run: ({ editor, range }) =>
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({
+            type: 'kanban',
+            attrs: {
+              lanes: [
+                { title: 'To do', cards: [] },
+                { title: 'Doing', cards: [] },
+                { title: 'Done', cards: [] },
+              ],
+            },
+          })
           .run(),
     },
     {

@@ -50,6 +50,7 @@ import { VaultImage } from '../editor/extensions/VaultImage'
 import { AiBlock } from '../editor/extensions/AiBlock'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
 import { BoardEmbed, convertBoardEmbeds } from '../editor/extensions/BoardEmbed'
+import { Kanban } from '../editor/extensions/Kanban'
 import { ColorText } from '../editor/extensions/ColorText'
 import { MarkSpanParser, RichHighlight } from '../editor/extensions/RichHighlight'
 import {
@@ -122,6 +123,9 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
       TableKit.configure({ table: { resizable: false } }),
       // T6 — ![[board:key]] renders the live project board inside the page.
       BoardEmbed,
+      // PR3 — /kanban: a standalone in-page board, stored as <!--kanban--> +
+      // a GFM pipe table (renders as a plain table everywhere else).
+      Kanban,
       VaultImage, // resolves /api/storage vault paths (auth-safe); no base64
       Markdown,
       MarkdownLiteral,
