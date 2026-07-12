@@ -222,7 +222,11 @@ export class VaultApi {
     opts: { excludeTags?: string[]; limit?: number } = {},
   ): Promise<Note[]> {
     const p = new URLSearchParams({
-      limit: String(opts.limit ?? 500),
+      // NEWEST first + generous limit: the vault is past 700 notes, and an
+      // unsorted limit-500 fetch silently truncated the NEWEST notes — fresh
+      // pages vanished from the sidebar on re-entry (Adam hit this live).
+      limit: String(opts.limit ?? 2000),
+      sort: 'desc',
       include_content: 'false',
     })
     for (const t of opts.excludeTags ?? []) p.append('exclude_tags', t)
@@ -236,7 +240,7 @@ export class VaultApi {
    * browser's tag rail and instant client-side full-text search (the vault's
    * own ?search= is title-biased and misses words inside note bodies).
    */
-  async listAllWithContent(limit = 500): Promise<Note[]> {
+  async listAllWithContent(limit = 2000): Promise<Note[]> {
     const p = new URLSearchParams({
       limit: String(limit),
       include_content: 'true',

@@ -3,14 +3,16 @@
 // settings gear. Right: the block editor for the open page, or an invitation
 // to start one.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Note } from '../lib/types'
 import {
   createPage,
+  fetchAllNotes,
   loadPages,
   toast,
   useStore,
 } from '../lib/store'
+import { rankNotes } from '../lib/search'
 import { hrefFor, navigate } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
 import {
@@ -71,17 +73,29 @@ export function PagesView({ path }: { path?: string }) {
     return [...(pages ?? [])].sort((a, b) => ts(b) - ts(a))
   }, [pages, notes])
 
-  // N3 — the minimal browser. Searching → one flat filtered list. Otherwise:
-  // a Recent section (what was I just working on) + collapsible VISUAL groups
-  // by the path's first segment. Purely presentational — paths never change.
+  // N3 — the minimal browser. Searching → the app's ONE relevance ranking
+  // (same as the Library: title/slug ≫ path/tags ≫ BODY, AND-terms, phrase
+  // bonuses). Bodies are lean until the first search keystroke pulls the full
+  // corpus once — after that "arianne" finds body mentions too. Otherwise:
+  // Recent + collapsible visual folders. Purely presentational.
+  const bodiesRequested = useRef(false)
+  useEffect(() => {
+    if (sideQuery.trim() && !bodiesRequested.current) {
+      bodiesRequested.current = true
+      fetchAllNotes().catch(() => {
+        bodiesRequested.current = false // retry on the next keystroke
+      })
+    }
+  }, [sideQuery])
+
   const filtered = useMemo(() => {
-    const q = sideQuery.trim().toLowerCase()
+    const q = sideQuery.trim()
     if (!q) return null
-    return ordered.filter(
-      (p) =>
-        sideTitle(p, notes[p]).toLowerCase().includes(q) || p.toLowerCase().includes(q),
-    )
-  }, [sideQuery, ordered, notes])
+    const list = (pages ?? [])
+      .map((p) => notes[p])
+      .filter((n): n is Note => Boolean(n))
+    return rankNotes(q, list, (n) => sideTitle(n.path, n)).map((n) => n.path)
+  }, [sideQuery, pages, notes])
 
   const groups = useMemo(() => {
     const m = new Map<string, string[]>()
@@ -252,10 +266,16 @@ export function PagesView({ path }: { path?: string }) {
                       <span className="pages-group-name">{seg}</span>
                       <span className="pages-group-count">{paths.length}</span>
                     </button>
-                    {open &&
-                      paths.map((p) => (
-                        <PageItem key={p} p={p} path={path} notes={notes} indent />
-                      ))}
+                    {open && (
+                      <FolderContents
+                        seg={seg}
+                        paths={paths}
+                        path={path}
+                        notes={notes}
+                        openGroups={openGroups}
+                        setOpenGroups={setOpenGroups}
+                      />
+                    )}
                   </div>
                 )
               })}
@@ -300,20 +320,93 @@ export function PagesView({ path }: { path?: string }) {
   )
 }
 
+/** One level of nesting inside a folder: notes under `seg/<sub>/…` group into
+ * collapsible subfolders (Adam: "_priority hides Escensus, which has more
+ * notes than anything"); direct children list first. Deeper paths stay flat
+ * inside their subfolder — two levels is structure, three is a filing cabinet. */
+function FolderContents({
+  seg,
+  paths,
+  path,
+  notes,
+  openGroups,
+  setOpenGroups,
+}: {
+  seg: string
+  paths: string[]
+  path?: string
+  notes: Record<string, Note>
+  openGroups: Set<string>
+  setOpenGroups: React.Dispatch<React.SetStateAction<Set<string>>>
+}) {
+  const direct: string[] = []
+  const subs = new Map<string, string[]>()
+  for (const p of paths) {
+    const rest = p.slice(seg.length + 1)
+    const cut = rest.indexOf('/')
+    if (cut === -1) {
+      direct.push(p)
+    } else {
+      const sub = rest.slice(0, cut)
+      const list = subs.get(sub)
+      if (list) list.push(p)
+      else subs.set(sub, [p])
+    }
+  }
+  const subList = [...subs.entries()].sort((a, b) => b[1].length - a[1].length)
+  return (
+    <>
+      {direct.map((p) => (
+        <PageItem key={p} p={p} path={path} notes={notes} indent />
+      ))}
+      {subList.map(([sub, subPaths]) => {
+        const key = `${seg}/${sub}`
+        const open = openGroups.has(key)
+        return (
+          <div key={key} className="pages-group pages-subgroup">
+            <button
+              className="pages-group-head pages-subgroup-head"
+              aria-expanded={open}
+              onClick={() =>
+                setOpenGroups((prev) => {
+                  const next = new Set(prev)
+                  if (next.has(key)) next.delete(key)
+                  else next.add(key)
+                  return next
+                })
+              }
+            >
+              <span className="pages-group-chevron">{open ? '▾' : '▸'}</span>
+              <span className="pages-group-name">{sub}</span>
+              <span className="pages-group-count">{subPaths.length}</span>
+            </button>
+            {open &&
+              subPaths.map((p) => (
+                <PageItem key={p} p={p} path={path} notes={notes} indent deep />
+              ))}
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
 function PageItem({
   p,
   path,
   notes,
   indent,
+  deep,
 }: {
   p: string
   path?: string
   notes: Record<string, Note>
   indent?: boolean
+  deep?: boolean
 }) {
   return (
     <a
-      className={`pages-item${p === path ? ' is-active' : ''}${indent ? ' pages-item-indent' : ''}`}
+      className={`pages-item${p === path ? ' is-active' : ''}${indent ? ' pages-item-indent' : ''}${deep ? ' pages-item-deep' : ''}`}
       href={hrefFor({ kind: 'pages', path: p })}
     >
       <span className="pages-item-title">{sideTitle(p, notes[p])}</span>
