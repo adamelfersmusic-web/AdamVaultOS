@@ -54,6 +54,7 @@ import { MarkSpanParser, RichHighlight } from '../editor/extensions/RichHighligh
 import {
   ToggleContent,
   ToggleDetails,
+  ToggleSize,
   ToggleSummary,
 } from '../editor/extensions/ToggleDetails'
 import { FormatBar } from '../components/FormatBar'
@@ -107,9 +108,13 @@ export function PageEditor({ path }: { path: string }) {
       ColorText,
       Color,
       // #18 — toggles: <details>/<summary> blocks, /toggle to insert.
-      ToggleDetails,
+      // persist:true → the open state lives in the doc, so inserting with
+      // open:true actually opens (it is NOT serialized — renderMarkdown
+      // only writes data-size).
+      ToggleDetails.configure({ persist: true }),
       ToggleSummary,
       ToggleContent,
+      ToggleSize,
       // Tables — GFM pipe tables, first-party markdown round-trip (Adam's
       // "renders perfectly in markdown" law). /table inserts 3×3.
       TableKit.configure({ table: { resizable: false } }),
