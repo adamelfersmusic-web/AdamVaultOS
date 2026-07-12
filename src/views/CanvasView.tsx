@@ -55,10 +55,21 @@ function isCard(n: Note): boolean {
   return n.metadata?.['ckind'] === 'card'
 }
 
+// The board you were working on — restored on return so "← Canvas" from a
+// card's full page drops you back INTO the board, not at the gallery.
+const ACTIVE_BOARD_KEY = 'adamvaultos.canvas.board'
+
 export function CanvasView() {
   const [notes, setNotes] = useState<Note[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [active, setActive] = useState<string | null>(null)
+  const [active, setActiveRaw] = useState<string | null>(
+    () => localStorage.getItem(ACTIVE_BOARD_KEY) || null,
+  )
+  const setActive = (id: string | null) => {
+    if (id) localStorage.setItem(ACTIVE_BOARD_KEY, id)
+    else localStorage.removeItem(ACTIVE_BOARD_KEY)
+    setActiveRaw(id)
+  }
   const seq = useRef(0)
 
   useEffect(() => {

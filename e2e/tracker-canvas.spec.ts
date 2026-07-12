@@ -184,15 +184,18 @@ test('PR2 — right-click a canvas card: open as full page, or move it into Page
   await expect(page).toHaveURL(/#\/pages\/canvas%2F/)
   await expect(page.locator('.page-prose')).toContainText('Merch ideas')
 
-  // Back to the canvas — the card is still there (opening ≠ moving).
-  await page.goto('http://127.0.0.1:4173/#/canvas')
-  await page.locator('.canvas-tile').first().click()
+  // ← Canvas takes you straight back INTO the board you were on (no gallery
+  // detour) — the card is still there (opening ≠ moving).
+  await page.getByTestId('back-to-canvas').click()
+  await expect(page).toHaveURL(/#\/canvas/)
   await expect(page.locator('.canvas-card')).toHaveCount(1)
 
   // Turn into a page: MOVES the note out of canvas/ into pages/.
   await page.locator('.canvas-card').click({ button: 'right' })
   await page.getByTestId('card-move-pages').click()
   await expect(page).toHaveURL(/#\/pages\/pages%2Fmerch-ideas/)
+  // The moved page keeps its #canvas breadcrumb — ← Canvas still works here.
+  await expect(page.getByTestId('back-to-canvas')).toBeVisible()
   await expect(page.locator('.canvas-card')).toHaveCount(0)
 
   const res = await page.request.get(`${MOCK}/api/notes?id=${encodeURIComponent('pages/merch-ideas')}`, { headers: AUTH })
