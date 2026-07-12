@@ -24,6 +24,7 @@ import {
   ToggleSize,
 } from '../editor/extensions/ToggleDetails'
 import { KanbanChip } from '../editor/extensions/Kanban'
+import { BoardEmbedChip, convertBoardEmbeds } from '../editor/extensions/BoardEmbed'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
 import { WikiLinkSuggest } from '../editor/extensions/WikiLinkSuggest'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
@@ -63,6 +64,7 @@ export function CardEditor({
       ToggleSize,
       TableKit.configure({ table: { resizable: false } }),
       KanbanChip,
+      BoardEmbedChip,
       Markdown,
       MarkdownLiteral,
       WikiLink,
@@ -92,7 +94,9 @@ export function CardEditor({
   useEffect(() => {
     if (!editor) return
     editor.commands.setContent(value, { contentType: 'markdown' })
-    const wiki = convertWikiLinks(editor.getJSON())
+    // Same order as the Pages editor: board markers FIRST (so ![[board:x]]
+    // never gets half-eaten as a wikilink), then wikilink chips.
+    const wiki = convertWikiLinks(convertBoardEmbeds(editor.getJSON()).doc)
     if (wiki.changed) editor.commands.setContent(wiki.doc)
     editor.commands.focus('end')
     // Load once per mount — the card remounts per edit session.

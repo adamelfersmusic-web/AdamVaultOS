@@ -268,3 +268,51 @@ async function savedNote(page: Page, path: string): Promise<string> {
   })
   return ((await res.json()) as { content?: string }).content ?? ''
 }
+
+test('project board embed survives a canvas card edit — chip shown, marker preserved', async ({ page }) => {
+  await page.request.post(`${MOCK}/api/notes`, {
+    headers: AUTH,
+    data: {
+      path: 'projects/amanda',
+      content: '# Amanda',
+      tags: ['project'],
+      metadata: { key: 'amanda', tag: 'amanda', status: 'active', order: 1, summary: 'x' },
+    },
+  })
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.getByRole('button', { name: 'New canvas' }).first().click()
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 500, y: 300 } })
+  await expect(page.locator('.card-prose')).toBeVisible()
+  await page.keyboard.type('Hey')
+  await page.locator('.canvas-title-input').click()
+  await expect(page.locator('.canvas-card-body')).toContainText('Hey')
+
+  // Full page: /board → pick Amanda → the marker lands in the note.
+  await page.locator('.canvas-card').click({ button: 'right' })
+  await page.getByTestId('card-open-page').click()
+  await page.locator('.page-prose').getByText('Hey').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/board')
+  await expect(page.locator('.slash-menu')).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('board-embed-picker')).toBeVisible()
+  await page.getByTestId('board-embed-picker').locator('button', { hasText: 'Amanda' }).click()
+  const cardPath = decodeURIComponent(page.url().split('#/pages/')[1])
+  await expect.poll(() => savedNote(page, cardPath)).toContain('![[board:amanda]]')
+
+  // Back on the canvas: pencil-edit shows a CHIP; blur-save must not eat the marker.
+  await page.getByTestId('back-to-canvas').click()
+  await page.locator('.canvas-card-btn[title="Edit"]').click()
+  await expect(page.getByTestId('board-embed-chip')).toBeVisible()
+  await page.locator('.card-prose').getByText('Hey').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' there')
+  await page.locator('.canvas-title-input').click()
+  await expect(page.locator('.canvas-card-body')).toContainText('Hey there')
+
+  const after = await savedNote(page, cardPath)
+  expect(after).toContain('![[board:amanda]]')
+})

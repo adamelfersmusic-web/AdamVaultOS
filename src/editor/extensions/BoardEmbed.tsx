@@ -151,6 +151,27 @@ export const BoardEmbed = Node.create({
   },
 })
 
+// Canvas-card variant: the live board never mounts inside a little card —
+// the marker renders as a chip and the markdown stays byte-identical, so a
+// card edit on the canvas can't eat a project board (same fix as KanbanChip).
+function BoardEmbedChipView({ node }: NodeViewProps) {
+  const project = ((node.attrs.project as string) || '').trim()
+  return (
+    <NodeViewWrapper className="kanban-chip-wrap" contentEditable={false}>
+      <span className="kanban-chip" data-testid="board-embed-chip">
+        📊 {project || 'project'} board
+        <em>open as page to edit</em>
+      </span>
+    </NodeViewWrapper>
+  )
+}
+
+export const BoardEmbedChip = BoardEmbed.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(BoardEmbedChipView)
+  },
+})
+
 /** Belt-and-braces for docs loaded through paths that skip the tokenizer:
  * convert a paragraph whose whole text is the marker into the node. */
 export function convertBoardEmbeds(doc: JSONContent): {
