@@ -14,6 +14,7 @@ import { TaskList, TaskItem } from '@tiptap/extension-list'
 import { Markdown } from '@tiptap/markdown'
 import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
+import { WikiLinkSuggest } from '../editor/extensions/WikiLinkSuggest'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
 
 export function CardEditor({
@@ -39,6 +40,7 @@ export function CardEditor({
       Markdown,
       MarkdownLiteral,
       WikiLink,
+      WikiLinkSuggest,
       SlashCommand.configure({
         exclude: ['image', 'subpage', 'ai', 'voice'],
       }),

@@ -447,7 +447,22 @@ export function DatabaseView({
   }, [allRows, query, filters, sort, def])
 
   const setField = (path: string, key: string, value: unknown, prev: unknown) => {
-    void setMetadata(path, { [key]: value }, { undo: { [key]: prev ?? null } })
+    const patch: Record<string, unknown> = { [key]: value }
+    const undo: Record<string, unknown> = { [key]: prev ?? null }
+    // Keep state ↔ done in sync: dragging a card into (or out of) the done
+    // lane also flips the bool that feeds the progress bars.
+    if (def.progress && key === def.board.field) {
+      const doneField = def.progress.doneField
+      const wasDone = notes[path]?.metadata[doneField] === true
+      if (value === 'done' && !wasDone) {
+        patch[doneField] = true
+        undo[doneField] = false
+      } else if (prev === 'done' && value !== 'done' && wasDone) {
+        patch[doneField] = false
+        undo[doneField] = true
+      }
+    }
+    void setMetadata(path, patch, { undo })
   }
 
   const onOpen = (path: string) => navigate({ kind: 'pages', path })

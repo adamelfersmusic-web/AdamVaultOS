@@ -15,27 +15,34 @@ import {
   ContentDivergedError,
   createPage,
   deletePage,
+  fetchLinkTargets,
   fetchNote,
+  fetchNoteLinks,
   forceContent,
   getState,
   linkNoteAttachment,
+  movePage,
   renameUntitledPage,
+  rewriteLinksIn,
   saveContent,
   setCurrentNote,
   toast,
   uploadImage,
   useStore,
+  type LinkedNote,
 } from '../lib/store'
 import { navigate, setRouteGuard } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
+import { fuzzyScore } from '../lib/fuzzy'
 import { databaseForPath } from '../domain/databases'
 import { RecordProperties } from '../components/RecordProperties'
 import { getSettings } from '../lib/editorSettings'
 import { transcribe } from '../lib/scribe'
 import { Modal } from '../components/Modal'
-import { IconMic, IconPage, IconPlus, IconTrash } from '../components/Icons'
+import { IconLink, IconMic, IconPage, IconPlus, IconTrash } from '../components/Icons'
 import { SubPageLink, convertPageLinks } from '../editor/extensions/SubPageLink'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
+import { WikiLinkSuggest } from '../editor/extensions/WikiLinkSuggest'
 import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
 import { VaultImage } from '../editor/extensions/VaultImage'
 import { AiBlock } from '../editor/extensions/AiBlock'
@@ -54,6 +61,12 @@ export function PageEditor({ path }: { path: string }) {
   const [conflict, setConflict] = useState<Note | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [subPageAt, setSubPageAt] = useState<number | null>(null)
+  const [linkPicker, setLinkPicker] = useState(false)
+  // F1b — click-to-edit path. `pathDraft` is the in-progress edit; `moveGuard`
+  // holds the confirm state when the note has inbound [[links]] that would break.
+  const [pathDraft, setPathDraft] = useState<string | null>(null)
+  const [moveGuard, setMoveGuard] = useState<{ newPath: string; incoming: LinkedNote[] } | null>(null)
+  const [moving, setMoving] = useState(false)
   const [rec, setRec] = useState<Rec>('idle')
   const [dirty, setDirty] = useState(false)
 
@@ -80,6 +93,7 @@ export function PageEditor({ path }: { path: string }) {
       MarkdownLiteral,
       SubPageLink,
       WikiLink,
+      WikiLinkSuggest,
       AiBlock,
       SlashCommand.configure({
         onPickSubPage: (_editor, at) => setSubPageAt(at),
@@ -413,6 +427,76 @@ export function PageEditor({ path }: { path: string }) {
     }
   }
 
+  // ——— #9 browse-to-link: insert a wikilink chip at the cursor ———
+  const insertWikiLink = (target: string) => {
+    setLinkPicker(false)
+    editor
+      ?.chain()
+      .focus()
+      .insertContent([
+        { type: 'wikiLink', attrs: { target } },
+        { type: 'text', text: ' ' },
+      ])
+      .run()
+  }
+
+  // ——— F1b: move / re-file, guarded by inbound [[links]] ———
+  const submitPathEdit = async () => {
+    const raw = (pathDraft ?? '').trim().replace(/^\/+|\/+$/g, '')
+    setPathDraft(null)
+    if (!raw || raw === path || moving) return
+    setMoving(true)
+    try {
+      // Don't move out from under an unsaved body.
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current)
+        saveTimer.current = null
+      }
+      await flushSave()
+      const { incoming } = await fetchNoteLinks(path)
+      if (incoming.length > 0) {
+        setMoveGuard({ newPath: raw, incoming })
+        return
+      }
+      await doMove(raw, [])
+    } catch (e) {
+      toast('error', `Couldn’t check links — ${e instanceof Error ? e.message : e}`)
+    } finally {
+      setMoving(false)
+    }
+  }
+
+  const doMove = async (newPath: string, rewrite: LinkedNote[]) => {
+    setMoveGuard(null)
+    setMoving(true)
+    try {
+      const ifUpdatedAt = baseRef.current?.updatedAt ?? note?.updatedAt
+      if (!ifUpdatedAt) throw new Error('note not loaded yet')
+      const moved = await movePage(path, newPath, ifUpdatedAt)
+      let fixed = 0
+      for (const l of rewrite) {
+        try {
+          if (await rewriteLinksIn(l.path, path, newPath)) fixed++
+        } catch {
+          // best-effort per linker; the audit pass catches stragglers
+        }
+      }
+      setRouteGuard(null)
+      setDirty(false)
+      toast(
+        'success',
+        rewrite.length
+          ? `Moved · updated ${fixed} of ${rewrite.length} linking note${rewrite.length === 1 ? '' : 's'}`
+          : `Moved to ${moved.path}`,
+      )
+      navigate({ kind: 'pages', path: moved.path })
+    } catch (e) {
+      toast('error', `Couldn’t move — ${e instanceof Error ? e.message : e}`)
+    } finally {
+      setMoving(false)
+    }
+  }
+
   if (status === 'missing') {
     return (
       <div className="page-editor">
@@ -447,6 +531,15 @@ export function PageEditor({ path }: { path: string }) {
           {saveLabel}
         </span>
         <div className="page-tools">
+          <button
+            className="page-tool"
+            title="Insert a link to any note ([[ also works while typing)"
+            aria-label="Insert link"
+            data-testid="insert-link"
+            onClick={() => setLinkPicker(true)}
+          >
+            <IconLink size={15} />
+          </button>
           <button
             className="page-tool"
             title="Set as current — what I'm working on right now"
@@ -495,7 +588,30 @@ export function PageEditor({ path }: { path: string }) {
 
       {note && (note.tags?.length || path) && (
         <div className="page-meta" data-testid="page-meta">
-          <span className="page-meta-path" title={path}>{path}</span>
+          {pathDraft === null ? (
+            <button
+              className="page-meta-path page-meta-path-btn"
+              title="Click to edit the path — re-file this note anywhere"
+              data-testid="path-edit"
+              disabled={moving}
+              onClick={() => setPathDraft(path)}
+            >
+              {path}
+            </button>
+          ) : (
+            <input
+              autoFocus
+              className="page-meta-path-input"
+              data-testid="path-input"
+              value={pathDraft}
+              onChange={(e) => setPathDraft(e.target.value)}
+              onBlur={() => setPathDraft(null)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void submitPathEdit()
+                if (e.key === 'Escape') setPathDraft(null)
+              }}
+            />
+          )}
           {note.tags?.length ? (
             <span className="page-meta-tags">
               {note.tags.map((t) => (
@@ -576,6 +692,59 @@ export function PageEditor({ path }: { path: string }) {
         />
       )}
 
+      {linkPicker && (
+        <LinkPicker
+          onClose={() => setLinkPicker(false)}
+          onPick={insertWikiLink}
+          excludePath={path}
+        />
+      )}
+
+      {moveGuard && (
+        <Modal onClose={() => setMoveGuard(null)} width={500} labelledBy="move-title">
+          <div className="canon-confirm">
+            <h2 id="move-title">
+              {moveGuard.incoming.length} note{moveGuard.incoming.length === 1 ? '' : 's'} link
+              here
+            </h2>
+            <p>
+              Moving <code>{path}</code> → <code>{moveGuard.newPath}</code> would break their{' '}
+              <code>[[links]]</code>. I can rewrite them to the new path in the same move.
+            </p>
+            <ul className="move-linkers">
+              {moveGuard.incoming.slice(0, 8).map((l) => (
+                <li key={l.path}>
+                  <code>{l.path}</code>
+                </li>
+              ))}
+              {moveGuard.incoming.length > 8 && (
+                <li>…and {moveGuard.incoming.length - 8} more</li>
+              )}
+            </ul>
+            <div className="canon-actions">
+              <button className="btn btn-ghost" onClick={() => setMoveGuard(null)}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-ghost"
+                disabled={moving}
+                onClick={() => void doMove(moveGuard.newPath, [])}
+              >
+                Move only
+              </button>
+              <button
+                className="btn btn-gold"
+                data-testid="move-and-fix"
+                disabled={moving}
+                onClick={() => void doMove(moveGuard.newPath, moveGuard.incoming)}
+              >
+                Move + update links
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {confirmDelete && (
         <Modal onClose={() => setConfirmDelete(false)} width={420} labelledBy="del-title">
           <div className="canon-confirm">
@@ -597,6 +766,93 @@ export function PageEditor({ path }: { path: string }) {
         </Modal>
       )}
     </div>
+  )
+}
+
+// ——— #9 link picker: browse/search the WHOLE vault, insert a [[wikilink]] ———
+
+function LinkPicker({
+  onClose,
+  onPick,
+  excludePath,
+}: {
+  onClose: () => void
+  onPick: (path: string) => void
+  excludePath: string
+}) {
+  const [query, setQuery] = useState('')
+  const [all, setAll] = useState<Note[] | null>(null)
+
+  useEffect(() => {
+    void fetchLinkTargets()
+      .then(setAll)
+      .catch(() => setAll([]))
+  }, [])
+
+  const q = query.trim()
+  const list = all ?? []
+  const matches = (
+    q
+      ? list
+          .map((n) => {
+            const title = titleFromPath(n.path)
+            const s = Math.max(
+              fuzzyScore(q, title) ?? -Infinity,
+              (fuzzyScore(q, n.path) ?? -Infinity) - 1,
+            )
+            return { n, s }
+          })
+          .filter((x) => x.s !== -Infinity)
+          .sort((a, b) => b.s - a.s)
+          .map((x) => x.n)
+      : [...list].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+  )
+    .filter((n) => n.path !== excludePath)
+    .slice(0, 24)
+
+  return (
+    <Modal onClose={onClose} width={460} labelledBy="linkpicker-title">
+      <div className="subpage-picker" data-testid="link-picker">
+        <h2 id="linkpicker-title" className="subpage-picker-title">
+          Link a note
+        </h2>
+        <input
+          autoFocus
+          className="subpage-search"
+          placeholder="Search every note in the vault…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && matches[0]) {
+              e.preventDefault()
+              onPick(matches[0].path)
+            }
+          }}
+        />
+        <div className="subpage-list">
+          {all === null ? (
+            <p className="subpage-empty">Loading the vault…</p>
+          ) : matches.length === 0 ? (
+            q ? (
+              <button className="subpage-row subpage-create" onClick={() => onPick(q)}>
+                <IconPlus size={14} />
+                <span className="subpage-row-title">Link “{q}” as typed</span>
+              </button>
+            ) : (
+              <p className="subpage-empty">No notes yet.</p>
+            )
+          ) : (
+            matches.map((n) => (
+              <button key={n.path} className="subpage-row" onClick={() => onPick(n.path)}>
+                <IconPage size={14} />
+                <span className="subpage-row-title">{titleFromPath(n.path)}</span>
+                <span className="subpage-row-meta">{n.path}</span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </Modal>
   )
 }
 
