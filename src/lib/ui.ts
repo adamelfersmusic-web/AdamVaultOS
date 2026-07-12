@@ -5,9 +5,10 @@ import { useSyncExternalStore } from 'react'
 interface UiState {
   paletteOpen: boolean
   newScriptOpen: boolean
+  askAiOpen: boolean
 }
 
-let state: UiState = { paletteOpen: false, newScriptOpen: false }
+let state: UiState = { paletteOpen: false, newScriptOpen: false, askAiOpen: false }
 const listeners = new Set<() => void>()
 
 function set(partial: Partial<UiState>): void {
@@ -29,3 +30,6 @@ export const openPalette = () => set({ paletteOpen: true })
 export const closePalette = () => set({ paletteOpen: false })
 export const openNewScript = () => set({ newScriptOpen: true, paletteOpen: false })
 export const closeNewScript = () => set({ newScriptOpen: false })
+export const openAskAi = () => set({ askAiOpen: true, paletteOpen: false })
+export const closeAskAi = () => set({ askAiOpen: false })
+export const toggleAskAi = () => set({ askAiOpen: !state.askAiOpen })
