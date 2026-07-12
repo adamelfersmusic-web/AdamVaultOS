@@ -525,6 +525,14 @@ export function DatabaseView({
           </div>
         </div>
 
+        {dataset === 'tracker' && (
+          <TrackerViews
+            filters={filters}
+            setFilters={setFilters}
+            owners={[...(observed.get('owner') ?? [])].filter(Boolean).sort()}
+          />
+        )}
+
         <Pipeline
           def={def}
           rows={allRows}
@@ -726,6 +734,54 @@ function TrackerNewTask() {
       <button className="btn btn-ghost" onClick={() => setOpen(false)}>
         Cancel
       </button>
+    </div>
+  )
+}
+
+// ——— saved views (#4): one-tap named slices of the Tracker ———
+// "Now" = what's moving (active + next). Owner chips = per-person lists.
+// These are filter presets, so they compose with the pipeline + filter UI and
+// persist through the same localStorage key as hand-built filters.
+
+function TrackerViews({
+  filters,
+  setFilters,
+  owners,
+}: {
+  filters: Filters
+  setFilters: (f: Filters) => void
+  owners: string[]
+}) {
+  const keys = Object.keys(filters)
+  const isAll = keys.length === 0
+  const isNow =
+    keys.length === 1 &&
+    [...(filters.state ?? [])].sort().join(',') === 'active,next'
+  const ownerOf = keys.length === 1 && (filters.owner?.length ?? 0) === 1 ? filters.owner[0] : null
+
+  return (
+    <div className="db-views" data-testid="db-views" role="group" aria-label="Saved views">
+      <span className="db-views-label">views</span>
+      <button className={`db-view${isAll ? ' is-on' : ''}`} onClick={() => setFilters({})}>
+        All
+      </button>
+      <button
+        className={`db-view${isNow ? ' is-on' : ''}`}
+        title="What's moving — active + next"
+        onClick={() => setFilters({ state: ['active', 'next'] })}
+      >
+        Now
+      </button>
+      {owners.map((o) => (
+        <button
+          key={o}
+          className={`db-view${ownerOf === o ? ' is-on' : ''}`}
+          title={`${o}'s tasks`}
+          onClick={() => setFilters({ owner: [o] })}
+        >
+          {o}
+        </button>
+      ))}
     </div>
   )
 }
