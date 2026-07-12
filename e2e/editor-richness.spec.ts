@@ -268,3 +268,45 @@ test('table — /table inserts a GFM pipe table; round-trips byte-stable', async
 
   expect(errors, errors.join('\n')).toEqual([])
 })
+
+test('toggle sizes — /toggle H1 stores data-size, renders big, round-trips', async ({ page }) => {
+  await seed(page, 'pages/rich', '# Rich\n\nend line')
+  await connectViaStorage(page)
+
+  await openPage(page, 'pages/rich')
+  await page.locator('.page-prose').getByText('end line').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/toggle')
+  await expect(page.locator('.slash-menu')).toBeVisible()
+  await page.keyboard.press('ArrowDown') // Toggle H1
+  await page.keyboard.press('Enter')
+
+  const details = page.locator('.page-prose [data-type="details"]')
+  await expect(details).toHaveAttribute('data-size', 'h1')
+  await page.keyboard.type('Big Picture')
+  // Headline-sized summary (26px), not fine print.
+  await expect
+    .poll(() =>
+      details.locator('summary').evaluate((el) => getComputedStyle(el).fontSize),
+    )
+    .toBe('26px')
+
+  await expect
+    .poll(() => savedContent(page, 'pages/rich'))
+    .toContain('<details data-size="h1">\n<summary>Big Picture</summary>')
+
+  // Round-trip: size survives reload, and an unrelated edit is byte-stable.
+  await page.reload()
+  await expect(page.locator('.page-prose [data-type="details"]')).toHaveAttribute(
+    'data-size',
+    'h1',
+  )
+  const before = await savedContent(page, 'pages/rich')
+  await page.locator('.page-prose').getByText('end line').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' ping')
+  await expect
+    .poll(() => savedContent(page, 'pages/rich'))
+    .toBe(before.replace('end line', 'end line ping'))
+})

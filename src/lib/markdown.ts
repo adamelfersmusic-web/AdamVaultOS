@@ -87,6 +87,6 @@ export function renderMarkdown(src: string): string {
   return DOMPurify.sanitize(html, {
     USE_PROFILES: { html: true },
     FORBID_TAGS: ['style'],
-    ADD_ATTR: ['target', 'data-vault-src', 'data-callout'],
+    ADD_ATTR: ['target', 'data-vault-src', 'data-callout', 'data-size'],
   })
 }

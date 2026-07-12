@@ -8,6 +8,7 @@ import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Extension } from '@tiptap/core'
 import type { Editor, Range } from '@tiptap/core'
+import { TextSelection } from '@tiptap/pm/state'
 import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion'
@@ -44,6 +45,38 @@ interface SlashItem {
   icon: ReactNode
   keywords: string[]
   run: (ctx: { editor: Editor; range: Range }) => void
+}
+
+/** Insert a details node OPEN with an optional size level, caret in the
+ * summary. insertContent (not setDetails) so attrs land at creation — the
+ * nodeview reads `open` on init, and Enter then drops INTO the fold. */
+function insertToggle(editor: Editor, range: Range, size: 'h1' | 'h2' | null) {
+  editor
+    .chain()
+    .focus()
+    .deleteRange(range)
+    .insertContent({
+      type: 'details',
+      attrs: { open: true, size },
+      content: [
+        { type: 'detailsSummary' },
+        { type: 'detailsContent', content: [{ type: 'paragraph' }] },
+      ],
+    })
+    // Place the caret in the fresh summary IN THE SAME transaction — position
+    // math after insertContent isn't predictable (an empty slash paragraph
+    // gets replaced, a non-empty one gets split), so find the nearest summary
+    // before the caret instead.
+    .command(({ tr }) => {
+      let pos: number | null = null
+      tr.doc.descendants((node, p) => {
+        if (node.type.name === 'detailsSummary' && p <= tr.selection.from) pos = p + 1
+        return true
+      })
+      if (pos !== null) tr.setSelection(TextSelection.create(tr.doc, pos))
+      return true
+    })
+    .run()
 }
 
 function buildItems(options: SlashCommandOptions): SlashItem[] {
@@ -152,22 +185,23 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
       subtitle: 'Collapsible section (details/summary)',
       icon: <IconList />,
       keywords: ['toggle', 'collapse', 'details', 'fold', 'accordion'],
-      run: ({ editor, range }) => {
-        editor.chain().focus().deleteRange(range).setDetails().run()
-        // Open the fresh toggle — otherwise Enter from the summary escapes
-        // below the block instead of dropping into the fold. The nodeview's
-        // own button is the supported way to flip the open state.
-        requestAnimationFrame(() => {
-          const { from } = editor.state.selection
-          const dom = editor.view.domAtPos(from).node
-          const el = dom instanceof Element ? dom : dom.parentElement
-          const details = el?.closest('[data-type="details"]')
-          if (details && !details.classList.contains('is-open')) {
-            details.querySelector<HTMLButtonElement>(':scope > button')?.click()
-            editor.commands.focus()
-          }
-        })
-      },
+      run: ({ editor, range }) => insertToggle(editor, range, null),
+    },
+    {
+      id: 'toggle-h1',
+      title: 'Toggle H1',
+      subtitle: 'Collapsible section, big headline title',
+      icon: <IconHeading />,
+      keywords: ['toggle', 'collapse', 'fold', 'h1', 'heading', 'big'],
+      run: ({ editor, range }) => insertToggle(editor, range, 'h1'),
+    },
+    {
+      id: 'toggle-h2',
+      title: 'Toggle H2',
+      subtitle: 'Collapsible section, medium headline title',
+      icon: <IconHeading />,
+      keywords: ['toggle', 'collapse', 'fold', 'h2', 'heading', 'medium'],
+      run: ({ editor, range }) => insertToggle(editor, range, 'h2'),
     },
     {
       id: 'table',

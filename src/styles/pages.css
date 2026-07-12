@@ -1462,12 +1462,21 @@
   flex: 1 1 auto;
   min-width: 0;
 }
-.page-prose [data-type='detailsSummary'] {
+.page-prose [data-type='details'] summary {
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 600;
   color: var(--ink);
   outline: none;
+}
+/* T2 — toggle size levels via data-size (pure HTML attr) */
+.page-prose [data-type='details'][data-size='h1'] summary {
+  font-size: 26px;
+  font-weight: 560;
+}
+.page-prose [data-type='details'][data-size='h2'] summary {
+  font-size: 21px;
+  font-weight: 580;
 }
 .page-prose [data-type='detailsContent'] {
   padding-left: 2px;
@@ -1489,6 +1498,16 @@
   font-size: 17px;
   font-weight: 600;
   color: var(--ink);
+}
+.md details[data-size='h1'] > summary,
+.note-body details[data-size='h1'] > summary {
+  font-size: 26px;
+  font-weight: 560;
+}
+.md details[data-size='h2'] > summary,
+.note-body details[data-size='h2'] > summary {
+  font-size: 21px;
+  font-weight: 580;
 }
 .md details[open] > summary,
 .note-body details[open] > summary {
