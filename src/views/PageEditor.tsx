@@ -9,6 +9,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskList, TaskItem } from '@tiptap/extension-list'
 import { Color } from '@tiptap/extension-text-style'
+import { TableKit } from '@tiptap/extension-table'
 import { Markdown } from '@tiptap/markdown'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
 import type { Note } from '../lib/types'
@@ -109,6 +110,9 @@ export function PageEditor({ path }: { path: string }) {
       ToggleDetails,
       ToggleSummary,
       ToggleContent,
+      // Tables — GFM pipe tables, first-party markdown round-trip (Adam's
+      // "renders perfectly in markdown" law). /table inserts 3×3.
+      TableKit.configure({ table: { resizable: false } }),
       VaultImage, // resolves /api/storage vault paths (auth-safe); no base64
       Markdown,
       MarkdownLiteral,

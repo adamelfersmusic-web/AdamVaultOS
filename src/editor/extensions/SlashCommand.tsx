@@ -12,6 +12,7 @@ import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion'
 import {
+  IconTable,
   IconText,
   IconHeading,
   IconList,
@@ -167,6 +168,20 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
           }
         })
       },
+    },
+    {
+      id: 'table',
+      title: 'Table',
+      subtitle: 'A markdown pipe table (3×3)',
+      icon: <IconTable size={15} />,
+      keywords: ['table', 'grid', 'rows', 'columns', 'spreadsheet'],
+      run: ({ editor, range }) =>
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+          .run(),
     },
     {
       id: 'image',

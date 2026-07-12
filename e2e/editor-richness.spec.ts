@@ -229,3 +229,42 @@ test('colored highlight — hover swatches write <mark style>, round-trips', asy
 
   expect(errors, errors.join('\n')).toEqual([])
 })
+
+test('table — /table inserts a GFM pipe table; round-trips byte-stable', async ({ page }) => {
+  await seed(page, 'pages/rich', '# Rich\n\nend line')
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await openPage(page, 'pages/rich')
+  await page.locator('.page-prose').getByText('end line').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/table')
+  await expect(page.locator('.slash-menu')).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('.page-prose table')).toHaveCount(1)
+
+  await page.keyboard.type('Song')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('Key')
+
+  // The vault gets a real pipe table.
+  await expect
+    .poll(() => savedContent(page, 'pages/rich'))
+    .toMatch(/\| Song\s+\| Key\s+\|/)
+
+  // Reload → table parses back; unrelated edit stays byte-stable.
+  await page.reload()
+  await expect(page.locator('.page-prose table')).toHaveCount(1)
+  const before = await savedContent(page, 'pages/rich')
+  await page.locator('.page-prose').getByText('end line').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' ping')
+  await expect
+    .poll(() => savedContent(page, 'pages/rich'))
+    .toBe(before.replace('end line', 'end line ping'))
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
