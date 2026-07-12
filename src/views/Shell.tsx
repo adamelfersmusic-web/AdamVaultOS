@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { disconnect, useStore } from '../lib/store'
 import { navigate, type Route } from '../lib/router'
-import { openPalette } from '../lib/ui'
+import { openPalette, toggleAskAi } from '../lib/ui'
 import { toggleTheme, useTheme } from '../lib/theme'
 import {
   IconBoard,
@@ -128,6 +128,14 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         <button className="rail-kbd" onClick={openPalette}>
           Jump anywhere
           <kbd>⌘K</kbd>
+        </button>
+        <button
+          className="rail-kbd rail-askai"
+          data-testid="askai-open"
+          onClick={toggleAskAi}
+        >
+          Ask AI
+          <kbd>⌘J</kbd>
         </button>
 
         <div className="rail-foot">

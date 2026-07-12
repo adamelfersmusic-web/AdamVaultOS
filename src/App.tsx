@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef } from 'react'
 import { processOAuthReturn, useStore } from './lib/store'
-import { useUi, openPalette, closePalette } from './lib/ui'
+import { useUi, openPalette, closePalette, toggleAskAi } from './lib/ui'
+import { AskAi } from './components/AskAi'
 import { navigate, useRoute } from './lib/router'
 import { Shell } from './views/Shell'
 import { ConnectView } from './views/ConnectView'
@@ -38,13 +39,18 @@ export default function App() {
     void processOAuthReturn()
   }, [])
 
-  // Global shortcuts: ⌘K / Ctrl+K opens the palette anywhere.
+  // Global shortcuts: ⌘K / Ctrl+K opens the palette, ⌘J / Ctrl+J Ask AI —
+  // anywhere, including the full-bleed Pages and Graph layouts.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         if (ui.paletteOpen) closePalette()
         else if (session) openPalette()
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault()
+        if (session) toggleAskAi()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -89,6 +95,7 @@ export default function App() {
       <>
         <GraphView />
         {ui.paletteOpen && <CommandPalette />}
+        <AskAi />
         <CaptureDock />
         <ToastHost />
       </>
@@ -109,6 +116,7 @@ export default function App() {
           <PagesView path={route.path} />
         </Suspense>
         {ui.paletteOpen && <CommandPalette />}
+        <AskAi />
         <CaptureDock />
         <ToastHost />
       </>
@@ -132,6 +140,7 @@ export default function App() {
       </Shell>
       {ui.newScriptOpen && <NewScriptModal />}
       {ui.paletteOpen && <CommandPalette />}
+      <AskAi />
       <CaptureDock />
       <ToastHost />
     </>

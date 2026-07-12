@@ -655,3 +655,200 @@
   border: 1px solid var(--border, #2c2d31); border-radius: 7px;
   padding: 4px 8px; font-size: 12.5px; font-family: inherit;
 }
+
+/* ——— Ask AI panel (⌘J) ——————————————————————————————————————————————— */
+.askai {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 92vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel, var(--bg));
+  border-left: 1px solid var(--line-strong);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.18);
+  z-index: 320; /* above the capture dock (300); toasts stay on top */
+}
+.askai-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.askai-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.askai-models {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  background: var(--hover);
+  border-radius: 7px;
+  padding: 2px;
+}
+.askai-models button {
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--ink-3);
+}
+.askai-models button.is-on {
+  background: var(--bg);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.askai-close {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 5px;
+  color: var(--ink-3);
+}
+.askai-close:hover {
+  background: var(--hover);
+}
+.askai-context {
+  font-size: 11px;
+  color: var(--ink-3);
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.askai-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.askai-empty {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  margin: auto 12px;
+  text-align: center;
+}
+.askai-msg {
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 10px;
+  max-width: 100%;
+}
+.askai-user {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  padding: 7px 10px;
+  white-space: pre-wrap;
+  max-width: 88%;
+}
+.askai-assistant {
+  align-self: stretch;
+}
+.askai-prose {
+  overflow-wrap: anywhere;
+}
+.askai-prose p {
+  margin: 0 0 8px;
+}
+.askai-prose p:last-child {
+  margin-bottom: 0;
+}
+.askai-prose pre {
+  overflow-x: auto;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--hover);
+}
+.askai-thinking {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-style: italic;
+}
+.askai-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.askai-actions button {
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--ink-3);
+}
+.askai-actions button:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.askai-inputrow {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+}
+.askai-inputrow textarea {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 9px;
+}
+.askai-send {
+  align-self: flex-end;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+.askai-send:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.rail-askai {
+  margin-top: 4px;
+}
+
+.askai-fab {
+  position: fixed;
+  right: 84px;
+  bottom: 26px;
+  z-index: 290; /* just under the capture dock so neither hides the other */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel, var(--bg));
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-lift, 0 4px 14px rgba(0, 0, 0, 0.14));
+}
+.askai-fab:hover {
+  background: var(--hover);
+}
