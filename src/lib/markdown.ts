@@ -1,9 +1,41 @@
-import { marked } from 'marked'
+import { marked, type Tokens } from 'marked'
 import DOMPurify from 'dompurify'
 
 // breaks:true — script bodies use single newlines as spoken-word line breaks;
 // collapsing them would destroy the rhythm of the writing.
 marked.setOptions({ gfm: true, breaks: true, async: false })
+
+// E1 — ==highlight== renders as <mark> in the read view. A real marked
+// tokenizer (not a regex pre-pass), so text inside code spans/blocks is never
+// touched — the same guarantee the editor's Highlight extension gives.
+interface HighlightToken extends Tokens.Generic {
+  type: 'highlightMark'
+  tokens: Tokens.Generic[]
+}
+marked.use({
+  extensions: [
+    {
+      name: 'highlightMark',
+      level: 'inline',
+      start(src: string) {
+        const i = src.indexOf('==')
+        return i === -1 ? undefined : i
+      },
+      tokenizer(src: string): HighlightToken | undefined {
+        const match = /^==([^=\n]+)==/.exec(src)
+        if (!match) return undefined
+        return {
+          type: 'highlightMark',
+          raw: match[0],
+          tokens: this.lexer.inlineTokens(match[1]),
+        }
+      },
+      renderer(token) {
+        return `<mark>${this.parser.parseInline(token.tokens ?? [])}</mark>`
+      },
+    },
+  ],
+})
 
 // Root-relative vault images (`/api/storage/...`) can't display from an <img>
 // src — the browser resolves them against the app origin, not the vault, so

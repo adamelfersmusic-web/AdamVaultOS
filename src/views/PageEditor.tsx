@@ -8,6 +8,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskList, TaskItem } from '@tiptap/extension-list'
+import { Highlight } from '@tiptap/extension-highlight'
+import { Color } from '@tiptap/extension-text-style'
 import { Markdown } from '@tiptap/markdown'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
 import type { Note } from '../lib/types'
@@ -47,6 +49,13 @@ import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
 import { VaultImage } from '../editor/extensions/VaultImage'
 import { AiBlock } from '../editor/extensions/AiBlock'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
+import { ColorText } from '../editor/extensions/ColorText'
+import {
+  ToggleContent,
+  ToggleDetails,
+  ToggleSummary,
+} from '../editor/extensions/ToggleDetails'
+import { FormatBar } from '../components/FormatBar'
 
 type Status = 'loading' | 'ready' | 'missing' | 'error'
 type Rec = 'idle' | 'recording' | 'transcribing'
@@ -88,6 +97,17 @@ export function PageEditor({ path }: { path: string }) {
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       TaskList,
       TaskItem.configure({ nested: true }),
+      // E1 — ==highlight==: first-party markdown round-trip (==…== both ways),
+      // toggled with ⌘⇧H or by typing ==text==.
+      Highlight,
+      // #20 — colored text: ColorText carries the custom <span style> markdown
+      // round-trip; Color supplies the setColor/unsetColor commands.
+      ColorText,
+      Color,
+      // #18 — toggles: <details>/<summary> blocks, /toggle to insert.
+      ToggleDetails,
+      ToggleSummary,
+      ToggleContent,
       VaultImage, // resolves /api/storage vault paths (auth-safe); no base64
       Markdown,
       MarkdownLiteral,
@@ -632,6 +652,8 @@ export function PageEditor({ path }: { path: string }) {
       {note && databaseForPath(path) && (
         <RecordProperties note={note} def={databaseForPath(path)!} />
       )}
+
+      {editor && <FormatBar editor={editor} />}
 
       {rec !== 'idle' && (
         <div className={`voice-bar voice-${rec}`} role="status">

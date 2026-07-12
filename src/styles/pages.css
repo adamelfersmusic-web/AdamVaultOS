@@ -1355,3 +1355,105 @@
 }
 .worktabs-input:focus { outline: none; border-color: var(--gold); }
 .worktabs-loading { color: var(--ink-4); padding: 4px 8px; }
+
+/* ── Supervised editor drop: format bar + toggles ─────────────────────── */
+
+.format-bar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
+  padding: 4px 6px;
+}
+.fmt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-sm);
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.fmt-btn:hover { background: var(--surface-2); color: var(--ink); }
+.fmt-btn.is-on { background: var(--surface-3); }
+.fmt-hl-swatch {
+  background: var(--hl);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--ink);
+}
+.fmt-swatch {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--mix-fg) 25%, transparent);
+}
+.fmt-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--line);
+  margin: 0 3px;
+}
+.fmt-clear { font-size: 10px; }
+
+/* #18 toggles — the Details node inside the editor */
+.page-prose [data-type='details'] {
+  display: flex;
+  gap: 4px;
+  margin: 0.4em 0;
+  border-radius: var(--r-sm);
+}
+.page-prose [data-type='details'] > button {
+  flex: none;
+  width: 20px;
+  height: 24px;
+  margin-top: 1px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-3);
+  font-size: 11px;
+  border-radius: var(--r-sm);
+}
+.page-prose [data-type='details'] > button:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.page-prose [data-type='details'] > button::before { content: '▸'; }
+.page-prose [data-type='details'].is-open > button::before { content: '▾'; }
+.page-prose [data-type='details'] > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.page-prose [data-type='detailsSummary'] {
+  font-weight: 600;
+  outline: none;
+}
+.page-prose [data-type='detailsContent'] {
+  padding-left: 2px;
+  border-left: 2px solid var(--line);
+  margin-top: 4px;
+  padding-left: 10px;
+}
+
+/* read view: native <details>/<summary> */
+.md details,
+.note-body details {
+  margin: 0.5em 0;
+  padding: 2px 0;
+}
+.md summary,
+.note-body summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+.md details[open] > summary,
+.note-body details[open] > summary {
+  margin-bottom: 6px;
+}
