@@ -8,7 +8,7 @@
 // SubPageLink's convertPageLinks): `[[…]]` inside a text node is replaced with
 // a wikiLink node, leaving surrounding text untouched.
 
-import { Node, mergeAttributes } from '@tiptap/core'
+import { Node, mergeAttributes, nodeInputRule } from '@tiptap/core'
 import type { JSONContent } from '@tiptap/core'
 import type { NodeViewProps } from '@tiptap/core'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
@@ -71,6 +71,20 @@ export const WikiLink = Node.create({
 
   addNodeView() {
     return ReactNodeViewRenderer(WikiLinkView)
+  },
+
+  // Typing a full `[[target]]` by hand converts to the chip the moment the
+  // closing brackets land — same shape convertWikiLinks() produces at load.
+  // NO capture group: nodeInputRule would then replace only the group and
+  // leave the brackets behind; we slice the target out of the whole match.
+  addInputRules() {
+    return [
+      nodeInputRule({
+        find: /\[\[[^[\]\n]+?\]\]$/,
+        type: this.type,
+        getAttributes: (match) => ({ target: match[0].slice(2, -2) }),
+      }),
+    ]
   },
 
   // @tiptap/markdown: write back EXACTLY `[[target]]` — never escaped. `target`

@@ -573,6 +573,85 @@ export async function renameUntitledPage(
   }
 }
 
+/** All-vault lean note list for link targets ([[ autocomplete, Link picker).
+ * Cached briefly so every keystroke doesn't refetch; 743 notes is nothing to
+ * filter client-side. */
+let linkTargetsCache: { at: number; list: Note[] } | null = null
+
+export async function fetchLinkTargets(): Promise<Note[]> {
+  if (linkTargetsCache && Date.now() - linkTargetsCache.at < 60_000) {
+    return linkTargetsCache.list
+  }
+  try {
+    const list = await requireApi().listAll({ limit: 1000 })
+    linkTargetsCache = { at: Date.now(), list }
+    return list
+  } catch (e) {
+    handleAuthFailure(e)
+    // A stale cache beats an empty menu mid-typing.
+    return linkTargetsCache?.list ?? []
+  }
+}
+
+/** F1b — move/re-file a note to a new path. The CALLER is responsible for the
+ * inbound-link guard (fetchNoteLinks) and any [[old]]→[[new]] rewrites; this
+ * just performs the rename and re-keys every store slice that indexes by path. */
+export async function movePage(
+  oldPath: string,
+  newPath: string,
+  ifUpdatedAt: string,
+): Promise<Note> {
+  const a = requireApi()
+  if ((await a.getNote(newPath)) !== null) {
+    throw new Error(`A note already lives at ${newPath}`)
+  }
+  try {
+    const moved = await a.updateNote(oldPath, { path: newPath, ifUpdatedAt })
+    const notes = { ...state.notes }
+    delete notes[oldPath]
+    notes[moved.path] = moved
+    const rekey = (list: string[] | null) =>
+      list ? list.map((p) => (p === oldPath ? moved.path : p)) : list
+    set({
+      notes,
+      pages: rekey(state.pages),
+      tracker: rekey(state.tracker),
+      projects: rekey(state.projects),
+    })
+    linkTargetsCache = null
+    return moved
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+/** Rewrite `[[oldPath]]` / `[[oldPath|alias]]` to the new path inside one
+ * linking note. Returns true if the note changed. Best-effort per note — the
+ * caller reports how many succeeded. */
+export async function rewriteLinksIn(
+  linkerPath: string,
+  oldPath: string,
+  newPath: string,
+): Promise<boolean> {
+  const a = requireApi()
+  const note = await a.getNote(linkerPath)
+  const content = note?.content
+  if (!note || typeof content !== 'string') return false
+  const esc = oldPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const re = new RegExp(`\\[\\[${esc}(\\|[^\\]\\n]*)?\\]\\]`, 'g')
+  const next = content.replace(re, (_m, alias: string | undefined) =>
+    `[[${newPath}${alias ?? ''}]]`,
+  )
+  if (next === content) return false
+  const updated = await a.updateNote(linkerPath, {
+    content: next,
+    ifUpdatedAt: note.updatedAt,
+  })
+  mergeNote(updated)
+  return true
+}
+
 // ---------------------------------------------------------------------------
 // Today layer (PART 25) — the now-surface. `desk/current` is a tiny pointer
 // note whose metadata.target = "what Adam is working on RIGHT NOW"; the daily
