@@ -240,6 +240,8 @@ export class VaultApi {
     const p = new URLSearchParams({
       limit: String(limit),
       include_content: 'true',
+      // Link degree per note — powers the Library cards' "N rel" weight.
+      include_link_count: 'true',
       sort: 'desc',
     })
     return (await this.request<Note[]>('GET', `/notes?${p.toString()}`)).map(

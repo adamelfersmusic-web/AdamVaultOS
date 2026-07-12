@@ -118,14 +118,16 @@ export function LibraryView() {
   const seq = useRef(0)
 
   // ＋ New note born IN CONTEXT (L1): the page inherits the tag you're
-  // standing in, so it's already filed the moment it exists.
-  const newNote = async () => {
+  // standing in — or the tag whose ＋ you clicked in the rail — so it's
+  // already filed the moment it exists.
+  const newNote = async (tagOverride?: string) => {
     if (creating) return
     setCreating(true)
+    const tag = tagOverride ?? activeTag
     try {
       const note = await createPage({
         title: 'Untitled',
-        extraTags: activeTag ? [activeTag] : [],
+        extraTags: tag ? [tag] : [],
       })
       navigate({ kind: 'pages', path: note.path })
     } catch (e) {
@@ -293,6 +295,7 @@ export function LibraryView() {
                   })
                 }
                 onSelect={(full) => selectTag(activeTag === full ? null : full)}
+                onCreate={(full) => void newNote(full)}
               />
             ))
           )}
@@ -418,6 +421,7 @@ function TagTreeRow({
   expanded,
   onToggle,
   onSelect,
+  onCreate,
 }: {
   node: TagNode
   depth: number
@@ -425,6 +429,7 @@ function TagTreeRow({
   expanded: Set<string>
   onToggle: (full: string) => void
   onSelect: (full: string) => void
+  onCreate: (full: string) => void
 }) {
   const hasKids = node.children.length > 0
   const open = expanded.has(node.full)
@@ -453,6 +458,17 @@ function TagTreeRow({
           <span className="tag-rail-name">#{depth === 0 ? node.full : node.seg}</span>
           <span className="tag-rail-count">{node.total}</span>
         </button>
+        <button
+          className="tag-tree-add"
+          title={`New note tagged #${node.full}`}
+          aria-label={`New note tagged #${node.full}`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onCreate(node.full)
+          }}
+        >
+          ＋
+        </button>
       </div>
       {hasKids &&
         open &&
@@ -465,6 +481,7 @@ function TagTreeRow({
             expanded={expanded}
             onToggle={onToggle}
             onSelect={onSelect}
+            onCreate={onCreate}
           />
         ))}
     </>
@@ -502,6 +519,14 @@ function NoteRow({
             </span>
           )}
         </span>
+        {typeof note.linkCount === 'number' && note.linkCount > 0 && (
+          <span
+            className="note-rel"
+            title={`${note.linkCount} link${note.linkCount === 1 ? '' : 's'} touch this note`}
+          >
+            {note.linkCount} rel
+          </span>
+        )}
         <span className="note-row-time">{relativeTime(note.updatedAt)}</span>
       </div>
       <div className="note-row-path">{note.path}</div>
