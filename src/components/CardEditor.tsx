@@ -11,6 +11,7 @@ import { useEffect, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskList, TaskItem } from '@tiptap/extension-list'
+import { Highlight } from '@tiptap/extension-highlight'
 import { Markdown } from '@tiptap/markdown'
 import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
@@ -37,12 +38,14 @@ export function CardEditor({
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       TaskList,
       TaskItem.configure({ nested: true }),
+      Highlight,
       Markdown,
       MarkdownLiteral,
       WikiLink,
       WikiLinkSuggest,
       SlashCommand.configure({
-        exclude: ['image', 'subpage', 'ai', 'voice'],
+        // No toggle either — the Details node isn't registered in cards.
+        exclude: ['image', 'subpage', 'ai', 'voice', 'toggle'],
       }),
     ],
     editorProps: {

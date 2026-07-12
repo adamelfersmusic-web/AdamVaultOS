@@ -115,6 +115,24 @@ export function LibraryView() {
   const [sort, setSort] = useState<Sort>('recent')
   const [selected, setSelected] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  // Logic-style panels: collapse the tag rail and/or the note browser to
+  // slim slivers whenever you want the reading room. Both persisted.
+  const [tagsCollapsed, setTagsCollapsed] = useState(
+    () => localStorage.getItem('adamvaultos.library.tags.collapsed') === '1',
+  )
+  const [listCollapsed, setListCollapsed] = useState(
+    () => localStorage.getItem('adamvaultos.library.list.collapsed') === '1',
+  )
+  const toggleTags = () =>
+    setTagsCollapsed((c) => {
+      localStorage.setItem('adamvaultos.library.tags.collapsed', c ? '0' : '1')
+      return !c
+    })
+  const toggleList = () =>
+    setListCollapsed((c) => {
+      localStorage.setItem('adamvaultos.library.list.collapsed', c ? '0' : '1')
+      return !c
+    })
   const seq = useRef(0)
 
   // ＋ New note born IN CONTEXT (L1): the page inherits the tag you're
@@ -246,9 +264,31 @@ export function LibraryView() {
   }
   const allActive = !activeTag && !query.trim()
 
+  // The list sliver only makes sense with a note open beside it — with
+  // nothing selected the browser IS the content, so it stays expanded.
+  const listIsCollapsed = listCollapsed && selected !== null
+
   return (
-    <div className={`browser${selected ? ' has-detail' : ''}`} data-testid="browser">
+    <div
+      className={`browser${selected ? ' has-detail' : ''}${tagsCollapsed ? ' tags-collapsed' : ''}${listIsCollapsed ? ' list-collapsed' : ''}`}
+      data-testid="browser"
+    >
+      {tagsCollapsed ? (
+        <aside className="tag-rail is-collapsed">
+          <button
+            className="panel-expand"
+            data-testid="tags-expand"
+            title="Expand tags"
+            aria-label="Expand tags"
+            onClick={toggleTags}
+          >
+            »
+          </button>
+          <span className="panel-collapsed-label">tags</span>
+        </aside>
+      ) : (
       <aside className="tag-rail">
+        <div className="tag-rail-head">
         <button
           className={`tag-rail-item${allActive ? ' is-active' : ''}`}
           onClick={() => selectTag(null)}
@@ -256,6 +296,16 @@ export function LibraryView() {
           <span className="tag-rail-name">All notes</span>
           <span className="tag-rail-count">{all.length}</span>
         </button>
+          <button
+            className="panel-collapse"
+            data-testid="tags-collapse"
+            title="Collapse tags"
+            aria-label="Collapse tags"
+            onClick={toggleTags}
+          >
+            «
+          </button>
+        </div>
         <input
           className="tag-rail-search"
           placeholder="Filter tags…"
@@ -301,7 +351,22 @@ export function LibraryView() {
           )}
         </div>
       </aside>
+      )}
 
+      {listIsCollapsed ? (
+        <main className="browser-main is-collapsed">
+          <button
+            className="panel-expand"
+            data-testid="list-expand"
+            title="Expand the note browser"
+            aria-label="Expand the note browser"
+            onClick={toggleList}
+          >
+            »
+          </button>
+          <span className="panel-collapsed-label">notes</span>
+        </main>
+      ) : (
       <main className="browser-main">
         <div className="browser-head">
           <input
@@ -317,7 +382,7 @@ export function LibraryView() {
               {activeTag ? ` · #${activeTag}` : ''}
             </span>
             <button
-              className="btn btn-gold browser-new"
+              className="browser-new"
               data-testid="library-new-note"
               title={
                 activeTag
@@ -375,15 +440,28 @@ export function LibraryView() {
                 note={n}
                 active={selected === n.path}
                 onOpen={() => setSelected(n.path)}
+                onEdit={() => openFull(n.path)}
               />
             ))}
           </div>
         )}
       </main>
+      )}
 
       {selected && (
         <section className="browser-detail" data-testid="browser-detail">
           <div className="browser-detail-bar">
+            {!listIsCollapsed && (
+              <button
+                className="panel-collapse"
+                data-testid="list-collapse"
+                title="Collapse the note browser — reading room"
+                aria-label="Collapse the note browser"
+                onClick={toggleList}
+              >
+                «
+              </button>
+            )}
             <span className="browser-detail-path" title={selected}>
               {selected}
             </span>
@@ -491,12 +569,37 @@ function TagTreeRow({
 function NoteRow({
   note,
   onOpen,
+  onEdit,
   active,
 }: {
   note: Note
   onOpen: () => void
+  /** Double-click: skip the preview, go straight into the editor. */
+  onEdit?: () => void
   active?: boolean
 }) {
+  // Debounce the single click: opening the detail pane reflows the grid, which
+  // would move the row out from under a double-click mid-gesture. A short hold
+  // lets the second click land first.
+  const clickTimer = useRef<number | null>(null)
+  const handleClick = () => {
+    if (!onEdit) {
+      onOpen()
+      return
+    }
+    if (clickTimer.current) clearTimeout(clickTimer.current)
+    clickTimer.current = window.setTimeout(() => {
+      clickTimer.current = null
+      onOpen()
+    }, 220)
+  }
+  const handleDouble = () => {
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current)
+      clickTimer.current = null
+    }
+    onEdit?.()
+  }
   const title = noteTitle(note)
   // Prefer the note's own summary (the vault has these on most real notes) —
   // it reads far better than a stripped-body preview. Fall back to the body.
@@ -504,7 +607,12 @@ function NoteRow({
   const tags = note.tags ?? []
   const tmeta = TYPE_META[inferNoteType(note)]
   return (
-    <button className={`note-row${active ? ' is-selected' : ''}`} onClick={onOpen}>
+    <button
+      className={`note-row${active ? ' is-selected' : ''}`}
+      onClick={handleClick}
+      onDoubleClick={handleDouble}
+      title="Click to preview · double-click to edit"
+    >
       <div className="note-row-head">
         <span className="note-row-title">
           <span

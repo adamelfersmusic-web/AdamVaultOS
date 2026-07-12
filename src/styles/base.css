@@ -117,3 +117,11 @@ textarea {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* E1 — highlight (==…== / <mark>): amber wash, both themes via --hl */
+mark {
+  background: var(--hl);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}

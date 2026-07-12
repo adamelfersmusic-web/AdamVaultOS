@@ -1458,8 +1458,29 @@ body.is-dragging .card {
   color: var(--ink-4);
   margin-right: auto;
 }
+/* Quiet on purpose (Adam: "dark and subtle, exactly like the Recent thing —
+   don't draw my eye"). Same skin as the sort toggle. */
 .browser-new {
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  border: none;
+  cursor: pointer;
+  transition: 0.12s ease;
+}
+.browser-new:hover {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+.browser-new:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 .sort-toggle {
   display: inline-flex;
@@ -1709,6 +1730,65 @@ body.is-dragging .card {
 /* #1 — master-detail: note list + detail pane beside it (nothing vanishes on click) */
 .browser.has-detail {
   grid-template-columns: 232px minmax(300px, 400px) 1fr;
+}
+/* Logic-style collapses: either panel folds to a 34px sliver, any combo */
+.browser.tags-collapsed {
+  grid-template-columns: 34px 1fr;
+}
+.browser.has-detail.tags-collapsed {
+  grid-template-columns: 34px minmax(300px, 400px) 1fr;
+}
+.browser.has-detail.list-collapsed {
+  grid-template-columns: 232px 34px 1fr;
+}
+.browser.has-detail.tags-collapsed.list-collapsed {
+  grid-template-columns: 34px 34px 1fr;
+}
+.tag-rail.is-collapsed,
+.browser-main.is-collapsed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+  background: var(--bg-rail);
+}
+.panel-expand,
+.panel-collapse {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  color: var(--ink-4);
+  font-size: 13px;
+  line-height: 1;
+}
+.panel-expand:hover,
+.panel-collapse:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+.panel-collapsed-label {
+  writing-mode: vertical-rl;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  user-select: none;
+}
+.tag-rail-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tag-rail-head > .tag-rail-item {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .browser-detail {
   min-width: 0;

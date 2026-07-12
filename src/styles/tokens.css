@@ -76,6 +76,9 @@
   --border: var(--line);
   --accent: var(--gold);
   --panel: var(--surface);
+
+  /* E1 — ==highlight== wash (amber, so it never fights the teal accent) */
+  --hl: color-mix(in srgb, #e0aa3e 30%, transparent);
 }
 
 /* ————————————————————————— light · "latte" ——————————————————————————
@@ -112,6 +115,7 @@
   --tint-text: 92%;
 
   --mix-fg: #2c2015;
+  --hl: color-mix(in srgb, #f0c24b 45%, transparent);
 
   --shadow-pop:
     0 1px 2px rgba(59, 45, 33, 0.16), 0 10px 32px rgba(59, 45, 33, 0.16),

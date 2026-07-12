@@ -146,6 +146,29 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
           .run(),
     },
     {
+      id: 'toggle',
+      title: 'Toggle',
+      subtitle: 'Collapsible section (details/summary)',
+      icon: <IconList />,
+      keywords: ['toggle', 'collapse', 'details', 'fold', 'accordion'],
+      run: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).setDetails().run()
+        // Open the fresh toggle — otherwise Enter from the summary escapes
+        // below the block instead of dropping into the fold. The nodeview's
+        // own button is the supported way to flip the open state.
+        requestAnimationFrame(() => {
+          const { from } = editor.state.selection
+          const dom = editor.view.domAtPos(from).node
+          const el = dom instanceof Element ? dom : dom.parentElement
+          const details = el?.closest('[data-type="details"]')
+          if (details && !details.classList.contains('is-open')) {
+            details.querySelector<HTMLButtonElement>(':scope > button')?.click()
+            editor.commands.focus()
+          }
+        })
+      },
+    },
+    {
       id: 'image',
       title: 'Image',
       subtitle: 'Upload from your device',
