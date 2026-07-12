@@ -41,11 +41,22 @@ function sideTitle(p: string, n?: Note): string {
 }
 
 const RECENT_COUNT = 8
+const SIDE_COLLAPSE_KEY = 'adamvaultos.pages.side.collapsed'
 
 export function PagesView({ path }: { path?: string }) {
   const { pages, pagesStatus, pagesError, notes } = useStore()
   const theme = useTheme()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // Collapse the whole sidebar to a bare dark sliver — just "◇ Pages" at the
+  // top so you know where you are. Persisted like the work-tabs rail.
+  const [sideCollapsed, setSideCollapsed] = useState(
+    () => localStorage.getItem(SIDE_COLLAPSE_KEY) === '1',
+  )
+  const toggleSide = () =>
+    setSideCollapsed((c) => {
+      localStorage.setItem(SIDE_COLLAPSE_KEY, c ? '0' : '1')
+      return !c
+    })
   const [creating, setCreating] = useState(false)
   const [sideQuery, setSideQuery] = useState('')
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set())
@@ -110,7 +121,7 @@ export function PagesView({ path }: { path?: string }) {
 
   return (
     <div className="pages" data-testid="pages">
-      <aside className="pages-sidebar">
+      <aside className={`pages-sidebar${sideCollapsed ? ' is-collapsed' : ''}`}>
         <div className="pages-sidebar-head">
           <a
             className="pages-wordmark"
@@ -132,27 +143,50 @@ export function PagesView({ path }: { path?: string }) {
             </svg>
             Pages
           </a>
-          <div className="pages-head-tools">
+          {sideCollapsed ? (
             <button
-              className="icon-btn"
-              data-testid="theme-toggle-pages"
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              aria-label="Toggle light / dark mode"
-              onClick={toggleTheme}
+              className="icon-btn pages-side-toggle"
+              data-testid="pages-side-expand"
+              title="Expand the page list"
+              aria-label="Expand the page list"
+              onClick={toggleSide}
             >
-              {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+              »
             </button>
-            <button
-              className="icon-btn"
-              title="Editor settings"
-              aria-label="Editor settings"
-              onClick={() => setSettingsOpen(true)}
-            >
-              <IconSettings size={15} />
-            </button>
-          </div>
+          ) : (
+            <div className="pages-head-tools">
+              <button
+                className="icon-btn"
+                data-testid="theme-toggle-pages"
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label="Toggle light / dark mode"
+                onClick={toggleTheme}
+              >
+                {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+              </button>
+              <button
+                className="icon-btn"
+                title="Editor settings"
+                aria-label="Editor settings"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <IconSettings size={15} />
+              </button>
+              <button
+                className="icon-btn pages-side-toggle"
+                data-testid="pages-side-collapse"
+                title="Collapse — just the dark rail"
+                aria-label="Collapse the page list"
+                onClick={toggleSide}
+              >
+                «
+              </button>
+            </div>
+          )}
         </div>
 
+        {!sideCollapsed && (
+          <>
         <button
           className="rail-new pages-new"
           onClick={() => void newPage()}
@@ -228,6 +262,8 @@ export function PagesView({ path }: { path?: string }) {
             </>
           )}
         </div>
+          </>
+        )}
       </aside>
 
       <main className="pages-main">

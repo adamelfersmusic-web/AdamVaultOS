@@ -49,6 +49,23 @@
   align-items: center;
   gap: 2px;
 }
+/* Collapse the sidebar to a bare dark sliver — "just want to see it is still
+   Pages": the wordmark stays, everything else goes, the column stays dark. */
+.pages-sidebar {
+  transition: width 0.16s ease;
+}
+.pages-sidebar.is-collapsed {
+  width: 128px;
+  overflow: hidden;
+}
+.pages-side-toggle {
+  font-size: 13px;
+  color: var(--ink-4);
+  line-height: 1;
+}
+.pages-side-toggle:hover {
+  color: var(--ink);
+}
 .pages-wordmark {
   display: inline-flex;
   align-items: center;
