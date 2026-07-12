@@ -680,7 +680,7 @@ export function DatabaseView({
           </div>
         </div>
         <div className="db-peek-body">
-          <PageEditor key={peek} path={peek} />
+          <PageEditor key={peek} path={peek} inPeek />
         </div>
       </section>
     )}
