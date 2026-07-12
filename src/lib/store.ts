@@ -537,6 +537,127 @@ export async function createProject(name: string): Promise<Note> {
   }
 }
 
+/**
+ * F1a — auto-slug: once an `pages/untitled-N` placeholder gets a real title,
+ * its path follows (pages/<slug-of-title>). Only ever fires on untitled
+ * placeholders — a brand-new page has no inbound links, so the rename is
+ * risk-free. Returns the renamed note, or null when no rename applies.
+ */
+export async function renameUntitledPage(
+  oldPath: string,
+  title: string,
+  ifUpdatedAt: string,
+): Promise<Note | null> {
+  if (!/^pages\/untitled(-\d+)?$/.test(oldPath)) return null
+  const a = requireApi()
+  const slug = slugify(title)
+  if (!slug || slug.startsWith('untitled')) return null
+  let target = `${NEW_PAGE.pathPrefix}${slug}`
+  for (let n = 2; (await a.getNote(target)) !== null; n++) {
+    target = `${NEW_PAGE.pathPrefix}${slug}-${n}`
+    if (n > 30) return null
+  }
+  try {
+    const renamed = await a.updateNote(oldPath, { path: target, ifUpdatedAt })
+    const notes = { ...state.notes }
+    delete notes[oldPath]
+    notes[renamed.path] = renamed
+    set({
+      notes,
+      pages: (state.pages ?? []).map((p) => (p === oldPath ? renamed.path : p)),
+    })
+    return renamed
+  } catch (e) {
+    handleAuthFailure(e)
+    return null // rename is best-effort; the save itself already succeeded
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Today layer (PART 25) — the now-surface. `desk/current` is a tiny pointer
+// note whose metadata.target = "what Adam is working on RIGHT NOW"; the daily
+// note lives at desk/<yyyy-mm-dd>; today's to-dos are tasks with when:"today".
+// ---------------------------------------------------------------------------
+
+const CURRENT_PATH = 'desk/current'
+
+export async function fetchCurrentTarget(): Promise<string | null> {
+  try {
+    const n = await requireApi().getNote(CURRENT_PATH)
+    const t = n?.metadata['target']
+    return typeof t === 'string' && t ? t : null
+  } catch (e) {
+    handleAuthFailure(e)
+    return null
+  }
+}
+
+export async function setCurrentNote(targetPath: string): Promise<void> {
+  const a = requireApi()
+  try {
+    const existing = await a.getNote(CURRENT_PATH)
+    if (!existing) {
+      const note = await a.createNote({
+        path: CURRENT_PATH,
+        content: '# Current\n\nPointer to what Adam is working on right now.',
+        tags: ['desk'],
+        metadata: { type: 'note', target: targetPath },
+      })
+      mergeNote(note)
+    } else {
+      await mutateNote(CURRENT_PATH, () => ({ metadata: { target: targetPath } }))
+    }
+    toast('success', 'Pinned as current 📍')
+  } catch (e) {
+    handleAuthFailure(e)
+    toast('error', `Couldn’t pin — ${e instanceof Error ? e.message : e}`)
+  }
+}
+
+/** Local date key — the daily note follows Adam's clock, not UTC. */
+export function todayKey(): string {
+  const d = new Date()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
+/** Open (create if needed) today's daily note; returns its path. */
+export async function ensureTodayNote(): Promise<string> {
+  const a = requireApi()
+  const path = `desk/${todayKey()}`
+  const existing = await a.getNote(path)
+  if (existing) {
+    mergeNote(existing)
+    return path
+  }
+  const title = new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
+  const note = await a.createNote({
+    path,
+    content: `# ${title}\n\n`,
+    tags: ['desk'],
+    metadata: { type: 'note', summary: `Daily note — ${title}.` },
+  })
+  mergeNote(note)
+  if (state.pages && !state.pages.includes(note.path)) {
+    set({ pages: [note.path, ...state.pages] })
+  }
+  return path
+}
+
+/** Promote a task onto today's list (when:"today") or send it back to later. */
+export async function setTaskToday(path: string, on: boolean): Promise<boolean> {
+  return setMetadata(
+    path,
+    { when: on ? 'today' : 'later' },
+    { undo: { when: on ? 'later' : 'today' } },
+  )
+}
+
 export async function loadTags(): Promise<void> {
   if (!api) return
   try {

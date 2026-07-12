@@ -109,7 +109,11 @@ test('World — overview renders the home note; board is scoped; create task + n
   await page.getByTestId('project-card').filter({ hasText: 'Amanda Bridges' }).click()
   await expect(page.getByTestId('world')).toBeVisible()
 
-  // Overview = the home note (rendered, with backlinks machinery available).
+  // The LANDING greets first (1+2): Continue + next items + quiet doors.
+  await expect(page.getByTestId('landing')).toBeVisible()
+
+  // Overview is a door now — the home note renders behind it.
+  await page.locator('.landing-doors button', { hasText: 'overview' }).click()
   await expect(page.locator('.world-overview')).toContainText('Amanda Bridges — Home')
 
   // Board: scoped to this project only.
@@ -129,7 +133,7 @@ test('World — overview renders the home note; board is scoped; create task + n
   // Back to the world → Notes: lists tagged notes, creates one carrying the tag.
   await page.goBack()
   await expect(page.getByTestId('world')).toBeVisible()
-  await page.locator('.world-tab', { hasText: 'Notes' }).click()
+  await page.locator('.landing-doors button', { hasText: 'notes' }).click()
   await expect(page.locator('.world-notes .note-row', { hasText: '00 Home' })).toBeVisible()
 
   await page.getByTestId('world-new-note').click()

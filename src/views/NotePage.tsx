@@ -37,6 +37,7 @@ export function NotePage({ path }: { path: string }) {
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const [editing, setEditing] = useState(false)
+  const [metaOpen, setMetaOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const baseRef = useRef<{ content: string; updatedAt: string } | null>(null)
   const [conflict, setConflict] = useState<Note | null>(null)
@@ -267,13 +268,30 @@ export function NotePage({ path }: { path: string }) {
         </div>
       ) : (
         Object.keys(note.metadata).length > 0 && (
-          <div className="props props-readonly">
-            {Object.entries(note.metadata).map(([k, v]) => (
-              <div className="prop" key={k}>
-                <span className="prop-label">{k}</span>
-                <span className="prop-value">{formatMetaValue(v)}</span>
+          // Progressive disclosure (Adam's law: dead simple by default,
+          // complexity by CHOICE). The raw metadata table — especially long
+          // summary fields — was a wall between the title and the words.
+          // Collapsed behind one small toggle; a click away, never in the way.
+          <div className="props-fold">
+            <button
+              className="props-fold-toggle"
+              aria-expanded={metaOpen}
+              onClick={() => setMetaOpen((o) => !o)}
+              data-testid="props-toggle"
+            >
+              {metaOpen ? '▾' : '▸'} Details
+              <span className="props-fold-count">{Object.keys(note.metadata).length}</span>
+            </button>
+            {metaOpen && (
+              <div className="props props-readonly">
+                {Object.entries(note.metadata).map(([k, v]) => (
+                  <div className="prop" key={k}>
+                    <span className="prop-label">{k}</span>
+                    <span className="prop-value">{formatMetaValue(v)}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )
       )}

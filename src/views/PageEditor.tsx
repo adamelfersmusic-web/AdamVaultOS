@@ -19,7 +19,9 @@ import {
   forceContent,
   getState,
   linkNoteAttachment,
+  renameUntitledPage,
   saveContent,
+  setCurrentNote,
   toast,
   uploadImage,
   useStore,
@@ -134,6 +136,14 @@ export function PageEditor({ path }: { path: string }) {
       baseRef.current = { content: updated.content ?? md, updatedAt: updated.updatedAt }
       setDirty(false)
       setConflict(null)
+      // F1a — auto-slug: an untitled placeholder follows its first real title
+      // (pages/untitled-N → pages/<slug>). Safe: new pages have no inbound
+      // links yet. On success, swap the route to the new path.
+      const h1 = md.match(/^\s{0,3}#{1,6}[ \t]+(.+?)[ \t]*$/m)?.[1]
+      if (h1 && /^pages\/untitled(-\d+)?$/.test(path)) {
+        const renamed = await renameUntitledPage(path, h1, updated.updatedAt)
+        if (renamed) navigate({ kind: 'pages', path: renamed.path })
+      }
     } catch (e) {
       if (e instanceof ContentDivergedError) setConflict(e.fresh)
       else toast('error', `Couldn’t save — ${e instanceof Error ? e.message : e}`)
@@ -437,6 +447,15 @@ export function PageEditor({ path }: { path: string }) {
           {saveLabel}
         </span>
         <div className="page-tools">
+          <button
+            className="page-tool"
+            title="Set as current — what I'm working on right now"
+            aria-label="Set as current"
+            data-testid="set-current"
+            onClick={() => void setCurrentNote(path)}
+          >
+            📍
+          </button>
           <button
             className="page-tool"
             title="Fullscreen (Esc to exit)"

@@ -429,6 +429,8 @@ export class VaultApi {
       content?: string
       metadata?: NoteMetadata
       tags?: { add?: string[]; remove?: string[] }
+      /** Rename/move the note (vault PATCH supports `path`). */
+      path?: string
       ifUpdatedAt: string
     },
   ): Promise<Note> {
@@ -436,6 +438,7 @@ export class VaultApi {
     if (patch.content !== undefined) body.content = patch.content
     if (patch.metadata !== undefined) body.metadata = patch.metadata
     if (patch.tags !== undefined) body.tags = patch.tags
+    if (patch.path !== undefined) body.path = patch.path
     const updated = await this.withNoteRoute(idOrPath, (enc) =>
       this.request<Note>('PATCH', `/notes/${enc}`, body),
     )

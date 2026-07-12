@@ -9,6 +9,7 @@ import { createProject, loadProjects, loadTracker, toast, useStore } from '../li
 import { navigate } from '../lib/router'
 import { projectProgress, STATUS_COLORS, toProjects, type Project } from '../domain/projects'
 import { IconPlus, IconRefresh } from '../components/Icons'
+import { TodayStrip } from '../components/TodayStrip'
 
 /** The deck is capped — six big things, no more. Calm by law. */
 const MAX_PROJECTS = 6
@@ -140,6 +141,8 @@ export function ProjectsView() {
           </button>
         </div>
       </header>
+
+      <TodayStrip />
 
       {projectsStatus === 'error' ? (
         <div className="db-state">
