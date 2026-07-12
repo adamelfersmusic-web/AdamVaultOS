@@ -33,3 +33,13 @@ export const closeNewScript = () => set({ newScriptOpen: false })
 export const openAskAi = () => set({ askAiOpen: true, paletteOpen: false })
 export const closeAskAi = () => set({ askAiOpen: false })
 export const toggleAskAi = () => set({ askAiOpen: !state.askAiOpen })
+
+/** Fired when something OUTSIDE the page editor (Ask AI insert) writes to the
+ * note that editor has open, so it can re-sync in place. detail:
+ * { path, content, updatedAt }. */
+export const PAGE_EXTERNAL_UPDATE_EVENT = 'adamvaultos:page-external-update'
+export function announcePageUpdate(path: string, content: string, updatedAt: string) {
+  window.dispatchEvent(
+    new CustomEvent(PAGE_EXTERNAL_UPDATE_EVENT, { detail: { path, content, updatedAt } }),
+  )
+}
