@@ -1190,3 +1190,18 @@
   font-variant-numeric: tabular-nums;
 }
 .pages-item-indent { padding-left: 22px; }
+
+/* N5 — fullscreen: the fullscreened editor leaves its scrolling parent
+   (.pages-main) behind, so it must scroll itself or the content below the
+   fold is unreachable. */
+.page-editor:fullscreen {
+  overflow-y: auto;
+  height: 100vh;
+  background:
+    radial-gradient(
+      120% 50% at 50% -12%,
+      color-mix(in srgb, var(--gold) 3.5%, transparent),
+      transparent 70%
+    ),
+    var(--bg);
+}

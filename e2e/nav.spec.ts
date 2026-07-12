@@ -98,6 +98,25 @@ test('N3 — Pages sidebar: search, Recent, and collapsible visual folders', asy
   await expect(page.locator('.pages-item', { hasText: 'Atelier SOP' })).toHaveCount(0)
 })
 
+test('N5 — fullscreen editor scrolls (long doc reachable below the fold)', async ({ page }) => {
+  const long = '# Long Doc\n\n' + Array.from({ length: 120 }, (_, i) => `Paragraph ${i + 1}.`).join('\n\n')
+  await seed(page, 'pages/long-doc', long, ['type/page'], {})
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/pages/' + encodeURIComponent('pages/long-doc'))
+  await expect(page.locator('.page-prose')).toContainText('Paragraph 1.')
+
+  await page.locator('.page-tool[title^="Fullscreen"]').click()
+  const state = await page.evaluate(() => {
+    const el = document.querySelector('.page-editor') as HTMLElement
+    const isFs = document.fullscreenElement === el
+    el.scrollTop = 500
+    return { isFs, scrolled: el.scrollTop }
+  })
+  expect(state.isFs).toBe(true)
+  expect(state.scrolled).toBeGreaterThan(0) // the fullscreened editor scrolls itself
+})
+
 test('Cockpit — + New project creates a card; the deck caps at 6', async ({ page }) => {
   for (let i = 1; i <= 5; i++) {
     await seed(page, `projects/p${i}`, `# Project ${i}`, ['project'], {
