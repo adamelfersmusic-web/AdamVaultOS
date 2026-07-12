@@ -22,6 +22,7 @@ import {
 import { renderMarkdown } from '../lib/markdown'
 import { relativeTime } from '../lib/format'
 import { IconPlus, IconClose, IconBack } from '../components/Icons'
+import { CardEditor } from '../components/CardEditor'
 
 const CANVAS_PREFIX = 'canvas/'
 const GRID = 20
@@ -205,19 +206,36 @@ function CanvasSurface({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [title, setTitle] = useState(board.title)
+  // The card that should open straight into edit mode (just created).
+  const [freshPath, setFreshPath] = useState<string | null>(null)
   useEffect(() => setTitle(board.title), [board.title, board.path])
+
+  const createAt = async (x: number, y: number) => {
+    try {
+      const note = await createCanvasCard(board.id, {
+        x: Math.max(0, snap(x)),
+        y: Math.max(0, snap(y)),
+        w: CARD_W,
+        h: CARD_H,
+      })
+      upsert(note)
+      setFreshPath(note.path) // open it in edit immediately
+    } catch (e) {
+      toast('error', `Couldn’t add card — ${e instanceof Error ? e.message : e}`)
+    }
+  }
 
   const addCard = async () => {
     const el = scrollRef.current
     // Drop the card near the top-left of what's currently in view.
-    const x = snap((el?.scrollLeft ?? 0) + 48)
-    const y = snap((el?.scrollTop ?? 0) + 48)
-    try {
-      const note = await createCanvasCard(board.id, { x, y, w: CARD_W, h: CARD_H })
-      upsert(note)
-    } catch (e) {
-      toast('error', `Couldn’t add card — ${e instanceof Error ? e.message : e}`)
-    }
+    await createAt((el?.scrollLeft ?? 0) + 48, (el?.scrollTop ?? 0) + 48)
+  }
+
+  // C1 — double-click empty canvas → a card right there, already in edit.
+  const onPlaneDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('.canvas-card')) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    void createAt(e.clientX - rect.left, e.clientY - rect.top)
   }
 
   const commitTitle = async () => {
@@ -276,14 +294,22 @@ function CanvasSurface({
       </header>
 
       <div className="canvas-scroll" ref={scrollRef}>
-        <div className="canvas-plane">
+        <div className="canvas-plane" onDoubleClick={onPlaneDoubleClick} data-testid="canvas-plane">
           {cards.length === 0 && (
             <div className="canvas-empty-hint">
-              Hit <b>Add card</b> and start writing. Drag the header to move · drag the corner to resize.
+              <b>Double-click anywhere</b> to drop a card. Drag the header to move · drag the
+              corner to resize · <code>/todo</code> for checkboxes, Tab to nest.
             </div>
           )}
           {cards.map((card) => (
-            <CanvasCard key={card.path} note={card} upsert={upsert} remove={remove} />
+            <CanvasCard
+              key={card.path}
+              note={card}
+              upsert={upsert}
+              remove={remove}
+              autoEdit={card.path === freshPath}
+              onEditClosed={() => setFreshPath((p) => (p === card.path ? null : p))}
+            />
           ))}
         </div>
       </div>
@@ -306,10 +332,15 @@ function CanvasCard({
   note,
   upsert,
   remove,
+  autoEdit = false,
+  onEditClosed,
 }: {
   note: Note
   upsert: (n: Note) => void
   remove: (path: string) => void
+  /** Freshly created via double-click — open straight into edit. */
+  autoEdit?: boolean
+  onEditClosed?: () => void
 }) {
   const base: Geom = {
     x: num(note.metadata?.['x'], 40),
@@ -319,15 +350,15 @@ function CanvasCard({
   }
   // Live geometry while dragging/resizing (avoids a vault write per frame).
   const [live, setLive] = useState<Geom | null>(null)
-  const [editing, setEditing] = useState(false)
-  const [text, setText] = useState(note.content ?? '')
+  const [editing, setEditing] = useState(autoEdit)
   const drag = useRef<{ mode: 'move' | 'resize'; sx: number; sy: number; start: Geom } | null>(null)
   const latest = useRef<Note>(note)
   latest.current = note
 
-  useEffect(() => {
-    if (!editing) setText(note.content ?? '')
-  }, [note.content, editing])
+  const closeEdit = () => {
+    setEditing(false)
+    onEditClosed?.()
+  }
 
   const geom = live ?? base
 
@@ -392,17 +423,15 @@ function CanvasCard({
     window.addEventListener('pointerup', endDrag)
   }
 
-  const saveText = async () => {
-    setEditing(false)
-    const next = text
-    if (next === (latest.current.content ?? '')) return
+  const saveMarkdown = async (md: string) => {
+    closeEdit()
     const cur = latest.current
+    if (md.trim() === (cur.content ?? '').trim()) return
     try {
-      const updated = await updateCanvasNote(cur.path, cur.updatedAt, { content: next })
+      const updated = await updateCanvasNote(cur.path, cur.updatedAt, { content: md })
       upsert(updated)
     } catch (e) {
       toast('error', `Couldn’t save card — ${e instanceof Error ? e.message : e}`)
-      setText(cur.content ?? '')
     }
   }
 
@@ -437,21 +466,13 @@ function CanvasCard({
       </header>
 
       {editing ? (
-        <textarea
-          className="canvas-card-textarea"
-          autoFocus
-          value={text}
-          placeholder="Write markdown…"
-          onChange={(e) => setText(e.target.value)}
-          onBlur={() => void saveText()}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              setText(note.content ?? '')
-              setEditing(false)
-            }
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') void saveText()
-          }}
-        />
+        <div className="canvas-card-edit">
+          <CardEditor
+            value={note.content ?? ''}
+            onSave={(md) => void saveMarkdown(md)}
+            onCancel={closeEdit}
+          />
+        </div>
       ) : (
         <div
           className={`canvas-card-body${empty ? ' is-empty' : ''}`}

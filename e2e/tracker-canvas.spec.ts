@@ -111,7 +111,7 @@ test('Row-as-page — a task opens with an editable property panel', async ({ pa
   expect(errors, errors.join('\n')).toEqual([])
 })
 
-test('Canvas — create a canvas, add a card, write to it', async ({ page }) => {
+test('Canvas v2 — double-click adds a card in the BLOCK editor; /todo + Tab nests; markdown round-trips', async ({ page }) => {
   await connectViaStorage(page)
 
   const errors: string[] = []
@@ -123,15 +123,40 @@ test('Canvas — create a canvas, add a card, write to it', async ({ page }) => 
   await page.getByRole('button', { name: 'New canvas' }).first().click()
   await expect(page.locator('.canvas-title-input')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Add card' }).click()
+  // C1 — double-click empty canvas → a card right there, already editing
+  // (block editor, NOT a raw-markdown textarea).
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 600, y: 320 } })
   await expect(page.locator('.canvas-card')).toHaveCount(1)
+  const prose = page.locator('.card-prose')
+  await expect(prose).toBeVisible()
+  await expect(page.locator('.canvas-card-textarea')).toHaveCount(0)
 
-  // Double-click the body to edit, type markdown, blur to save.
-  await page.locator('.canvas-card-body').dblclick()
-  await page.locator('.canvas-card-textarea').fill('# Hello canvas\n\nDrag me around.')
-  await page.locator('.canvas-title-input').click() // blur the textarea → save
+  // Blocks, not markdown: heading via input rule, then /todo from the slash
+  // menu, then Tab to NEST (C3).
+  await page.keyboard.type('# Launch brain')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/todo')
+  await expect(page.locator('.slash-menu')).toBeVisible()
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Ship it')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('sub-step')
+  await expect(prose.locator('ul[data-type=taskList] ul[data-type=taskList]')).toHaveCount(1)
 
-  await expect(page.locator('.canvas-card-body')).toContainText('Hello canvas')
+  // Blur (click the top bar) → saves; read view renders rich.
+  await page.locator('.canvas-title-input').click()
+  await expect(page.locator('.canvas-card-body')).toContainText('Ship it')
+  await expect(page.locator('.canvas-card-body h1, .canvas-card-body h2, .canvas-card-body h3').first()).toContainText('Launch brain')
+
+  // The vault got clean MARKDOWN (storage format survives the round-trip).
+  const list = await page.request.get(`${MOCK}/api/notes?path_prefix=${encodeURIComponent('canvas/')}&include_content=true`, { headers: AUTH })
+  const notesList = (await list.json()) as Array<{ path: string; content?: string; metadata?: Record<string, unknown> }>
+  const card = notesList.find((n) => n.content?.includes('Ship it'))
+  expect(card, 'card note with content exists').toBeTruthy()
+  expect(card!.content).toMatch(/# Launch brain/)
+  expect(card!.content).toMatch(/- \[ \] Ship it/)
+  expect(card!.content).toMatch(/\n\s+- \[ \] sub-step/) // nested via Tab
 
   expect(errors, errors.join('\n')).toEqual([])
 })

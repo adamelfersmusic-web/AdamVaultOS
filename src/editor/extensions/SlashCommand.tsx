@@ -32,6 +32,8 @@ export interface SlashCommandOptions {
   onVoice?: (editor: Editor) => void
   /** Open the image file picker to upload an attachment; `at` is the slash pos. */
   onUploadImage?: (editor: Editor, at: number) => void
+  /** Item ids to hide — e.g. a canvas card omits image/subpage/ai/voice. */
+  exclude?: string[]
 }
 
 interface SlashItem {
@@ -283,7 +285,8 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
         startOfLine: false,
         items: ({ query }) => {
           const q = query.toLowerCase().trim()
-          const items = buildItems(options)
+          const excluded = new Set(options.exclude ?? [])
+          const items = buildItems(options).filter((it) => !excluded.has(it.id))
           if (!q) return items
           return items.filter(
             (it) =>
