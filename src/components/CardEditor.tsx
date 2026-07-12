@@ -46,7 +46,7 @@ export function CardEditor({
       WikiLinkSuggest,
       SlashCommand.configure({
         // No toggle/table either — those nodes aren't registered in cards.
-        exclude: ['image', 'subpage', 'ai', 'voice', 'toggle', 'toggle-h1', 'toggle-h2', 'table', 'board'],
+        exclude: ['image', 'subpage', 'ai', 'voice', 'toggle', 'toggle-h1', 'toggle-h2', 'table', 'board', 'kanban'],
       }),
     ],
     editorProps: {

@@ -373,3 +373,66 @@ test('T3/T4/T6 — table bar grows tables; fold wraps selection; /board embeds a
 
   expect(errors, errors.join('\n')).toEqual([])
 })
+
+test('PR3 kanban — /kanban inserts a standalone board; GFM-table storage; byte-stable', async ({ page }) => {
+  await seed(page, 'pages/kb', '# KB\n\nend line')
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await openPage(page, 'pages/kb')
+  await page.locator('.page-prose').getByText('end line').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/kanban')
+  await expect(page.locator('.slash-menu')).toBeVisible()
+  await page.keyboard.press('Enter')
+
+  const kb = page.getByTestId('kanban')
+  await expect(kb).toBeVisible()
+  await expect(kb.getByTestId('kanban-lane')).toHaveCount(3) // To do / Doing / Done
+
+  // Add a card in "To do".
+  await kb.getByTestId('kanban-add-card').first().click()
+  await page.keyboard.type('Buy cables')
+  await page.keyboard.press('Enter')
+  await expect(kb.getByTestId('kanban-card')).toHaveCount(1)
+
+  // Move it right → lands in "Doing".
+  await kb.getByTestId('kanban-card').hover()
+  await kb.locator('.kanban-card-tools button[title="Move right"]').click()
+  await expect(
+    kb.getByTestId('kanban-lane').nth(1).getByTestId('kanban-card'),
+  ).toHaveCount(1)
+
+  // The vault gets an INVISIBLE marker + a clean GFM pipe table (renders as a
+  // plain table in every other markdown renderer — Adam's law).
+  await expect.poll(() => savedContent(page, 'pages/kb')).toContain('<!--kanban-->')
+  const md = await savedContent(page, 'pages/kb')
+  expect(md).toContain('| To do | Doing | Done |')
+  expect(md).toContain('| --- | --- | --- |')
+  expect(md).toContain('|  | Buy cables |  |')
+
+  // Reload → parses back into a live board; unrelated edit stays byte-stable.
+  await page.reload()
+  const kb2 = page.getByTestId('kanban')
+  await expect(kb2).toBeVisible()
+  await expect(kb2.getByTestId('kanban-card')).toContainText('Buy cables')
+  const before = await savedContent(page, 'pages/kb')
+  await page.locator('.page-prose').getByText('end line').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' ping')
+  await expect
+    .poll(() => savedContent(page, 'pages/kb'))
+    .toBe(before.replace('end line', 'end line ping'))
+
+  // Rename a lane + add a second lane's card → all in the table.
+  await kb2.locator('.kanban-lane-title').first().click()
+  await page.keyboard.press('ControlOrMeta+a')
+  await page.keyboard.type('Backlog')
+  await page.keyboard.press('Enter')
+  await expect.poll(() => savedContent(page, 'pages/kb')).toContain('| Backlog | Doing | Done |')
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
