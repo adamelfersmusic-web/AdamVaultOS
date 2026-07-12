@@ -7,7 +7,7 @@
 // when Adam clicks Insert (propose-don't-apply, as law).
 
 import { useEffect, useRef, useState } from 'react'
-import { closeAskAi, openAskAi, useUi } from '../lib/ui'
+import { announcePageUpdate, closeAskAi, openAskAi, useUi } from '../lib/ui'
 import { useRoute } from '../lib/router'
 import { saveContent, toast, useStore } from '../lib/store'
 import { useEditorSettings, openPagesSettings } from '../lib/editorSettings'
@@ -63,6 +63,16 @@ export function AskAi() {
     const el = threadRef.current
     if (el) el.scrollTop = el.scrollHeight
   }, [msgs])
+
+  // Fresh thread every open — deterministic (previously it depended on which
+  // layout you were in) and keeps re-sent history, i.e. cost, at zero between
+  // sessions. Adam's call 2026-07-12.
+  useEffect(() => {
+    if (!askAiOpen) {
+      setMsgs([])
+      setInput('')
+    }
+  }, [askAiOpen])
 
   // Closed: a floating pill so every layout (incl. full-bleed Pages/Graph,
   // which have no rail) still has a visible way in. ⌘J works everywhere too.
@@ -154,11 +164,13 @@ export function AskAi() {
         content: pageNote.content ?? '',
       }
       const body = base.content.trimEnd()
-      await saveContent(
+      const updated = await saveContent(
         pageNote.path,
         `${body ? `${body}\n\n` : ''}${text.trim()}\n`,
         base,
       )
+      // Tell an open editor to re-sync in place (it won't clobber live edits).
+      announcePageUpdate(updated.path, updated.content ?? '', updated.updatedAt)
       toast('success', `Added to ${titleFromPath(pageNote.path)}`)
     } catch {
       toast('error', 'Insert failed — the page changed underneath. Copy instead.')

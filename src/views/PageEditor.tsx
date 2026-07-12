@@ -34,6 +34,7 @@ import {
   type LinkedNote,
 } from '../lib/store'
 import { navigate, setRouteGuard } from '../lib/router'
+import { PAGE_EXTERNAL_UPDATE_EVENT } from '../lib/ui'
 import { relativeTime, titleFromPath } from '../lib/format'
 import { fuzzyScore } from '../lib/fuzzy'
 import { databaseForPath } from '../domain/databases'
@@ -271,8 +272,25 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
         }
       })
 
+    // Ask AI's "Insert into page" (or any external writer) announces its save;
+    // re-sync the editor in place — but never clobber live unsaved edits (a
+    // dirty editor keeps its buffer; the external text is already in the vault
+    // and the normal conflict flow reconciles on the next save).
+    const onExternal = (e: Event) => {
+      const detail = (e as CustomEvent).detail as
+        | { path?: string; content?: string; updatedAt?: string }
+        | undefined
+      if (!detail || detail.path !== path || cancelled) return
+      if (loadingRef.current || !baseRef.current || !editor) return
+      const clean = editor.getMarkdown() === baseRef.current.content
+      if (!clean) return
+      apply(detail.content ?? '', detail.updatedAt ?? '')
+    }
+    window.addEventListener(PAGE_EXTERNAL_UPDATE_EVENT, onExternal)
+
     return () => {
       cancelled = true
+      window.removeEventListener(PAGE_EXTERNAL_UPDATE_EVENT, onExternal)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor])

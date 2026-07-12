@@ -177,6 +177,14 @@ test.describe('Ask AI panel', () => {
 
     await page.getByTestId('askai-insert').click()
 
+    // The OPEN editor re-syncs in place — no navigation needed (the glitch
+    // Adam hit: insert saved to the vault but the mounted editor never
+    // reloaded until you left Pages and came back).
+    await expect(page.locator('.page-prose')).toContainText(
+      'A crisp new paragraph.',
+      { timeout: 10_000 },
+    )
+
     // The vault note now ends with the inserted answer.
     await expect
       .poll(async () => {
