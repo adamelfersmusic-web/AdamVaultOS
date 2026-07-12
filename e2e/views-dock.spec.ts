@@ -114,3 +114,32 @@ test('dock Pad ⤢ Open as doc — jot lands in today’s daily note, pad clears
   await page.locator('.dock-fab', { hasText: '✎' }).click()
   await expect(page.locator('.dock-pad')).toHaveValue('')
 })
+
+test('T5 — a dock todo files into a project as a real task', async ({ page }) => {
+  const res = await page.request.post(`${MOCK}/api/notes`, {
+    headers: AUTH,
+    data: { path: 'projects/amanda', content: '# Amanda', tags: ['project'], metadata: { key: 'amanda', tag: 'amanda', status: 'active', order: 1, summary: 'x' } },
+  })
+  expect(res.status()).toBe(201)
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  await page.locator('.dock-fab', { hasText: '☑' }).click()
+  await page.locator('.dock-input').fill('Call the venue about parking')
+  await page.keyboard.press('Enter')
+  await page.getByTestId('todo-to-project').first().click()
+  await expect(page.getByTestId('todo-assign')).toBeVisible()
+  await page.getByTestId('todo-assign').locator('button', { hasText: 'File' }).click()
+
+  // Task note exists with tracker defaults; the local todo is gone.
+  await expect
+    .poll(async () => {
+      const r = await page.request.get(
+        `${MOCK}/api/notes?id=${encodeURIComponent('tasks/amanda/call-the-venue-about-parking')}`,
+        { headers: AUTH },
+      )
+      return r.ok() ? ((await r.json()) as { metadata?: Record<string, unknown> }).metadata?.project : null
+    })
+    .toBe('amanda')
+  await expect(page.locator('.dock-todo')).toHaveCount(0)
+})

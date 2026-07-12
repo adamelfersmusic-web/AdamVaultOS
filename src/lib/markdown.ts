@@ -82,8 +82,18 @@ function linkWikilinks(src: string): string {
   )
 }
 
+// T6 — the board-embed marker renders as a link in the read view (the live
+// board itself only mounts in the editor). Applied pre-parse like wikilinks.
+function stageBoardEmbeds(src: string): string {
+  return src.replace(
+    /^!\[\[board:([a-z0-9-]*)\]\]$/gm,
+    (_m, key: string) =>
+      `<a class="board-embed-link" href="#/tracker/board">📊 ${key || 'project'} board →</a>`,
+  )
+}
+
 export function renderMarkdown(src: string): string {
-  const html = styleCallouts(marked.parse(stageVaultImages(linkWikilinks(src))) as string)
+  const html = styleCallouts(marked.parse(stageVaultImages(linkWikilinks(stageBoardEmbeds(src)))) as string)
   return DOMPurify.sanitize(html, {
     USE_PROFILES: { html: true },
     FORBID_TAGS: ['style'],

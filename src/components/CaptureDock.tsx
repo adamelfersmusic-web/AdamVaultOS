@@ -6,8 +6,16 @@
 // vault API (the dashboard's captureToVault was a stub). Opens with ⌘⇧K
 // (⌘K is the command palette).
 
-import { useEffect, useRef, useState } from 'react'
-import { createCapture, promotePadToToday, toast } from '../lib/store'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  createCapture,
+  createTask,
+  loadProjects,
+  promotePadToToday,
+  toast,
+  useStore,
+} from '../lib/store'
+import { toProjects } from '../domain/projects'
 import { navigate } from '../lib/router'
 
 type Tab = 'capture' | 'todos' | 'pad'
@@ -39,6 +47,37 @@ export function CaptureDock() {
   const [newTodo, setNewTodo] = useState('')
   const [pad, setPad] = useState(() => localStorage.getItem(PAD_KEY) ?? '')
   const [promoting, setPromoting] = useState(false)
+  // T5 — a dock todo can graduate into a REAL project task (queryable, on
+  // the project board) instead of living in localStorage forever.
+  const { projects, projectsStatus, notes } = useStore()
+  const [assigning, setAssigning] = useState<string | null>(null)
+  const [assignKey, setAssignKey] = useState('')
+  const [filing, setFiling] = useState(false)
+  useEffect(() => {
+    if (assigning && projectsStatus === 'idle') void loadProjects()
+  }, [assigning, projectsStatus])
+  const projectOptions = useMemo(
+    () => toProjects((projects ?? []).map((p) => notes[p]).filter(Boolean)),
+    [projects, notes],
+  )
+  useEffect(() => {
+    if (!assignKey && projectOptions.length > 0) setAssignKey(projectOptions[0].key)
+  }, [projectOptions, assignKey])
+
+  const fileTodoToProject = async (todo: Todo) => {
+    if (!assignKey || filing) return
+    setFiling(true)
+    try {
+      await createTask(assignKey, todo.text)
+      setTodos((list) => list.filter((x) => x.id !== todo.id))
+      setAssigning(null)
+      toast('success', `Filed to ${assignKey} — it's on the board now`)
+    } catch (e) {
+      toast('error', `Couldn’t file the task — ${e instanceof Error ? e.message : e}`)
+    } finally {
+      setFiling(false)
+    }
+  }
   const panelRef = useRef<HTMLDivElement>(null)
   const captureRef = useRef<HTMLTextAreaElement>(null)
 
@@ -188,23 +227,55 @@ export function CaptureDock() {
               <div className="dock-todos">
                 {todos.length === 0 && <p className="dock-empty">No todos yet.</p>}
                 {todos.map((t) => (
-                  <label key={t.id} className="dock-todo" data-done={t.done || undefined}>
-                    <input
-                      type="checkbox"
-                      checked={t.done}
-                      onChange={() =>
-                        setTodos((list) => list.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)))
-                      }
-                    />
-                    <span>{t.text}</span>
-                    <button
-                      className="dock-todo-x"
-                      title="Remove"
-                      onClick={() => setTodos((list) => list.filter((x) => x.id !== t.id))}
-                    >
-                      ✕
-                    </button>
-                  </label>
+                  <div key={t.id}>
+                    <label className="dock-todo" data-done={t.done || undefined}>
+                      <input
+                        type="checkbox"
+                        checked={t.done}
+                        onChange={() =>
+                          setTodos((list) => list.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)))
+                        }
+                      />
+                      <span>{t.text}</span>
+                      <button
+                        className="dock-todo-file"
+                        title="File to a project — becomes a real task on its board"
+                        data-testid="todo-to-project"
+                        onClick={() => setAssigning(assigning === t.id ? null : t.id)}
+                      >
+                        ➜
+                      </button>
+                      <button
+                        className="dock-todo-x"
+                        title="Remove"
+                        onClick={() => setTodos((list) => list.filter((x) => x.id !== t.id))}
+                      >
+                        ✕
+                      </button>
+                    </label>
+                    {assigning === t.id && (
+                      <div className="dock-todo-assign" data-testid="todo-assign">
+                        <select value={assignKey} onChange={(e) => setAssignKey(e.target.value)}>
+                          {projectOptions.length === 0 && <option value="">no projects</option>}
+                          {projectOptions.map((p) => (
+                            <option key={p.key} value={p.key}>
+                              {p.title}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          className="dock-add-btn"
+                          disabled={filing || !assignKey}
+                          onClick={() => void fileTodoToProject(t)}
+                        >
+                          File
+                        </button>
+                        <button className="dock-todo-x" onClick={() => setAssigning(null)}>
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
               <div className="dock-todo-add">
