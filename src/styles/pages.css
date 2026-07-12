@@ -1463,7 +1463,10 @@
   min-width: 0;
 }
 .page-prose [data-type='detailsSummary'] {
+  font-family: var(--font-display);
+  font-size: 17px;
   font-weight: 600;
+  color: var(--ink);
   outline: none;
 }
 .page-prose [data-type='detailsContent'] {
@@ -1482,10 +1485,39 @@
 .md summary,
 .note-body summary {
   cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 17px;
   font-weight: 600;
   color: var(--ink);
 }
 .md details[open] > summary,
 .note-body details[open] > summary {
   margin-bottom: 6px;
+}
+
+/* Tables — GFM pipe tables in the block editor */
+.page-prose table {
+  border-collapse: collapse;
+  margin: 0.6em 0;
+  width: 100%;
+}
+.page-prose th,
+.page-prose td {
+  border: 1px solid var(--line-2);
+  padding: 6px 10px;
+  font-size: 13.5px;
+  text-align: left;
+  min-width: 60px;
+  position: relative;
+}
+.page-prose th {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+.page-prose .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  pointer-events: none;
 }
