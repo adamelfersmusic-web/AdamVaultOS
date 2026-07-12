@@ -108,7 +108,7 @@ test('color — format bar writes a safe <span style>, round-trips, stays stable
   await openPage(page, 'pages/rich')
   await selectWord(page, 'alpha', 'gamma')
   await expect(page.getByTestId('format-bar')).toBeVisible()
-  await page.locator('.fmt-color').nth(2).click() // Blue
+  await page.locator('.fmt-font-color').nth(2).click() // Blue
 
   await expect
     .poll(() => savedContent(page, 'pages/rich'))
@@ -194,4 +194,38 @@ test('pre-existing rich note — read view renders all three; body round-trip is
   expect(after).toContain('==hot take== stays marked.')
   expect(after).toContain('<span style="color: #c4445a">red alert</span> text.')
   expect(after).toContain('<details>\n<summary>The fold</summary>\n\n- [ ] inside task\n</details>')
+})
+
+test('colored highlight — hover swatches write <mark style>, round-trips', async ({ page }) => {
+  await seed(page, 'pages/rich', '# Rich\n\nalpha beta gamma')
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await openPage(page, 'pages/rich')
+  await selectWord(page, 'alpha', 'beta')
+  await page.getByTestId('fmt-hl-group').hover()
+  await page.locator('.fmt-hl-colors .fmt-color').nth(4).click() // Purple wash
+
+  await expect
+    .poll(() => savedContent(page, 'pages/rich'))
+    .toContain('alpha <mark style="background-color: #7a5c9e66">beta</mark> gamma')
+
+  // Reload → the colored mark is back; unrelated edit keeps it intact.
+  await page.reload()
+  await expect(page.locator('.page-prose mark[data-color]')).toHaveText('beta')
+  await page.locator('.page-prose').getByText('alpha').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('ping')
+  await expect
+    .poll(() => savedContent(page, 'pages/rich'))
+    .toContain('alpha <mark style="background-color: #7a5c9e66">beta</mark> gamma')
+
+  // Read view renders the wash natively.
+  await page.goto('http://127.0.0.1:4173/#/note/' + encodeURIComponent('pages/rich'))
+  await expect(page.locator('mark[style*="background-color"]', { hasText: 'beta' }).first()).toBeVisible()
+
+  expect(errors, errors.join('\n')).toEqual([])
 })
