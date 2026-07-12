@@ -62,6 +62,12 @@ test('Tracker ＋ New task — project picker, lands in row-as-page', async ({ p
   await page.goto('http://127.0.0.1:4173/#/tracker')
   await expect(page.locator('.db-title')).toHaveText('Tracker')
 
+  // The nav rail collapses on any view for max real estate, and it sticks.
+  await page.getByTestId('rail-collapse').click()
+  await expect(page.locator('.rail')).toHaveClass(/is-collapsed/)
+  await page.getByTestId('rail-collapse').click()
+  await expect(page.locator('.rail')).not.toHaveClass(/is-collapsed/)
+
   await page.getByTestId('tracker-new-task').click()
   const form = page.getByTestId('tracker-new-task-form')
   await expect(form).toBeVisible()
@@ -82,7 +88,11 @@ test('Tracker ＋ New task — project picker, lands in row-as-page', async ({ p
   const peek = page.getByTestId('db-peek')
   await expect(peek).toBeVisible()
   await expect(page.locator('.db-title')).toBeVisible() // tracker still on screen
+  // Notion-style peek: the task title is BIG at the top, editable props under it.
+  await expect(peek.getByTestId('db-peek-title')).toHaveText('Wire the pitch deck')
   await expect(peek.locator('[data-testid="record-props"]')).toBeVisible()
+  // The peek is resizable (drag divider present).
+  await expect(page.getByTestId('db-peek-resize')).toBeVisible()
 
   // Inside the peek there's no back button — the tracker is already on screen.
   await expect(peek.getByTestId('back-to-tracker')).toHaveCount(0)

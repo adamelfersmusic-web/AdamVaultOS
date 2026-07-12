@@ -14,10 +14,18 @@ import { Chip, chipFor } from './Chip'
 import { Popover } from './Popover'
 import { IconCheck } from './Icons'
 
-export function RecordProperties({ note, def }: { note: Note; def: DatabaseDef }) {
+export function RecordProperties({
+  note,
+  def,
+  variant = 'full',
+}: {
+  note: Note
+  def: DatabaseDef
+  variant?: 'full' | 'peek'
+}) {
   return (
-    <div className="record-props" data-testid="record-props">
-      <div className="record-props-label">{def.title} · properties</div>
+    <div className={`record-props record-props--${variant}`} data-testid="record-props">
+      {variant === 'full' && <div className="record-props-label">{def.title} · properties</div>}
       <div className="record-props-grid">
         {def.fields.map((field) => (
           <div className="prop-row" key={field.key}>

@@ -63,6 +63,13 @@ export function PagesView({ path }: { path?: string }) {
   const [sideQuery, setSideQuery] = useState('')
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set())
 
+  // Canvas cards are their own surface — a card only becomes a browsable page
+  // when you promote it there, so keep canvas/* out of the Pages browser.
+  const pagePaths = useMemo(
+    () => (pages ?? []).filter((p) => !p.startsWith('canvas/')),
+    [pages],
+  )
+
   // Live order: newest-touched first, from the note cache — so the doc you're
   // saving bubbles to the top instead of drifting down a stale list.
   const ordered = useMemo(() => {
@@ -70,8 +77,8 @@ export function PagesView({ path }: { path?: string }) {
       const t = new Date(notes[p]?.updatedAt ?? 0).getTime()
       return Number.isNaN(t) ? 0 : t
     }
-    return [...(pages ?? [])].sort((a, b) => ts(b) - ts(a))
-  }, [pages, notes])
+    return [...pagePaths].sort((a, b) => ts(b) - ts(a))
+  }, [pagePaths, notes])
 
   // N3 — the minimal browser. Searching → the app's ONE relevance ranking
   // (same as the Library: title/slug ≫ path/tags ≫ BODY, AND-terms, phrase
@@ -91,11 +98,11 @@ export function PagesView({ path }: { path?: string }) {
   const filtered = useMemo(() => {
     const q = sideQuery.trim()
     if (!q) return null
-    const list = (pages ?? [])
+    const list = pagePaths
       .map((p) => notes[p])
       .filter((n): n is Note => Boolean(n))
     return rankNotes(q, list, (n) => sideTitle(n.path, n)).map((n) => n.path)
-  }, [sideQuery, pages, notes])
+  }, [sideQuery, pagePaths, notes])
 
   const groups = useMemo(() => {
     const m = new Map<string, string[]>()

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { disconnect, useStore } from '../lib/store'
 import { navigate, type Route } from '../lib/router'
 import { openPalette } from '../lib/ui'
@@ -55,10 +55,30 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
     host = session?.vaultUrl ?? ''
   }
 
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem('adamvaultos.rail.collapsed') === '1',
+  )
+  const toggleRail = () =>
+    setCollapsed((c) => {
+      localStorage.setItem('adamvaultos.rail.collapsed', c ? '0' : '1')
+      return !c
+    })
+
   return (
-    <div className="shell">
-      <aside className="rail">
-        <Wordmark />
+    <div className={`shell${collapsed ? ' rail-collapsed' : ''}`}>
+      <aside className={`rail${collapsed ? ' is-collapsed' : ''}`}>
+        <div className="rail-top">
+          <Wordmark />
+          <button
+            className="rail-collapse"
+            data-testid="rail-collapse"
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            onClick={toggleRail}
+          >
+            {collapsed ? '»' : '«'}
+          </button>
+        </div>
 
         <nav className="rail-nav">
           <a

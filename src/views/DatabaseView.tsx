@@ -29,6 +29,7 @@ import {
 } from '../components/Icons'
 import { TableLens } from './TableLens'
 import { PageEditor } from './PageEditor'
+import { RecordProperties } from '../components/RecordProperties'
 import { BoardLens } from './BoardLens'
 import { GalleryLens } from './GalleryLens'
 
@@ -475,11 +476,40 @@ export function DatabaseView({
     else navigate({ kind: 'pages', path })
   }
 
+  // Drag-to-resize the side peek: the divider writes a % width to localStorage
+  // so the split you pick sticks. Clamped 28–72% so neither pane vanishes.
+  const PEEK_KEY = 'adamvaultos.peek.width'
+  const [peekWidth, setPeekWidth] = useState<number>(() => {
+    const stored = Number(localStorage.getItem(PEEK_KEY))
+    return stored >= 28 && stored <= 72 ? stored : 46
+  })
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault()
+    const move = (ev: MouseEvent) => {
+      const box = wrapRef.current?.getBoundingClientRect()
+      if (!box) return
+      const pct = Math.min(72, Math.max(28, ((box.right - ev.clientX) / box.width) * 100))
+      setPeekWidth(pct)
+    }
+    const up = () => {
+      document.removeEventListener('mousemove', move)
+      document.removeEventListener('mouseup', up)
+      document.body.style.cursor = ''
+      localStorage.setItem(PEEK_KEY, String(Math.round(peekWidthRef.current)))
+    }
+    document.body.style.cursor = 'col-resize'
+    document.addEventListener('mousemove', move)
+    document.addEventListener('mouseup', up)
+  }
+  const peekWidthRef = useRef(peekWidth)
+  peekWidthRef.current = peekWidth
+
   const lensProps: LensProps = { def, rows, observed, saving, onOpen, setField }
   const statusFilters = filters[def.board.field] ?? []
 
   return (
-    <div className={`db-wrap${peek ? ' has-peek' : ''}`}>
+    <div className={`db-wrap${peek ? ' has-peek' : ''}`} ref={wrapRef}>
     <div className="db">
       <header className="db-head">
         <div className="db-title-row">
@@ -656,33 +686,56 @@ export function DatabaseView({
     </div>
 
     {peek && (
-      <section className="db-peek" data-testid="db-peek">
-        <div className="db-peek-bar">
-          <span className="db-peek-path" title={peek}>
-            {peek}
-          </span>
-          <div className="db-peek-actions">
-            <button
-              className="detail-btn"
-              onClick={() => navigate({ kind: 'pages', path: peek })}
-              title="Open as a full page"
-            >
-              Open ↗
-            </button>
-            <button
-              className="detail-btn"
-              data-testid="db-peek-close"
-              onClick={() => setPeek(null)}
-              title="Close"
-            >
-              ✕
-            </button>
+      <>
+        <div
+          className="db-peek-resize"
+          onMouseDown={startResize}
+          role="separator"
+          aria-orientation="vertical"
+          title="Drag to resize"
+          data-testid="db-peek-resize"
+        />
+        <section
+          className="db-peek"
+          data-testid="db-peek"
+          style={{ flexBasis: `${peekWidth}%` }}
+        >
+          <div className="db-peek-bar">
+            <span className="db-peek-path" title={peek}>
+              {peek}
+            </span>
+            <div className="db-peek-actions">
+              <button
+                className="detail-btn"
+                onClick={() => navigate({ kind: 'pages', path: peek })}
+                title="Open as a full page"
+              >
+                Open ↗
+              </button>
+              <button
+                className="detail-btn"
+                data-testid="db-peek-close"
+                onClick={() => setPeek(null)}
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
           </div>
-        </div>
-        <div className="db-peek-body">
-          <PageEditor key={peek} path={peek} inPeek />
-        </div>
-      </section>
+          {notes[peek] && (
+            <div className="db-peek-head">
+              <h1 className="db-peek-title" data-testid="db-peek-title">
+                {rowTitle(notes[peek], def)}
+              </h1>
+              <RecordProperties note={notes[peek]} def={def} variant="peek" />
+            </div>
+          )}
+          <div className="db-peek-notes-label">Notes</div>
+          <div className="db-peek-body">
+            <PageEditor key={peek} path={peek} inPeek />
+          </div>
+        </section>
+      </>
     )}
     </div>
   )

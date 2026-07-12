@@ -2627,7 +2627,8 @@ body.is-dragging .card {
 .db-peek {
   position: relative;
   z-index: 20;
-  flex: 0 0 min(600px, 46%);
+  flex: 0 0 46%;
+  min-width: 260px;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -2635,6 +2636,24 @@ body.is-dragging .card {
   background: var(--bg);
   animation: peek-in 0.16s ease;
 }
+/* Drag divider between the tracker and the peek. */
+.db-peek-resize {
+  flex: 0 0 6px;
+  cursor: col-resize;
+  position: relative;
+  z-index: 21;
+  align-self: stretch;
+}
+.db-peek-resize::after {
+  content: '';
+  position: absolute;
+  inset: 0 2px;
+  border-radius: 2px;
+  background: var(--gold);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.db-peek-resize:hover::after { opacity: 0.5; }
 @keyframes peek-in {
   from { transform: translateX(24px); opacity: 0.4; }
   to { transform: none; opacity: 1; }
@@ -2689,3 +2708,93 @@ tr:hover .row-peek { opacity: 1; }
   color: var(--gold-bright);
   background: color-mix(in srgb, var(--gold) 12%, transparent);
 }
+
+/* ─── PR: Notion-style peek head + collapsible rail (2026-07-13) ─── */
+
+/* Big task title → compact editable props → Notes → body. */
+.db-peek-head {
+  flex: 0 0 auto;
+  padding: 18px 22px 8px;
+}
+.db-peek-title {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.22;
+  color: var(--ink);
+  word-break: break-word;
+}
+.record-props--peek { margin: 0; padding: 0; border: none; }
+.record-props--peek .record-props-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.record-props--peek .prop-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.record-props--peek .prop-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-4);
+}
+.db-peek-notes-label {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  padding: 10px 22px 2px;
+  border-top: 1px solid var(--line);
+  font-size: 10.5px;
+  font-weight: 640;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.page-editor.in-peek .page-prose { padding-top: 6px; }
+
+/* Collapsible nav rail — thin strip on any view for max real estate. */
+.rail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.rail-collapse {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  color: var(--ink-4);
+  font-size: 15px;
+  line-height: 1;
+  transition: 0.12s ease;
+}
+.rail-collapse:hover { background: var(--surface); color: var(--ink); }
+
+.rail.is-collapsed { width: 62px; padding-left: 8px; padding-right: 8px; }
+.rail.is-collapsed .rail-top { justify-content: center; }
+.rail.is-collapsed .wordmark { padding: 2px; }
+.rail.is-collapsed .wordmark-text { display: none; }
+.rail.is-collapsed .rail-kbd { display: none; }
+.rail.is-collapsed .rail-nav .rail-link {
+  justify-content: center;
+  gap: 0;
+  font-size: 0;
+}
+.rail.is-collapsed .rail-theme,
+.rail.is-collapsed .rail-disconnect {
+  justify-content: center;
+  gap: 0;
+  font-size: 0;
+}
+.rail.is-collapsed .vault-host { display: none; }
+.rail.is-collapsed .vault-status { justify-content: center; }
+/* Expand affordance when collapsed: the whole wordmark gem re-opens it. */
+.rail.is-collapsed .wordmark { cursor: pointer; }
