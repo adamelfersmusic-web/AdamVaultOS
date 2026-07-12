@@ -117,15 +117,31 @@ test('walkthrough — cockpit: project cards and a world', async ({ page }) => {
   for (const [slug, text, phase, state, done] of tasks) {
     await seed(page, `tasks/amanda/${slug}`, text, ['task'], { project: 'amanda', phase, track: 'planable', owner: 'Adam', state, done })
   }
+  // Today-strip data: two tasks promoted to today + a pinned current note.
+  await page.request.patch(`${MOCK}/api/notes/${encodeURIComponent('tasks/amanda/send-video-8')}`, {
+    headers: AUTH, data: { metadata: { when: 'today' }, force: true },
+  })
+  await page.request.patch(`${MOCK}/api/notes/${encodeURIComponent('tasks/amanda/caption-pass')}`, {
+    headers: AUTH, data: { metadata: { when: 'today' }, force: true },
+  })
+  await seed(page, 'pages/gohighlevel-wiring', '# GoHighLevel Wiring\n\nNotes…', ['type/page', 'escensus'], {})
+  await seed(page, 'desk/current', '# Current', ['desk'], { target: 'pages/gohighlevel-wiring' })
   await connect(page)
 
   await page.goto('http://127.0.0.1:4173/')
   await expect(page.getByTestId('cockpit')).toBeVisible()
   await expect(page.getByTestId('project-card')).toHaveCount(4)
+  await expect(page.getByTestId('today-strip')).toContainText('Send Amanda video 8')
   await page.waitForTimeout(400)
   await page.screenshot({ path: `${SHOTS}/07-cockpit.png` })
 
   await page.getByTestId('project-card').filter({ hasText: 'Amanda Bridges' }).click()
+  await expect(page.getByTestId('landing')).toBeVisible()
+  await expect(page.locator('.landing-continue')).toBeEnabled()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: `${SHOTS}/14-landing.png` })
+
+  await page.locator('.landing-doors button', { hasText: 'overview' }).click()
   await expect(page.locator('.world-overview')).toContainText('Amanda Bridges — Home')
   await page.waitForTimeout(400)
   await page.screenshot({ path: `${SHOTS}/08-world-overview.png` })

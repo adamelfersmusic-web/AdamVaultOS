@@ -14,23 +14,27 @@ import {
   createTask,
   fetchProjectNotes,
   loadProjects,
+  setMetadata,
   toast,
   useStore,
 } from '../lib/store'
 import { navigate } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
-import { projectProgress, STATUS_COLORS, toProject } from '../domain/projects'
-import { TRACKER_DB } from '../domain/tracker'
+import { projectProgress, STATUS_COLORS, toProject, type Project } from '../domain/projects'
+import { PHASES, TRACKER_DB } from '../domain/tracker'
 import { inferNoteType, summaryOf, TYPE_META } from '../domain/noteType'
 import { IconBack, IconPlus } from '../components/Icons'
 import { DatabaseView } from './DatabaseView'
 import { NotePage } from './NotePage'
 
-type Section = 'overview' | 'board' | 'notes'
+// The LANDING is the default (build log PART 28/29, Adam's 1+2 pick): dead
+// simple first — Continue + milestone + next 3 checkboxes — with overview/
+// board/notes as quiet doors. Complexity is a room you walk into.
+type Section = 'landing' | 'overview' | 'board' | 'notes'
 
 export function ProjectWorld({ path }: { path: string }) {
   const { notes, projectsStatus, tracker } = useStore()
-  const [section, setSection] = useState<Section>('overview')
+  const [section, setSection] = useState<Section>('landing')
 
   // Direct deep-link: make sure the project deck is loaded.
   useEffect(() => {
@@ -83,20 +87,32 @@ export function ProjectWorld({ path }: { path: string }) {
             {pct}%
           </span>
         )}
-        <nav className="world-tabs" role="tablist" aria-label="Project sections">
-          {(['overview', 'board', 'notes'] as Section[]).map((s) => (
-            <button
-              key={s}
-              role="tab"
-              aria-selected={section === s}
-              className={`world-tab${section === s ? ' is-active' : ''}`}
-              onClick={() => setSection(s)}
-            >
-              {s === 'overview' ? 'Overview' : s === 'board' ? 'Board' : 'Notes'}
-            </button>
-          ))}
-        </nav>
+        {section !== 'landing' && (
+          <nav className="world-tabs" role="tablist" aria-label="Project sections">
+            {(['landing', 'overview', 'board', 'notes'] as Section[]).map((s) => (
+              <button
+                key={s}
+                role="tab"
+                aria-selected={section === s}
+                className={`world-tab${section === s ? ' is-active' : ''}`}
+                onClick={() => setSection(s)}
+              >
+                {s === 'landing'
+                  ? '‹ Landing'
+                  : s === 'overview'
+                    ? 'Overview'
+                    : s === 'board'
+                      ? 'Board'
+                      : 'Notes'}
+              </button>
+            ))}
+          </nav>
+        )}
       </header>
+
+      {section === 'landing' && (
+        <WorldLanding project={project} taskNotes={taskNotes} onDoor={setSection} />
+      )}
 
       {section === 'overview' && (
         <div className="world-overview">
@@ -117,6 +133,167 @@ export function ProjectWorld({ path }: { path: string }) {
       )}
 
       {section === 'notes' && <WorldNotes project={project} notesCache={notes} />}
+    </div>
+  )
+}
+
+// ——— the Landing: Continue + milestone + next 3 + quiet doors (1+2) ———
+
+const phaseIdx = (n: Note): number => {
+  const i = (PHASES as readonly string[]).indexOf(String(n.metadata['phase'] ?? ''))
+  return i === -1 ? 99 : i
+}
+const stateRank = (n: Note): number => {
+  const s = String(n.metadata['state'] ?? '')
+  return s === 'active' ? 0 : s === 'next' ? 1 : s === 'blocked' ? 2 : 3
+}
+const taskLine = (n: Note): string => {
+  const first = (n.content ?? n.preview ?? '')
+    .split('\n')
+    .map((s) => s.trim())
+    .find(Boolean)
+  return first ? first.replace(/^#{1,6}\s+/, '').slice(0, 110) : titleFromPath(n.path)
+}
+
+function WorldLanding({
+  project,
+  taskNotes,
+  onDoor,
+}: {
+  project: Project
+  taskNotes: Note[]
+  onDoor: (s: Section) => void
+}) {
+  // Continue = the most recently touched note in this world (its knowledge
+  // tag), falling back to the project's home note. One click, zero decisions.
+  const [cont, setCont] = useState<Note | null>(null)
+  const [contReady, setContReady] = useState(false)
+  const seq = useRef(0)
+  useEffect(() => {
+    const id = ++seq.current
+    fetchProjectNotes(project.tag)
+      .then((list) => {
+        if (seq.current !== id) return
+        setCont(list.find((n) => n.path !== project.path) ?? null)
+        setContReady(true)
+      })
+      .catch(() => {
+        if (seq.current === id) setContReady(true)
+      })
+  }, [project.tag, project.path])
+
+  const mine = useMemo(
+    () => taskNotes.filter((n) => String(n.metadata['project'] ?? '') === project.key),
+    [taskNotes, project.key],
+  )
+  // The 3 picks PIN for the visit: checking one keeps it in place (struck
+  // through — the dopamine beat) instead of teleporting a new task in.
+  const [pinned, setPinned] = useState<string[] | null>(null)
+  useEffect(() => {
+    if (pinned !== null || mine.length === 0) return
+    const picks = mine
+      .filter((n) => n.metadata['done'] !== true)
+      .sort((a, b) => stateRank(a) - stateRank(b) || phaseIdx(a) - phaseIdx(b))
+      .slice(0, 3)
+      .map((n) => n.path)
+    setPinned(picks)
+  }, [mine, pinned])
+  const next3 = useMemo(
+    () =>
+      (pinned ?? [])
+        .map((p) => mine.find((n) => n.path === p))
+        .filter((n): n is Note => Boolean(n)),
+    [pinned, mine],
+  )
+
+  // Milestone: the project note's own one-liner wins; else derive "Phase X"
+  // from the earliest phase still carrying open tasks; else say nothing.
+  const milestone = useMemo(() => {
+    const explicit = project.note.metadata['milestone']
+    if (typeof explicit === 'string' && explicit.trim()) return explicit.trim()
+    const open = mine.filter((n) => n.metadata['done'] !== true && phaseIdx(n) !== 99)
+    if (open.length === 0) return null
+    const lead = open.sort((a, b) => phaseIdx(a) - phaseIdx(b))[0]!
+    const phase = String(lead.metadata['phase'])
+    const track = String(lead.metadata['track'] ?? '').trim()
+    return `Phase ${phase}${track ? ` — ${track}` : ''}`
+  }, [project.note, mine])
+
+  const openContinue = () => {
+    const target = cont?.path ?? project.home
+    navigate(
+      target.startsWith('pages/') || target.startsWith('desk/')
+        ? { kind: 'pages', path: target }
+        : { kind: 'note', path: target },
+    )
+  }
+
+  const toggleDone = (n: Note) => {
+    const done = n.metadata['done'] === true
+    void setMetadata(
+      n.path,
+      { done: !done, state: done ? 'active' : 'done' },
+      { undo: { done, state: String(n.metadata['state'] ?? 'next') } },
+    )
+  }
+
+  return (
+    <div className="landing" data-testid="landing">
+      <button className="landing-continue" onClick={openContinue} disabled={!contReady}>
+        <span className="landing-continue-play">▶</span>
+        <span className="landing-continue-body">
+          <span className="landing-continue-label">Continue</span>
+          <span className="landing-continue-title">
+            {contReady ? titleFromPath(cont?.path ?? project.home) : '…'}
+          </span>
+        </span>
+        {cont && (
+          <span className="landing-continue-time">{relativeTime(cont.updatedAt)}</span>
+        )}
+      </button>
+
+      {milestone && (
+        <p className="landing-milestone">
+          <span className="landing-milestone-label">Where we are</span>
+          {milestone}
+        </p>
+      )}
+
+      <div className="landing-next">
+        <div className="landing-label">Next here</div>
+        {next3.length === 0 ? (
+          <p className="landing-empty">Nothing queued. The board’s behind the door.</p>
+        ) : (
+          next3.map((n) => (
+            <div
+              key={n.path}
+              className={`landing-item${n.metadata['done'] === true ? ' is-done' : ''}`}
+            >
+              <input
+                type="checkbox"
+                checked={n.metadata['done'] === true}
+                onChange={() => toggleDone(n)}
+                aria-label={taskLine(n)}
+              />
+              <button
+                className="landing-item-title"
+                onClick={() => navigate({ kind: 'pages', path: n.path })}
+                title={n.path}
+              >
+                {taskLine(n)}
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="landing-doors">
+        <button onClick={() => onDoor('overview')}>overview</button>
+        <span>·</span>
+        <button onClick={() => onDoor('board')}>board</button>
+        <span>·</span>
+        <button onClick={() => onDoor('notes')}>notes</button>
+      </div>
     </div>
   )
 }

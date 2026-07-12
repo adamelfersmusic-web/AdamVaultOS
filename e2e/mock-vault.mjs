@@ -495,6 +495,7 @@ const server = http.createServer(async (req, res) => {
         })
       }
       if (body.content !== undefined) note.content = body.content
+      if (body.path !== undefined) note.path = body.path // rename/move, like the real vault
       if (body.metadata !== undefined) {
         note.metadata = { ...note.metadata, ...body.metadata }
       }
