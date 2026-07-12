@@ -1130,3 +1130,78 @@
 .callout-warning, .callout-warn, .callout-caution { --cl: #d99a2b; }
 .callout-danger, .callout-error, .callout-bug { --cl: #d9534f; }
 .callout-quote, .callout-cite { --cl: #8a8a8a; }
+
+/* N3 — Pages sidebar: search, Recent, collapsible visual folders */
+.pages-side-search {
+  margin: 0 0 8px;
+  background: var(--hover, #202126);
+  border: 1px solid var(--border, #2c2d31);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  color: var(--text, #e6e7ea);
+  width: 100%;
+}
+.pages-side-search:focus {
+  outline: none;
+  border-color: var(--accent, #46b3a6);
+}
+.pages-side-search::placeholder { color: var(--text-dim, #7f8288); }
+.pages-section-label {
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim, #7f8288);
+  padding: 4px 8px 2px;
+}
+.pages-section-label-groups { margin-top: 12px; }
+.pages-group-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  padding: 5px 8px;
+  border: none;
+  background: none;
+  color: var(--text, #c9cbd1);
+  font-size: 12.5px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.pages-group-head:hover { background: var(--hover, #202126); }
+.pages-group-chevron {
+  width: 12px;
+  color: var(--text-dim, #7f8288);
+  font-size: 9px;
+  flex: none;
+}
+.pages-group-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pages-group-count {
+  font-size: 10.5px;
+  color: var(--text-dim, #7f8288);
+  font-variant-numeric: tabular-nums;
+}
+.pages-item-indent { padding-left: 22px; }
+
+/* N5 — fullscreen: the fullscreened editor leaves its scrolling parent
+   (.pages-main) behind, so it must scroll itself or the content below the
+   fold is unreachable. */
+.page-editor:fullscreen {
+  overflow-y: auto;
+  height: 100vh;
+  background:
+    radial-gradient(
+      120% 50% at 50% -12%,
+      color-mix(in srgb, var(--gold) 3.5%, transparent),
+      transparent 70%
+    ),
+    var(--bg);
+}

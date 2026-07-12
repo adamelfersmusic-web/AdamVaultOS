@@ -58,6 +58,43 @@ const TASKS: Array<[string, string, Record<string, unknown>]> = [
   ['collect-performance', 'Collect performance — sticker to blue', { phase: '9', track: 'analytics', owner: 'Adam', state: 'next', done: false }],
 ]
 
+test('walkthrough — navigation: tag tree + pages sidebar', async ({ page }) => {
+  await reset(page)
+  const tagged: Array<[string, string, string[]]> = [
+    ['esc/pitch-notes', '# Vegas Pitch Notes', ['escensus/pitch']],
+    ['esc/scoring', '# Scoring Engine', ['escensus/engine']],
+    ['esc/strategy-map', '# Strategy Map', ['escensus/strategy']],
+    ['esc/front', '# Escensus Front Door', ['escensus']],
+    ['health/labs-june', '# June Labs', ['health/labs']],
+    ['health/protocol', '# Protocol', ['health']],
+    ['Amanda/00-home', '# Amanda Home', ['amanda', 'client']],
+    ['Amanda/02-work-log', '# Work Log', ['amanda']],
+    ['Atelier/sop', '# Atelier SOP', ['atelier']],
+    ['pages/reel-ideas', '# Reel Ideas', ['type/page']],
+    ['capture/2026-07-11-thought', '# Quick thought', ['capture/quick']],
+  ]
+  for (const [path, content, tags] of tagged) {
+    await seed(page, path, content, tags, { summary: `${content.slice(2)} — summary line.` })
+  }
+  await connect(page)
+
+  // Library: hierarchical tag tree, escensus expanded.
+  await page.goto('http://127.0.0.1:4173/#/library')
+  const tree = page.getByTestId('tag-tree')
+  await expect(tree).toBeVisible()
+  await tree.locator('.tag-tree-item', { hasText: '#escensus' }).first().locator('.tag-tree-chevron').click()
+  await tree.locator('.tag-tree-item', { hasText: '#health' }).first().locator('.tag-tree-chevron').click()
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: `${SHOTS}/11-tag-tree.png` })
+
+  // Pages: Recent + folders, one expanded.
+  await page.goto('http://127.0.0.1:4173/#/pages')
+  await expect(page.locator('.pages-section-label', { hasText: 'Recent' })).toBeVisible()
+  await page.locator('.pages-group-head', { hasText: 'Amanda' }).click()
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: `${SHOTS}/12-pages-sidebar.png` })
+})
+
 test('walkthrough — cockpit: project cards and a world', async ({ page }) => {
   await reset(page)
   const projects: Array<[string, string, Record<string, unknown>]> = [

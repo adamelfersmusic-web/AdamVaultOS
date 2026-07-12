@@ -3,12 +3,15 @@
 // Composition over construction: cards derive entirely from `project`-tagged
 // notes + the already-loaded tracker slice. Build log PART 22.
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Note } from '../lib/types'
-import { loadProjects, loadTracker, useStore } from '../lib/store'
+import { createProject, loadProjects, loadTracker, toast, useStore } from '../lib/store'
 import { navigate } from '../lib/router'
 import { projectProgress, STATUS_COLORS, toProjects, type Project } from '../domain/projects'
-import { IconRefresh } from '../components/Icons'
+import { IconPlus, IconRefresh } from '../components/Icons'
+
+/** The deck is capped — six big things, no more. Calm by law. */
+const MAX_PROJECTS = 6
 
 function ProgressBar({ done, total }: { done: number; total: number }) {
   if (total === 0) return <span className="proj-noprog">no tasks yet</span>
@@ -49,6 +52,9 @@ function ProjectCard({ project, taskNotes }: { project: Project; taskNotes: Note
 
 export function ProjectsView() {
   const { projects, projectsStatus, projectsError, notes, tracker } = useStore()
+  const [newOpen, setNewOpen] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [busy, setBusy] = useState(false)
 
   const cards = useMemo(
     () =>
@@ -59,6 +65,23 @@ export function ProjectsView() {
     () => (tracker ?? []).map((p) => notes[p]).filter((n): n is Note => Boolean(n)),
     [tracker, notes],
   )
+  const full = cards.length >= MAX_PROJECTS
+
+  const submitNew = async () => {
+    const name = newName.trim()
+    if (!name || busy) return
+    setBusy(true)
+    try {
+      const note = await createProject(name)
+      setNewOpen(false)
+      setNewName('')
+      navigate({ kind: 'project', path: note.path })
+    } catch (e) {
+      toast('error', `${e instanceof Error ? e.message : e}`)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div className="cockpit" data-testid="cockpit">
@@ -67,16 +90,55 @@ export function ProjectsView() {
           <h1 className="db-title">Projects</h1>
           <p className="cockpit-sub">The big things. Open one and work inside its world.</p>
         </div>
-        <button
-          className="icon-btn"
-          title="Refresh projects"
-          onClick={() => {
-            void loadProjects()
-            void loadTracker()
-          }}
-        >
-          <IconRefresh size={14} />
-        </button>
+        <div className="cockpit-actions">
+          {newOpen ? (
+            <div className="world-new-row">
+              <input
+                autoFocus
+                className="db-search world-new-input"
+                placeholder="Project name — Enter to create…"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void submitNew()
+                  if (e.key === 'Escape') setNewOpen(false)
+                }}
+              />
+              <button
+                className="btn btn-gold"
+                disabled={busy || !newName.trim()}
+                onClick={() => void submitNew()}
+              >
+                Create
+              </button>
+            </div>
+          ) : (
+            <button
+              className="btn btn-gold"
+              disabled={full}
+              title={
+                full
+                  ? 'The Cockpit holds 6 projects max — finish or park one first'
+                  : 'Add a project'
+              }
+              onClick={() => setNewOpen(true)}
+              data-testid="new-project"
+            >
+              <IconPlus size={13} /> New project
+            </button>
+          )}
+          {full && <span className="cockpit-cap">6 of 6 — a full deck</span>}
+          <button
+            className="icon-btn"
+            title="Refresh projects"
+            onClick={() => {
+              void loadProjects()
+              void loadTracker()
+            }}
+          >
+            <IconRefresh size={14} />
+          </button>
+        </div>
       </header>
 
       {projectsStatus === 'error' ? (

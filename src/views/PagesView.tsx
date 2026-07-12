@@ -38,10 +38,14 @@ function sideTitle(p: string, n?: Note): string {
   return titleFromPath(p)
 }
 
+const RECENT_COUNT = 8
+
 export function PagesView({ path }: { path?: string }) {
   const { pages, pagesStatus, pagesError, notes } = useStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [sideQuery, setSideQuery] = useState('')
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set())
 
   // Live order: newest-touched first, from the note cache — so the doc you're
   // saving bubbles to the top instead of drifting down a stale list.
@@ -52,6 +56,29 @@ export function PagesView({ path }: { path?: string }) {
     }
     return [...(pages ?? [])].sort((a, b) => ts(b) - ts(a))
   }, [pages, notes])
+
+  // N3 — the minimal browser. Searching → one flat filtered list. Otherwise:
+  // a Recent section (what was I just working on) + collapsible VISUAL groups
+  // by the path's first segment. Purely presentational — paths never change.
+  const filtered = useMemo(() => {
+    const q = sideQuery.trim().toLowerCase()
+    if (!q) return null
+    return ordered.filter(
+      (p) =>
+        sideTitle(p, notes[p]).toLowerCase().includes(q) || p.toLowerCase().includes(q),
+    )
+  }, [sideQuery, ordered, notes])
+
+  const groups = useMemo(() => {
+    const m = new Map<string, string[]>()
+    for (const p of ordered) {
+      const seg = p.includes('/') ? p.slice(0, p.indexOf('/')) : '·'
+      const list = m.get(seg)
+      if (list) list.push(p)
+      else m.set(seg, [p])
+    }
+    return [...m.entries()].sort((a, b) => b[1].length - a[1].length)
+  }, [ordered])
 
   // Lazy-load the dataset when the view first opens.
   useEffect(() => {
@@ -121,6 +148,13 @@ export function PagesView({ path }: { path?: string }) {
           New page
         </button>
 
+        <input
+          className="pages-side-search"
+          placeholder="Search pages…"
+          value={sideQuery}
+          onChange={(e) => setSideQuery(e.target.value)}
+        />
+
         <div className="pages-list">
           {pagesStatus === 'loading' && !pages ? (
             <div className="db-skeleton">
@@ -137,19 +171,47 @@ export function PagesView({ path }: { path?: string }) {
             </div>
           ) : (pages ?? []).length === 0 ? (
             <p className="pages-side-empty">No pages yet.</p>
+          ) : filtered ? (
+            filtered.length === 0 ? (
+              <p className="pages-side-empty">No page matches.</p>
+            ) : (
+              filtered.map((p) => <PageItem key={p} p={p} path={path} notes={notes} />)
+            )
           ) : (
-            ordered.map((p) => (
-              <a
-                key={p}
-                className={`pages-item${p === path ? ' is-active' : ''}`}
-                href={hrefFor({ kind: 'pages', path: p })}
-              >
-                <span className="pages-item-title">{sideTitle(p, notes[p])}</span>
-                <span className="pages-item-time">
-                  {relativeTime(notes[p]?.updatedAt)}
-                </span>
-              </a>
-            ))
+            <>
+              <div className="pages-section-label">Recent</div>
+              {ordered.slice(0, RECENT_COUNT).map((p) => (
+                <PageItem key={p} p={p} path={path} notes={notes} />
+              ))}
+              <div className="pages-section-label pages-section-label-groups">Folders</div>
+              {groups.map(([seg, paths]) => {
+                const open = openGroups.has(seg)
+                return (
+                  <div key={seg} className="pages-group">
+                    <button
+                      className="pages-group-head"
+                      aria-expanded={open}
+                      onClick={() =>
+                        setOpenGroups((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(seg)) next.delete(seg)
+                          else next.add(seg)
+                          return next
+                        })
+                      }
+                    >
+                      <span className="pages-group-chevron">{open ? '▾' : '▸'}</span>
+                      <span className="pages-group-name">{seg}</span>
+                      <span className="pages-group-count">{paths.length}</span>
+                    </button>
+                    {open &&
+                      paths.map((p) => (
+                        <PageItem key={p} p={p} path={path} notes={notes} indent />
+                      ))}
+                  </div>
+                )
+              })}
+            </>
           )}
         </div>
       </aside>
@@ -175,6 +237,28 @@ export function PagesView({ path }: { path?: string }) {
 
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
     </div>
+  )
+}
+
+function PageItem({
+  p,
+  path,
+  notes,
+  indent,
+}: {
+  p: string
+  path?: string
+  notes: Record<string, Note>
+  indent?: boolean
+}) {
+  return (
+    <a
+      className={`pages-item${p === path ? ' is-active' : ''}${indent ? ' pages-item-indent' : ''}`}
+      href={hrefFor({ kind: 'pages', path: p })}
+    >
+      <span className="pages-item-title">{sideTitle(p, notes[p])}</span>
+      <span className="pages-item-time">{relativeTime(notes[p]?.updatedAt)}</span>
+    </a>
   )
 }
 
