@@ -1,7 +1,7 @@
 import { relativeTime, fullTime } from '../lib/format'
 import { isProtectedNote } from '../domain/scripts'
 import { ChipSelect } from '../components/EnumMenu'
-import { IconShield } from '../components/Icons'
+import { IconPage, IconShield } from '../components/Icons'
 import type { LensProps } from './DatabaseView'
 
 const FLAG_COLUMNS = ['declined', 'approval_required']
@@ -49,12 +49,19 @@ export function TableLens({
           {rows.map((row) => {
             const isSaving = (saving[row.path] ?? 0) > 0
             return (
-              <tr
-                key={row.path}
-                className={isSaving ? 'is-saving' : undefined}
-                onClick={() => onOpen(row.path)}
-              >
+              <tr key={row.path} className={isSaving ? 'is-saving' : undefined}>
                 <td className="cell-title">
+                  <button
+                    className="row-peek"
+                    title="Open beside the tracker"
+                    data-testid="row-peek"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onOpen(row.path)
+                    }}
+                  >
+                    <IconPage size={12} />
+                  </button>
                   <span
                     className="row-ember"
                     data-status={String(row.note.metadata['status'] ?? '')}

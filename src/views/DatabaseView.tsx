@@ -28,6 +28,7 @@ import {
   IconBack,
 } from '../components/Icons'
 import { TableLens } from './TableLens'
+import { PageEditor } from './PageEditor'
 import { BoardLens } from './BoardLens'
 import { GalleryLens } from './GalleryLens'
 
@@ -465,12 +466,20 @@ export function DatabaseView({
     void setMetadata(path, patch, { undo })
   }
 
-  const onOpen = (path: string) => navigate({ kind: 'pages', path })
+  // Notion-style peek: on the GLOBAL tracker, opening a row splits the screen
+  // — the tracker stays put, the task page mounts beside it. Full page is an
+  // explicit Open ↗ in the peek bar. (Scripts + embedded boards still navigate.)
+  const [peek, setPeek] = useState<string | null>(null)
+  const onOpen = (path: string) => {
+    if (dataset === 'tracker' && !embedded) setPeek(path)
+    else navigate({ kind: 'pages', path })
+  }
 
   const lensProps: LensProps = { def, rows, observed, saving, onOpen, setField }
   const statusFilters = filters[def.board.field] ?? []
 
   return (
+    <div className={`db-wrap${peek ? ' has-peek' : ''}`}>
     <div className="db">
       <header className="db-head">
         <div className="db-title-row">
@@ -645,6 +654,37 @@ export function DatabaseView({
         </>
       )}
     </div>
+
+    {peek && (
+      <section className="db-peek" data-testid="db-peek">
+        <div className="db-peek-bar">
+          <span className="db-peek-path" title={peek}>
+            {peek}
+          </span>
+          <div className="db-peek-actions">
+            <button
+              className="detail-btn"
+              onClick={() => navigate({ kind: 'pages', path: peek })}
+              title="Open as a full page"
+            >
+              Open ↗
+            </button>
+            <button
+              className="detail-btn"
+              data-testid="db-peek-close"
+              onClick={() => setPeek(null)}
+              title="Close"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <div className="db-peek-body">
+          <PageEditor key={peek} path={peek} />
+        </div>
+      </section>
+    )}
+    </div>
   )
 }
 
@@ -676,11 +716,14 @@ function TrackerNewTask() {
     if (!t || !projectKey || busy) return
     setBusy(true)
     try {
-      const note = await createTask(projectKey, t)
-      // Straight into row-as-page to set phase/track/owner/state.
-      navigate({ kind: 'pages', path: note.path })
+      await createTask(projectKey, t)
+      // Stay HERE — the row appears below and every field edits inline.
+      // (Open it beside the tracker with the row's 📄 if you want the page.)
+      setTitle('')
+      toast('success', 'Task added — fill the chips right in the row')
     } catch (e) {
       toast('error', `Couldn’t create task — ${e instanceof Error ? e.message : e}`)
+    } finally {
       setBusy(false)
     }
   }

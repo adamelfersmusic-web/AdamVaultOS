@@ -86,7 +86,7 @@ function linkWikilinks(src: string): string {
 // board itself only mounts in the editor). Applied pre-parse like wikilinks.
 function stageBoardEmbeds(src: string): string {
   return src.replace(
-    /^!\[\[board:([a-z0-9-]*)\]\]$/gm,
+    /^!\[\[board:([a-z0-9-]*)(?::(?:table|board|gallery))?\]\]$/gm,
     (_m, key: string) =>
       `<a class="board-embed-link" href="#/tracker/board">📊 ${key || 'project'} board →</a>`,
   )

@@ -17,10 +17,15 @@ import { toProjects } from '../../domain/projects'
 import { TRACKER_DB } from '../../domain/tracker'
 import { DatabaseView } from '../../views/DatabaseView'
 
-const MARKER_RE = /^!\[\[board:([a-z0-9-]*)\]\]$/
+const MARKER_RE = /^!\[\[board:([a-z0-9-]*)(?::(table|board|gallery))?\]\]$/
+const LENSES = ['table', 'board', 'gallery'] as const
+type EmbedLens = (typeof LENSES)[number]
 
 function BoardEmbedView({ node, updateAttributes }: NodeViewProps) {
   const project = ((node.attrs.project as string) || '').trim()
+  const lens = (LENSES as readonly string[]).includes(node.attrs.lens as string)
+    ? (node.attrs.lens as EmbedLens)
+    : 'board'
   const { projects, projectsStatus, notes } = useStore()
 
   useEffect(() => {
@@ -37,7 +42,18 @@ function BoardEmbedView({ node, updateAttributes }: NodeViewProps) {
       {project ? (
         <div className="board-embed" data-testid="board-embed">
           <div className="board-embed-head">
-            <span className="board-embed-title">📊 {project} board</span>
+            <span className="board-embed-title">📊 {project}</span>
+            <div className="board-embed-lenses" data-testid="board-embed-lenses">
+              {LENSES.map((l) => (
+                <button
+                  key={l}
+                  className={l === lens ? 'is-on' : ''}
+                  onClick={() => updateAttributes({ lens: l })}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
             <a className="board-embed-open" href="#/tracker/board">
               open tracker →
             </a>
@@ -47,7 +63,7 @@ function BoardEmbedView({ node, updateAttributes }: NodeViewProps) {
               def={TRACKER_DB}
               dataset="tracker"
               presetFilter={{ project: [project] }}
-              lensOverride="board"
+              lensOverride={lens}
               embedded
             />
           </div>
@@ -83,6 +99,13 @@ export const BoardEmbed = Node.create({
         parseHTML: (el) => el.getAttribute('data-project') ?? '',
         renderHTML: (attrs) => ({ 'data-project': attrs.project }),
       },
+      // The embed's view lives in the MARKER (![[board:key:table]]), so each
+      // embed remembers its own lens and it round-trips as plain text.
+      lens: {
+        default: 'board',
+        parseHTML: (el) => el.getAttribute('data-lens') ?? 'board',
+        renderHTML: (attrs) => ({ 'data-lens': attrs.lens }),
+      },
     }
   },
 
@@ -100,23 +123,30 @@ export const BoardEmbed = Node.create({
 
   renderMarkdown: (node) => {
     const project = ((node.attrs?.project as string) ?? '').trim()
-    return `![[board:${project}]]\n\n`
+    const lens = (node.attrs?.lens as string) ?? 'board'
+    const suffix = lens && lens !== 'board' ? `:${lens}` : ''
+    return `![[board:${project}${suffix}]]\n\n`
   },
 
   // Parse the marker straight from markdown so reloads restore the board.
   markdownTokenName: 'boardEmbed',
   parseMarkdown: (token, h) => {
-    const t = token as MarkdownToken & { project?: string }
-    return h.createNode('boardEmbed', { project: t.project ?? '' }, [])
+    const t = token as MarkdownToken & { project?: string; lens?: string }
+    return h.createNode('boardEmbed', { project: t.project ?? '', lens: t.lens ?? 'board' }, [])
   },
   markdownTokenizer: {
     name: 'boardEmbed',
     level: 'block',
     start: (src: string) => src.indexOf('![[board:'),
     tokenize(src) {
-      const match = /^!\[\[board:([a-z0-9-]*)\]\]\s*(?:\n+|$)/.exec(src)
+      const match = /^!\[\[board:([a-z0-9-]*)(?::(table|board|gallery))?\]\]\s*(?:\n+|$)/.exec(src)
       if (!match) return undefined
-      return { type: 'boardEmbed', raw: match[0], project: match[1] } as MarkdownToken
+      return {
+        type: 'boardEmbed',
+        raw: match[0],
+        project: match[1],
+        lens: match[2] ?? 'board',
+      } as MarkdownToken
     },
   },
 })
@@ -139,7 +169,7 @@ export function convertBoardEmbeds(doc: JSONContent): {
         const m = MARKER_RE.exec(child.content[0].text ?? '')
         if (m) {
           changed = true
-          return { type: 'boardEmbed', attrs: { project: m[1] } }
+          return { type: 'boardEmbed', attrs: { project: m[1], lens: m[2] ?? 'board' } }
         }
       }
       return walk(child)
