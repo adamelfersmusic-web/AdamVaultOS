@@ -573,6 +573,17 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
             ← Tracker
           </button>
         )}
+        {!inPeek &&
+          (path.startsWith('canvas/') || note?.tags?.includes('canvas')) && (
+            <button
+              className="page-back-tracker"
+              data-testid="back-to-canvas"
+              title="Back to the canvas you were on"
+              onClick={() => navigate({ kind: 'canvas' })}
+            >
+              ← Canvas
+            </button>
+          )}
         <span
           className={`page-save${dirty || isSaving ? ' is-active' : ''}`}
           data-testid="page-save"
