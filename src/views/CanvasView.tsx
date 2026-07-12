@@ -16,11 +16,13 @@ import {
   deleteCanvasBoard,
   deleteCanvasCard,
   loadCanvasNotes,
+  movePage,
   toast,
   updateCanvasNote,
 } from '../lib/store'
+import { navigate } from '../lib/router'
 import { renderMarkdown } from '../lib/markdown'
-import { relativeTime } from '../lib/format'
+import { relativeTime, slugify } from '../lib/format'
 import { IconPlus, IconClose, IconBack } from '../components/Icons'
 import { CardEditor } from '../components/CardEditor'
 
@@ -446,11 +448,78 @@ function CanvasCard({
 
   const empty = !(note.content ?? '').trim()
 
+  // Right-click → promote menu. A card is a canvas thing until YOU choose:
+  // open it as a full page (stays on the canvas) or move it into Pages.
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  useEffect(() => {
+    if (!menu) return
+    const close = () => setMenu(null)
+    window.addEventListener('pointerdown', close)
+    window.addEventListener('keydown', close)
+    return () => {
+      window.removeEventListener('pointerdown', close)
+      window.removeEventListener('keydown', close)
+    }
+  }, [menu])
+
+  const moveToPages = async () => {
+    const cur = latest.current
+    const firstLine = (cur.content ?? '')
+      .split('\n')
+      .map((s) => s.trim())
+      .find(Boolean)
+    const slug =
+      slugify((firstLine ?? '').replace(/^#{1,6}\s+/, '')) ||
+      cur.path.split('/').pop() ||
+      'card'
+    try {
+      const moved = await movePage(cur.path, `pages/${slug}`, cur.updatedAt)
+      remove(cur.path)
+      navigate({ kind: 'pages', path: moved.path })
+    } catch (e) {
+      toast('error', `Couldn’t move card — ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
   return (
     <article
       className={`canvas-card${live ? ' is-live' : ''}${editing ? ' is-editing' : ''}`}
       style={{ left: geom.x, top: geom.y, width: geom.w, height: geom.h }}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setMenu({ x: e.clientX, y: e.clientY })
+      }}
     >
+      {menu && (
+        <div
+          className="card-menu"
+          data-testid="card-menu"
+          style={{ position: 'fixed', left: menu.x, top: menu.y }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button
+            className="card-menu-item"
+            data-testid="card-open-page"
+            onClick={() => {
+              setMenu(null)
+              navigate({ kind: 'pages', path: note.path })
+            }}
+          >
+            Open as full page ↗
+          </button>
+          <button
+            className="card-menu-item"
+            data-testid="card-move-pages"
+            onClick={() => {
+              setMenu(null)
+              void moveToPages()
+            }}
+          >
+            Turn into a page (moves to Pages)
+          </button>
+        </div>
+      )}
       <header className="canvas-card-head" onPointerDown={beginDrag('move')}>
         <span className="canvas-card-grip" aria-hidden="true">⠿</span>
         <div className="canvas-card-tools">
