@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { DatabaseDef, FieldDef, LensKind, Note } from '../lib/types'
-import { loadScripts, loadTracker, setMetadata, useStore } from '../lib/store'
+import {
+  createTask,
+  loadProjects,
+  loadScripts,
+  loadTracker,
+  setMetadata,
+  toast,
+  useStore,
+} from '../lib/store'
 import { navigate } from '../lib/router'
 import { openNewScript } from '../lib/ui'
 import { titleFromPath } from '../lib/format'
+import { toProjects } from '../domain/projects'
 import { Chip, chipFor } from '../components/Chip'
 import { Popover } from '../components/Popover'
 import {
@@ -497,6 +506,7 @@ export function DatabaseView({
                 New script
               </button>
             )}
+            {dataset === 'tracker' && !embedded && <TrackerNewTask />}
           </div>
         </div>
 
@@ -611,6 +621,96 @@ export function DatabaseView({
           {lens === 'gallery' && <GalleryLens {...lensProps} />}
         </>
       )}
+    </div>
+  )
+}
+
+// ——— ＋ New task from the global Tracker: pick the world it belongs to ———
+
+function TrackerNewTask() {
+  const { projects, projectsStatus, notes } = useStore()
+  const [open, setOpen] = useState(false)
+  const [title, setTitle] = useState('')
+  const [projectKey, setProjectKey] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (open && projectsStatus === 'idle') void loadProjects()
+  }, [open, projectsStatus])
+
+  const options = useMemo(() => {
+    const list = (projects ?? []).map((p) => notes[p]).filter(Boolean)
+    return toProjects(list)
+  }, [projects, notes])
+
+  // Default to the first project once the list lands.
+  useEffect(() => {
+    if (!projectKey && options.length > 0) setProjectKey(options[0].key)
+  }, [options, projectKey])
+
+  const submit = async () => {
+    const t = title.trim()
+    if (!t || !projectKey || busy) return
+    setBusy(true)
+    try {
+      const note = await createTask(projectKey, t)
+      // Straight into row-as-page to set phase/track/owner/state.
+      navigate({ kind: 'pages', path: note.path })
+    } catch (e) {
+      toast('error', `Couldn’t create task — ${e instanceof Error ? e.message : e}`)
+      setBusy(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        className="btn btn-gold"
+        data-testid="tracker-new-task"
+        onClick={() => setOpen(true)}
+      >
+        <IconPlus size={13} />
+        New task
+      </button>
+    )
+  }
+
+  return (
+    <div className="db-newtask" data-testid="tracker-new-task-form">
+      <select
+        className="db-newtask-project"
+        value={projectKey}
+        onChange={(e) => setProjectKey(e.target.value)}
+        aria-label="Project"
+      >
+        {options.length === 0 && <option value="">no projects yet</option>}
+        {options.map((p) => (
+          <option key={p.key} value={p.key}>
+            {p.title}
+          </option>
+        ))}
+      </select>
+      <input
+        autoFocus
+        className="db-search db-newtask-title"
+        placeholder="Task title — Enter to create…"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') void submit()
+          if (e.key === 'Escape') setOpen(false)
+        }}
+      />
+      <button
+        className="btn btn-gold"
+        disabled={busy || !title.trim() || !projectKey}
+        onClick={() => void submit()}
+      >
+        Create
+      </button>
+      <button className="btn btn-ghost" onClick={() => setOpen(false)}>
+        Cancel
+      </button>
     </div>
   )
 }
