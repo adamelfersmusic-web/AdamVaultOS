@@ -556,7 +556,8 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
         : ''
 
   return (
-    <div className="page-editor" ref={editorRootRef}>
+    <div className={`page-editor${inPeek ? ' in-peek' : ''}`} ref={editorRootRef}>
+      {!inPeek && (
       <div className="page-topbar">
         {path.startsWith('tasks/') && !inPeek && (
           <button
@@ -629,8 +630,9 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
           </button>
         </div>
       </div>
+      )}
 
-      {note && (note.tags?.length || path) && (
+      {!inPeek && note && (note.tags?.length || path) && (
         <div className="page-meta" data-testid="page-meta">
           {pathDraft === null ? (
             <button
@@ -673,7 +675,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
         </div>
       )}
 
-      {note && databaseForPath(path) && (
+      {!inPeek && note && databaseForPath(path) && (
         <RecordProperties note={note} def={databaseForPath(path)!} />
       )}
 
