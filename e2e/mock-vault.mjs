@@ -407,7 +407,8 @@ const server = http.createServer(async (req, res) => {
       const wantLinks = url.searchParams.get('include_links') === 'true'
       const wantCount = url.searchParams.get('include_link_count') === 'true'
       if (wantLinks || wantCount) {
-        const links = resolvedLinks()
+        // Wikilink-derived edges count too — like the real vault's degree.
+        const links = allLinks()
         shaped = shaped.map((n) => {
           const touching = links.filter(
             (l) => l.sourceId === n.id || l.targetId === n.id,
