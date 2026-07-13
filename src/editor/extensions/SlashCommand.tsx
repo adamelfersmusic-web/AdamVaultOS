@@ -12,6 +12,7 @@ import { TextSelection } from '@tiptap/pm/state'
 import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion'
+import { CSV_IMPORT_EVENT } from '../../lib/ui'
 import {
   IconBoard,
   IconTable,
@@ -254,6 +255,18 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
           .deleteRange(range)
           .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
           .run(),
+    },
+    {
+      id: 'table-csv',
+      title: 'Table — from CSV',
+      subtitle: 'Paste CSV/TSV, get a table',
+      icon: <IconTable size={15} />,
+      keywords: ['csv', 'tsv', 'import', 'data'],
+      // Doesn't insert anything itself — PageEditor owns the paste modal.
+      run: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).run()
+        window.dispatchEvent(new CustomEvent(CSV_IMPORT_EVENT))
+      },
     },
     {
       id: 'image',

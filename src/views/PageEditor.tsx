@@ -34,7 +34,8 @@ import {
   type LinkedNote,
 } from '../lib/store'
 import { navigate, setRouteGuard } from '../lib/router'
-import { PAGE_EXTERNAL_UPDATE_EVENT } from '../lib/ui'
+import { CSV_IMPORT_EVENT, PAGE_EXTERNAL_UPDATE_EVENT } from '../lib/ui'
+import { parseDelimited, rowsToTableJSON } from '../lib/csv'
 import { relativeTime, titleFromPath } from '../lib/format'
 import { fuzzyScore } from '../lib/fuzzy'
 import { databaseForPath } from '../domain/databases'
@@ -84,6 +85,9 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
   const [moving, setMoving] = useState(false)
   const [rec, setRec] = useState<Rec>('idle')
   const [dirty, setDirty] = useState(false)
+  // /table-from-csv modal (opened by the slash menu via CSV_IMPORT_EVENT).
+  const [csvOpen, setCsvOpen] = useState(false)
+  const [csvText, setCsvText] = useState('')
 
   const baseRef = useRef<{ content: string; updatedAt: string } | null>(null)
   const editorRootRef = useRef<HTMLDivElement>(null)
@@ -95,6 +99,9 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
   const voiceStartRef = useRef<() => void>(() => {})
   // Image upload: handleDrop/handlePaste and the /image picker all funnel here.
   const uploadImageRef = useRef<(file: File, at?: number) => void>(() => {})
+  // CSV/TSV paste → table. A ref because editorProps closes over the
+  // first-render `editor` (null), same trick as uploadImageRef.
+  const csvPasteRef = useRef<(event: ClipboardEvent) => boolean>(() => false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pendingImageAt = useRef<number | null>(null)
 
@@ -163,7 +170,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
         const files = Array.from(event.clipboardData?.files ?? []).filter((f) =>
           f.type.startsWith('image/'),
         )
-        if (files.length === 0) return false
+        if (files.length === 0) return csvPasteRef.current(event)
         event.preventDefault()
         for (const f of files) uploadImageRef.current(f)
         return true
@@ -417,6 +424,49 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
     }
   }
   uploadImageRef.current = (file, at) => void uploadAndInsert(file, at)
+
+  // ——— CSV/TSV → table (paste + /table-from-csv modal) ———
+  // Paste path: convert ONLY when the text is confidently tabular — false
+  // positives are worse than misses, so anything ambiguous falls through to
+  // the default paste.
+  csvPasteRef.current = (event) => {
+    if (!editor || editor.isActive('table')) return false
+    const cb = event.clipboardData
+    if (!cb) return false
+    // HTML tables (Sheets/Notion rich copies) are ProseMirror's job.
+    if (cb.getData('text/html').toLowerCase().includes('<table')) return false
+    const text = cb.getData('text/plain')
+    if (!text) return false
+    const lines = text.replace(/\r\n?/g, '\n').split('\n')
+    if (lines.filter((l) => l.trim() !== '').length < 2) return false
+    const rows = parseDelimited(text)
+    if (!rows) return false
+    event.preventDefault()
+    editor.chain().focus().insertContent(rowsToTableJSON(rows)).run()
+    return true
+  }
+
+  useEffect(() => {
+    // Only the focused editor claims the event (a peeked page and the main
+    // page can both be mounted).
+    const onCsvImport = () => {
+      if (!editor?.isFocused) return
+      setCsvText('')
+      setCsvOpen(true)
+    }
+    window.addEventListener(CSV_IMPORT_EVENT, onCsvImport)
+    return () => window.removeEventListener(CSV_IMPORT_EVENT, onCsvImport)
+  }, [editor])
+
+  // The modal relaxes to ≥1 column — the user explicitly asked for a table.
+  const csvRows = csvOpen ? parseDelimited(csvText, 1) : null
+  const createCsvTable = () => {
+    if (!csvRows || !editor) return
+    editor.chain().focus().insertContent(rowsToTableJSON(csvRows)).run()
+    setCsvOpen(false)
+    setCsvText('')
+    toast('success', `Table created — ${csvRows.length} row${csvRows.length === 1 ? '' : 's'}`)
+  }
 
   // ——— sub-page insertion ———
   const insertSubPage = (pagePath: string) => {
@@ -822,6 +872,38 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
                 onClick={() => void doMove(moveGuard.newPath, moveGuard.incoming)}
               >
                 Move + update links
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {csvOpen && (
+        <Modal onClose={() => setCsvOpen(false)} width={520} labelledBy="csv-title">
+          <div className="subpage-picker" data-testid="csv-import">
+            <h2 id="csv-title" className="subpage-picker-title">
+              Table from CSV
+            </h2>
+            <textarea
+              autoFocus
+              className="subpage-search"
+              data-testid="csv-input"
+              rows={8}
+              placeholder="Paste CSV or TSV…"
+              value={csvText}
+              onChange={(e) => setCsvText(e.target.value)}
+            />
+            <div className="canon-actions">
+              <button className="btn btn-ghost" onClick={() => setCsvOpen(false)}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-gold"
+                data-testid="csv-create"
+                disabled={!csvRows}
+                onClick={createCsvTable}
+              >
+                Create table
               </button>
             </div>
           </div>
