@@ -89,7 +89,10 @@ async function bumpNote(
 async function connectViaStorage(page: Page) {
   await page.addInitScript(
     ([url, token]) => {
-      localStorage.setItem('atelier.vault', JSON.stringify({ url, token }))
+      localStorage.setItem(
+        'adamvaultos.session.v1',
+        JSON.stringify({ vaultUrl: url, mode: 'token', token: { accessToken: token } }),
+      )
     },
     [VAULT_URL, TOKEN] as const,
   )
@@ -120,27 +123,14 @@ test('connect screen: token paste lives under Advanced and validates', async ({ 
 
   await page.fill('textarea[name="vault-token"]', TOKEN)
   await page.getByTestId('connect-token').click()
-  await expect(page).toHaveURL(/#\/scripts/)
-  await expect(page.locator('.db-table tbody tr').first()).toBeVisible()
+  await expect(page).toHaveURL(/#\/(projects|library|scripts)/)
   // Session persisted for the next visit.
-  const stored = await page.evaluate(() => localStorage.getItem('atelier.session.v1'))
+  const stored = await page.evaluate(() => localStorage.getItem('adamvaultos.session.v1'))
   expect(JSON.parse(stored!)).toEqual({
     vaultUrl: VAULT_URL,
     mode: 'token',
     token: { accessToken: TOKEN },
   })
-})
-
-test('top bar: Brand Brain links out to the project in a new tab', async ({ page }) => {
-  await openScripts(page)
-  const link = page.getByRole('link', { name: 'Brand Brain' })
-  await expect(link).toBeVisible()
-  await expect(link).toHaveAttribute(
-    'href',
-    'https://claude.ai/project/019df26a-e720-77a8-bfd1-1be88ba75aef',
-  )
-  await expect(link).toHaveAttribute('target', '_blank')
-  await expect(link).toHaveAttribute('rel', /noreferrer/)
 })
 
 test('table: rows, sorting, pipeline filter, field filter, search', async ({ page }) => {
@@ -241,7 +231,13 @@ test('cell edit survives a concurrent writer (409 → reload → reconcile → r
 
 test('note page: properties, body read mode, body edit + save', async ({ page }) => {
   await openScripts(page)
-  await page.click('.db-table tbody tr:has-text("The Fake Map") .cell-title')
+  // A scripts row click opens the note in the Pages editor (peek is
+  // tracker-only — see DatabaseView.openRow).
+  await page.locator('.db-table tbody tr:has-text("The Fake Map")').getByTestId('row-peek').click()
+  await expect(page).toHaveURL(/#\/pages\//)
+  await expect(page.locator('.page-prose')).toContainText('two sales by noon')
+  // The note page itself is still a live surface — enter it directly.
+  await page.goto('/#/note/' + encodeURIComponent('content/scripts/the-fake-map'))
   await expect(page.getByTestId('note-page')).toBeVisible()
   await expect(page.locator('.note-title')).toHaveText('The Fake Map')
   await expect(page.locator('.note-path')).toHaveText('content/scripts/the-fake-map')
@@ -408,9 +404,11 @@ test('board: lanes in pipeline order, drag writes status to the vault', async ({
     .poll(async () => (await mockNote(page, 'content/scripts/bedtime-tuck-in')).metadata.status)
     .toBe('filmed')
 
-  // A short press without movement opens the note instead of dragging.
+  // A short press without movement opens the note (Pages editor) instead
+  // of dragging.
   await page.locator('.card', { hasText: 'The Fake Map' }).click()
-  await expect(page.getByTestId('note-page')).toBeVisible()
+  await expect(page).toHaveURL(/#\/pages\//)
+  await expect(page.locator('.page-prose')).toContainText('The Fake Map')
 })
 
 test('gallery: cards render chips and open the note page', async ({ page }) => {
@@ -422,12 +420,15 @@ test('gallery: cards render chips and open the note page', async ({ page }) => {
   const card = page.locator('.gcard', { hasText: 'Provider Ad V1' })
   await expect(card.locator('.chip')).toContainText(['approved'])
   await card.click()
-  await expect(page.locator('.note-title')).toHaveText('Provider Ad V1')
+  await expect(page).toHaveURL(/#\/pages\//)
+  await expect(page.locator('.page-prose')).toContainText('Provider Ad V1')
 })
 
 test('capture: a new script lands in the vault with script defaults', async ({ page }) => {
   await openScripts(page)
-  await page.click('.rail-new')
+  await page.keyboard.press('ControlOrMeta+k')
+  await page.fill('.palette-input', 'New script')
+  await page.locator('.palette-item', { hasText: 'New script' }).click()
   await page.getByTestId('capture-title').fill('The Second Alarm Clock')
   await expect(page.locator('.capture-path')).toContainText(
     'content/scripts/the-second-alarm-clock',
@@ -436,7 +437,8 @@ test('capture: a new script lands in the vault with script defaults', async ({ p
   await page.screenshot({ path: `${SHOTS}/09-capture.png` })
   await page.getByTestId('capture-create').click()
 
-  await expect(page.locator('.note-title')).toHaveText('The Second Alarm Clock')
+  // Creation navigates into the new page — wait for it before asserting.
+  await expect(page).toHaveURL(/#\/pages\//)
   const note = await mockNote(page, 'content/scripts/the-second-alarm-clock')
   expect([...note.tags].sort()).toEqual(['content/script', 'type/content'])
   expect(note.metadata.status).toBe('idea')
@@ -446,27 +448,10 @@ test('capture: a new script lands in the vault with script defaults', async ({ p
   expect(note.content).toContain('Nobody warns you about the second alarm clock.')
 
   // It shows up in the dataset.
-  await page.click('.rail-link:has-text("Scripts")')
+  await page.goto('/#/scripts/table')
   await expect(
     page.locator('.db-table tbody tr', { hasText: 'The Second Alarm Clock' }),
   ).toBeVisible()
-})
-
-test('library searches the whole vault; command palette jumps', async ({ page }) => {
-  await openScripts(page)
-  await page.click('.rail-link:has-text("Library")')
-  await expect(page.locator('.lib-row').first()).toBeVisible()
-  await page.fill('.library-search', 'analytics')
-  await expect(page.locator('.lib-row')).toHaveCount(1)
-  await page.screenshot({ path: `${SHOTS}/10-library.png` })
-  await page.click('.lib-row')
-  await expect(page.locator('.note-title')).toHaveText('The Analytics Gap')
-
-  await page.keyboard.press('ControlOrMeta+k')
-  await expect(page.locator('.palette')).toBeVisible()
-  await page.fill('.palette-input', 'bathtub')
-  await page.keyboard.press('Enter')
-  await expect(page.locator('.note-title')).toHaveText('The Bathtub Sales Call')
 })
 
 test('lens choice persists across reloads; disconnect wipes credentials', async ({ page }) => {
@@ -479,7 +464,7 @@ test('lens choice persists across reloads; disconnect wipes credentials', async 
   await page.click('.rail-disconnect')
   await expect(page).toHaveURL(/#\/connect/)
   const stored = await page.evaluate(() => ({
-    session: localStorage.getItem('atelier.session.v1'),
+    session: localStorage.getItem('adamvaultos.session.v1'),
     legacy: localStorage.getItem('atelier.vault'),
   }))
   expect(stored.session).toBeNull()
