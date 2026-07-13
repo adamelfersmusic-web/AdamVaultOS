@@ -6,12 +6,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Note } from '../lib/types'
 import {
+  createNoteAt,
   createPage,
   fetchAllNotes,
+  fetchNote,
   loadPages,
+  saveContent,
   toast,
   useStore,
 } from '../lib/store'
+import { announcePageUpdate } from '../lib/ui'
+import {
+  parseShelves,
+  serializeShelves,
+  SHELF_CAP,
+  SHELVES_PATH,
+  type Shelf,
+} from '../lib/shelves'
 import { rankNotes } from '../lib/search'
 import { hrefFor, navigate } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
@@ -58,6 +69,9 @@ const SIDE_COLLAPSE_KEY = 'adamvaultos.pages.side.collapsed'
  * of the sidebar, above every section. */
 const PLAN_PATH = 'desk/00-plan'
 const PINNED_OPEN_KEY = 'adamvaultos.pages.pinnedOpen'
+const SHELVES_OPEN_KEY = 'adamvaultos.pages.shelvesOpen'
+/** Per-shelf disclosure, keyed by shelf name (shelves default collapsed). */
+const SHELF_OPEN_PREFIX = 'adamvaultos.pages.shelf.'
 
 export function PagesView({ path }: { path?: string }) {
   const { pages, pagesStatus, pagesError, notes } = useStore()
@@ -292,6 +306,7 @@ export function PagesView({ path }: { path?: string }) {
               {hasPlan && (
                 <PageItem p={PLAN_PATH} path={path} notes={notes} plan />
               )}
+              <ShelvesSection path={path} notes={notes} pagePaths={pagePaths} />
               {pinned.length > 0 && (
                 <div className="pages-pinned" data-testid="pages-pinned">
                   <button
@@ -459,6 +474,314 @@ function FolderContents({
         )
       })}
     </>
+  )
+}
+
+// ——— SHELVES — virtual folders (desk/shelves). Visual grouping ONLY: a shelf
+// never moves, retags, or relinks a note. The whole layout lives in one
+// hand-editable markdown note; every write here is an explicit click that
+// re-reads the note, re-applies the intent, and saves through the same
+// conflict-safe flow as Ask AI's insert. ———
+
+function ShelvesSection({
+  path,
+  notes,
+  pagePaths,
+}: {
+  path?: string
+  notes: Record<string, Note>
+  pagePaths: string[]
+}) {
+  const note = notes[SHELVES_PATH]
+  const shelves = useMemo(
+    () => (note?.content ? parseShelves(note.content) : []),
+    [note?.content],
+  )
+  // Default OPEN (unlike Pinned) — shelves are curated, so they stay small.
+  const [open, setOpen] = useState(
+    () => localStorage.getItem(SHELVES_OPEN_KEY) !== '0',
+  )
+  const toggle = () =>
+    setOpen((o) => {
+      localStorage.setItem(SHELVES_OPEN_KEY, o ? '0' : '1')
+      return !o
+    })
+  const [naming, setNaming] = useState(false)
+  const [name, setName] = useState('')
+
+  // Hydrate the layout note once — the lean pages list carries no bodies.
+  // Missing is fine: the section is just the "+ New shelf" affordance until
+  // the first shelf creates desk/shelves.
+  useEffect(() => {
+    fetchNote(SHELVES_PATH).catch(() => {})
+  }, [])
+
+  /** Every mutation: re-read the freshest desk/shelves, apply the intent to
+   * THAT parse (never a stale render), regenerate the canonical markdown, and
+   * write via the conflict-safe saveContent flow — create-if-missing on the
+   * very first shelf. `fn` returning null = silent no-op, nothing written. */
+  const mutate = async (fn: (current: Shelf[]) => Shelf[] | null) => {
+    try {
+      const fresh = await fetchNote(SHELVES_PATH)
+      const next = fn(fresh?.content ? parseShelves(fresh.content) : [])
+      if (!next) return
+      const body = serializeShelves(next)
+      const updated = fresh
+        ? await saveContent(SHELVES_PATH, body, {
+            updatedAt: fresh.updatedAt,
+            content: fresh.content ?? '',
+          })
+        : await createNoteAt(SHELVES_PATH, body, ['desk'], { type: 'note' })
+      // An open desk/shelves editor re-syncs in place (won't clobber edits).
+      announcePageUpdate(updated.path, updated.content ?? '', updated.updatedAt)
+    } catch (e) {
+      toast('error', `Couldn’t save shelves — ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
+  const atCap = shelves.length >= SHELF_CAP
+
+  const submitName = () => {
+    const trimmed = name.trim()
+    // Empty or duplicate: quietly keep the input open for a rethink.
+    if (!trimmed || atCap || shelves.some((s) => s.name === trimmed)) return
+    setNaming(false)
+    setName('')
+    void mutate((current) =>
+      current.length >= SHELF_CAP || current.some((s) => s.name === trimmed)
+        ? null
+        : [...current, { name: trimmed, members: [] }],
+    )
+  }
+
+  const addMember = (shelfName: string, notePath: string) =>
+    void mutate((current) =>
+      // Already on this shelf (or the shelf vanished) — silent no-op.
+      current.some((s) => s.name === shelfName && !s.members.includes(notePath))
+        ? current.map((s) =>
+            s.name === shelfName
+              ? { ...s, members: [...s.members, notePath] }
+              : s,
+          )
+        : null,
+    )
+
+  const removeMember = (shelfName: string, notePath: string) =>
+    void mutate((current) =>
+      current.some((s) => s.name === shelfName && s.members.includes(notePath))
+        ? current.map((s) =>
+            s.name === shelfName
+              ? { ...s, members: s.members.filter((m) => m !== notePath) }
+              : s,
+          )
+        : null,
+    )
+
+  const deleteShelf = (shelf: Shelf) => {
+    if (
+      shelf.members.length > 0 &&
+      !window.confirm(
+        `Delete shelf “${shelf.name}”? Its notes stay exactly where they are.`,
+      )
+    ) {
+      return
+    }
+    void mutate((current) => current.filter((s) => s.name !== shelf.name))
+  }
+
+  return (
+    <div className="pages-shelves" data-testid="pages-shelves">
+      <div className="pages-shelf-row">
+        <button
+          className="pages-group-head pages-pinned-head"
+          data-testid="shelves-toggle"
+          aria-expanded={open}
+          onClick={toggle}
+        >
+          <span className="pages-group-chevron">{open ? '▾' : '▸'}</span>
+          <span className="pages-group-name">Shelves</span>
+          <span className="pages-group-count">{shelves.length}</span>
+        </button>
+        <button
+          className="pages-shelf-tool pages-shelf-tool-static"
+          data-testid="shelf-new"
+          disabled={atCap}
+          title={atCap ? `Shelf limit reached (${SHELF_CAP})` : 'New shelf'}
+          aria-label="New shelf"
+          onClick={() => {
+            setNaming(true)
+            if (!open) toggle()
+          }}
+        >
+          +
+        </button>
+      </div>
+      {naming && (
+        <div className="pages-shelf-inputbox">
+          <input
+            autoFocus
+            className="pages-side-search pages-shelf-input"
+            data-testid="shelf-name-input"
+            placeholder="Shelf name…"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitName()
+              if (e.key === 'Escape') {
+                setNaming(false)
+                setName('')
+              }
+            }}
+          />
+        </div>
+      )}
+      {open &&
+        shelves.map((s) => (
+          <ShelfRow
+            key={s.name}
+            shelf={s}
+            path={path}
+            notes={notes}
+            pagePaths={pagePaths}
+            onAdd={addMember}
+            onRemove={removeMember}
+            onDelete={() => deleteShelf(s)}
+          />
+        ))}
+    </div>
+  )
+}
+
+function ShelfRow({
+  shelf,
+  path,
+  notes,
+  pagePaths,
+  onAdd,
+  onRemove,
+  onDelete,
+}: {
+  shelf: Shelf
+  path?: string
+  notes: Record<string, Note>
+  pagePaths: string[]
+  onAdd: (shelfName: string, notePath: string) => void
+  onRemove: (shelfName: string, notePath: string) => void
+  onDelete: () => void
+}) {
+  // Default collapsed; per-shelf disclosure keyed by name.
+  const [open, setOpen] = useState(
+    () => localStorage.getItem(`${SHELF_OPEN_PREFIX}${shelf.name}`) === '1',
+  )
+  const toggle = () =>
+    setOpen((o) => {
+      localStorage.setItem(`${SHELF_OPEN_PREFIX}${shelf.name}`, o ? '0' : '1')
+      return !o
+    })
+  const [adding, setAdding] = useState(false)
+  const [query, setQuery] = useState('')
+
+  // Members whose note no longer exists are skipped silently — the wikilink
+  // stays in desk/shelves (the note might come back); it just doesn't render.
+  const existing = useMemo(() => {
+    const have = new Set(pagePaths)
+    return shelf.members.filter((m) => have.has(m))
+  }, [shelf.members, pagePaths])
+
+  // The sidebar's ONE relevance ranking, reused: filter every loaded page
+  // title, shortlist the top handful.
+  const results = useMemo(() => {
+    const q = query.trim()
+    if (!q) return []
+    const list = pagePaths
+      .map((p) => notes[p])
+      .filter((n): n is Note => Boolean(n))
+    return rankNotes(q, list, (n) => sideTitle(n.path, n)).slice(0, 8)
+  }, [query, pagePaths, notes])
+
+  return (
+    <div className="pages-group pages-shelf">
+      <div className="pages-shelf-row">
+        <button
+          className="pages-group-head"
+          data-testid="shelf-head"
+          aria-expanded={open}
+          onClick={toggle}
+        >
+          <span className="pages-group-chevron">{open ? '▾' : '▸'}</span>
+          <span className="pages-group-name">{shelf.name}</span>
+          <span className="pages-group-count">{existing.length}</span>
+        </button>
+        <button
+          className="pages-shelf-tool"
+          data-testid="shelf-add"
+          title={`Add a note to “${shelf.name}”`}
+          aria-label={`Add a note to ${shelf.name}`}
+          onClick={() => {
+            setAdding((a) => !a)
+            setQuery('')
+          }}
+        >
+          +
+        </button>
+        <button
+          className="pages-shelf-tool"
+          data-testid="shelf-delete"
+          title={`Delete shelf “${shelf.name}” — its notes stay put`}
+          aria-label={`Delete shelf ${shelf.name}`}
+          onClick={onDelete}
+        >
+          ×
+        </button>
+      </div>
+      {adding && (
+        <div className="pages-shelf-inputbox">
+          <input
+            autoFocus
+            className="pages-side-search pages-shelf-input"
+            data-testid="shelf-add-input"
+            placeholder="Add a note…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setAdding(false)
+                setQuery('')
+              }
+            }}
+          />
+          {results.map((n) => (
+            <button
+              key={n.path}
+              className="pages-shelf-result"
+              data-testid="shelf-add-result"
+              onClick={() => {
+                onAdd(shelf.name, n.path)
+                setAdding(false)
+                setQuery('')
+              }}
+            >
+              {sideTitle(n.path, n)}
+            </button>
+          ))}
+        </div>
+      )}
+      {open &&
+        existing.map((p) => (
+          <div key={p} className="pages-shelf-member">
+            <PageItem p={p} path={path} notes={notes} indent />
+            <button
+              className="pages-shelf-remove"
+              data-testid="shelf-remove"
+              title="Remove from this shelf — the note itself is untouched"
+              aria-label={`Remove from ${shelf.name}`}
+              onClick={() => onRemove(shelf.name, p)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+    </div>
   )
 }
 

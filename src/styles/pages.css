@@ -1287,6 +1287,98 @@
   color: var(--text-dim, #7f8288);
   font-variant-numeric: tabular-nums;
 }
+/* SHELVES — virtual folders (desk/shelves). Same disclosure anatomy as the
+   Pinned group; the tiny +/× tools sit beside the head and stay quiet until
+   the row is hovered (the section's own + is always visible — it's the whole
+   affordance when no shelves exist yet). */
+.pages-shelves {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 10px;
+}
+.pages-shelf-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.pages-shelf-row > .pages-group-head {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.pages-shelf-tool {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  color: var(--text-dim, #7f8288);
+  font-size: 13px;
+  line-height: 1;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+}
+.pages-shelf-row:hover .pages-shelf-tool,
+.pages-shelf-tool:focus-visible,
+.pages-shelf-tool-static {
+  opacity: 1;
+}
+.pages-shelf-tool:hover:not(:disabled) {
+  background: var(--hover, #202126);
+  color: var(--text, #e6e7ea);
+}
+.pages-shelf-row .pages-shelf-tool:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.pages-shelf-inputbox {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 8px 6px 20px;
+}
+.pages-shelf-inputbox .pages-shelf-input { margin: 0; }
+.pages-shelf-result {
+  text-align: left;
+  border: none;
+  background: none;
+  color: var(--text, #e6e7ea);
+  font-size: 12.5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pages-shelf-result:hover { background: var(--hover, #202126); }
+.pages-shelf-member { position: relative; }
+.pages-shelf-remove {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: var(--bg, #17181c);
+  color: var(--text-dim, #7f8288);
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+}
+.pages-shelf-member:hover .pages-shelf-remove,
+.pages-shelf-remove:focus-visible {
+  opacity: 1;
+}
+.pages-shelf-remove:hover {
+  background: var(--hover, #202126);
+  color: var(--text, #e6e7ea);
+}
+
 .pages-item-indent { padding-left: 22px; }
 .pages-subgroup-head {
   padding-left: 22px;

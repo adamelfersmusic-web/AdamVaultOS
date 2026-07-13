@@ -1256,6 +1256,32 @@ export async function createPage(input: {
 }
 
 /**
+ * Create a note at an EXACT path — for app-owned convention notes (e.g. the
+ * desk/shelves layout note) where the path is the contract, so no slug hunt.
+ * A 409 (someone else created it first) bubbles to the caller, whose next
+ * read picks up the winner.
+ */
+export async function createNoteAt(
+  path: string,
+  content: string,
+  tags: string[] = [],
+  metadata: NoteMetadata = {},
+): Promise<Note> {
+  const a = requireApi()
+  try {
+    const note = await a.createNote({ path, content, tags, metadata })
+    mergeNote(note)
+    if (state.pages && !state.pages.includes(note.path)) {
+      set({ pages: [note.path, ...state.pages] })
+    }
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+/**
  * Quick capture — drop a raw thought straight into the vault, tagged
  * `capture/quick`. Stays raw (the inbox layer); filed/synthesized later. Powers
  * the global CaptureDock.
