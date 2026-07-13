@@ -6,7 +6,7 @@
 //    subfolder instead of hiding 100+ notes behind "_priority".
 // 3. The sidebar search is the app's ONE relevance ranking — body text counts.
 
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 
 const MOCK = 'http://127.0.0.1:8787'
 const TOKEN = 'atelier-test-token'
@@ -338,6 +338,157 @@ test('shelf and section collapse states persist across reload', async ({ page })
   await page.reload()
   await expect(page.getByTestId('shelves-toggle')).toBeVisible()
   await expect(page.getByTestId('pages-shelves').getByTestId('shelf-head')).toHaveCount(0)
+})
+
+// ——— SHELF DRAG & DROP — native HTML5 DnD. Playwright's mouse-based drag
+// can't carry a DataTransfer through the app's dragover guards, so each drag
+// hand-dispatches the real event sequence with ONE shared DataTransfer —
+// exactly what a browser does, minus the ghost image. ———
+
+type DropPos = 'top' | 'bottom' | 'center'
+
+async function dragDrop(
+  page: Page,
+  source: Locator,
+  target: Locator,
+  pos: DropPos = 'center',
+) {
+  const src = await source.elementHandle()
+  const tgt = await target.elementHandle()
+  if (!src || !tgt) throw new Error('drag endpoints not found')
+  await page.evaluate(
+    ({ src, tgt, pos }) => {
+      const dt = new DataTransfer()
+      const r = tgt.getBoundingClientRect()
+      const x = r.left + r.width / 2
+      const y =
+        pos === 'top'
+          ? r.top + 2
+          : pos === 'bottom'
+            ? r.bottom - 2
+            : r.top + r.height / 2
+      const fire = (el: Element, type: string) =>
+        el.dispatchEvent(
+          new DragEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer: dt,
+            clientX: x,
+            clientY: y,
+          }),
+        )
+      fire(src, 'dragstart')
+      fire(tgt, 'dragenter')
+      fire(tgt, 'dragover')
+      fire(tgt, 'drop')
+      fire(src, 'dragend')
+    },
+    { src, tgt, pos },
+  )
+}
+
+const DND_SHELVES_MD = [
+  '# Shelves',
+  '',
+  SHELVES_INTRO,
+  '',
+  '## Mixes',
+  '- [[pages/alpha-track]]',
+  '- [[pages/beta-track]]',
+  '',
+  '## Stems',
+  '- [[pages/gamma-stem]]',
+  '',
+].join('\n')
+
+async function seedDndWorld(page: Page) {
+  await seed(page, 'pages/alpha-track', '# Alpha Track\n\nBody.')
+  await seed(page, 'pages/beta-track', '# Beta Track\n\nBody.')
+  await seed(page, 'pages/gamma-stem', '# Gamma Stem\n\nBody.')
+  await seed(page, 'pages/fresh-cut', '# Fresh Cut\n\nBody.')
+  await seed(page, 'desk/shelves', DND_SHELVES_MD)
+  await connectViaStorage(page)
+  await page.goto('http://127.0.0.1:4173/#/pages')
+  await expect(
+    page.getByTestId('pages-shelves').getByTestId('shelf-head'),
+  ).toHaveCount(2)
+}
+
+test('drag a Recent note onto a shelf header — membership lands in the markdown', async ({ page }) => {
+  await seedDndWorld(page)
+  const recentRow = page.locator('.pages-list > .pages-item', { hasText: 'Fresh Cut' })
+  const stems = page
+    .getByTestId('pages-shelves')
+    .locator('.pages-shelf', { hasText: 'Stems' })
+
+  await dragDrop(page, recentRow, stems.getByTestId('shelf-head'))
+
+  await expect(stems.locator('.pages-group-count')).toHaveText('2')
+  await expect
+    .poll(async () => (await storedNote(page, 'desk/shelves'))?.content ?? '')
+    .toContain('## Stems\n- [[pages/gamma-stem]]\n- [[pages/fresh-cut]]')
+  // Dropping is additive — the note itself never moved or changed.
+  expect((await storedNote(page, 'pages/fresh-cut'))?.content).toBe('# Fresh Cut\n\nBody.')
+
+  // Same drop again: already a member — silent no-op, no duplicate line.
+  await dragDrop(page, recentRow, stems.getByTestId('shelf-head'))
+  await page.waitForTimeout(250)
+  const after = (await storedNote(page, 'desk/shelves'))?.content ?? ''
+  expect(after.match(/\[\[pages\/fresh-cut\]\]/g)).toHaveLength(1)
+})
+
+test('drag a member above another — the shelf lines reorder', async ({ page }) => {
+  await seedDndWorld(page)
+  const mixes = page
+    .getByTestId('pages-shelves')
+    .locator('.pages-shelf', { hasText: 'Mixes' })
+  await mixes.getByTestId('shelf-head').click()
+  await expect(mixes.locator('.pages-item')).toHaveCount(2)
+
+  const beta = mixes.locator('.pages-item', { hasText: 'Beta Track' })
+  const alphaRow = mixes.locator('.pages-shelf-member', { hasText: 'Alpha Track' })
+  await dragDrop(page, beta, alphaRow, 'top')
+
+  await expect
+    .poll(async () => (await storedNote(page, 'desk/shelves'))?.content ?? '')
+    .toContain('## Mixes\n- [[pages/beta-track]]\n- [[pages/alpha-track]]')
+})
+
+test('drag a member from shelf A to shelf B — moved, never duplicated', async ({ page }) => {
+  await seedDndWorld(page)
+  const shelves = page.getByTestId('pages-shelves')
+  const mixes = shelves.locator('.pages-shelf', { hasText: 'Mixes' })
+  const stems = shelves.locator('.pages-shelf', { hasText: 'Stems' })
+  await stems.getByTestId('shelf-head').click()
+
+  const gamma = stems.locator('.pages-item', { hasText: 'Gamma Stem' })
+  await dragDrop(page, gamma, mixes.getByTestId('shelf-head'))
+
+  await expect
+    .poll(async () => (await storedNote(page, 'desk/shelves'))?.content ?? '')
+    .toContain(
+      '## Mixes\n- [[pages/alpha-track]]\n- [[pages/beta-track]]\n- [[pages/gamma-stem]]',
+    )
+  const content = (await storedNote(page, 'desk/shelves'))?.content ?? ''
+  expect(content.match(/\[\[pages\/gamma-stem\]\]/g)).toHaveLength(1)
+  expect(content).toContain('## Stems') // the emptied shelf survives
+})
+
+test('drag shelf Stems above Mixes — the H2 order flips', async ({ page }) => {
+  await seedDndWorld(page)
+  const shelves = page.getByTestId('pages-shelves')
+  const stemsHead = shelves
+    .locator('.pages-shelf', { hasText: 'Stems' })
+    .getByTestId('shelf-head')
+  const mixesRow = shelves
+    .locator('.pages-shelf', { hasText: 'Mixes' })
+    .locator('.pages-shelf-row')
+
+  await dragDrop(page, stemsHead, mixesRow, 'top')
+
+  await expect
+    .poll(async () => (await storedNote(page, 'desk/shelves'))?.content ?? '')
+    .toContain('## Stems\n- [[pages/gamma-stem]]\n\n## Mixes\n- [[pages/alpha-track]]')
 })
 
 test('sidebar search finds body-text mentions (the Arianne case)', async ({ page }) => {

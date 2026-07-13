@@ -3,7 +3,7 @@
 // settings gear. Right: the block editor for the open page, or an invitation
 // to start one.
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { Note } from '../lib/types'
 import {
   createNoteAt,
@@ -70,6 +70,69 @@ const SIDE_COLLAPSE_KEY = 'adamvaultos.pages.side.collapsed'
  * of the sidebar, above every section. */
 const PLAN_PATH = 'desk/00-plan'
 const PINNED_OPEN_KEY = 'adamvaultos.pages.pinnedOpen'
+
+// ——— DRAG & DROP (native HTML5) — shelves are the ONLY drop targets. A drag
+// is pure gesture: nothing is written until a drop lands on a shelf, and
+// every drop funnels through the same conflict-safe mutate() as the +/×
+// clicks. Dragging never REMOVES anything — removal stays the explicit ×. ———
+
+/** What's riding the drag: a plain note row (Recent / Pinned / Plan), a shelf
+ * member (knows which shelf it left), or a whole shelf (header reorder). */
+type DragPayload =
+  | { kind: 'note'; path: string }
+  | { kind: 'member'; path: string; fromShelf: string }
+  | { kind: 'shelf'; name: string }
+
+const DND_MIME = 'application/x-adamvaultos-shelf-dnd'
+/** Hovering a collapsed shelf header this long springs it open (macOS style). */
+const SPRING_OPEN_MS = 600
+
+/** dragover can't read dataTransfer (HTML5 protected mode), so the in-flight
+ * payload is mirrored here for hover affordances; drop still prefers the real
+ * dataTransfer JSON. Cleared on dragend — a cancelled drag leaves no trace. */
+let liveDrag: DragPayload | null = null
+
+function isDragPayload(p: unknown): p is DragPayload {
+  if (!p || typeof p !== 'object') return false
+  const d = p as Record<string, unknown>
+  if (d.kind === 'note') return typeof d.path === 'string'
+  if (d.kind === 'member')
+    return typeof d.path === 'string' && typeof d.fromShelf === 'string'
+  if (d.kind === 'shelf') return typeof d.name === 'string'
+  return false
+}
+
+/** The drop-time payload: the dataTransfer JSON when it parses, else the live
+ * mirror. Malformed/foreign data (someone dropping random text) → null. */
+function readDragPayload(e: React.DragEvent): DragPayload | null {
+  try {
+    const raw = e.dataTransfer.getData(DND_MIME)
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw)
+      if (isDragPayload(parsed)) return parsed
+    }
+  } catch {
+    // fall through to the mirror
+  }
+  return liveDrag
+}
+
+function startDrag(e: React.DragEvent, payload: DragPayload) {
+  liveDrag = payload
+  e.dataTransfer.setData(DND_MIME, JSON.stringify(payload))
+  // Notes COPY onto a shelf (the row stays put); members/shelves MOVE.
+  e.dataTransfer.effectAllowed = payload.kind === 'note' ? 'copy' : 'move'
+}
+
+function endDrag() {
+  liveDrag = null
+}
+
+/** Top or bottom half of the hovered row → insert before it or after it. */
+function slotFor(e: React.DragEvent, index: number): number {
+  const r = e.currentTarget.getBoundingClientRect()
+  return e.clientY > r.top + r.height / 2 ? index + 1 : index
+}
 const SHELVES_OPEN_KEY = 'adamvaultos.pages.shelvesOpen'
 /** Per-shelf disclosure, keyed by shelf name (shelves default collapsed). */
 const SHELF_OPEN_PREFIX = 'adamvaultos.pages.shelf.'
@@ -305,7 +368,13 @@ export function PagesView({ path }: { path?: string }) {
           ) : (
             <>
               {hasPlan && (
-                <PageItem p={PLAN_PATH} path={path} notes={notes} plan />
+                <PageItem
+                  p={PLAN_PATH}
+                  path={path}
+                  notes={notes}
+                  plan
+                  drag={{ kind: 'note', path: PLAN_PATH }}
+                />
               )}
               <ShelvesSection path={path} notes={notes} pagePaths={pagePaths} />
               {pinned.length > 0 && (
@@ -324,13 +393,26 @@ export function PagesView({ path }: { path?: string }) {
                   </button>
                   {pinnedOpen &&
                     pinned.map((p) => (
-                      <PageItem key={p} p={p} path={path} notes={notes} pinned />
+                      <PageItem
+                        key={p}
+                        p={p}
+                        path={path}
+                        notes={notes}
+                        pinned
+                        drag={{ kind: 'note', path: p }}
+                      />
                     ))}
                 </div>
               )}
               <div className="pages-section-label">Recent</div>
               {ordered.slice(0, RECENT_COUNT).map((p) => (
-                <PageItem key={p} p={p} path={path} notes={notes} />
+                <PageItem
+                  key={p}
+                  p={p}
+                  path={path}
+                  notes={notes}
+                  drag={{ kind: 'note', path: p }}
+                />
               ))}
               <div className="pages-section-label pages-section-label-groups">Folders</div>
               {groups.map(([seg, paths]) => {
@@ -568,6 +650,109 @@ function ShelvesSection({
         : null,
     )
 
+  /** Insert `item` before `before` (null / not found → append). */
+  const insertBefore = (list: string[], item: string, before: string | null) => {
+    const next = [...list]
+    const at = before === null ? -1 : next.indexOf(before)
+    if (at === -1) next.push(item)
+    else next.splice(at, 0, item)
+    return next
+  }
+
+  // Drop intents. The UI hands over an ANCHOR (the member/shelf the drop
+  // landed above; null = end) rather than a raw index — mutate() re-reads the
+  // freshest note, so an anchor survives concurrent edits and the hidden
+  // members that don't render (missing notes) without off-by-ones.
+
+  /** Note row dropped on a shelf — same dedup rule as +: already there → no-op. */
+  const addMemberAt = (shelfName: string, notePath: string, before: string | null) =>
+    void mutate((current) => {
+      const shelf = current.find((s) => s.name === shelfName)
+      if (!shelf || shelf.members.includes(notePath)) return null
+      return current.map((s) =>
+        s.name === shelfName
+          ? { ...s, members: insertBefore(s.members, notePath, before) }
+          : s,
+      )
+    })
+
+  /** Member dropped inside a shelf (reorder) or on another shelf (move —
+   * leaves A; joins B at the drop slot unless already there: no dupes). */
+  const moveMember = (
+    fromName: string,
+    toName: string,
+    notePath: string,
+    before: string | null,
+  ) =>
+    void mutate((current) => {
+      const from = current.find((s) => s.name === fromName)
+      const to = current.find((s) => s.name === toName)
+      if (!from || !to || !from.members.includes(notePath)) return null
+      if (before === notePath) return null // dropped right where it sits
+      if (fromName === toName) {
+        const members = insertBefore(
+          from.members.filter((m) => m !== notePath),
+          notePath,
+          before,
+        )
+        if (members.every((m, i) => m === from.members[i])) return null
+        return current.map((s) => (s.name === fromName ? { ...s, members } : s))
+      }
+      return current.map((s) => {
+        if (s.name === fromName)
+          return { ...s, members: s.members.filter((m) => m !== notePath) }
+        if (s.name === toName && !s.members.includes(notePath))
+          return { ...s, members: insertBefore(s.members, notePath, before) }
+        return s
+      })
+    })
+
+  /** Shelf header dropped between shelf headers. */
+  const reorderShelf = (name: string, before: string | null) =>
+    void mutate((current) => {
+      if (name === before) return null
+      const moved = current.find((s) => s.name === name)
+      if (!moved) return null
+      const rest = current.filter((s) => s.name !== name)
+      const at = before === null ? -1 : rest.findIndex((s) => s.name === before)
+      const next = [...rest]
+      if (at === -1) next.push(moved)
+      else next.splice(at, 0, moved)
+      if (next.every((s, i) => s === current[i])) return null
+      return next
+    })
+
+  /** A note/member drop landing on a shelf (header = append, member slot =
+   * insert before the anchor). Shelf drags never route here. */
+  const dropOnShelf = (
+    shelfName: string,
+    payload: DragPayload,
+    before: string | null,
+  ) => {
+    if (payload.kind === 'note') addMemberAt(shelfName, payload.path, before)
+    else if (payload.kind === 'member')
+      moveMember(payload.fromShelf, shelfName, payload.path, before)
+  }
+
+  // Shelf-reorder hover slot (index into `shelves`; a gold line renders
+  // there). Window-level dragend/drop is the safety net for cancelled drags.
+  const [shelfDropIndex, setShelfDropIndex] = useState<number | null>(null)
+  useEffect(() => {
+    const clear = () => setShelfDropIndex(null)
+    window.addEventListener('dragend', clear)
+    window.addEventListener('drop', clear)
+    return () => {
+      window.removeEventListener('dragend', clear)
+      window.removeEventListener('drop', clear)
+    }
+  }, [])
+
+  const shelfDropAt = (payload: DragPayload, index: number) => {
+    setShelfDropIndex(null)
+    if (payload.kind !== 'shelf') return
+    reorderShelf(payload.name, shelves[index]?.name ?? null)
+  }
+
   const removeMember = (shelfName: string, notePath: string) =>
     void mutate((current) =>
       current.some((s) => s.name === shelfName && s.members.includes(notePath))
@@ -638,38 +823,62 @@ function ShelvesSection({
         </div>
       )}
       {open &&
-        shelves.map((s) => (
-          <ShelfRow
-            key={s.name}
-            shelf={s}
-            path={path}
-            notes={notes}
-            pagePaths={pagePaths}
-            onAdd={addMember}
-            onRemove={removeMember}
-            onDelete={() => deleteShelf(s)}
-          />
+        shelves.map((s, i) => (
+          <Fragment key={s.name}>
+            {shelfDropIndex === i && (
+              <div className="pages-drop-line" data-testid="drop-line" />
+            )}
+            <ShelfRow
+              shelf={s}
+              index={i}
+              path={path}
+              notes={notes}
+              pagePaths={pagePaths}
+              onAdd={addMember}
+              onRemove={removeMember}
+              onDelete={() => deleteShelf(s)}
+              onDropOnShelf={dropOnShelf}
+              onShelfHover={setShelfDropIndex}
+              onShelfDropAt={shelfDropAt}
+            />
+          </Fragment>
         ))}
+      {open && shelfDropIndex === shelves.length && shelves.length > 0 && (
+        <div className="pages-drop-line" data-testid="drop-line" />
+      )}
     </div>
   )
 }
 
 function ShelfRow({
   shelf,
+  index,
   path,
   notes,
   pagePaths,
   onAdd,
   onRemove,
   onDelete,
+  onDropOnShelf,
+  onShelfHover,
+  onShelfDropAt,
 }: {
   shelf: Shelf
+  /** Position among the rendered shelves — shelf-reorder slots hang off it. */
+  index: number
   path?: string
   notes: Record<string, Note>
   pagePaths: string[]
   onAdd: (shelfName: string, notePath: string) => void
   onRemove: (shelfName: string, notePath: string) => void
   onDelete: () => void
+  onDropOnShelf: (
+    shelfName: string,
+    payload: DragPayload,
+    before: string | null,
+  ) => void
+  onShelfHover: (insertIndex: number | null) => void
+  onShelfDropAt: (payload: DragPayload, insertIndex: number) => void
 }) {
   // Default collapsed; per-shelf disclosure keyed by name.
   const [open, setOpen] = useState(
@@ -682,6 +891,92 @@ function ShelfRow({
     })
   const [adding, setAdding] = useState(false)
   const [query, setQuery] = useState('')
+
+  // ——— DnD state: header highlight, member insertion slot, spring timer. ———
+  const [headOver, setHeadOver] = useState(false)
+  const [overSlot, setOverSlot] = useState<number | null>(null)
+  const springTimer = useRef<number | null>(null)
+  const clearSpring = () => {
+    if (springTimer.current !== null) {
+      window.clearTimeout(springTimer.current)
+      springTimer.current = null
+    }
+  }
+  // Cancelled or elsewhere-dropped drags: sweep every affordance clean.
+  useEffect(() => {
+    const clear = () => {
+      setHeadOver(false)
+      setOverSlot(null)
+      clearSpring()
+    }
+    window.addEventListener('dragend', clear)
+    window.addEventListener('drop', clear)
+    return () => {
+      window.removeEventListener('dragend', clear)
+      window.removeEventListener('drop', clear)
+    }
+  }, [])
+
+  /** The header accepts notes and members of OTHER shelves (a member dropped
+   * back on its own header would only mean "stay put"). */
+  const headerAccepts = () =>
+    liveDrag?.kind === 'note' ||
+    (liveDrag?.kind === 'member' && liveDrag.fromShelf !== shelf.name)
+  /** The member area additionally accepts this shelf's own members (reorder). */
+  const areaAccepts = () =>
+    liveDrag?.kind === 'note' || liveDrag?.kind === 'member'
+
+  const expandForDrag = () => {
+    setOpen(true)
+    localStorage.setItem(`${SHELF_OPEN_PREFIX}${shelf.name}`, '1')
+  }
+
+  const onHeaderEnter = (e: React.DragEvent) => {
+    if (!headerAccepts()) return
+    e.preventDefault()
+    setHeadOver(true)
+    // Spring-loading: keep hovering a COLLAPSED header and it opens itself.
+    if (!open && springTimer.current === null) {
+      springTimer.current = window.setTimeout(() => {
+        springTimer.current = null
+        expandForDrag()
+      }, SPRING_OPEN_MS)
+    }
+  }
+  const onHeaderOver = (e: React.DragEvent) => {
+    if (liveDrag?.kind === 'shelf') {
+      if (liveDrag.name === shelf.name) return
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      onShelfHover(slotFor(e, index))
+      return
+    }
+    if (!headerAccepts()) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = liveDrag?.kind === 'note' ? 'copy' : 'move'
+    setHeadOver(true)
+  }
+  const onHeaderLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+    setHeadOver(false)
+    clearSpring()
+    if (liveDrag?.kind === 'shelf') onShelfHover(null)
+  }
+  const onHeaderDrop = (e: React.DragEvent) => {
+    const payload = readDragPayload(e)
+    setHeadOver(false)
+    clearSpring()
+    if (!payload) return
+    e.preventDefault()
+    e.stopPropagation()
+    if (payload.kind === 'shelf') {
+      if (payload.name !== shelf.name) onShelfDropAt(payload, slotFor(e, index))
+      return
+    }
+    // A member dropped on its OWN header stays put — never a surprise shuffle.
+    if (payload.kind === 'member' && payload.fromShelf === shelf.name) return
+    onDropOnShelf(shelf.name, payload, null) // header drop = append
+  }
 
   // Members whose note no longer exists are skipped silently — the wikilink
   // stays in desk/shelves (the note might come back); it just doesn't render.
@@ -702,8 +997,23 @@ function ShelfRow({
   }, [query, pagePaths, notes])
 
   return (
-    <div className="pages-group pages-shelf">
-      <div className="pages-shelf-row">
+    <div className={`pages-group pages-shelf${headOver ? ' is-drop-target' : ''}`}>
+      <div
+        className="pages-shelf-row"
+        draggable
+        onDragStart={(e) => {
+          e.stopPropagation()
+          startDrag(e, { kind: 'shelf', name: shelf.name })
+        }}
+        onDragEnd={() => {
+          endDrag()
+          onShelfHover(null)
+        }}
+        onDragEnter={onHeaderEnter}
+        onDragOver={onHeaderOver}
+        onDragLeave={onHeaderLeave}
+        onDrop={onHeaderDrop}
+      >
         <button
           className="pages-group-head"
           data-testid="shelf-head"
@@ -768,21 +1078,85 @@ function ShelfRow({
           ))}
         </div>
       )}
-      {open &&
-        existing.map((p) => (
-          <div key={p} className="pages-shelf-member">
-            <PageItem p={p} path={path} notes={notes} indent />
-            <button
-              className="pages-shelf-remove"
-              data-testid="shelf-remove"
-              title="Remove from this shelf — the note itself is untouched"
-              aria-label={`Remove from ${shelf.name}`}
-              onClick={() => onRemove(shelf.name, p)}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+      {open && (
+        <div
+          className="pages-shelf-members"
+          data-testid="shelf-members"
+          onDragOver={(e) => {
+            // The gap under the last member — append.
+            if (!areaAccepts()) return
+            e.preventDefault()
+            e.dataTransfer.dropEffect = liveDrag?.kind === 'note' ? 'copy' : 'move'
+            setOverSlot(existing.length)
+          }}
+          onDragLeave={(e) => {
+            if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+            setOverSlot(null)
+          }}
+          onDrop={(e) => {
+            const payload = readDragPayload(e)
+            setOverSlot(null)
+            if (!payload || payload.kind === 'shelf') return
+            e.preventDefault()
+            e.stopPropagation()
+            onDropOnShelf(shelf.name, payload, null)
+          }}
+        >
+          {existing.map((p, i) => (
+            <Fragment key={p}>
+              {overSlot === i && (
+                <div className="pages-drop-line" data-testid="drop-line" />
+              )}
+              <div
+                className="pages-shelf-member"
+                onDragOver={(e) => {
+                  if (!areaAccepts()) return
+                  e.preventDefault()
+                  e.stopPropagation()
+                  e.dataTransfer.dropEffect =
+                    liveDrag?.kind === 'note' ? 'copy' : 'move'
+                  setOverSlot(slotFor(e, i))
+                }}
+                onDrop={(e) => {
+                  const payload = readDragPayload(e)
+                  setOverSlot(null)
+                  if (!payload || payload.kind === 'shelf') return
+                  e.preventDefault()
+                  e.stopPropagation()
+                  // Anchor = the visible member at the slot; null = append.
+                  // (Hidden members — missing notes — keep their lines; the
+                  // anchor resolves against the FRESH parse inside mutate.)
+                  onDropOnShelf(
+                    shelf.name,
+                    payload,
+                    existing[slotFor(e, i)] ?? null,
+                  )
+                }}
+              >
+                <PageItem
+                  p={p}
+                  path={path}
+                  notes={notes}
+                  indent
+                  drag={{ kind: 'member', path: p, fromShelf: shelf.name }}
+                />
+                <button
+                  className="pages-shelf-remove"
+                  data-testid="shelf-remove"
+                  title="Remove from this shelf — the note itself is untouched"
+                  aria-label={`Remove from ${shelf.name}`}
+                  onClick={() => onRemove(shelf.name, p)}
+                >
+                  ×
+                </button>
+              </div>
+            </Fragment>
+          ))}
+          {overSlot === existing.length && existing.length > 0 && (
+            <div className="pages-drop-line" data-testid="drop-line" />
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -795,6 +1169,7 @@ function PageItem({
   deep,
   pinned,
   plan,
+  drag,
 }: {
   p: string
   path?: string
@@ -805,12 +1180,18 @@ function PageItem({
   pinned?: boolean
   /** THE PLAN front-door slot — pin marker plus a firmer voice. */
   plan?: boolean
+  /** When set, the row can be dragged onto a shelf, carrying this payload.
+   * Absent (folders, search results, section labels) → no app-level drag. */
+  drag?: DragPayload
 }) {
   return (
     <a
-      className={`pages-item${p === path ? ' is-active' : ''}${indent ? ' pages-item-indent' : ''}${deep ? ' pages-item-deep' : ''}${plan ? ' pages-item-plan' : ''}`}
+      className={`pages-item${p === path ? ' is-active' : ''}${indent ? ' pages-item-indent' : ''}${deep ? ' pages-item-deep' : ''}${plan ? ' pages-item-plan' : ''}${drag ? ' pages-item-draggable' : ''}`}
       href={hrefFor({ kind: 'pages', path: p })}
       data-testid={plan ? 'plan-slot' : undefined}
+      draggable={drag ? true : undefined}
+      onDragStart={drag ? (e) => startDrag(e, drag) : undefined}
+      onDragEnd={drag ? () => endDrag() : undefined}
     >
       <span className="pages-item-title">
         {(pinned || plan) && <IconPin size={11} className="pages-item-pin" />}
