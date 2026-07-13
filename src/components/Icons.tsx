@@ -141,6 +141,15 @@ export const IconSpark = (p: IconProps = {}) =>
     p,
   )
 
+export const IconBolt = (p: IconProps = {}) =>
+  svg(<path d="M8.8 1.8 3.6 9h3.2l-1 5.2L11.2 7H8l.8-5.2Z" />, p)
+
+export const IconSpiral = (p: IconProps = {}) =>
+  svg(
+    <path d="M8 8.2a1 1 0 0 0 1-1.1c-.1-1-1.1-1.6-2.2-1.5C5.2 5.8 4.2 7.2 4.3 8.8c.1 2 1.9 3.4 4 3.3 2.6-.2 4.5-2.4 4.4-5C12.5 4 9.8 1.9 6.7 2.1 3 2.4.4 5.5.6 9.1" />,
+    p,
+  )
+
 export const IconLink = (p: IconProps = {}) =>
   svg(
     <>

@@ -20,7 +20,7 @@ import {
   type AskModel,
   type AskTurn,
 } from '../lib/anthropic'
-import { IconClose, IconSpark } from './Icons'
+import { IconClose, IconSpark, IconSpiral } from './Icons'
 
 interface PanelMsg {
   role: 'user' | 'assistant'
@@ -74,17 +74,19 @@ export function AskAi() {
     }
   }, [askAiOpen])
 
-  // Closed: a floating pill so every layout (incl. full-bleed Pages/Graph,
-  // which have no rail) still has a visible way in. ⌘J works everywhere too.
+  // Closed: a quiet spiral circle folded under the capture dock — same size,
+  // same deep-brown/off-white palette, in every layout (incl. full-bleed
+  // Pages/Graph, which have no rail). ⌘J works everywhere too.
   if (!askAiOpen) {
     return (
       <button
         className="askai-fab"
         data-testid="askai-fab"
         title="Ask AI (⌘J)"
+        aria-label="Ask AI"
         onClick={openAskAi}
       >
-        <IconSpark size={13} /> Ask AI
+        <IconSpiral size={17} />
       </button>
     )
   }
