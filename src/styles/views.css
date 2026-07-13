@@ -1333,6 +1333,8 @@ body.is-dragging .card {
   font-size: 13px;
 }
 
+/* R1 — the note body edits as rich blocks now (TipTap contenteditable),
+   same gold editing frame the old textarea had. */
 .note-editor {
   width: 100%;
   min-height: 320px;
@@ -1340,18 +1342,16 @@ body.is-dragging .card {
   border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--line-2));
   border-radius: var(--r-md);
   padding: 18px 20px;
-  font-family: var(--font-mono);
-  font-size: 13.5px;
+  font-size: 14.5px;
   line-height: 1.7;
   color: var(--ink);
-  resize: none;
-  overflow: hidden;
 }
 .note-editor:focus {
   outline: none;
   border-color: color-mix(in srgb, var(--gold) 55%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 8%, transparent);
 }
+.note-editor-wrap { margin-bottom: 8px; }
 
 /* ————————————————————————— library ————————————————————————— */
 

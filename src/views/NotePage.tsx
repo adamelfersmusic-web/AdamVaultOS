@@ -22,6 +22,7 @@ import {
 } from '../domain/scripts'
 import { ChipSelect } from '../components/EnumMenu'
 import { TagEditor } from '../components/TagEditor'
+import { NoteBodyEditor } from '../components/NoteBodyEditor'
 import { Modal } from '../components/Modal'
 import { IconBack, IconEdit, IconShield } from '../components/Icons'
 import { filterValueOf } from './DatabaseView'
@@ -43,7 +44,9 @@ export function NotePage({ path }: { path: string }) {
   const [conflict, setConflict] = useState<Note | null>(null)
   const [confirmCanon, setConfirmCanon] = useState(false)
   const [savingBody, setSavingBody] = useState(false)
-  const textRef = useRef<HTMLTextAreaElement>(null)
+  // Bumped to remount the rich editor when external content must load in
+  // (conflict "Load theirs") — NoteBodyEditor reads `value` once per mount.
+  const [editorEpoch, setEditorEpoch] = useState(0)
   const bodyRef = useRef<HTMLElement>(null)
 
   const dirty = editing && draft !== (baseRef.current?.content ?? '')
@@ -90,11 +93,6 @@ export function NotePage({ path }: { path: string }) {
       window.removeEventListener('beforeunload', onBeforeUnload)
     }
   }, [dirty])
-
-  // Keep the editor sized to its content (including programmatic loads).
-  useEffect(() => {
-    if (editing && textRef.current) autosize(textRef.current)
-  }, [editing, draft])
 
   const observed = useMemo(() => {
     const map = new Map<string, Set<string>>()
@@ -145,15 +143,8 @@ export function NotePage({ path }: { path: string }) {
     const content = note.content ?? ''
     baseRef.current = { content, updatedAt: note.updatedAt }
     setDraft(content)
+    setEditorEpoch((n) => n + 1)
     setEditing(true)
-    setTimeout(() => {
-      const el = textRef.current
-      if (el) {
-        autosize(el)
-        el.focus()
-        el.setSelectionRange(0, 0)
-      }
-    }, 0)
   }
 
   const discard = () => {
@@ -222,6 +213,7 @@ export function NotePage({ path }: { path: string }) {
     const theirs = conflict.content ?? ''
     baseRef.current = { content: theirs, updatedAt: conflict.updatedAt }
     setDraft(theirs)
+    setEditorEpoch((n) => n + 1) // remount the editor with the live version
     setConflict(null)
     toast('info', 'Loaded the live version into the editor')
   }
@@ -323,20 +315,13 @@ export function NotePage({ path }: { path: string }) {
       )}
 
       {editing ? (
-        <textarea
-          ref={textRef}
-          className="note-editor"
-          data-testid="note-editor"
+        <NoteBodyEditor
+          key={editorEpoch}
           value={draft}
-          spellCheck={false}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-              e.preventDefault()
-              requestSave()
-            } else if (e.key === 'Escape' && !dirty) {
-              discard()
-            }
+          onChange={setDraft}
+          onSave={requestSave}
+          onEscape={() => {
+            if (!dirty) discard()
           }}
         />
       ) : (
@@ -421,7 +406,3 @@ function formatMetaValue(v: unknown): string {
   return String(v)
 }
 
-function autosize(el: HTMLTextAreaElement): void {
-  el.style.height = 'auto'
-  el.style.height = `${el.scrollHeight + 2}px`
-}
