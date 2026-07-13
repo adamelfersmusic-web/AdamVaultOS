@@ -23,7 +23,13 @@ import {
 import { listScribeModels } from '../lib/scribe'
 import { toggleTheme, useTheme } from '../lib/theme'
 import { Modal } from '../components/Modal'
-import { IconMoon, IconPlus, IconSettings, IconSun } from '../components/Icons'
+import {
+  IconMoon,
+  IconPin,
+  IconPlus,
+  IconSettings,
+  IconSun,
+} from '../components/Icons'
 import { WorkTabs } from '../components/WorkTabs'
 import { PageEditor } from './PageEditor'
 
@@ -43,6 +49,9 @@ function sideTitle(p: string, n?: Note): string {
 }
 
 const RECENT_COUNT = 8
+/** Pinned shows EVERY pinned note (no Recent-style trim) — the cap is purely a
+ * defensive ceiling against a runaway `pinned: true` sweep. */
+const PINNED_CAP = 30
 const SIDE_COLLAPSE_KEY = 'adamvaultos.pages.side.collapsed'
 
 export function PagesView({ path }: { path?: string }) {
@@ -103,6 +112,18 @@ export function PagesView({ path }: { path?: string }) {
       .filter((n): n is Note => Boolean(n))
     return rankNotes(q, list, (n) => sideTitle(n.path, n)).map((n) => n.path)
   }, [sideQuery, pagePaths, notes])
+
+  // Pinned front-doors (metadata.pinned === true, e.g. desk/00-plan) sit above
+  // Recent so they never drift down the recency order. The lean list already
+  // carries metadata, so this is the same store data Recent reads.
+  const pinned = useMemo(
+    () =>
+      pagePaths
+        .filter((p) => notes[p]?.metadata.pinned === true)
+        .sort((a, b) => a.localeCompare(b))
+        .slice(0, PINNED_CAP),
+    [pagePaths, notes],
+  )
 
   const groups = useMemo(() => {
     const m = new Map<string, string[]>()
@@ -248,6 +269,14 @@ export function PagesView({ path }: { path?: string }) {
             )
           ) : (
             <>
+              {pinned.length > 0 && (
+                <div className="pages-pinned" data-testid="pages-pinned">
+                  <div className="pages-section-label">Pinned</div>
+                  {pinned.map((p) => (
+                    <PageItem key={p} p={p} path={path} notes={notes} pinned />
+                  ))}
+                </div>
+              )}
               <div className="pages-section-label">Recent</div>
               {ordered.slice(0, RECENT_COUNT).map((p) => (
                 <PageItem key={p} p={p} path={path} notes={notes} />
@@ -404,19 +433,25 @@ function PageItem({
   notes,
   indent,
   deep,
+  pinned,
 }: {
   p: string
   path?: string
   notes: Record<string, Note>
   indent?: boolean
   deep?: boolean
+  /** Row lives in the Pinned group — show the little pin marker. */
+  pinned?: boolean
 }) {
   return (
     <a
       className={`pages-item${p === path ? ' is-active' : ''}${indent ? ' pages-item-indent' : ''}${deep ? ' pages-item-deep' : ''}`}
       href={hrefFor({ kind: 'pages', path: p })}
     >
-      <span className="pages-item-title">{sideTitle(p, notes[p])}</span>
+      <span className="pages-item-title">
+        {pinned && <IconPin size={11} className="pages-item-pin" />}
+        {sideTitle(p, notes[p])}
+      </span>
       <span className="pages-item-time">{relativeTime(notes[p]?.updatedAt)}</span>
     </a>
   )

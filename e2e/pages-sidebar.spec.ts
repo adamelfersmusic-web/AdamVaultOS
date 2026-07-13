@@ -16,10 +16,15 @@ const SESSION_KEY = 'adamvaultos.session.v1'
 async function reset(page: Page) {
   await page.request.post(`${MOCK}/__test/reset`)
 }
-async function seed(page: Page, path: string, content: string) {
+async function seed(
+  page: Page,
+  path: string,
+  content: string,
+  metadata: Record<string, unknown> = {},
+) {
   const res = await page.request.post(`${MOCK}/api/notes`, {
     headers: AUTH,
-    data: { path, content, tags: [], metadata: {} },
+    data: { path, content, tags: [], metadata },
   })
   expect(res.status(), await res.text()).toBe(201)
 }
@@ -75,6 +80,28 @@ test('folders nest one level — escensus surfaces inside _priority', async ({ p
   await expect(sub.locator('.pages-group-count')).toHaveText('2')
   await sub.locator('.pages-subgroup-head').click()
   await expect(sub).toContainText('Pitch Plan')
+})
+
+test('pinned notes sit in a Pinned group above Recent, and open on click', async ({ page }) => {
+  await seed(page, 'desk/00-plan', '# The Plan\n\nFront door.', { pinned: true })
+  await seed(page, 'pages/ordinary-note', '# Ordinary\n\nNothing pinned here.')
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/pages')
+  const pinned = page.getByTestId('pages-pinned')
+  await expect(pinned).toBeVisible()
+
+  // Pinned is the FIRST section in the list, and holds ONLY the pinned note.
+  await expect(page.locator('.pages-list .pages-section-label').first()).toHaveText('Pinned')
+  await expect(pinned.locator('.pages-item')).toHaveCount(1)
+  await expect(pinned.locator('.pages-item')).toContainText('00 Plan')
+  // The non-pinned note stays out of the group (it lives under Recent).
+  await expect(pinned).not.toContainText('Ordinary')
+
+  // Clicking navigates like any Recent row — the page opens in the editor.
+  await pinned.locator('.pages-item').click()
+  await expect(page).toHaveURL(/#\/pages\/desk%2F00-plan/)
+  await expect(page.locator('.page-prose h1')).toContainText('The Plan')
 })
 
 test('sidebar search finds body-text mentions (the Arianne case)', async ({ page }) => {
