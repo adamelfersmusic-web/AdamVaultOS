@@ -76,10 +76,24 @@ export class VaultApi {
     let token = await this.auth.getAccessToken()
     let res = await this.send(method, path, token, body)
 
-    // Access token rejected — try one silent refresh, then replay.
+    // Access token rejected — try one silent refresh (which itself prefers
+    // adopting a sibling tab's rotation over refreshing), then replay.
     if (res.status === 401 && (await this.auth.tryRefresh())) {
       token = await this.auth.getAccessToken()
       res = await this.send(method, path, token, body)
+    }
+
+    // Still rejected — never declare death prematurely. Re-read the persisted
+    // session one final time: another tab may have rotated (or reconnected)
+    // after our refresh failed. A different token than the one just rejected
+    // earns exactly one more replay before VaultAuthError.
+    if (res.status === 401) {
+      this.auth.adoptFromStorage()
+      const latest = this.auth.current.token.accessToken
+      if (latest !== token) {
+        token = latest
+        res = await this.send(method, path, token, body)
+      }
     }
 
     if (res.status === 204) return undefined as T
@@ -365,6 +379,15 @@ export class VaultApi {
     if (res.status === 401 && (await this.auth.tryRefresh())) {
       token = await this.auth.getAccessToken()
       res = await doUpload(token)
+    }
+    // Same last-chance adopt as request(): a sibling tab may hold live tokens.
+    if (res.status === 401) {
+      this.auth.adoptFromStorage()
+      const latest = this.auth.current.token.accessToken
+      if (latest !== token) {
+        token = latest
+        res = await doUpload(token)
+      }
     }
     const data = await res.json().catch(() => null)
     if (!res.ok) {

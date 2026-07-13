@@ -486,6 +486,71 @@
   vertical-align: 1px;
 }
 
+/* ————————————————— auth resilience: banner + draft restore ————————————————— */
+
+/* Slim, calm "session expired" banner at the top of the content area. */
+.auth-banner {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: color-mix(in srgb, var(--gold) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  flex: none;
+}
+.auth-banner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--gold) 65%, transparent);
+  flex: none;
+}
+.auth-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+.auth-banner-btn {
+  flex: none;
+}
+/* Pages is full-bleed — align the banner with the writing column. */
+.pages-main .auth-banner {
+  margin: 12px auto 0;
+  max-width: 740px;
+  width: calc(100% - 52px);
+}
+
+/* Quiet inline bar offering to restore a recovered draft. */
+.draft-restore {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: color-mix(in srgb, var(--blue) 7%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--blue) 26%, transparent);
+  border-radius: var(--r-md);
+  padding: 7px 12px;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.draft-restore-text {
+  flex: 1;
+  min-width: 0;
+}
+.draft-restore-sep {
+  color: var(--ink-3);
+}
+.page-editor .draft-restore {
+  margin: 12px auto 0;
+  max-width: 740px;
+  width: calc(100% - 52px);
+  flex: none;
+}
+
 .conflict-bar {
   display: flex;
   align-items: center;

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { disconnect, useStore } from '../lib/store'
 import { navigate, type Route } from '../lib/router'
+import { AuthBanner } from '../components/AuthBanner'
 import { openPalette, toggleAskAi } from '../lib/ui'
 import { toggleTheme, useTheme } from '../lib/theme'
 import {
@@ -186,7 +187,10 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         </div>
       </aside>
 
-      <main className="stage">{children}</main>
+      <main className="stage">
+        <AuthBanner />
+        {children}
+      </main>
     </div>
   )
 }
