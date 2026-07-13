@@ -1222,6 +1222,19 @@
   padding: 4px 8px 2px;
 }
 .pages-section-label-groups { margin-top: 12px; }
+/* Pinned group — same rows as Recent, just a hair of air before Recent. */
+.pages-pinned {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 10px;
+}
+.pages-item-pin {
+  display: inline-block;
+  vertical-align: -1px;
+  margin-right: 5px;
+  color: var(--gold);
+}
 .pages-group-head {
   display: flex;
   align-items: center;

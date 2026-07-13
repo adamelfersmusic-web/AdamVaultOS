@@ -209,6 +209,15 @@ export const IconPage = (p: IconProps = {}) =>
     p,
   )
 
+export const IconPin = (p: IconProps = {}) =>
+  svg(
+    <>
+      <path d="m9.6 2.2 4.2 4.2-1.9.6-1 3.1-5-5 3.1-1z" />
+      <path d="M8.2 7.8 3 13" />
+    </>,
+    p,
+  )
+
 export const IconSettings = (p: IconProps = {}) =>
   svg(
     <>
