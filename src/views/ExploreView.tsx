@@ -1,9 +1,12 @@
-// Explore — the vault as a wanderable knowledge layer. ONE view, THREE MODES
-// behind a segmented switch (Atlas · Orbit · Threads):
+// Explore — the vault as a wanderable knowledge layer. ONE view, FOUR MODES
+// behind a segmented switch (Atlas · Orbit · Threads · Shuffle):
 //   Atlas   — domain-sectioned topic grid → topic pages grouped by kind
 //   Orbit   — any note as the center; calm concentric rings of cites /
 //             cited-by / siblings, click to re-center and walk the mycelium
 //   Threads — chronological thought-trails: days as strips, colored by domain
+//   Shuffle — the serendipity dealer: one card at a time, weighted toward
+//             the dusty (longest-untouched) notes, with a trail of recent
+//             deals and a hand-off into Orbit
 // Strictly read-only: Explore renders the graphNotes() snapshot the Graph
 // view already loads and never writes to the vault.
 
@@ -15,6 +18,7 @@ import { titleFromPath } from '../lib/format'
 import {
   buildAtlas,
   buildThreads,
+  dealShuffle,
   DOMAIN_COLOR,
   domainOf,
   dotColorOf,
@@ -25,22 +29,24 @@ import {
   relatedTags,
   takeawayOf,
   TOPIC_KINDS,
+  TRAIL_CAP,
 } from '../lib/explore'
 import { IconGem } from '../components/Icons'
 
 const MODE_KEY = 'adamvaultos.explore.mode'
 
-type Mode = 'atlas' | 'orbit' | 'threads'
+type Mode = 'atlas' | 'orbit' | 'threads' | 'shuffle'
 
 const MODES: { key: Mode; label: string }[] = [
   { key: 'atlas', label: 'Atlas' },
   { key: 'orbit', label: 'Orbit' },
   { key: 'threads', label: 'Threads' },
+  { key: 'shuffle', label: 'Shuffle' },
 ]
 
 function loadMode(): Mode {
   const m = localStorage.getItem(MODE_KEY)
-  return m === 'orbit' || m === 'threads' ? m : 'atlas'
+  return m === 'orbit' || m === 'threads' || m === 'shuffle' ? m : 'atlas'
 }
 
 /** Open a note in its proper full surface (same rule as the Library). */
@@ -54,6 +60,10 @@ export function ExploreView({ tag }: { tag?: string }) {
   const [notes, setNotes] = useState<Note[]>([])
   const [mode, setModeState] = useState<Mode>(loadMode)
   const [center, setCenter] = useState<string | null>(null)
+  // Shuffle's session-only state lives up here (like Orbit's center) so a
+  // detour into another mode doesn't lose the dealt card or the trail.
+  const [dealt, setDealt] = useState<Note | null>(null)
+  const [trail, setTrail] = useState<Note[]>([])
 
   const setMode = (m: Mode) => {
     setModeState(m)
@@ -88,6 +98,7 @@ export function ExploreView({ tag }: { tag?: string }) {
             {mode === 'atlas' && 'The vault as topics, world by world.'}
             {mode === 'orbit' && 'One note at the center — walk its connections.'}
             {mode === 'threads' && 'Where was my head? Days as thought-trails.'}
+            {mode === 'shuffle' && 'One card off the top — the dusty ones first.'}
           </p>
         </div>
         <div className="explore-modes" role="tablist" aria-label="Explore mode">
@@ -131,6 +142,18 @@ export function ExploreView({ tag }: { tag?: string }) {
             notes={notes}
             center={center}
             onCenter={(p) => setCenter(p)}
+          />
+        ) : mode === 'shuffle' ? (
+          <ShuffleMode
+            notes={notes}
+            dealt={dealt}
+            trail={trail}
+            onDealt={setDealt}
+            onTrail={setTrail}
+            onOrbit={(p) => {
+              setCenter(p)
+              setMode('orbit')
+            }}
           />
         ) : (
           <Threads notes={notes} />
@@ -446,6 +469,141 @@ function Threads({ notes }: { notes: Note[] }) {
           </div>
         </section>
       ))}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Mode 4 — Shuffle: the serendipity dealer. One full, calm card at a time,
+// dealt dusty-first (see dealShuffle), with a trail of recent deals and
+// three moves: deal again, orbit this, open.
+// ---------------------------------------------------------------------------
+
+function ShuffleMode({
+  notes,
+  dealt,
+  trail,
+  onDealt,
+  onTrail,
+  onOrbit,
+}: {
+  notes: Note[]
+  dealt: Note | null
+  trail: Note[]
+  onDealt: (n: Note | null) => void
+  onTrail: (t: Note[]) => void
+  onOrbit: (path: string) => void
+}) {
+  // Auto-deal the first card when the snapshot is in and no card is face-up.
+  useEffect(() => {
+    if (!dealt && notes.length > 0) {
+      onDealt(dealShuffle(notes, Math.random))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes, dealt])
+
+  if (!dealt) {
+    return (
+      <div className="db-state">
+        <p className="db-state-title">Nothing to deal</p>
+        <p className="db-state-msg">The deck is empty — write a few notes first.</p>
+      </div>
+    )
+  }
+
+  const dealAgain = () => {
+    const exclude = new Set([dealt.path, ...trail.map((t) => t.path)])
+    const next = dealShuffle(notes, Math.random, exclude)
+    if (!next || next.path === dealt.path) return
+    onTrail([dealt, ...trail.filter((t) => t.path !== dealt.path)].slice(0, TRAIL_CAP))
+    onDealt(next)
+  }
+
+  /** A trail chip re-deals that exact note back to the big card. */
+  const recall = (note: Note) => {
+    const rest = trail.filter((t) => t.path !== note.path && t.path !== dealt.path)
+    onTrail(
+      dealt.path === note.path ? rest : [dealt, ...rest].slice(0, TRAIL_CAP),
+    )
+    onDealt(note)
+  }
+
+  const domain = domainOf(dealt.path)
+  const takeaway = takeawayOf(dealt)
+  const tags = (dealt.tags ?? []).slice(0, 8)
+
+  return (
+    <div className="shuffle" data-testid="shuffle">
+      <article
+        className="shuffle-card"
+        data-testid="shuffle-card"
+        data-path={dealt.path}
+      >
+        <span className="shuffle-domain" style={{ color: DOMAIN_COLOR[domain] }}>
+          <i
+            className="shuffle-domain-dot"
+            style={{ background: DOMAIN_COLOR[domain] }}
+            aria-hidden="true"
+          />
+          {domain}
+        </span>
+        <h2 className="shuffle-card-title">
+          <span
+            className={`type-dot type-dot-${dotColorOf(dealt)}`}
+            aria-hidden="true"
+          />
+          {titleFromPath(dealt.path)}
+        </h2>
+        {takeaway && <p className="shuffle-takeaway">{takeaway}</p>}
+        {tags.length > 0 && (
+          <div className="shuffle-tags">
+            {tags.map((t) => (
+              <span key={t} className="shuffle-tag">
+                #{t}
+              </span>
+            ))}
+          </div>
+        )}
+      </article>
+
+      <div className="shuffle-actions">
+        <button className="btn btn-gold" data-testid="shuffle-deal" onClick={dealAgain}>
+          Deal again
+        </button>
+        <button
+          className="btn btn-ghost"
+          data-testid="shuffle-orbit"
+          onClick={() => onOrbit(dealt.path)}
+        >
+          Orbit this
+        </button>
+        <button
+          className="btn btn-ghost"
+          data-testid="shuffle-open"
+          onClick={() => openNote(dealt.path)}
+        >
+          Open
+        </button>
+      </div>
+
+      {trail.length > 0 && (
+        <div className="shuffle-trail" data-testid="shuffle-trail">
+          {trail.map((n) => (
+            <button
+              key={n.path}
+              className="shuffle-trail-chip"
+              title={n.path}
+              onClick={() => recall(n)}
+            >
+              <span
+                className={`type-dot type-dot-${dotColorOf(n)}`}
+                aria-hidden="true"
+              />
+              <span className="shuffle-trail-title">{titleFromPath(n.path)}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
