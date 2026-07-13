@@ -867,3 +867,21 @@
   border-color: rgba(255, 255, 255, 0.24);
   background: color-mix(in srgb, var(--bg) 70%, #5c4432);
 }
+
+
+/* The Atelier gem breathing — shared AI waiting state. */
+.gem-breathe {
+  color: var(--accent);
+  animation: gem-breathe 1.8s ease-in-out infinite;
+}
+@keyframes gem-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}

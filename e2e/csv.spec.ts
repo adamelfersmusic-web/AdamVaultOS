@@ -185,7 +185,6 @@ test('table filter hides rows view-only; storage untouched; bar floats by the ta
     page,
     'pages/roster',
     '# Roster\n\n| name | role |\n| --- | --- |\n| Cassy | content ops |\n| Patricia | video editor |\n',
-    [],
   )
   await connectViaStorage(page)
   await page.goto('/#/pages/' + encodeURIComponent('pages/roster'))
