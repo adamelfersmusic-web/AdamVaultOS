@@ -163,6 +163,183 @@ test('a non-pinned note lives only under Recent', async ({ page }) => {
   await expect(recent).toBeVisible()
 })
 
+// ——— SHELVES — virtual folders (desk/shelves). Visual grouping only: the
+// layout lives in ONE markdown note; member paths/tags/links never change. ———
+
+const SHELVES_INTRO =
+  '*Sidebar shelves — visual only; paths never change. Edit freely.*'
+
+const SHELVES_MD = [
+  '# Shelves',
+  '',
+  SHELVES_INTRO,
+  '',
+  'Stray prose the parser must ignore.',
+  '',
+  '## Music',
+  '- [[pages/song-idea]]',
+  '- [[pages/gone-note]]',
+  '',
+  '## Research',
+  '- [[pages/deep-dive]]',
+  '',
+].join('\n')
+
+async function storedNote(page: Page, path: string) {
+  const res = await page.request.get(
+    `${MOCK}/__test/note?path=${encodeURIComponent(path)}`,
+  )
+  return res.ok() ? ((await res.json()) as { content: string }) : null
+}
+
+async function seedShelvesWorld(page: Page) {
+  await seed(page, 'desk/00-plan', '# The Plan\n\nFront door.', { pinned: true })
+  await seed(page, 'pages/pinned-alpha', '# Pinned Alpha\n\nBody.', { pinned: true })
+  await seed(page, 'pages/song-idea', '# Song Idea\n\nBody.')
+  await seed(page, 'pages/deep-dive', '# Deep Dive\n\nBody.')
+  await seed(page, 'desk/shelves', SHELVES_MD)
+  await connectViaStorage(page)
+}
+
+test('shelves render between Plan and Pinned; expanding shows members; a member opens', async ({ page }) => {
+  await seedShelvesWorld(page)
+  await page.goto('http://127.0.0.1:4173/#/pages')
+
+  // Locked order: Plan slot → SHELVES → Pinned → Recent.
+  await expect(page.locator('.pages-list > :nth-child(1)')).toHaveAttribute(
+    'data-testid',
+    'plan-slot',
+  )
+  await expect(page.locator('.pages-list > :nth-child(2)')).toHaveAttribute(
+    'data-testid',
+    'pages-shelves',
+  )
+  await expect(page.locator('.pages-list > :nth-child(3)')).toHaveAttribute(
+    'data-testid',
+    'pages-pinned',
+  )
+  await expect(page.locator('.pages-list > :nth-child(4)')).toHaveText('Recent')
+
+  // Section open by default with the shelf count; each SHELF starts collapsed.
+  const shelves = page.getByTestId('pages-shelves')
+  await expect(shelves.getByTestId('shelves-toggle').locator('.pages-group-count')).toHaveText('2')
+  await expect(shelves.getByTestId('shelf-head')).toHaveCount(2)
+  await expect(shelves.locator('.pages-item')).toHaveCount(0)
+
+  // Expand Music: the real member shows; the vanished note is skipped
+  // silently (its wikilink stays in the markdown, it just doesn't render).
+  const music = shelves.locator('.pages-shelf', { hasText: 'Music' })
+  await expect(music.locator('.pages-group-count')).toHaveText('1')
+  await music.getByTestId('shelf-head').click()
+  await expect(music.locator('.pages-item')).toHaveCount(1)
+  await expect(music).toContainText('Song Idea')
+  await expect(music).not.toContainText('Gone Note')
+
+  // A member row is a normal page row — clicking opens the page.
+  await music.locator('.pages-item', { hasText: 'Song Idea' }).click()
+  await expect(page).toHaveURL(/#\/pages\/pages%2Fsong-idea/)
+  await expect(page.locator('.page-prose h1')).toContainText('Song Idea')
+})
+
+test('creating the first shelf mints desk/shelves; + search adds a [[wikilink]] member', async ({ page }) => {
+  // No desk/shelves seeded — the section is just the "+ New shelf" affordance.
+  await seed(page, 'pages/song-idea', '# Song Idea\n\nBody.')
+  await connectViaStorage(page)
+  await page.goto('http://127.0.0.1:4173/#/pages')
+
+  const shelves = page.getByTestId('pages-shelves')
+  await expect(shelves.getByTestId('shelf-head')).toHaveCount(0)
+  await shelves.getByTestId('shelf-new').click()
+  const nameInput = shelves.getByTestId('shelf-name-input')
+
+  // Empty name: quietly rejected, the input stays open.
+  await nameInput.press('Enter')
+  await expect(nameInput).toBeVisible()
+
+  await nameInput.fill('Reading')
+  await nameInput.press('Enter')
+  const head = shelves.getByTestId('shelf-head')
+  await expect(head).toContainText('Reading')
+
+  // The saved markdown is the canonical format — H2 + intro line.
+  await expect
+    .poll(async () => (await storedNote(page, 'desk/shelves'))?.content ?? '')
+    .toContain('## Reading')
+  expect((await storedNote(page, 'desk/shelves'))?.content).toContain(SHELVES_INTRO)
+
+  // Add a member via the shelf's + search (titles filter as you type).
+  const row = shelves.locator('.pages-shelf', { hasText: 'Reading' })
+  await row.locator('.pages-shelf-row').hover()
+  await row.getByTestId('shelf-add').click()
+  await row.getByTestId('shelf-add-input').fill('song')
+  await row.getByTestId('shelf-add-result').filter({ hasText: 'Song Idea' }).click()
+
+  await expect(row.locator('.pages-group-count')).toHaveText('1')
+  await expect
+    .poll(async () => (await storedNote(page, 'desk/shelves'))?.content ?? '')
+    .toContain('- [[pages/song-idea]]')
+})
+
+test('removing a member and deleting a shelf rewrite the markdown — notes untouched', async ({ page }) => {
+  await seedShelvesWorld(page)
+  await page.goto('http://127.0.0.1:4173/#/pages')
+
+  const shelves = page.getByTestId('pages-shelves')
+  const music = shelves.locator('.pages-shelf', { hasText: 'Music' })
+
+  // Remove Song Idea from Music (hover ×) — membership only.
+  await music.getByTestId('shelf-head').click()
+  const member = music.locator('.pages-shelf-member', { hasText: 'Song Idea' })
+  await member.hover()
+  await member.getByTestId('shelf-remove').click()
+  await expect(music.locator('.pages-item')).toHaveCount(0)
+  await expect
+    .poll(async () => (await storedNote(page, 'desk/shelves'))?.content ?? '')
+    .not.toContain('[[pages/song-idea]]')
+  const afterRemove = (await storedNote(page, 'desk/shelves'))?.content ?? ''
+  expect(afterRemove).toContain('## Music') // the (now empty) shelf remains
+  expect(afterRemove).toContain('- [[pages/deep-dive]]')
+  // The note itself never moved or changed.
+  expect((await storedNote(page, 'pages/song-idea'))?.content).toBe('# Song Idea\n\nBody.')
+
+  // Delete Research (has a member → confirm) — its note stays put.
+  page.once('dialog', (d) => void d.accept())
+  const research = shelves.locator('.pages-shelf', { hasText: 'Research' })
+  await research.locator('.pages-shelf-row').hover()
+  await research.getByTestId('shelf-delete').click()
+  await expect(shelves.getByTestId('shelf-head')).toHaveCount(1)
+  await expect
+    .poll(async () => (await storedNote(page, 'desk/shelves'))?.content ?? '')
+    .not.toContain('## Research')
+  expect((await storedNote(page, 'pages/deep-dive'))?.content).toBe('# Deep Dive\n\nBody.')
+})
+
+test('shelf and section collapse states persist across reload', async ({ page }) => {
+  await seedShelvesWorld(page)
+  await page.goto('http://127.0.0.1:4173/#/pages')
+
+  const shelves = page.getByTestId('pages-shelves')
+  const music = shelves.locator('.pages-shelf', { hasText: 'Music' })
+
+  // Expand Music, reload: still expanded (per-shelf key, by name).
+  await music.getByTestId('shelf-head').click()
+  await expect(music.locator('.pages-item')).toHaveCount(1)
+  await page.reload()
+  await expect(
+    page
+      .getByTestId('pages-shelves')
+      .locator('.pages-shelf', { hasText: 'Music' })
+      .locator('.pages-item'),
+  ).toHaveCount(1)
+
+  // Collapse the whole section, reload: it stays folded (header only).
+  await page.getByTestId('shelves-toggle').click()
+  await expect(page.getByTestId('pages-shelves').getByTestId('shelf-head')).toHaveCount(0)
+  await page.reload()
+  await expect(page.getByTestId('shelves-toggle')).toBeVisible()
+  await expect(page.getByTestId('pages-shelves').getByTestId('shelf-head')).toHaveCount(0)
+})
+
 test('sidebar search finds body-text mentions (the Arianne case)', async ({ page }) => {
   await seed(page, 'pages/session-notes', '# Session Notes\n\nReviewed Arianne’s taiko beat.')
   await seed(page, 'pages/other-note', '# Other note\n\nNothing relevant here.')
