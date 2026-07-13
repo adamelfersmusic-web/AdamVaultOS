@@ -12,7 +12,6 @@ import { CanvasView } from './views/CanvasView'
 import { ProjectsView } from './views/ProjectsView'
 import { ProjectWorld } from './views/ProjectWorld'
 import { GraphView } from './views/GraphView'
-import { ExploreView } from './views/ExploreView'
 import { NewScriptModal } from './views/NewScriptModal'
 import { CommandPalette } from './components/CommandPalette'
 import { CaptureDock } from './components/CaptureDock'
@@ -24,6 +23,12 @@ import { TRACKER_DB } from './domain/tracker'
 // initial bundle so Scripts/Graph/Library stay light. It loads on first visit.
 const PagesView = lazy(() =>
   import('./views/PagesView').then((m) => ({ default: m.PagesView })),
+)
+
+// Explore is its own world — split it out so the everyday bundle (and the
+// editor's load timing) stays exactly as it was. It loads on first visit.
+const ExploreView = lazy(() =>
+  import('./views/ExploreView').then((m) => ({ default: m.ExploreView })),
 )
 
 export default function App() {
@@ -136,7 +141,9 @@ export default function App() {
         {route.kind === 'note' && <NotePage path={route.path} key={route.path} />}
         {route.kind === 'library' && <LibraryView />}
         {(route.kind === 'explore' || route.kind === 'explore-tag') && (
-          <ExploreView tag={route.kind === 'explore-tag' ? route.tag : undefined} />
+          <Suspense fallback={null}>
+            <ExploreView tag={route.kind === 'explore-tag' ? route.tag : undefined} />
+          </Suspense>
         )}
         {route.kind === 'canvas' && <CanvasView />}
         {route.kind === 'projects' && <ProjectsView />}

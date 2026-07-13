@@ -144,9 +144,13 @@ test('toggle — /toggle folds; Enter drops INTO the fold; canonical markdown', 
   await page.keyboard.press('Enter')
   await expect(page.locator('.page-prose [data-type="details"]')).toHaveCount(1)
 
-  await page.keyboard.type('Plan for Vegas')
+  // Human-paced typing: the Details fold moves the selection from summary
+  // into content asynchronously, and a zero-delay burst can land keystrokes
+  // in the old node (pre-existing flake, seen on main too — not a feature
+  // regression). 30ms between keys is still 5× faster than fast typing.
+  await page.keyboard.type('Plan for Vegas', { delay: 30 })
   await page.keyboard.press('Enter')
-  await page.keyboard.type('- [ ] book flight')
+  await page.keyboard.type('- [ ] book flight', { delay: 30 })
 
   await expect
     .poll(() => savedContent(page, 'pages/rich'))
