@@ -1573,10 +1573,32 @@
 }
 
 /* ── T3 table bar ── */
-.table-bar {
-  position: sticky;
-  top: 0;
+/* Floating: anchored just above the table the caret is in (inline top/left). */
+.table-bar-float {
+  position: absolute;
   z-index: 8;
+  box-shadow: var(--shadow-lift, 0 4px 14px rgba(0, 0, 0, 0.18));
+}
+.pm-row-filtered {
+  display: none;
+}
+.table-filter {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: var(--r-sm);
+  font-size: 11.5px;
+  padding: 3px 7px;
+  width: 110px;
+}
+.table-filter:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+}
+.table-filter-clear {
+  color: var(--gold-bright, var(--gold));
+}
+.table-bar {
   display: flex;
   align-items: center;
   gap: 4px;

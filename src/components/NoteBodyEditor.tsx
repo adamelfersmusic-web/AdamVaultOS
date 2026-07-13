@@ -15,6 +15,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { TaskList, TaskItem } from '@tiptap/extension-list'
 import { Markdown } from '@tiptap/markdown'
 import { TableKit } from '@tiptap/extension-table'
+import { TableFilter } from '../editor/extensions/TableFilter'
 import { Color } from '@tiptap/extension-text-style'
 import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
 import { MarkSpanParser, RichHighlight } from '../editor/extensions/RichHighlight'
@@ -64,6 +65,7 @@ export function NoteBodyEditor({
       ToggleContent,
       ToggleSize,
       TableKit.configure({ table: { resizable: false } }),
+      TableFilter,
       // Full-page surfaces get the REAL kanban + live board (the canvas cards
       // use the chip variants; storage is byte-identical either way).
       Kanban,
