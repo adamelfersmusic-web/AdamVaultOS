@@ -17,6 +17,7 @@ import {
 } from '../lib/store'
 import { toProjects } from '../domain/projects'
 import { navigate } from '../lib/router'
+import { IconBolt } from './Icons'
 
 type Tab = 'capture' | 'todos' | 'pad'
 interface Todo {
@@ -171,14 +172,15 @@ export function CaptureDock() {
     <div className="dock">
       {!open && (
         <div className="dock-fabs">
-          <button className="dock-fab dock-fab-accent" title="Capture to vault (⌘⇧K)" onClick={() => openTab('capture')}>
-            ⚡
-          </button>
-          <button className="dock-fab" title="Todos" onClick={() => openTab('todos')}>
-            ☑
-          </button>
-          <button className="dock-fab" title="Scratch pad" onClick={() => openTab('pad')}>
-            ✎
+          {/* One quiet button — the panel it opens has all three tabs
+              (Capture / Todos / Pad), so satellite icons were redundant.
+              Adam's call 2026-07-13: deep brown, off-white bolt. */}
+          <button
+            className="dock-fab dock-fab-main"
+            title="Capture · Todos · Pad (⌘⇧K)"
+            onClick={() => openTab('capture')}
+          >
+            <IconBolt size={17} />
           </button>
         </div>
       )}

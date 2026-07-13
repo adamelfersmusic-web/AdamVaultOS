@@ -95,7 +95,8 @@ test('dock Pad ⤢ Open as doc — jot lands in today’s daily note, pad clears
   await page.goto('http://127.0.0.1:4173/')
   await expect(page.getByTestId('cockpit')).toBeVisible()
 
-  await page.locator('.dock-fab', { hasText: '✎' }).click()
+  await page.locator('.dock-fab-main').click()
+  await page.locator('.dock-tab', { hasText: 'Pad' }).click()
   await page.locator('.dock-pad').fill('remember: call Aaron about the mix')
   await page.getByTestId('pad-promote').click()
 
@@ -111,7 +112,8 @@ test('dock Pad ⤢ Open as doc — jot lands in today’s daily note, pad clears
   const note = (await res.json()) as { content?: string }
   expect(note.content).toContain('remember: call Aaron about the mix')
 
-  await page.locator('.dock-fab', { hasText: '✎' }).click()
+  await page.locator('.dock-fab-main').click()
+  await page.locator('.dock-tab', { hasText: 'Pad' }).click()
   await expect(page.locator('.dock-pad')).toHaveValue('')
 })
 
@@ -124,7 +126,8 @@ test('T5 — a dock todo files into a project as a real task', async ({ page }) 
   await connectViaStorage(page)
 
   await page.goto('http://127.0.0.1:4173/')
-  await page.locator('.dock-fab', { hasText: '☑' }).click()
+  await page.locator('.dock-fab-main').click()
+  await page.locator('.dock-tab', { hasText: 'Todos' }).click()
   await page.locator('.dock-input').fill('Call the venue about parking')
   await page.keyboard.press('Enter')
   await page.getByTestId('todo-to-project').first().click()

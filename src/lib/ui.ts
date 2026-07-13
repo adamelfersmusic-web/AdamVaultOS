@@ -34,6 +34,11 @@ export const openAskAi = () => set({ askAiOpen: true, paletteOpen: false })
 export const closeAskAi = () => set({ askAiOpen: false })
 export const toggleAskAi = () => set({ askAiOpen: !state.askAiOpen })
 
+/** Fired by the slash menu's "Table — from CSV" item; the focused PageEditor
+ * listens and opens its paste-CSV modal (the slash command itself stays dumb —
+ * it neither parses nor inserts). */
+export const CSV_IMPORT_EVENT = 'adamvaultos:csv-import'
+
 /** Fired when something OUTSIDE the page editor (Ask AI insert) writes to the
  * note that editor has open, so it can re-sync in place. detail:
  * { path, content, updatedAt }. */

@@ -72,7 +72,7 @@ export function CardEditor({
       SlashCommand.configure({
         // Insertion still page-only for the big blocks; registration above is
         // about PRESERVING them, not authoring them in a little card.
-        exclude: ['image', 'subpage', 'ai', 'voice', 'toggle', 'toggle-h1', 'toggle-h2', 'table', 'board', 'kanban'],
+        exclude: ['image', 'subpage', 'ai', 'voice', 'toggle', 'toggle-h1', 'toggle-h2', 'table', 'table-csv', 'board', 'kanban'],
       }),
     ],
     editorProps: {
