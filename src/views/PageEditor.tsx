@@ -13,7 +13,8 @@ import { TableKit } from '@tiptap/extension-table'
 import { TableFilter } from '../editor/extensions/TableFilter'
 import { Markdown } from '@tiptap/markdown'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
-import type { Note } from '../lib/types'
+import { VaultAuthError, type Note } from '../lib/types'
+import { clearDraft, loadDraft, stashDraft, type DraftStash } from '../lib/drafts'
 import {
   ContentDivergedError,
   createPage,
@@ -86,6 +87,9 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
   const [moving, setMoving] = useState(false)
   const [rec, setRec] = useState<Rec>('idle')
   const [dirty, setDirty] = useState(false)
+  // A recovered unsaved draft (stashed when a save died with an auth failure)
+  // waiting for the human's Restore/Discard decision.
+  const [draftStash, setDraftStash] = useState<DraftStash | null>(null)
   // /table-from-csv modal (opened by the slash menu via CSV_IMPORT_EVENT).
   const [csvOpen, setCsvOpen] = useState(false)
   const [csvText, setCsvText] = useState('')
@@ -198,6 +202,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
       baseRef.current = { content: updated.content ?? md, updatedAt: updated.updatedAt }
       setDirty(false)
       setConflict(null)
+      setDraftStash(null) // saved for real — the stash (already cleared) is moot
       // F1a — auto-slug: an untitled placeholder follows its first real title
       // (pages/untitled-N → pages/<slug>). Safe: new pages have no inbound
       // links yet. On success, swap the route to the new path.
@@ -208,7 +213,12 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
       }
     } catch (e) {
       if (e instanceof ContentDivergedError) setConflict(e.fresh)
-      else toast('error', `Couldn’t save — ${e instanceof Error ? e.message : e}`)
+      else if (e instanceof VaultAuthError) {
+        // Session died mid-save (also hit by the leave-guard's flush) — park
+        // the buffer locally so no work is lost. The AuthBanner takes it from
+        // here; a toast on top of it would just be noise.
+        stashDraft(path, md, base.updatedAt)
+      } else toast('error', `Couldn’t save — ${e instanceof Error ? e.message : e}`)
     }
   }
   flushRef.current = flushSave
@@ -257,6 +267,22 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
       setStatus('ready')
     }
 
+    // Draft-restore check (runs once, right after the note loads): a stash
+    // that matches the live content got saved after all — silently drop it.
+    // One that differs is real unsaved work; offer Restore/Discard.
+    const checkStash = (loadedContent: string) => {
+      const stash = loadDraft(path)
+      if (!stash) return
+      if (
+        stash.content === loadedContent ||
+        stash.content === baseRef.current?.content
+      ) {
+        clearDraft(path)
+      } else {
+        setDraftStash(stash)
+      }
+    }
+
     fetchNote(path, { refresh: true })
       .then((n) => {
         if (cancelled) return
@@ -266,6 +292,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
           return
         }
         apply(n.content ?? '', n.updatedAt)
+        checkStash(n.content ?? '')
       })
       .catch((e) => {
         if (cancelled) return
@@ -273,6 +300,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
         const cached = getState().notes[path]
         if (cached?.content !== undefined) {
           apply(cached.content, cached.updatedAt)
+          checkStash(cached.content)
           setLoadError(e instanceof Error ? e.message : String(e))
         } else {
           loadingRef.current = false
@@ -480,6 +508,24 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
         .run()
     }
     setSubPageAt(null)
+  }
+
+  // ——— draft restore (stash from a save that died with the session) ———
+  const restoreDraft = () => {
+    if (!draftStash || !editor || !baseRef.current) return
+    editor.commands.setContent(draftStash.content, { contentType: 'markdown' })
+    const page = convertPageLinks(editor.getJSON())
+    const wiki = convertWikiLinks(convertBoardEmbeds(page.doc).doc)
+    if (page.changed || wiki.changed) editor.commands.setContent(wiki.doc)
+    setDraftStash(null)
+    // The buffer is now dirty against the loaded base — the normal debounced
+    // save flow takes over (and clears the stash on success).
+    onUpdateRef.current()
+  }
+
+  const discardDraft = () => {
+    clearDraft(path)
+    setDraftStash(null)
   }
 
   // ——— conflict resolution ———
@@ -770,6 +816,24 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
         <div className={`voice-bar voice-${rec}`} role="status">
           <span className="voice-dot" />
           {rec === 'recording' ? 'Listening… click the mic to stop' : 'Transcribing…'}
+        </div>
+      )}
+
+      {draftStash && (
+        <div className="draft-restore" data-testid="draft-restore" role="status">
+          <span className="draft-restore-text">
+            Recovered unsaved draft
+            {draftStash.stashedAt ? ` from ${relativeTime(draftStash.stashedAt)}` : ''}
+          </span>
+          <button className="btn btn-ghost draft-restore-btn" onClick={restoreDraft}>
+            Restore
+          </button>
+          <span className="draft-restore-sep" aria-hidden="true">
+            ·
+          </span>
+          <button className="btn btn-ghost draft-restore-btn" onClick={discardDraft}>
+            Discard
+          </button>
         </div>
       )}
 

@@ -42,6 +42,7 @@ import {
   IconSun,
 } from '../components/Icons'
 import { WorkTabs } from '../components/WorkTabs'
+import { AuthBanner } from '../components/AuthBanner'
 import { PageEditor } from './PageEditor'
 
 /** Sidebar label: the doc's real H1 once its content is cached (i.e. it's been
@@ -373,6 +374,7 @@ export function PagesView({ path }: { path?: string }) {
       </aside>
 
       <main className="pages-main">
+        <AuthBanner />
         {path ? (
           path.startsWith('desk/') ? (
             // Work docs get the tab rail (W1) — daily notes + project docs.

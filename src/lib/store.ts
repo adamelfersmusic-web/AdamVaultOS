@@ -22,6 +22,7 @@ import {
   storedFromTokenResponse,
 } from './oauth'
 import { slugify } from './format'
+import { clearDraft } from './drafts'
 import {
   VaultAuthError,
   VaultConflictError,
@@ -56,6 +57,10 @@ export interface ToastItem {
 export interface StoreState {
   session: AuthSession | null
   connection: ConnectionState
+  /** A VaultAuthError escaped and auth hasn't recovered — drives the calm
+   * "Session expired — your work is safe locally" banner. Cleared by any
+   * successful request or a fresh sign-in. */
+  authDead: boolean
   /** OAuth return in progress (exchanging the code). */
   oauthStatus: 'idle' | 'completing'
   oauthError: string | null
@@ -144,6 +149,7 @@ let manager: AuthManager | null = null
 let state: StoreState = {
   session: null,
   connection: 'idle',
+  authDead: false,
   oauthStatus: 'idle',
   oauthError: null,
   approveUrl: null,
@@ -196,7 +202,14 @@ function requireApi(): VaultApi {
 }
 
 function handleAuthFailure(e: unknown): void {
-  if (e instanceof VaultAuthError) set({ connection: 'auth-error' })
+  if (e instanceof VaultAuthError) set({ connection: 'auth-error', authDead: true })
+}
+
+/** Any successful vault round-trip proves auth is alive again. */
+function clearAuthDead(): void {
+  if (state.authDead || state.connection === 'auth-error') {
+    set({ authDead: false, connection: 'ok' })
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -222,17 +235,58 @@ export function dismissToast(id: number): void {
 // Connection lifecycle
 // ---------------------------------------------------------------------------
 
+// Cross-tab rotation transport: BroadcastChannel when available, with the
+// storage event (fired by saveSession's localStorage write) as the fallback.
+// Live sibling tabs adopt a rotation the moment it happens instead of waiting
+// to trip a 401 with a dead token.
+let authChannel: BroadcastChannel | null = null
+let crossTabWired = false
+
+function wireCrossTabAuth(): void {
+  if (crossTabWired || typeof window === 'undefined') return
+  crossTabWired = true
+  try {
+    authChannel = new BroadcastChannel('adamvaultos-auth')
+    authChannel.onmessage = (e: MessageEvent) => {
+      if ((e.data as { type?: string } | null)?.type === 'rotated') {
+        manager?.adoptFromStorage()
+      }
+    }
+  } catch {
+    /* no BroadcastChannel — the storage-event fallback below still covers us */
+  }
+  window.addEventListener('storage', (e) => {
+    if (e.key === SESSION_KEY && e.newValue) manager?.adoptFromStorage()
+  })
+}
+
 function adoptSession(session: AuthSession): void {
   saveSession(session)
-  manager = new AuthManager(session, (rotated) => {
-    // Persist every refresh-token rotation the moment it happens.
-    saveSession(rotated)
-    set({ session: rotated })
-  })
+  wireCrossTabAuth()
+  manager = new AuthManager(
+    session,
+    (rotated) => {
+      // Persist every refresh-token rotation the moment it happens…
+      saveSession(rotated)
+      set({ session: rotated })
+      // …and tell live sibling tabs to adopt it immediately.
+      try {
+        authChannel?.postMessage({ type: 'rotated' })
+      } catch {
+        /* channel closed — storage event already covered it */
+      }
+    },
+    {
+      // The persisted session is the cross-tab source of truth for tokens.
+      loadPersisted: loadSavedSession,
+      onAdopt: (adopted) => set({ session: adopted }),
+    },
+  )
   api = new VaultApi(manager)
   set({
     session,
     connection: 'ok',
+    authDead: false,
     oauthError: null,
     approveUrl: null,
     scriptsStatus: 'idle',
@@ -338,6 +392,7 @@ export function disconnect(): void {
   set({
     session: null,
     connection: 'idle',
+    authDead: false,
     oauthStatus: 'idle',
     oauthError: null,
     approveUrl: null,
@@ -380,6 +435,7 @@ function mergeNote(incoming: Note): Note {
   }
   state = { ...state, notes: { ...state.notes, [incoming.path]: next } }
   emit()
+  clearAuthDead() // a note arrived — the session is provably alive
   return next
 }
 
@@ -395,6 +451,7 @@ function mergeNotes(incoming: Note[]): void {
         : n
   }
   set({ notes })
+  clearAuthDead() // notes arrived — the session is provably alive
 }
 
 export async function loadScripts(): Promise<void> {
@@ -1110,6 +1167,7 @@ export async function saveContent(
           content,
           ifUpdatedAt: base.updatedAt,
         })
+        clearDraft(path) // the buffer made it to the vault — no stash needed
         return mergeNote(updated)
       } catch (e) {
         if (!(e instanceof VaultConflictError)) throw e
@@ -1123,6 +1181,7 @@ export async function saveContent(
           content,
           ifUpdatedAt: fresh.updatedAt,
         })
+        clearDraft(path)
         return mergeNote(updated)
       }
     } catch (e) {
@@ -1147,6 +1206,7 @@ export async function forceContent(
         content,
         ifUpdatedAt: liveUpdatedAt,
       })
+      clearDraft(path)
       return mergeNote(updated)
     } catch (e) {
       handleAuthFailure(e)

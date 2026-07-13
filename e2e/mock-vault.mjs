@@ -113,6 +113,11 @@ const freshOAuth = () => ({
   approvalMode: false, // when true, token exchange returns invalid_client + approve_url
   expiresIn: 3600,
   lastRegistration: null,
+  // ——— auth-resilience controls ———
+  extraTokens: new Set(), // additional bearer tokens accepted (test-issued)
+  revokedTokens: new Set(), // bearers that 401 with "token has been revoked"
+  refreshDisabled: false, // when true, the refresh grant always fails (family dead)
+  requestLog: [], // { method, path, token } for every /api request
 })
 let oauth = freshOAuth()
 
@@ -207,7 +212,20 @@ const server = http.createServer(async (req, res) => {
     if (typeof body.approvalMode === 'boolean') oauth.approvalMode = body.approvalMode
     if (typeof body.expiresIn === 'number') oauth.expiresIn = body.expiresIn
     if (body.revokeAccess === true) oauth.validAccessTokens.clear()
+    // Auth-resilience controls:
+    if (typeof body.addToken === 'string') oauth.extraTokens.add(body.addToken)
+    if (typeof body.revokeToken === 'string') {
+      // Revoked-with-prejudice: the bearer 401s with the hub's theft message.
+      oauth.revokedTokens.add(body.revokeToken)
+      oauth.validAccessTokens.delete(body.revokeToken)
+      oauth.extraTokens.delete(body.revokeToken)
+    }
+    if (typeof body.refreshDisabled === 'boolean') oauth.refreshDisabled = body.refreshDisabled
+    if (body.clearLog === true) oauth.requestLog = []
     return json(res, 200, { ok: true })
+  }
+  if (path === '/__test/requests' && req.method === 'GET') {
+    return json(res, 200, oauth.requestLog)
   }
   if (path === '/__test/oauth-state' && req.method === 'GET') {
     return json(res, 200, {
@@ -307,6 +325,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (grant === 'refresh_token') {
+      // Test control: the whole token family is dead — refresh always fails.
+      if (oauth.refreshDisabled) {
+        return json(res, 400, { error: 'invalid_grant', detail: 'token family revoked' })
+      }
       // Strict rotation: only the CURRENT refresh token is accepted.
       if (form.get('refresh_token') !== oauth.currentRefreshToken) {
         return json(res, 400, { error: 'invalid_grant' })
@@ -345,10 +367,19 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { status: 'ok', vault: 'mock' })
   }
 
-  // ——— auth: the static operator token, or any live OAuth access token ———
+  // ——— auth: the static operator token, any live OAuth access token, or a
+  // test-issued extra token; revoked bearers get the hub's theft message ———
   const auth = req.headers.authorization ?? ''
   const bearer = auth.replace(/^Bearer /, '')
-  if (auth !== `Bearer ${TOKEN}` && !oauth.validAccessTokens.has(bearer)) {
+  oauth.requestLog.push({ method: req.method, path, token: bearer })
+  if (oauth.revokedTokens.has(bearer)) {
+    return json(res, 401, { error: 'invalid_token', message: 'token has been revoked' })
+  }
+  if (
+    auth !== `Bearer ${TOKEN}` &&
+    !oauth.validAccessTokens.has(bearer) &&
+    !oauth.extraTokens.has(bearer)
+  ) {
     const verb = req.method === 'GET' ? 'vault:read' : 'vault:write'
     return json(res, 401, {
       error: 'Unauthorized',

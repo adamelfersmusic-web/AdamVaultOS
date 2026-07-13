@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Note } from '../lib/types'
+import { VaultAuthError, type Note } from '../lib/types'
+import { clearDraft, loadDraft, stashDraft, type DraftStash } from '../lib/drafts'
 import {
   ContentDivergedError,
   fetchNote,
@@ -42,6 +43,8 @@ export function NotePage({ path }: { path: string }) {
   const [draft, setDraft] = useState('')
   const baseRef = useRef<{ content: string; updatedAt: string } | null>(null)
   const [conflict, setConflict] = useState<Note | null>(null)
+  // Unsaved buffer recovered from a save that died with the session.
+  const [draftStash, setDraftStash] = useState<DraftStash | null>(null)
   const [confirmCanon, setConfirmCanon] = useState(false)
   const [savingBody, setSavingBody] = useState(false)
   // Bumped to remount the rich editor when external content must load in
@@ -61,6 +64,13 @@ export function NotePage({ path }: { path: string }) {
       .then((n) => {
         if (cancelled) return
         setStatus(n ? 'ready' : 'missing')
+        // Draft-restore check: a stash equal to the live content got saved
+        // after all — drop it silently. A different one is unsaved work.
+        const stash = loadDraft(path)
+        if (stash && n) {
+          if (stash.content === (n.content ?? '')) clearDraft(path)
+          else setDraftStash(stash)
+        }
       })
       .catch((e) => {
         if (cancelled) return
@@ -163,10 +173,15 @@ export function NotePage({ path }: { path: string }) {
       baseRef.current = null
       setEditing(false)
       setConflict(null)
+      setDraftStash(null) // saved for real — the stash was cleared by the store
       toast('success', 'Saved to vault')
     } catch (e) {
       if (e instanceof ContentDivergedError) {
         setConflict(e.fresh)
+      } else if (e instanceof VaultAuthError) {
+        // Session died mid-save — park the buffer locally so no work is lost.
+        // The AuthBanner announces it; no toast on top.
+        stashDraft(path, draft, base.updatedAt)
       } else {
         toast('error', `Couldn’t save — ${e instanceof Error ? e.message : e}`)
       }
@@ -293,6 +308,44 @@ export function NotePage({ path }: { path: string }) {
       </div>
 
       <hr className="note-rule" />
+
+      {draftStash && !editing && (
+        <div className="draft-restore" data-testid="draft-restore" role="status">
+          <span className="draft-restore-text">
+            Recovered unsaved draft
+            {draftStash.stashedAt ? ` from ${relativeTime(draftStash.stashedAt)}` : ''}
+          </span>
+          <button
+            className="btn btn-ghost draft-restore-btn"
+            onClick={() => {
+              // Load the stash into the editor as a dirty buffer against the
+              // live note — the normal save flow takes over from here.
+              baseRef.current = {
+                content: note.content ?? '',
+                updatedAt: note.updatedAt,
+              }
+              setDraft(draftStash.content)
+              setEditorEpoch((n) => n + 1)
+              setEditing(true)
+              setDraftStash(null)
+            }}
+          >
+            Restore
+          </button>
+          <span className="draft-restore-sep" aria-hidden="true">
+            ·
+          </span>
+          <button
+            className="btn btn-ghost draft-restore-btn"
+            onClick={() => {
+              clearDraft(path)
+              setDraftStash(null)
+            }}
+          >
+            Discard
+          </button>
+        </div>
+      )}
 
       {conflict && (
         <div className="conflict-bar" role="alert">
