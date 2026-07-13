@@ -53,6 +53,11 @@ const RECENT_COUNT = 8
  * defensive ceiling against a runaway `pinned: true` sweep. */
 const PINNED_CAP = 30
 const SIDE_COLLAPSE_KEY = 'adamvaultos.pages.side.collapsed'
+/** App-owned front-door convention: the note at this path is THE PLAN — the
+ * planning front door. If it exists, it gets a dedicated slot at the very top
+ * of the sidebar, above every section. */
+const PLAN_PATH = 'desk/00-plan'
+const PINNED_OPEN_KEY = 'adamvaultos.pages.pinnedOpen'
 
 export function PagesView({ path }: { path?: string }) {
   const { pages, pagesStatus, pagesError, notes } = useStore()
@@ -71,6 +76,16 @@ export function PagesView({ path }: { path?: string }) {
   const [creating, setCreating] = useState(false)
   const [sideQuery, setSideQuery] = useState('')
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set())
+  // Pinned folds away by default — 20+ pinned notes were swamping the sidebar
+  // and burying Recent. Disclosure persists like the sidebar collapse.
+  const [pinnedOpen, setPinnedOpen] = useState(
+    () => localStorage.getItem(PINNED_OPEN_KEY) === '1',
+  )
+  const togglePinned = () =>
+    setPinnedOpen((o) => {
+      localStorage.setItem(PINNED_OPEN_KEY, o ? '0' : '1')
+      return !o
+    })
 
   // Canvas cards are their own surface — a card only becomes a browsable page
   // when you promote it there, so keep canvas/* out of the Pages browser.
@@ -113,13 +128,18 @@ export function PagesView({ path }: { path?: string }) {
     return rankNotes(q, list, (n) => sideTitle(n.path, n)).map((n) => n.path)
   }, [sideQuery, pagePaths, notes])
 
-  // Pinned front-doors (metadata.pinned === true, e.g. desk/00-plan) sit above
-  // Recent so they never drift down the recency order. The lean list already
-  // carries metadata, so this is the same store data Recent reads.
+  // THE PLAN slot — desk/00-plan, when it exists, sits above everything.
+  const hasPlan = useMemo(() => pagePaths.includes(PLAN_PATH), [pagePaths])
+
+  // Pinned notes (metadata.pinned === true) live in a collapsible group below
+  // the Plan slot so they never drift down the recency order — but never
+  // swamp Recent either. The lean list already carries metadata, so this is
+  // the same store data Recent reads. desk/00-plan is excluded: it already
+  // has the dedicated slot on top.
   const pinned = useMemo(
     () =>
       pagePaths
-        .filter((p) => notes[p]?.metadata.pinned === true)
+        .filter((p) => p !== PLAN_PATH && notes[p]?.metadata.pinned === true)
         .sort((a, b) => a.localeCompare(b))
         .slice(0, PINNED_CAP),
     [pagePaths, notes],
@@ -269,12 +289,27 @@ export function PagesView({ path }: { path?: string }) {
             )
           ) : (
             <>
+              {hasPlan && (
+                <PageItem p={PLAN_PATH} path={path} notes={notes} plan />
+              )}
               {pinned.length > 0 && (
                 <div className="pages-pinned" data-testid="pages-pinned">
-                  <div className="pages-section-label">Pinned</div>
-                  {pinned.map((p) => (
-                    <PageItem key={p} p={p} path={path} notes={notes} pinned />
-                  ))}
+                  <button
+                    className="pages-group-head pages-pinned-head"
+                    data-testid="pinned-toggle"
+                    aria-expanded={pinnedOpen}
+                    onClick={togglePinned}
+                  >
+                    <span className="pages-group-chevron">
+                      {pinnedOpen ? '▾' : '▸'}
+                    </span>
+                    <span className="pages-group-name">Pinned</span>
+                    <span className="pages-group-count">{pinned.length}</span>
+                  </button>
+                  {pinnedOpen &&
+                    pinned.map((p) => (
+                      <PageItem key={p} p={p} path={path} notes={notes} pinned />
+                    ))}
                 </div>
               )}
               <div className="pages-section-label">Recent</div>
@@ -434,6 +469,7 @@ function PageItem({
   indent,
   deep,
   pinned,
+  plan,
 }: {
   p: string
   path?: string
@@ -442,14 +478,17 @@ function PageItem({
   deep?: boolean
   /** Row lives in the Pinned group — show the little pin marker. */
   pinned?: boolean
+  /** THE PLAN front-door slot — pin marker plus a firmer voice. */
+  plan?: boolean
 }) {
   return (
     <a
-      className={`pages-item${p === path ? ' is-active' : ''}${indent ? ' pages-item-indent' : ''}${deep ? ' pages-item-deep' : ''}`}
+      className={`pages-item${p === path ? ' is-active' : ''}${indent ? ' pages-item-indent' : ''}${deep ? ' pages-item-deep' : ''}${plan ? ' pages-item-plan' : ''}`}
       href={hrefFor({ kind: 'pages', path: p })}
+      data-testid={plan ? 'plan-slot' : undefined}
     >
       <span className="pages-item-title">
-        {pinned && <IconPin size={11} className="pages-item-pin" />}
+        {(pinned || plan) && <IconPin size={11} className="pages-item-pin" />}
         {sideTitle(p, notes[p])}
       </span>
       <span className="pages-item-time">{relativeTime(notes[p]?.updatedAt)}</span>

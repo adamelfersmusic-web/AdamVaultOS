@@ -82,26 +82,85 @@ test('folders nest one level — escensus surfaces inside _priority', async ({ p
   await expect(sub).toContainText('Pitch Plan')
 })
 
-test('pinned notes sit in a Pinned group above Recent, and open on click', async ({ page }) => {
+test('THE PLAN owns the top slot and opens on click', async ({ page }) => {
   await seed(page, 'desk/00-plan', '# The Plan\n\nFront door.', { pinned: true })
   await seed(page, 'pages/ordinary-note', '# Ordinary\n\nNothing pinned here.')
   await connectViaStorage(page)
 
   await page.goto('http://127.0.0.1:4173/#/pages')
-  const pinned = page.getByTestId('pages-pinned')
-  await expect(pinned).toBeVisible()
+  const plan = page.getByTestId('plan-slot')
+  await expect(plan).toBeVisible()
 
-  // Pinned is the FIRST section in the list, and holds ONLY the pinned note.
-  await expect(page.locator('.pages-list .pages-section-label').first()).toHaveText('Pinned')
-  await expect(pinned.locator('.pages-item')).toHaveCount(1)
-  await expect(pinned.locator('.pages-item')).toContainText('00 Plan')
-  // The non-pinned note stays out of the group (it lives under Recent).
-  await expect(pinned).not.toContainText('Ordinary')
+  // The Plan slot is the VERY FIRST row in the list — above every section.
+  await expect(page.locator('.pages-list .pages-item').first()).toContainText('00 Plan')
+  await expect(page.locator('.pages-list > :first-child')).toHaveAttribute(
+    'data-testid',
+    'plan-slot',
+  )
 
-  // Clicking navigates like any Recent row — the page opens in the editor.
-  await pinned.locator('.pages-item').click()
+  // Clicking navigates like any row — the page opens in the editor.
+  await plan.click()
   await expect(page).toHaveURL(/#\/pages\/desk%2F00-plan/)
   await expect(page.locator('.page-prose h1')).toContainText('The Plan')
+})
+
+test('Pinned folds away by default, reveals on toggle, and remembers across reload', async ({ page }) => {
+  await seed(page, 'desk/00-plan', '# The Plan\n\nFront door.', { pinned: true })
+  await seed(page, 'pages/pinned-alpha', '# Pinned Alpha\n\nBody.', { pinned: true })
+  await seed(page, 'pages/pinned-beta', '# Pinned Beta\n\nBody.', { pinned: true })
+  await seed(page, 'pages/ordinary-note', '# Ordinary\n\nNothing pinned here.')
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/pages')
+  const pinned = page.getByTestId('pages-pinned')
+  const toggle = page.getByTestId('pinned-toggle')
+
+  // Collapsed by default: only the header row (with the count) shows —
+  // 23 pins were swamping the sidebar and burying Recent.
+  await expect(toggle).toBeVisible()
+  await expect(pinned.locator('.pages-group-count')).toHaveText('2')
+  await expect(pinned.locator('.pages-item')).toHaveCount(0)
+  await expect(pinned).not.toContainText('Pinned Alpha')
+
+  // Expand: the pinned rows appear — but desk/00-plan stays out (it already
+  // owns the Plan slot up top).
+  await toggle.click()
+  await expect(pinned.locator('.pages-item')).toHaveCount(2)
+  await expect(pinned).toContainText('Pinned Alpha')
+  await expect(pinned).toContainText('Pinned Beta')
+  await expect(pinned).not.toContainText('00 Plan')
+  await expect(pinned).not.toContainText('Ordinary')
+
+  // The open state persists across a reload…
+  await page.reload()
+  await expect(page.getByTestId('pages-pinned').locator('.pages-item')).toHaveCount(2)
+
+  // …and so does collapsing again.
+  await page.getByTestId('pinned-toggle').click()
+  await expect(page.getByTestId('pages-pinned').locator('.pages-item')).toHaveCount(0)
+  await page.reload()
+  await expect(page.getByTestId('pinned-toggle')).toBeVisible()
+  await expect(page.getByTestId('pages-pinned').locator('.pages-item')).toHaveCount(0)
+})
+
+test('a non-pinned note lives only under Recent', async ({ page }) => {
+  await seed(page, 'desk/00-plan', '# The Plan\n\nFront door.', { pinned: true })
+  await seed(page, 'pages/pinned-alpha', '# Pinned Alpha\n\nBody.', { pinned: true })
+  await seed(page, 'pages/ordinary-note', '# Ordinary\n\nNothing pinned here.')
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/pages')
+  await page.getByTestId('pinned-toggle').click()
+
+  // Not in the Plan slot, not in the pinned group — only the Recent section
+  // (and its folder) carries it.
+  await expect(page.getByTestId('plan-slot')).not.toContainText('Ordinary')
+  await expect(page.getByTestId('pages-pinned')).not.toContainText('Ordinary')
+  const recent = page
+    .locator('.pages-list .pages-item')
+    .filter({ hasText: 'Ordinary' })
+    .first()
+  await expect(recent).toBeVisible()
 })
 
 test('sidebar search finds body-text mentions (the Arianne case)', async ({ page }) => {
