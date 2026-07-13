@@ -25,6 +25,12 @@ const PagesView = lazy(() =>
   import('./views/PagesView').then((m) => ({ default: m.PagesView })),
 )
 
+// Explore is its own world — split it out so the everyday bundle (and the
+// editor's load timing) stays exactly as it was. It loads on first visit.
+const ExploreView = lazy(() =>
+  import('./views/ExploreView').then((m) => ({ default: m.ExploreView })),
+)
+
 export default function App() {
   const { session, oauthStatus, oauthError } = useStore()
   const ui = useUi()
@@ -134,6 +140,11 @@ export default function App() {
         )}
         {route.kind === 'note' && <NotePage path={route.path} key={route.path} />}
         {route.kind === 'library' && <LibraryView />}
+        {(route.kind === 'explore' || route.kind === 'explore-tag') && (
+          <Suspense fallback={null}>
+            <ExploreView tag={route.kind === 'explore-tag' ? route.tag : undefined} />
+          </Suspense>
+        )}
         {route.kind === 'canvas' && <CanvasView />}
         {route.kind === 'projects' && <ProjectsView />}
         {route.kind === 'project' && <ProjectWorld path={route.path} key={route.path} />}
