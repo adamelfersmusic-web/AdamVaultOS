@@ -1,5 +1,5 @@
-// Explore — pure data shaping for the Knowledge Explorer's four modes
-// (Atlas · Orbit · Threads · Shuffle). Everything is computed client-side from the ONE
+// Explore — pure data shaping for the Knowledge Explorer's five modes
+// (Atlas · Orbit · Threads · Shuffle · Museum). Everything is computed client-side from the ONE
 // graphNotes() fetch the Graph view already relies on (lean notes + hydrated
 // links + link degree): no new API endpoints, and Explore never writes.
 
@@ -354,4 +354,74 @@ export function dealShuffle(
     if (roll <= 0) return candidates[i]
   }
   return candidates[n - 1]
+}
+
+// ---------------------------------------------------------------------------
+// Museum — the trophy room. Membership is EARNED, in metadata, never curated
+// here: a note hangs iff it is pinned, canonical, or status-locked. The
+// most-linked piece takes the featured wall; the rest hang in wings by
+// domain, same world order as the Atlas. Pure and read-only throughout.
+// ---------------------------------------------------------------------------
+
+/** A note hangs in the Museum iff its metadata says it earned the wall. */
+export function isMuseumPiece(n: Note): boolean {
+  const m = n.metadata ?? {}
+  return m['pinned'] === true || m['canonical'] === true || m['status'] === 'locked'
+}
+
+/** Only the vault's earned best-of notes — everything else doesn't exist here. */
+export function museumPieces(notes: Note[]): Note[] {
+  return notes.filter(isMuseumPiece)
+}
+
+export interface MuseumWing {
+  domain: Domain
+  pieces: Note[]
+}
+
+export interface Museum {
+  /** The featured exhibit: the most-linked piece, ties broken by path. */
+  featured: Note
+  /** Remaining pieces by domain, Atlas world order; empty wings omitted. */
+  wings: MuseumWing[]
+}
+
+export function buildMuseum(notes: Note[]): Museum | null {
+  const pieces = museumPieces(notes)
+  if (pieces.length === 0) return null
+  const featured = [...pieces].sort(
+    (a, b) => (b.linkCount ?? 0) - (a.linkCount ?? 0) || a.path.localeCompare(b.path),
+  )[0]
+  const byDomain = new Map<Domain, Note[]>()
+  for (const n of pieces) {
+    if (n.path === featured.path) continue
+    const d = domainOf(n.path)
+    const list = byDomain.get(d)
+    if (list) list.push(n)
+    else byDomain.set(d, [n])
+  }
+  const wings: MuseumWing[] = []
+  for (const d of [...DOMAINS, ELSEWHERE] as Domain[]) {
+    const list = byDomain.get(d)
+    if (!list || list.length === 0) continue
+    list.sort(
+      (a, b) =>
+        (b.linkCount ?? 0) - (a.linkCount ?? 0) ||
+        titleFromPath(a.path).localeCompare(titleFromPath(b.path)),
+    )
+    wings.push({ domain: d, pieces: list })
+  }
+  return { featured, wings }
+}
+
+/** The plaque's small credential caption, composed from what exists —
+ * voice · status (or verification) · link degree — omitting missing pieces. */
+export function museumCredential(n: Note): string {
+  const parts: string[] = []
+  const voice = n.metadata?.['voice']
+  if (typeof voice === 'string' && voice.trim()) parts.push(voice.trim())
+  const standing = n.metadata?.['status'] ?? n.metadata?.['verification']
+  if (typeof standing === 'string' && standing.trim()) parts.push(standing.trim())
+  if (typeof n.linkCount === 'number' && n.linkCount > 0) parts.push(`${n.linkCount} rel`)
+  return parts.join(' · ')
 }

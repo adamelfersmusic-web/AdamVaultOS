@@ -1,8 +1,8 @@
-// Explore — the Knowledge Explorer (Atlas · Orbit · Threads · Shuffle).
+// Explore — the Knowledge Explorer (Atlas · Orbit · Threads · Shuffle · Museum).
 // Read-only layer over the graphNotes() snapshot: domain-sectioned topic grid,
 // topic pages grouped by kind with rel badges, orbit rings that re-center on
-// click, the dusty-first shuffle dealer with its trail, and the mode switch
-// persisted in localStorage.
+// click, the dusty-first shuffle dealer with its trail, the museum trophy
+// room of earned pieces, and the mode switch persisted in localStorage.
 
 import { test, expect, type Page } from '@playwright/test'
 
@@ -88,6 +88,33 @@ async function seedExplore(page: Page) {
     { summary: 'The origin web framework.' },
   )
   await seed(page, 'health/labs/june-panel', '# June Panel\n\nLab numbers.', ['health'], {})
+}
+
+/** Three earned museum pieces on top of the explore corpus: one pinned (and
+ * the most-linked, so it takes the featured wall), one canonical, one
+ * status-locked. Nothing else in the vault qualifies. */
+async function seedMuseum(page: Page) {
+  await seed(
+    page,
+    'ai/mycelium-thesis',
+    '# Mycelium Thesis\n\nThe thesis the whole vault hangs from.\n\nGrows from [[ai/isenberg-concepts]] and [[ai/linked-knowledge-llms]].',
+    ['ai', 'concept'],
+    { pinned: true, voice: 'founder', summary: 'The thesis the whole vault hangs from.' },
+  )
+  await seed(
+    page,
+    'atelier/method/frameworks/canon-web',
+    '# Canon Web\n\nThe canonized origin web.',
+    ['atelier', 'framework'],
+    { canonical: true, status: 'approved', summary: 'The canonized origin web.' },
+  )
+  await seed(
+    page,
+    'health/sleep-protocol',
+    '# Sleep Protocol\n\nThe locked sleep protocol.',
+    ['health'],
+    { status: 'locked', summary: 'The locked sleep protocol.' },
+  )
 }
 
 test.beforeEach(async ({ page }) => {
@@ -329,5 +356,112 @@ test('shuffle: mode persists across a full reload and re-deals', async ({ page }
   await expect(page.getByTestId('shuffle-card')).toBeVisible()
   await expect(
     page.locator('.explore-modes button', { hasText: 'Shuffle' }),
+  ).toHaveClass(/is-active/)
+})
+
+test('museum: only earned pieces hang — featured exhibit, domain wings, credentials', async ({ page }) => {
+  await seedExplore(page)
+  await seedMuseum(page)
+  await connectViaStorage(page)
+  await page.goto('/#/explore')
+
+  await page.click('.explore-modes button:has-text("Museum")')
+  await expect(page.getByTestId('museum')).toBeVisible()
+
+  // Featured exhibit = the most-linked piece (2 wikilinks out): title,
+  // takeaway, domain accent, and the composed credential caption.
+  const featured = page.getByTestId('museum-featured')
+  await expect(featured).toContainText('Mycelium Thesis')
+  await expect(featured).toContainText('The thesis the whole vault hangs from.')
+  await expect(featured.locator('.museum-featured-domain')).toHaveText('ai')
+  await expect(featured.locator('.museum-cred')).toHaveText('founder · 2 rel')
+
+  // The remaining pieces hang in domain wings, Atlas world order; the ai
+  // wing is empty once its only piece takes the featured wall, so it
+  // doesn't render.
+  const wings = page.getByTestId('museum-wing')
+  await expect(wings).toHaveCount(2)
+  expect(
+    await wings.evaluateAll((els) => els.map((el) => el.getAttribute('data-domain'))),
+  ).toEqual(['atelier', 'health'])
+  await expect(page.getByTestId('museum-plaque')).toHaveCount(2)
+
+  // Plaque credentials compose from what exists and omit the rest.
+  const canon = page.locator('.museum-plaque[data-path="atelier/method/frameworks/canon-web"]')
+  await expect(canon).toContainText('Canon Web')
+  await expect(canon.locator('.museum-cred')).toHaveText('approved')
+  const locked = page.locator('.museum-plaque[data-path="health/sleep-protocol"]')
+  await expect(locked.locator('.museum-cred')).toHaveText('locked')
+
+  // Membership is EARNED: a seeded note without pinned/canonical/locked
+  // metadata simply doesn't exist in this mode.
+  await expect(
+    page.getByTestId('museum').getByText('Context Windows'),
+  ).toHaveCount(0)
+})
+
+test('museum: a plaque click opens the note; the Orbit affordance re-centers Orbit on it', async ({ page }) => {
+  await seedExplore(page)
+  await seedMuseum(page)
+  await connectViaStorage(page)
+  await page.goto('/#/explore')
+
+  await page.click('.explore-modes button:has-text("Museum")')
+  await expect(page.getByTestId('museum')).toBeVisible()
+
+  // The Orbit affordance hands off WITHOUT opening the note: Orbit mode,
+  // centered on the plaque's piece, persisted like Shuffle's hand-off.
+  await page
+    .locator('.museum-plaque[data-path="atelier/method/frameworks/canon-web"]')
+    .getByTestId('museum-orbit')
+    .click()
+  await expect(page.getByTestId('orbit')).toBeVisible()
+  await expect(page.getByTestId('orbit-center')).toContainText('Canon Web')
+  await expect(page).toHaveURL(/#\/explore$/)
+  await expect(
+    page.locator('.explore-modes button', { hasText: 'Orbit' }),
+  ).toHaveClass(/is-active/)
+  expect(
+    await page.evaluate(() => localStorage.getItem('adamvaultos.explore.mode')),
+  ).toBe('orbit')
+
+  // Back in the museum, clicking the plaque itself walks into the note.
+  await page.click('.explore-modes button:has-text("Museum")')
+  await page.locator('.museum-plaque[data-path="health/sleep-protocol"]').click()
+  await expect(page).toHaveURL(/#\/note\//)
+  await expect(page.locator('.note-title')).toHaveText('Sleep Protocol')
+})
+
+test('museum: empty state when nothing has earned the wall', async ({ page }) => {
+  // The explore corpus alone: no pinned/canonical/locked metadata anywhere.
+  await seedExplore(page)
+  await connectViaStorage(page)
+  await page.goto('/#/explore')
+
+  await page.click('.explore-modes button:has-text("Museum")')
+  const empty = page.getByTestId('museum-empty')
+  await expect(empty).toBeVisible()
+  await expect(empty).toContainText(
+    'Nothing hangs here yet — pin or canonize your best notes and they appear.',
+  )
+  await expect(page.getByTestId('museum-featured')).toHaveCount(0)
+})
+
+test('museum: mode persists across a full reload', async ({ page }) => {
+  await seedExplore(page)
+  await seedMuseum(page)
+  await connectViaStorage(page)
+  await page.goto('/#/explore')
+
+  await page.click('.explore-modes button:has-text("Museum")')
+  await expect(page.getByTestId('museum-featured')).toBeVisible()
+  expect(
+    await page.evaluate(() => localStorage.getItem('adamvaultos.explore.mode')),
+  ).toBe('museum')
+
+  await page.reload()
+  await expect(page.getByTestId('museum-featured')).toBeVisible()
+  await expect(
+    page.locator('.explore-modes button', { hasText: 'Museum' }),
   ).toHaveClass(/is-active/)
 })
