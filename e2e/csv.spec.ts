@@ -176,3 +176,42 @@ test('copy as CSV — table bar CSV button quotes the comma field', async ({ pag
 
   expect(errors, errors.join('\n')).toEqual([])
 })
+
+test('table filter hides rows view-only; storage untouched; bar floats by the table', async ({
+  page,
+}) => {
+  await reset(page)
+  await seed(
+    page,
+    'pages/roster',
+    '# Roster\n\n| name | role |\n| --- | --- |\n| Cassy | content ops |\n| Patricia | video editor |\n',
+    [],
+  )
+  await connectViaStorage(page)
+  await page.goto('/#/pages/' + encodeURIComponent('pages/roster'))
+  await expect(page.locator('.page-prose table')).toBeVisible({ timeout: 10_000 })
+
+  // Click into the table → the bar floats next to it (not the old sticky top strip).
+  await page.locator('.page-prose table td').first().click()
+  const bar = page.getByTestId('table-bar')
+  await expect(bar).toBeVisible()
+  await expect(bar).toHaveClass(/table-bar-float/)
+
+  // Filter to "cassy" — Patricia's row hides, header stays.
+  await page.getByTestId('table-filter').fill('cassy')
+  await expect(page.locator('.page-prose table tr', { hasText: 'Patricia' })).toBeHidden()
+  await expect(page.locator('.page-prose table tr', { hasText: 'Cassy' })).toBeVisible()
+  await expect(page.locator('.page-prose table tr', { hasText: 'role' })).toBeVisible()
+
+  // Clear → everything back.
+  await page.getByTestId('table-filter-clear').click()
+  await expect(page.locator('.page-prose table tr', { hasText: 'Patricia' })).toBeVisible()
+
+  // View-only law: the stored markdown never changed while filtered.
+  const res = await page.request.get(
+    `${MOCK}/api/notes?id=${encodeURIComponent('pages/roster')}`,
+    { headers: AUTH },
+  )
+  const note = (await res.json()) as { content?: string }
+  expect(note.content).toContain('| Patricia | video editor |')
+})

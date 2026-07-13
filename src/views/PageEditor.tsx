@@ -10,6 +10,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { TaskList, TaskItem } from '@tiptap/extension-list'
 import { Color } from '@tiptap/extension-text-style'
 import { TableKit } from '@tiptap/extension-table'
+import { TableFilter } from '../editor/extensions/TableFilter'
 import { Markdown } from '@tiptap/markdown'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
 import type { Note } from '../lib/types'
@@ -129,6 +130,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
       // Tables — GFM pipe tables, first-party markdown round-trip (Adam's
       // "renders perfectly in markdown" law). /table inserts 3×3.
       TableKit.configure({ table: { resizable: false } }),
+      TableFilter,
       // T6 — ![[board:key]] renders the live project board inside the page.
       BoardEmbed,
       // PR3 — /kanban: a standalone in-page board, stored as <!--kanban--> +
@@ -762,8 +764,6 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
         <RecordProperties note={note} def={databaseForPath(path)!} />
       )}
 
-      {editor && <TableBar editor={editor} />}
-
       {editor && <FormatBar editor={editor} />}
 
       {rec !== 'idle' && (
@@ -800,6 +800,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
           </DragHandle>
         )}
         <EditorContent editor={editor} className="page-content" />
+        {editor && <TableBar editor={editor} />}
       </div>
 
       <input
