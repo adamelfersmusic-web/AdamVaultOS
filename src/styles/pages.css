@@ -1378,6 +1378,29 @@
   background: var(--hover, #202126);
   color: var(--text, #e6e7ea);
 }
+/* Shelf drag & drop — calm affordances only: grab cursors on the rows that
+   actually drag, a gold-tinted head while a valid drag hovers a shelf, and a
+   thin gold insertion line marking the reorder slot. Dropping is the only
+   gesture that ever writes; a cancelled drag leaves no trace. */
+.pages-item-draggable { cursor: grab; }
+.pages-item-draggable:active { cursor: grabbing; }
+.pages-shelf-row[draggable='true'] .pages-group-head { cursor: grab; }
+.pages-shelf-row[draggable='true'] .pages-group-head:active { cursor: grabbing; }
+.pages-shelf.is-drop-target > .pages-shelf-row .pages-group-head {
+  background: color-mix(in srgb, var(--gold) 12%, var(--hover, #202126));
+}
+.pages-shelf-members {
+  display: flex;
+  flex-direction: column;
+}
+.pages-drop-line {
+  height: 2px;
+  border-radius: 999px;
+  background: var(--gold);
+  margin: 1px 8px 1px 18px;
+  pointer-events: none;
+  flex: none;
+}
 
 .pages-item-indent { padding-left: 22px; }
 .pages-subgroup-head {
