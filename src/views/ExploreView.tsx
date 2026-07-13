@@ -1,5 +1,5 @@
-// Explore — the vault as a wanderable knowledge layer. ONE view, FOUR MODES
-// behind a segmented switch (Atlas · Orbit · Threads · Shuffle):
+// Explore — the vault as a wanderable knowledge layer. ONE view, FIVE MODES
+// behind a segmented switch (Atlas · Orbit · Threads · Shuffle · Museum):
 //   Atlas   — domain-sectioned topic grid → topic pages grouped by kind
 //   Orbit   — any note as the center; calm concentric rings of cites /
 //             cited-by / siblings, click to re-center and walk the mycelium
@@ -7,6 +7,9 @@
 //   Shuffle — the serendipity dealer: one card at a time, weighted toward
 //             the dusty (longest-untouched) notes, with a trail of recent
 //             deals and a hand-off into Orbit
+//   Museum  — the trophy room: only the earned best-of notes (pinned,
+//             canonical, or locked in metadata), a featured exhibit plus
+//             domain wings of quiet plaques
 // Strictly read-only: Explore renders the graphNotes() snapshot the Graph
 // view already loads and never writes to the vault.
 
@@ -17,6 +20,7 @@ import { hrefFor, navigate } from '../lib/router'
 import { titleFromPath } from '../lib/format'
 import {
   buildAtlas,
+  buildMuseum,
   buildThreads,
   dealShuffle,
   DOMAIN_COLOR,
@@ -25,6 +29,7 @@ import {
   groupByKind,
   hasTagDeep,
   mostLinked,
+  museumCredential,
   orbitFor,
   relatedTags,
   takeawayOf,
@@ -35,18 +40,21 @@ import { IconGem } from '../components/Icons'
 
 const MODE_KEY = 'adamvaultos.explore.mode'
 
-type Mode = 'atlas' | 'orbit' | 'threads' | 'shuffle'
+type Mode = 'atlas' | 'orbit' | 'threads' | 'shuffle' | 'museum'
 
 const MODES: { key: Mode; label: string }[] = [
   { key: 'atlas', label: 'Atlas' },
   { key: 'orbit', label: 'Orbit' },
   { key: 'threads', label: 'Threads' },
   { key: 'shuffle', label: 'Shuffle' },
+  { key: 'museum', label: 'Museum' },
 ]
 
 function loadMode(): Mode {
   const m = localStorage.getItem(MODE_KEY)
-  return m === 'orbit' || m === 'threads' || m === 'shuffle' ? m : 'atlas'
+  return m === 'orbit' || m === 'threads' || m === 'shuffle' || m === 'museum'
+    ? m
+    : 'atlas'
 }
 
 /** Open a note in its proper full surface (same rule as the Library). */
@@ -99,6 +107,7 @@ export function ExploreView({ tag }: { tag?: string }) {
             {mode === 'orbit' && 'One note at the center — walk its connections.'}
             {mode === 'threads' && 'Where was my head? Days as thought-trails.'}
             {mode === 'shuffle' && 'One card off the top — the dusty ones first.'}
+            {mode === 'museum' && 'The trophy room — only the earned hang here.'}
           </p>
         </div>
         <div className="explore-modes" role="tablist" aria-label="Explore mode">
@@ -150,6 +159,14 @@ export function ExploreView({ tag }: { tag?: string }) {
             trail={trail}
             onDealt={setDealt}
             onTrail={setTrail}
+            onOrbit={(p) => {
+              setCenter(p)
+              setMode('orbit')
+            }}
+          />
+        ) : mode === 'museum' ? (
+          <MuseumMode
+            notes={notes}
             onOrbit={(p) => {
               setCenter(p)
               setMode('orbit')
@@ -605,5 +622,136 @@ function ShuffleMode({
         </div>
       )}
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Mode 5 — Museum: the trophy room. Only the earned best-of hang here
+// (pinned / canonical / status-locked in metadata — see museumPieces). The
+// most-linked piece takes the featured wall; the rest hang in domain wings
+// of quiet plaques. Read-only, like all of Explore.
+// ---------------------------------------------------------------------------
+
+function MuseumMode({
+  notes,
+  onOrbit,
+}: {
+  notes: Note[]
+  onOrbit: (path: string) => void
+}) {
+  const museum = useMemo(() => buildMuseum(notes), [notes])
+
+  if (!museum) {
+    return (
+      <p className="museum-empty" data-testid="museum-empty">
+        Nothing hangs here yet — pin or canonize your best notes and they
+        appear.
+      </p>
+    )
+  }
+
+  const featured = museum.featured
+  const featuredDomain = domainOf(featured.path)
+  const featuredTakeaway = takeawayOf(featured)
+  const featuredCred = museumCredential(featured)
+
+  return (
+    <div className="museum" data-testid="museum">
+      <button
+        className="museum-featured"
+        data-testid="museum-featured"
+        data-path={featured.path}
+        title={featured.path}
+        onClick={() => openNote(featured.path)}
+      >
+        <span
+          className="museum-featured-domain"
+          style={{ color: DOMAIN_COLOR[featuredDomain] }}
+        >
+          <i
+            className="museum-domain-dot"
+            style={{ background: DOMAIN_COLOR[featuredDomain] }}
+            aria-hidden="true"
+          />
+          {featuredDomain}
+        </span>
+        <span className="museum-featured-title">
+          <span
+            className={`type-dot type-dot-${dotColorOf(featured)}`}
+            aria-hidden="true"
+          />
+          {titleFromPath(featured.path)}
+        </span>
+        {featuredTakeaway && (
+          <span className="museum-featured-takeaway">{featuredTakeaway}</span>
+        )}
+        {featuredCred && <span className="museum-cred">{featuredCred}</span>}
+      </button>
+
+      {museum.wings.map((wing) => (
+        <section
+          key={wing.domain}
+          className="museum-wing"
+          data-testid="museum-wing"
+          data-domain={wing.domain}
+        >
+          <h2 className="museum-wing-head">
+            <i
+              className="museum-domain-dot"
+              style={{ background: DOMAIN_COLOR[wing.domain] }}
+              aria-hidden="true"
+            />
+            {wing.domain}
+          </h2>
+          <div className="museum-wing-row">
+            {wing.pieces.map((n) => (
+              <MuseumPlaque key={n.path} note={n} onOrbit={onOrbit} />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  )
+}
+
+function MuseumPlaque({
+  note,
+  onOrbit,
+}: {
+  note: Note
+  onOrbit: (path: string) => void
+}) {
+  const takeaway = takeawayOf(note)
+  const cred = museumCredential(note)
+  return (
+    <article
+      className="museum-plaque"
+      data-testid="museum-plaque"
+      data-path={note.path}
+      title={note.path}
+      onClick={() => openNote(note.path)}
+    >
+      <span className="museum-plaque-title">
+        <span
+          className={`type-dot type-dot-${dotColorOf(note)}`}
+          aria-hidden="true"
+        />
+        {titleFromPath(note.path)}
+      </span>
+      {takeaway && <span className="museum-plaque-takeaway">{takeaway}</span>}
+      <span className="museum-plaque-foot">
+        {cred ? <span className="museum-cred">{cred}</span> : <span />}
+        <button
+          className="museum-orbit-btn"
+          data-testid="museum-orbit"
+          onClick={(e) => {
+            e.stopPropagation()
+            onOrbit(note.path)
+          }}
+        >
+          Orbit
+        </button>
+      </span>
+    </article>
   )
 }
