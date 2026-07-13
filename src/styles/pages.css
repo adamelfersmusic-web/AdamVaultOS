@@ -638,13 +638,11 @@
   padding: 18px 0 8px;
 }
 .ai-monogram {
-  font-family: var(--font-display);
-  font-size: 48px;
-  font-weight: 500;
+  display: inline-flex;
   line-height: 1;
-  color: var(--gold);
+  color: var(--accent); /* the turquoise Atelier gem, per Adam 🔥 */
   animation: ai-breathe 2.5s ease-in-out infinite;
-  will-change: opacity, text-shadow;
+  will-change: opacity, transform;
 }
 .ai-monogram.is-leaving {
   animation: none;

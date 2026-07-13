@@ -20,7 +20,7 @@ import {
   type AskModel,
   type AskTurn,
 } from '../lib/anthropic'
-import { IconClose, IconSpark, IconSpiral } from './Icons'
+import { IconClose, IconGem, IconSpark, IconSpiral } from './Icons'
 
 interface PanelMsg {
   role: 'user' | 'assistant'
@@ -244,7 +244,9 @@ export function AskAi() {
                   dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }}
                 />
               ) : (
-                <div className="askai-thinking">thinking…</div>
+                <div className="askai-thinking">
+                  <IconGem size={18} className="gem-breathe" />
+                </div>
               )}
               {!m.streaming && m.text && !m.text.startsWith('⚠️') && (
                 <div className="askai-actions">

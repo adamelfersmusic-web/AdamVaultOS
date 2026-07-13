@@ -13,7 +13,7 @@ import { useEditorSettings, openPagesSettings } from '../../lib/editorSettings'
 import { askVault, AnthropicError } from '../../lib/anthropic'
 import { parseHash } from '../../lib/router'
 import { toast } from '../../lib/store'
-import { IconSpark, IconClose } from '../../components/Icons'
+import { IconSpark, IconClose, IconGem } from '../../components/Icons'
 
 // Split the model's plain-prose answer into separate paragraph block nodes —
 // one block per logical paragraph, so ideas aren't collapsed into a single
@@ -144,7 +144,7 @@ function AiBlockView({ node, updateAttributes, deleteNode, editor, getPos }: Nod
             <span
               className={`ai-monogram${phase === 'fading' ? ' is-leaving' : ''}`}
             >
-              G.
+              <IconGem size={40} />
             </span>
           </div>
         ) : (
