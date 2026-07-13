@@ -73,17 +73,23 @@ export function ConnectView() {
       <div className="connect-glow" aria-hidden="true" />
       <form className="connect-card" onSubmit={tokenConnect}>
         <div className="connect-brand">
-          <svg width="34" height="34" viewBox="0 0 32 32" aria-hidden="true">
+          <svg
+            className="connect-gem"
+            width="56"
+            height="56"
+            viewBox="0 0 32 32"
+            aria-hidden="true"
+          >
             <path
               d="M16 4.5 27.5 16 16 27.5 4.5 16Z"
               fill="none"
               stroke="var(--gold)"
-              strokeWidth="2"
+              strokeWidth="2.4"
             />
-            <circle cx="16" cy="16" r="2.8" fill="var(--gold)" />
+            <circle cx="16" cy="16" r="3" fill="var(--gold)" />
           </svg>
-          <h1 className="connect-title">Adam</h1>
-          <p className="connect-sub">a studio for your personal vault</p>
+          <h1 className="connect-title">Welcome</h1>
+          <p className="connect-sub">Adam · Vault OS</p>
         </div>
 
         <label className="field">

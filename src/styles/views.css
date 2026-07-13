@@ -231,6 +231,16 @@
   margin-bottom: 8px;
   text-align: center;
 }
+/* The welcome gem — a slow, calm breath (half the tempo of the AI thinking
+   gem; this one is a greeting, not a heartbeat). */
+.connect-gem {
+  animation: gem-breathe 4.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .connect-gem {
+    animation: none;
+  }
+}
 .connect-title {
   font-family: var(--font-display);
   font-size: 34px;
