@@ -7,6 +7,7 @@ import {
   IconBoard,
   IconDisconnect,
   IconGallery,
+  IconGem,
   IconGraph,
   IconLibrary,
   IconMoon,
@@ -115,6 +116,13 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           >
             <IconGraph size={15} />
             Graph
+          </a>
+          <a
+            className={`rail-link${route.kind === 'explore' || route.kind === 'explore-tag' ? ' is-active' : ''}`}
+            href="#/explore"
+          >
+            <IconGem size={15} />
+            Explore
           </a>
           <a
             className={`rail-link${route.kind === 'library' || route.kind === 'note' ? ' is-active' : ''}`}

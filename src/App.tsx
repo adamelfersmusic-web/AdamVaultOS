@@ -12,6 +12,7 @@ import { CanvasView } from './views/CanvasView'
 import { ProjectsView } from './views/ProjectsView'
 import { ProjectWorld } from './views/ProjectWorld'
 import { GraphView } from './views/GraphView'
+import { ExploreView } from './views/ExploreView'
 import { NewScriptModal } from './views/NewScriptModal'
 import { CommandPalette } from './components/CommandPalette'
 import { CaptureDock } from './components/CaptureDock'
@@ -134,6 +135,9 @@ export default function App() {
         )}
         {route.kind === 'note' && <NotePage path={route.path} key={route.path} />}
         {route.kind === 'library' && <LibraryView />}
+        {(route.kind === 'explore' || route.kind === 'explore-tag') && (
+          <ExploreView tag={route.kind === 'explore-tag' ? route.tag : undefined} />
+        )}
         {route.kind === 'canvas' && <CanvasView />}
         {route.kind === 'projects' && <ProjectsView />}
         {route.kind === 'project' && <ProjectWorld path={route.path} key={route.path} />}

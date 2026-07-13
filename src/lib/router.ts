@@ -17,6 +17,8 @@ export type Route =
   | { kind: 'note'; path: string }
   | { kind: 'library' }
   | { kind: 'graph' }
+  | { kind: 'explore' }
+  | { kind: 'explore-tag'; tag: string }
   | { kind: 'pages'; path?: string }
 
 /** Decode a hash path back to a vault path. Accepts the single %2F-encoded
@@ -56,6 +58,16 @@ export function parseHash(hash: string): Route {
     }
     case 'graph':
       return { kind: 'graph' }
+    case 'explore': {
+      // #/explore/tag/<tag> — tags can themselves contain slashes
+      // (capture/voice), so everything after /tag/ is decoded greedily as
+      // ONE tag name (accepting both the %2F-encoded and legacy forms).
+      if (rest[0] === 'tag') {
+        const tag = decodePath(rest.slice(1))
+        return tag ? { kind: 'explore-tag', tag } : { kind: 'explore' }
+      }
+      return { kind: 'explore' }
+    }
     case 'pages': {
       const path = decodePath(rest)
       return path ? { kind: 'pages', path } : { kind: 'pages' }
@@ -98,6 +110,12 @@ export function hrefFor(route: Route): string {
       return `#/project/${encodeURIComponent(route.path)}`
     case 'graph':
       return '#/graph'
+    case 'explore':
+      return '#/explore'
+    case 'explore-tag':
+      // Same single-encoded-segment contract as note paths: the slashed tag
+      // stays opaque to the splitter.
+      return `#/explore/tag/${encodeURIComponent(route.tag)}`
     case 'pages':
       // Single %2F-encoded segment so the slashed vault path is opaque to the
       // splitter (and never re-parsed as a nested route).
