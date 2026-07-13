@@ -11,6 +11,7 @@ import type { JSONContent, NodeViewProps } from '@tiptap/core'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
 import { useEditorSettings, openPagesSettings } from '../../lib/editorSettings'
 import { askVault, AnthropicError } from '../../lib/anthropic'
+import { parseHash } from '../../lib/router'
 import { toast } from '../../lib/store'
 import { IconSpark, IconClose } from '../../components/Icons'
 
@@ -62,9 +63,16 @@ function AiBlockView({ node, updateAttributes, deleteNode, editor, getPos }: Nod
     setPhase('loading')
     setError(null)
     try {
+      // The page this block lives in rides along as first-class context —
+      // same grounding as the ⌘J panel. Path from the route, body from the
+      // editor's own doc (the un-asked /ai block serializes to nothing).
+      const route = parseHash(window.location.hash)
+      const path =
+        route.kind === 'pages' || route.kind === 'note' ? route.path : null
       const answer = await askVault({
         prompt: q,
         apiKey: settings.anthropicKey,
+        page: path ? { path, content: editor.getMarkdown() } : null,
       })
       // Fade the thinking monogram out (0.3s) before the answer appears.
       setPhase('fading')

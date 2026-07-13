@@ -48,6 +48,8 @@ const MAX_PAGE_CHARS = 12000 // the open page gets far more room than RAG hits
 export interface AskVaultInput {
   prompt: string
   apiKey: string
+  /** The page the /ai block lives in — first-class context, like the panel. */
+  page?: { path: string; content: string } | null
 }
 
 export class AnthropicError extends Error {
@@ -137,6 +139,7 @@ async function requestMessages(
   apiKey: string,
   system: string,
   prompt: string,
+  effort: 'medium' | 'high',
 ): Promise<string> {
   let res: Response
   try {
@@ -150,8 +153,9 @@ async function requestMessages(
       },
       body: JSON.stringify({
         model: ASK_MODELS.sonnet.id,
-        max_tokens: 1000,
+        max_tokens: 2000,
         system,
+        output_config: { effort },
         messages: [{ role: 'user', content: prompt }],
       }),
     })
@@ -184,13 +188,20 @@ async function requestMessages(
   return text
 }
 
-/** One-shot ask for the /ai editor block (plain prose, non-streaming). */
+/** One-shot ask for the /ai editor block (plain prose, non-streaming).
+ * Same grounding as the panel — vault RAG + the page the block lives in —
+ * on one model (Sonnet 5), with the same broad-question effort bump. */
 export async function askVault(input: AskVaultInput): Promise<string> {
-  const { prompt, apiKey } = input
+  const { prompt, apiKey, page } = input
   if (!apiKey) throw new AnthropicError('No Anthropic API key set.')
   const notes = await retrieve(prompt)
-  const system = `${SYSTEM_BLOCK}\n\n# Vault context\n\n${contextBlock(notes)}`
-  return requestMessages(apiKey, system, prompt)
+  let system = `${SYSTEM_BLOCK}\n\n# Vault context\n\n${contextBlock(notes)}`
+  if (page) {
+    let body = page.content.trim()
+    if (body.length > MAX_PAGE_CHARS) body = `${body.slice(0, MAX_PAGE_CHARS)}…`
+    system += `\n\n# The page this question was asked INSIDE\n\nPath: ${page.path}\n\n${body}`
+  }
+  return requestMessages(apiKey, system, prompt, looksBroad(prompt) ? 'high' : 'medium')
 }
 
 // ——— Ask AI panel: streaming, multi-turn, model toggle ————————————————————

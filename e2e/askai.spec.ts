@@ -198,3 +198,51 @@ test.describe('Ask AI panel', () => {
       .toContain('A crisp new paragraph.')
   })
 })
+
+test('the /ai block shares the panel grounding: page context + Sonnet 5 + effort', async ({
+  page,
+}) => {
+  await reset(page)
+  await seed(page, 'pages/songcraft', '# Songcraft\n\nThe bridge needs lift.', [])
+  await connectViaStorage(page)
+
+  // /ai uses the non-streaming Messages shape — separate mock from the panel's SSE.
+  const captured: unknown[] = []
+  await page.route('https://api.anthropic.com/**', async (route) => {
+    captured.push(route.request().postDataJSON())
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        content: [{ type: 'text', text: 'A grounded drafting answer.' }],
+      }),
+    })
+  })
+
+  await page.goto('/#/pages/' + encodeURIComponent('pages/songcraft'))
+  await expect(page.getByText('The bridge needs lift.')).toBeVisible({ timeout: 10_000 })
+
+  // Insert the /ai block at the end of the doc and ask.
+  await page.locator('.page-prose').click()
+  await page.keyboard.press('Control+End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/ai')
+  await page.locator('.slash-item, .slash-menu button', { hasText: 'Ask AI' }).first().click()
+  await page.locator('.ai-input').fill('Draft the next line')
+  await page.keyboard.press('ControlOrMeta+Enter')
+
+  // The answer lands in the page as plain paragraphs.
+  await expect(page.locator('.page-prose')).toContainText('A grounded drafting answer.', {
+    timeout: 10_000,
+  })
+
+  const req = captured[0] as {
+    model: string
+    system: string
+    output_config: { effort: string }
+  }
+  expect(req.model).toBe('claude-sonnet-5')
+  expect(req.output_config.effort).toBe('medium')
+  expect(req.system).toContain('pages/songcraft')
+  expect(req.system).toContain('The bridge needs lift.')
+})
