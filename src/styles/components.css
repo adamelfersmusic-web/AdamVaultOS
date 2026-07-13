@@ -582,10 +582,18 @@
   box-shadow: 0 4px 20px rgba(70, 179, 166, 0.35);
 }
 .dock-fab-main {
-  background: #453227; border-color: #5a4433; color: #f4ede2;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+  /* Nearly blends into the canvas: deep brown-charcoal pulled from the bg,
+     a faint white ring to read as a button, glyph at half strength. */
+  background: color-mix(in srgb, var(--bg) 78%, #5c4432);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(244, 237, 226, 0.48);
+  box-shadow: none;
 }
-.dock-fab-main:hover { color: #fffdf8; background: #523c2e; }
+.dock-fab-main:hover {
+  color: rgba(244, 237, 226, 0.85);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: color-mix(in srgb, var(--bg) 70%, #5c4432);
+}
 .dock-panel {
   width: 360px; max-width: calc(100vw - 32px);
   background: var(--panel, #17181b); border: 1px solid var(--border, #2c2d31);
@@ -847,11 +855,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #453227;
-  border: 1px solid #5a4433;
-  color: #f4ede2;
+  background: color-mix(in srgb, var(--bg) 78%, #5c4432);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(244, 237, 226, 0.48);
   cursor: pointer;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
-  transition: transform 0.12s ease;
+  box-shadow: none;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
-.askai-fab:hover { transform: translateY(-2px); color: #fffdf8; background: #523c2e; }
+.askai-fab:hover {
+  color: rgba(244, 237, 226, 0.85);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: color-mix(in srgb, var(--bg) 70%, #5c4432);
+}
