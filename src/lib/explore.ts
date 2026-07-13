@@ -1,5 +1,5 @@
-// Explore — pure data shaping for the Knowledge Explorer's three modes
-// (Atlas · Orbit · Threads). Everything is computed client-side from the ONE
+// Explore — pure data shaping for the Knowledge Explorer's four modes
+// (Atlas · Orbit · Threads · Shuffle). Everything is computed client-side from the ONE
 // graphNotes() fetch the Graph view already relies on (lean notes + hydrated
 // links + link degree): no new API endpoints, and Explore never writes.
 
@@ -297,4 +297,61 @@ export function buildThreads(notes: Note[], cap = THREAD_DAY_CAP): ThreadDay[] {
       // Within a day the strip reads left → right chronologically.
       notes: [...list].sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1)),
     }))
+}
+
+// ---------------------------------------------------------------------------
+// Shuffle — the serendipity dealer. ONE card at a time, drawn dusty-first:
+// candidates are ranked by updatedAt ascending and sampled with a weight that
+// decays exponentially by recency rank, so the note untouched the longest is
+// DUSTY_BIAS× more likely than the freshest. Pure — the view passes
+// Math.random; tests can pass a fixed rng for determinism.
+// ---------------------------------------------------------------------------
+
+/** How much likelier the dustiest candidate is than the freshest. */
+export const DUSTY_BIAS = 4
+
+/** How many recently-dealt cards the trail remembers (and excludes). */
+export const TRAIL_CAP = 8
+
+/** Notes worth dealing: skip vault plumbing (_meta/), untitled shells, and
+ * notes with nothing to say (no takeaway at all). */
+export function shuffleCandidates(notes: Note[]): Note[] {
+  return notes.filter(
+    (n) =>
+      !n.path.startsWith('_meta/') &&
+      titleFromPath(n.path).length > 0 &&
+      takeawayOf(n).length > 0,
+  )
+}
+
+/** Deal one card. `exclude` (the trail + the face-up card) keeps re-deals
+ * from repeating recent cards; if the trail has covered the whole deck we
+ * quietly reshuffle and deal from everything again. */
+export function dealShuffle(
+  notes: Note[],
+  rng: () => number,
+  exclude?: Set<string>,
+): Note | null {
+  const pool = shuffleCandidates(notes)
+  let candidates = pool.filter((n) => !exclude?.has(n.path))
+  if (candidates.length === 0) candidates = pool
+  const n = candidates.length
+  if (n === 0) return null
+  // Dusty-first: oldest updatedAt takes rank 0 and the heaviest weight.
+  candidates = [...candidates].sort(
+    (a, b) =>
+      (a.updatedAt < b.updatedAt ? -1 : a.updatedAt > b.updatedAt ? 1 : 0) ||
+      a.path.localeCompare(b.path),
+  )
+  if (n === 1) return candidates[0]
+  const weights = candidates.map(
+    (_, rank) => DUSTY_BIAS ** ((n - 1 - rank) / (n - 1)),
+  )
+  const total = weights.reduce((sum, w) => sum + w, 0)
+  let roll = rng() * total
+  for (let i = 0; i < n; i++) {
+    roll -= weights[i]
+    if (roll <= 0) return candidates[i]
+  }
+  return candidates[n - 1]
 }

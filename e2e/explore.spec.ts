@@ -1,7 +1,8 @@
-// Explore — the Knowledge Explorer (Atlas · Orbit · Threads). Read-only layer
-// over the graphNotes() snapshot: domain-sectioned topic grid, topic pages
-// grouped by kind with rel badges, orbit rings that re-center on click, and
-// the mode switch persisted in localStorage.
+// Explore — the Knowledge Explorer (Atlas · Orbit · Threads · Shuffle).
+// Read-only layer over the graphNotes() snapshot: domain-sectioned topic grid,
+// topic pages grouped by kind with rel badges, orbit rings that re-center on
+// click, the dusty-first shuffle dealer with its trail, and the mode switch
+// persisted in localStorage.
 
 import { test, expect, type Page } from '@playwright/test'
 
@@ -233,5 +234,100 @@ test('threads: notes grouped by day, domain-labeled; mode persists across reload
   await expect(page.getByTestId('threads')).toBeVisible()
   await expect(
     page.locator('.explore-modes button', { hasText: 'Threads' }),
+  ).toHaveClass(/is-active/)
+})
+
+test('shuffle: auto-deals one full card — title, takeaway, and the three moves', async ({ page }) => {
+  await seedExplore(page)
+  await connectViaStorage(page)
+  await page.goto('/#/explore')
+
+  await page.click('.explore-modes button:has-text("Shuffle")')
+  const card = page.getByTestId('shuffle-card')
+  await expect(card).toBeVisible()
+
+  // Whatever the dealer drew, the card is complete: a real title, a takeaway
+  // (empty/untitled notes never enter the deck), and the three moves.
+  await expect(card.locator('.shuffle-card-title')).not.toHaveText('')
+  await expect(card.locator('.shuffle-takeaway')).toBeVisible()
+  await expect(card.locator('.shuffle-takeaway')).not.toHaveText('')
+  await expect(card.locator('.shuffle-domain')).toBeVisible()
+  await expect(page.getByTestId('shuffle-deal')).toHaveText('Deal again')
+  await expect(page.getByTestId('shuffle-orbit')).toBeVisible()
+  await expect(page.getByTestId('shuffle-open')).toBeVisible()
+
+  // No trail yet — nothing has been dealt past.
+  await expect(page.getByTestId('shuffle-trail')).toHaveCount(0)
+})
+
+test('shuffle: deal again advances the card and grows the trail; a chip recalls its note', async ({ page }) => {
+  await seedExplore(page)
+  await connectViaStorage(page)
+  await page.goto('/#/explore')
+
+  await page.click('.explore-modes button:has-text("Shuffle")')
+  const card = page.getByTestId('shuffle-card')
+  await expect(card).toBeVisible()
+  const first = await card.getAttribute('data-path')
+
+  // Deal again: a DIFFERENT note comes up (the trail excludes recent deals)
+  // and the previous card drops onto the trail, most recent first.
+  await page.getByTestId('shuffle-deal').click()
+  await expect(card).not.toHaveAttribute('data-path', first!)
+  const second = await card.getAttribute('data-path')
+  const trail = page.getByTestId('shuffle-trail')
+  await expect(trail.locator('.shuffle-trail-chip')).toHaveCount(1)
+  await expect(trail.locator('.shuffle-trail-chip').first()).toHaveAttribute('title', first!)
+
+  await page.getByTestId('shuffle-deal').click()
+  await expect(card).not.toHaveAttribute('data-path', second!)
+  await expect(trail.locator('.shuffle-trail-chip')).toHaveCount(2)
+  await expect(trail.locator('.shuffle-trail-chip').first()).toHaveAttribute('title', second!)
+
+  // Clicking the oldest chip re-deals that exact note back to the big card;
+  // the displaced card takes its place on the trail.
+  await trail.locator(`.shuffle-trail-chip[title="${first}"]`).click()
+  await expect(card).toHaveAttribute('data-path', first!)
+  await expect(trail.locator(`.shuffle-trail-chip[title="${first}"]`)).toHaveCount(0)
+  await expect(trail.locator('.shuffle-trail-chip')).toHaveCount(2)
+})
+
+test('shuffle: "Orbit this" hands the dealt note to Orbit as its center', async ({ page }) => {
+  await seedExplore(page)
+  await connectViaStorage(page)
+  await page.goto('/#/explore')
+
+  await page.click('.explore-modes button:has-text("Shuffle")')
+  const card = page.getByTestId('shuffle-card')
+  await expect(card).toBeVisible()
+  const title = (await card.locator('.shuffle-card-title').innerText()).trim()
+
+  await page.getByTestId('shuffle-orbit').click()
+  await expect(page.getByTestId('orbit')).toBeVisible()
+  await expect(page.getByTestId('orbit-center')).toContainText(title)
+  await expect(
+    page.locator('.explore-modes button', { hasText: 'Orbit' }),
+  ).toHaveClass(/is-active/)
+  // Modes compose: the hand-off also persists Orbit as the chosen mode.
+  expect(
+    await page.evaluate(() => localStorage.getItem('adamvaultos.explore.mode')),
+  ).toBe('orbit')
+})
+
+test('shuffle: mode persists across a full reload and re-deals', async ({ page }) => {
+  await seedExplore(page)
+  await connectViaStorage(page)
+  await page.goto('/#/explore')
+
+  await page.click('.explore-modes button:has-text("Shuffle")')
+  await expect(page.getByTestId('shuffle-card')).toBeVisible()
+  expect(
+    await page.evaluate(() => localStorage.getItem('adamvaultos.explore.mode')),
+  ).toBe('shuffle')
+
+  await page.reload()
+  await expect(page.getByTestId('shuffle-card')).toBeVisible()
+  await expect(
+    page.locator('.explore-modes button', { hasText: 'Shuffle' }),
   ).toHaveClass(/is-active/)
 })
