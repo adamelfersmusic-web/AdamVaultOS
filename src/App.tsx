@@ -14,7 +14,7 @@ import { ProjectsView } from './views/ProjectsView'
 import { ProjectWorld } from './views/ProjectWorld'
 import { GraphView } from './views/GraphView'
 import { NewScriptModal } from './views/NewScriptModal'
-import { CommandPalette } from './components/CommandPalette'
+import { Omnibar } from './components/Omnibar'
 import { CaptureDock } from './components/CaptureDock'
 import { ToastHost } from './components/Toast'
 import { SCRIPTS_DB } from './domain/scripts'
@@ -107,7 +107,7 @@ export default function App() {
     return (
       <>
         <GraphView />
-        {ui.paletteOpen && <CommandPalette />}
+        {ui.paletteOpen && <Omnibar />}
         <AskAi />
         <CaptureDock />
         <ToastHost />
@@ -128,7 +128,7 @@ export default function App() {
         >
           <PagesView path={route.path} />
         </Suspense>
-        {ui.paletteOpen && <CommandPalette />}
+        {ui.paletteOpen && <Omnibar />}
         <AskAi />
         <CaptureDock />
         <ToastHost />
@@ -157,7 +157,7 @@ export default function App() {
         {route.kind === 'project' && <ProjectWorld path={route.path} key={route.path} />}
       </Shell>
       {ui.newScriptOpen && <NewScriptModal />}
-      {ui.paletteOpen && <CommandPalette />}
+      {ui.paletteOpen && <Omnibar />}
       <AskAi />
       <CaptureDock />
       <ToastHost />
