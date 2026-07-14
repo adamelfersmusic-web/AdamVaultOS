@@ -125,7 +125,7 @@ test('Cockpit — + New project creates a card; the deck caps at 6', async ({ pa
   }
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   await expect(page.getByTestId('macro-row')).toHaveCount(5)
 
   // Create #6 → lands inside the new world.

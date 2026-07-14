@@ -81,7 +81,7 @@ test.beforeEach(async ({ page }) => {
 test('Today add-row — minting with due "tomorrow" writes metadata.due; chip renders Tomorrow', async ({ page }) => {
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const strip = page.getByTestId('today-strip')
   await strip.locator('.today-add-btn').click()
 
@@ -113,7 +113,7 @@ test('Today add-row — minting with due "tomorrow" writes metadata.due; chip re
 test('Today add-row — an unparseable due entry writes NO due key at all', async ({ page }) => {
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const strip = page.getByTestId('today-strip')
   await strip.locator('.today-add-btn').click()
   await strip.locator('.today-picker-input').first().fill('Loose task')
@@ -138,7 +138,7 @@ test('Today pulls due tasks — an overdue when:later task joins the checklist, 
   })
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const strip = page.getByTestId('today-strip')
   // Pulled onto the day by its date, even though when is 'later'.
   await expect(strip).toContainText('Deliver the final cut')

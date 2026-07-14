@@ -23,6 +23,24 @@
   color: var(--gold);
   padding: 2px 6px;
 }
+/* THE GEM DOOR — the gem is its own button onto the Map; visually identical
+   to the old mark, with a soft gem glow when engaged. */
+.wordmark-gem-btn {
+  display: flex;
+  align-items: center;
+  color: inherit;
+  border-radius: 6px;
+  transition: filter 0.15s ease;
+}
+.wordmark-gem-btn:hover,
+.wordmark-gem-btn:focus-visible {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--gold) 60%, transparent));
+}
+.wordmark-link {
+  display: flex;
+  min-width: 0;
+  color: inherit;
+}
 .wordmark-text {
   display: flex;
   align-items: baseline;
@@ -171,6 +189,22 @@
 .rail-theme:hover {
   color: var(--gold);
   background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+
+/* The Shortcuts row — the very bottom of the footer, quiet like its siblings. */
+.rail-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 6px;
+  border-radius: var(--r-sm);
+  font-size: 11.5px;
+  color: var(--ink-4);
+  transition: 0.12s ease;
+}
+.rail-shortcuts:hover {
+  color: var(--ink-2);
+  background: var(--surface);
 }
 
 .stage {
@@ -3346,14 +3380,16 @@ tr:hover .row-peek { opacity: 1; }
   font-size: 0;
 }
 .rail.is-collapsed .rail-theme,
-.rail.is-collapsed .rail-disconnect {
+.rail.is-collapsed .rail-disconnect,
+.rail.is-collapsed .rail-shortcuts {
   justify-content: center;
   gap: 0;
   font-size: 0;
 }
+.rail.is-collapsed .rail-shortcuts span { font-size: 13px; }
 .rail.is-collapsed .vault-host { display: none; }
 .rail.is-collapsed .vault-status { justify-content: center; }
-/* Expand affordance when collapsed: the whole wordmark gem re-opens it. */
+/* Collapsed, only the gem remains — still the door onto the Map. */
 .rail.is-collapsed .wordmark { cursor: pointer; }
 
 /* Canvas card right-click menu — promote a card to page-hood by CHOICE. */
@@ -4318,12 +4354,14 @@ button.tasks-group-head:hover {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  background: none;
-  border: none;
-  padding: 0;
   text-align: left;
-  cursor: pointer;
   color: var(--ink-2);
+}
+.task-row-open {
+  min-width: 0;
+  display: flex;
+  text-align: left;
+  color: inherit;
 }
 .task-row-title {
   font-size: 13.5px;
@@ -4331,14 +4369,55 @@ button.tasks-group-head:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.task-row-main:hover .task-row-title {
+.task-row-open:hover .task-row-title {
   color: var(--ink);
 }
+/* The due label IS its edit button (row-due-edit) — same quiet chip look;
+   a dotted underline whispers "tappable" on hover. */
 .task-row-due {
   flex: 0 0 auto;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+button.task-row-due:hover {
+  text-decoration: underline dotted;
+}
+/* The set-a-date affordance for dateless rows: hover-revealed on pointer
+   devices (same law as the ↗ promote), always faintly present under touch. */
+.row-due-set {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  color: var(--ink-4);
+  padding: 2px 4px;
+  border-radius: var(--r-sm);
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+.task-row:hover .row-due-set,
+.task-row:focus-within .row-due-set,
+.row-due-set:focus-visible {
+  opacity: 1;
+}
+.row-due-set:hover {
+  color: var(--gold-bright);
+}
+@media (hover: none) {
+  .row-due-set {
+    opacity: 0.55;
+  }
+}
+/* Drag-reorder: the thin gold insertion line (the WorkTabs/Shelves line). */
+.tasks-drop-line {
+  height: 2px;
+  border-radius: 999px;
+  background: var(--gold);
+  margin: 0 4px;
+  pointer-events: none;
+}
+.task-row.is-draggable {
+  cursor: grab;
 }
 .task-src {
   flex: 0 0 auto;

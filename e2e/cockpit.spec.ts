@@ -161,8 +161,9 @@ test('Macro strip — rows in order with card-derived one-things; paused folds a
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(String(e)))
 
-  // Bare URL → the Projects front door: the macro strip.
-  await page.goto('http://127.0.0.1:4173/')
+  // #/projects → the Cockpit: the macro strip. (The BARE url is the gate
+  // now — the Map greets there; see ceremonial.spec.ts.)
+  await page.goto('http://127.0.0.1:4173/#/projects')
   await expect(page.getByTestId('cockpit')).toBeVisible()
   const strip = page.getByTestId('macro-strip')
   await expect(strip).toBeVisible()
@@ -211,7 +212,7 @@ test('Status view — mission → phase bar → ⭐ THIS WEEK → blockers, in o
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(String(e)))
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   await page.getByTestId('macro-row').filter({ hasText: 'Amanda Bridges' }).click()
   await expect(page.getByTestId('world')).toBeVisible()
 
@@ -371,7 +372,7 @@ test('World — overview renders the home note; board is scoped; create task + n
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(String(e)))
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   await page.getByTestId('macro-row').filter({ hasText: 'Amanda Bridges' }).click()
   await expect(page.getByTestId('world')).toBeVisible()
 

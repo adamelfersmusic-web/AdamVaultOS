@@ -32,7 +32,7 @@ test('rail toggle flips to latte, persists across reload, flips back', async ({ 
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(String(e)))
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   await expect(page.getByTestId('cockpit')).toBeVisible()
 
   const html = page.locator('html')

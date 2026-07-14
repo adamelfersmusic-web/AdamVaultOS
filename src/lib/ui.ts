@@ -6,9 +6,15 @@ interface UiState {
   paletteOpen: boolean
   newScriptOpen: boolean
   askAiOpen: boolean
+  shortcutsOpen: boolean
 }
 
-let state: UiState = { paletteOpen: false, newScriptOpen: false, askAiOpen: false }
+let state: UiState = {
+  paletteOpen: false,
+  newScriptOpen: false,
+  askAiOpen: false,
+  shortcutsOpen: false,
+}
 const listeners = new Set<() => void>()
 
 function set(partial: Partial<UiState>): void {
@@ -33,6 +39,9 @@ export const closeNewScript = () => set({ newScriptOpen: false })
 export const openAskAi = () => set({ askAiOpen: true, paletteOpen: false })
 export const closeAskAi = () => set({ askAiOpen: false })
 export const toggleAskAi = () => set({ askAiOpen: !state.askAiOpen })
+export const openShortcuts = () => set({ shortcutsOpen: true, paletteOpen: false })
+export const closeShortcuts = () => set({ shortcutsOpen: false })
+export const toggleShortcuts = () => set({ shortcutsOpen: !state.shortcutsOpen })
 
 /** The Omnibar's "🔮 Ask the vault" handoff: open the Ask AI panel AND send
  * the query — one continuous gesture. AskAi is always mounted (it renders the

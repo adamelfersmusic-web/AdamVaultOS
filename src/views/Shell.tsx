@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { disconnect, useStore } from '../lib/store'
 import { navigate, type Route } from '../lib/router'
 import { AuthBanner } from '../components/AuthBanner'
-import { openPalette, toggleAskAi } from '../lib/ui'
+import { openPalette, openShortcuts, toggleAskAi } from '../lib/ui'
 import { toggleTheme, useTheme } from '../lib/theme'
 import {
   IconBoard,
@@ -18,30 +18,45 @@ import {
   IconTodo,
 } from '../components/Icons'
 
+// THE GEM DOOR — the wordmark's gem is its own button (a thumb-reachable
+// monument door onto the Map); the text part keeps navigating to Projects.
 function Wordmark() {
   return (
-    <a
-      className="wordmark"
-      href="#/projects"
-      onClick={(e) => {
-        e.preventDefault()
-        navigate({ kind: 'projects' })
-      }}
-    >
-      <svg className="wordmark-gem" width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
-        <path
-          d="M16 4.5 27.5 16 16 27.5 4.5 16Z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.4"
-        />
-        <circle cx="16" cy="16" r="3" fill="currentColor" />
-      </svg>
-      <span className="wordmark-text">
-        Adam
-        <span className="wordmark-sub">Vault OS</span>
-      </span>
-    </a>
+    <div className="wordmark">
+      <button
+        className="wordmark-gem-btn"
+        data-testid="wordmark-gem"
+        title="The Map"
+        aria-label="The Map"
+        onClick={(e) => {
+          e.stopPropagation()
+          navigate({ kind: 'map' })
+        }}
+      >
+        <svg className="wordmark-gem" width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
+          <path
+            d="M16 4.5 27.5 16 16 27.5 4.5 16Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+          />
+          <circle cx="16" cy="16" r="3" fill="currentColor" />
+        </svg>
+      </button>
+      <a
+        className="wordmark-link"
+        href="#/projects"
+        onClick={(e) => {
+          e.preventDefault()
+          navigate({ kind: 'projects' })
+        }}
+      >
+        <span className="wordmark-text">
+          Adam
+          <span className="wordmark-sub">Vault OS</span>
+        </span>
+      </a>
+    </div>
   )
 }
 
@@ -191,6 +206,15 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           >
             <IconDisconnect size={13} />
             Disconnect
+          </button>
+          <button
+            className="rail-shortcuts"
+            data-testid="shortcuts-open"
+            title="Keyboard shortcuts (⌘/)"
+            onClick={openShortcuts}
+          >
+            <span aria-hidden="true">⌨</span>
+            Shortcuts
           </button>
         </div>
       </aside>

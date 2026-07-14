@@ -283,6 +283,15 @@ export const IconTodo = (p: IconProps = {}) =>
     p,
   )
 
+export const IconCalendar = (p: IconProps = {}) =>
+  svg(
+    <>
+      <rect x="2.6" y="3.6" width="10.8" height="9.8" rx="2" />
+      <path d="M2.6 6.6h10.8M5.4 2.2v2.4M10.6 2.2v2.4" />
+    </>,
+    p,
+  )
+
 export const IconDivider = (p: IconProps = {}) =>
   svg(<path d="M3.5 4.5h9M2.5 8h11M3.5 11.5h9" />, p)
 

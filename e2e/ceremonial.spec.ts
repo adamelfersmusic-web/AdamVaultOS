@@ -96,6 +96,45 @@ test('the Map — chambers are real doors; monuments cross-link', async ({ page 
   expect(errors, errors.join('\n')).toEqual([])
 })
 
+test('the gate — the bare address greets with the Map; deep links sail past; a chamber lets you in', async ({ page }) => {
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  // The bare address is the threshold: the Map greets the arrival.
+  await page.goto('http://127.0.0.1:4173/')
+  await expect(page.getByTestId('vault-map')).toBeVisible()
+
+  // From the gate, a chamber is a real door — the Tracker chamber enters it.
+  await page.getByTestId('chamber-tracker').click()
+  await expect(page.getByTestId('db-views')).toBeVisible()
+  await expect(page.getByTestId('vault-map')).toHaveCount(0)
+
+  // A REAL hash sails straight past the gate — no Map flash on deep links.
+  await page.goto('http://127.0.0.1:4173/#/tracker')
+  await expect(page.getByTestId('db-views')).toBeVisible()
+  await expect(page.getByTestId('vault-map')).toHaveCount(0)
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
+test('the gem door — tapping the wordmark gem opens the Map; the text still opens Projects', async ({ page }) => {
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/projects')
+  await expect(page.getByTestId('cockpit')).toBeVisible()
+
+  // The gem is its own button onto the Map…
+  await page.getByTestId('wordmark-gem').click()
+  await expect(page.getByTestId('vault-map')).toBeVisible()
+
+  // …and the wordmark text keeps navigating to Projects (from a shell route).
+  await page.goto('http://127.0.0.1:4173/#/tracker')
+  await page.locator('.wordmark-link').click()
+  await expect(page.getByTestId('cockpit')).toBeVisible()
+})
+
 test('the Omnibar knows the wing — ⌘K → "commandments" enters the room', async ({ page }) => {
   await connectViaStorage(page)
 

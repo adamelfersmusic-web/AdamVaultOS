@@ -93,7 +93,7 @@ test('Tracker views — Now shows only moving work; world chips slice per projec
 test('dock Pad ⤢ Open as doc — jot lands in today’s daily note, pad clears', async ({ page }) => {
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   await expect(page.getByTestId('cockpit')).toBeVisible()
 
   await page.locator('.dock-fab-main').click()
@@ -126,7 +126,7 @@ test('T5 — a dock todo files into a project as a real task', async ({ page }) 
   expect(res.status()).toBe(201)
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   await page.locator('.dock-fab-main').click()
   await page.locator('.dock-tab', { hasText: 'Todos' }).click()
   await page.locator('.dock-input').fill('Call the venue about parking')
