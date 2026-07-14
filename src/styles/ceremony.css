@@ -230,6 +230,38 @@
   text-indent: 0.6em;
 }
 
+/* the way in — pronounced but quiet, gem-cut, above the cross-link */
+.cere-enter {
+  margin-top: 44px;
+  text-align: center;
+}
+.cere-enter button {
+  background: none;
+  cursor: pointer;
+  font-family: var(--cv-serif);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  text-transform: uppercase;
+  color: var(--cv-gem);
+  text-shadow: 0 0 14px rgba(53, 184, 173, 0.35);
+  border: 1px solid rgba(53, 184, 173, 0.32);
+  border-radius: 999px;
+  padding: 11px 26px 10px;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    color 0.25s ease;
+}
+.cere-enter button:hover,
+.cere-enter button:focus-visible {
+  outline: none;
+  color: #5fd6cb;
+  border-color: rgba(53, 184, 173, 0.65);
+  box-shadow: 0 0 30px -8px rgba(53, 184, 173, 0.55);
+}
+
 /* the quiet cross-link between the two monuments */
 .cere-cross {
   margin-top: 34px;
