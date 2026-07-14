@@ -15,7 +15,7 @@ import type { Note } from '../lib/types'
 import { createTask, setMetadata, setTaskToday, toast, useStore } from '../lib/store'
 import { navigate } from '../lib/router'
 import { dueTone, formatDue, parseDue } from '../lib/dates'
-import { titleFromPath } from '../lib/format'
+import { mergedTodayTasks, taskDue, taskTitle } from '../domain/tasks'
 import { IconPlus } from './Icons'
 
 const TODAY_CAP = 5
@@ -24,21 +24,6 @@ const TODAY_CAP = 5
 // the later/running list, then everything else. Stable within each group.
 const WHEN_RANK: Record<string, number> = { 'this-week': 0, later: 1 }
 const whenRank = (n: Note) => WHEN_RANK[String(n.metadata['when'] ?? '')] ?? 2
-
-/** The task's due ('YYYY-MM-DD') when set, else null — never '' or junk. */
-function taskDue(n: Note): string | null {
-  const v = n.metadata['due']
-  return typeof v === 'string' && v ? v : null
-}
-
-/** A task's display line is its body's first line (same rule as the Tracker). */
-function taskTitle(n: Note): string {
-  const first = (n.content ?? '')
-    .split('\n')
-    .map((s) => s.trim())
-    .find(Boolean)
-  return first ? first.replace(/^#{1,6}\s+/, '').slice(0, 120) : titleFromPath(n.path)
-}
 
 export function TodayStrip() {
   const { tracker, notes } = useStore()
@@ -52,23 +37,9 @@ export function TodayStrip() {
     () => (tracker ?? []).map((p) => notes[p]).filter((n): n is Note => Boolean(n)),
     [tracker, notes],
   )
-  // The day's list: picked tasks (when:"today") PLUS any not-done task whose
-  // due date has arrived (today or overdue) — the date claims the day even
-  // when the when-word says later. Deduped by construction: the due pull
-  // skips anything already picked.
-  const todays = useMemo(() => {
-    const picked = taskNotes.filter((n) => n.metadata['when'] === 'today')
-    const dued = taskNotes.filter((n) => {
-      if (n.metadata['when'] === 'today' || n.metadata['done'] === true) return false
-      const due = taskDue(n)
-      if (!due) return false
-      const tone = dueTone(due)
-      return tone === 'today' || tone === 'overdue'
-    })
-    return [...picked, ...dued].sort(
-      (a, b) => Number(a.metadata['done'] === true) - Number(b.metadata['done'] === true),
-    )
-  }, [taskNotes])
+  // The day's list — the ONE shared merged-today rule (domain/tasks.ts),
+  // identical to what the Tasks tab's Today chip shows.
+  const todays = useMemo(() => mergedTodayTasks(taskNotes), [taskNotes])
   const openCount = todays.filter((n) => n.metadata['done'] !== true).length
 
   // Picker candidates: not-done tasks not already on the day's list (picked

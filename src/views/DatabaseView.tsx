@@ -14,6 +14,7 @@ import { openNewScript } from '../lib/ui'
 import { parseDue } from '../lib/dates'
 import { titleFromPath } from '../lib/format'
 import { toProjects } from '../domain/projects'
+import { isFiledTask } from '../domain/tracker'
 import { Chip, chipFor } from '../components/Chip'
 import { Popover } from '../components/Popover'
 import {
@@ -406,6 +407,10 @@ export function DatabaseView({
     let rows = paths
       .map((path) => notes[path])
       .filter((n): n is Note => Boolean(n))
+      // Unfiled (inbox) tasks never reach the Tracker — filing to a world is
+      // the promotion gesture. Adam's law, 2026-07-14. (Every lens, saved
+      // view, pipeline segment, and count derives from this one assembly.)
+      .filter((n) => dataset !== 'tracker' || isFiledTask(n))
       .map((note) => ({ path: note.path, note, title: rowTitle(note, def) }))
     // Fixed scope (a world's slice) applies before any user filtering, so
     // counts, pipeline, and progress all reflect just this scope.
@@ -418,7 +423,7 @@ export function DatabaseView({
       }
     }
     return rows
-  }, [paths, notes, def, presetFilter])
+  }, [paths, notes, def, presetFilter, dataset])
 
   const observed = useMemo(() => {
     const map = new Map<string, Set<string>>()

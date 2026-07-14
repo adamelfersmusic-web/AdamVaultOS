@@ -50,6 +50,7 @@ import {
   IconPlus,
   IconSpark,
   IconTable,
+  IconTodo,
 } from './Icons'
 
 // ————————————————————————— caps (calm by law) —————————————————————————
@@ -250,6 +251,12 @@ export function Omnibar() {
         label: 'Pages — the writing desk',
         icon: <IconPage size={14} />,
         run: () => navigate({ kind: 'pages' }),
+      },
+      {
+        key: 'tasks',
+        label: 'Tasks — inbox · today · upcoming',
+        icon: <IconTodo size={14} />,
+        run: () => navigate({ kind: 'tasks' }),
       },
       {
         key: 'tracker',

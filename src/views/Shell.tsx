@@ -15,6 +15,7 @@ import {
   IconPage,
   IconSpark,
   IconSun,
+  IconTodo,
 } from '../components/Icons'
 
 function Wordmark() {
@@ -96,6 +97,13 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           >
             <IconPage size={15} />
             Pages
+          </a>
+          <a
+            className={`rail-link${route.kind === 'tasks' ? ' is-active' : ''}`}
+            href="#/tasks"
+          >
+            <IconTodo size={15} />
+            Tasks
           </a>
           <a
             className={`rail-link${route.kind === 'tracker' ? ' is-active' : ''}`}

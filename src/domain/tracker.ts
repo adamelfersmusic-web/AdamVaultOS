@@ -172,3 +172,12 @@ export const TRACKER_DB: DatabaseDef = {
 export function isTaskNote(note: Note): boolean {
   return note.path.startsWith(TRACKER_DB.pathPrefix) || (note.tags ?? []).includes('task')
 }
+
+/** Unfiled (inbox) tasks never reach the Tracker — filing to a world is the
+ * promotion gesture. Adam's law, 2026-07-14. The Tasks tab still shows them
+ * (its Inbox chip IS the unfiled bucket); this predicate gates only the
+ * Tracker surface (table/board/gallery, saved views, pipeline, counts). */
+export function isFiledTask(note: Note): boolean {
+  const p = note.metadata['project']
+  return typeof p === 'string' && p.trim() !== ''
+}
