@@ -25,6 +25,7 @@ import { ChipSelect } from '../components/EnumMenu'
 import { TagEditor } from '../components/TagEditor'
 import { NoteBodyEditor } from '../components/NoteBodyEditor'
 import { Modal } from '../components/Modal'
+import { LockPill } from '../components/LockPill'
 import { IconBack, IconEdit, IconShield } from '../components/Icons'
 import { filterValueOf } from './DatabaseView'
 
@@ -47,6 +48,10 @@ export function NotePage({ path }: { path: string }) {
   const [draftStash, setDraftStash] = useState<DraftStash | null>(null)
   const [confirmCanon, setConfirmCanon] = useState(false)
   const [savingBody, setSavingBody] = useState(false)
+  // Tier 2 — the sacred-handful lock, mirrored on this read view's edit
+  // affordance. Visit-scoped only; navigating away re-locks.
+  const [visitUnlocked, setVisitUnlocked] = useState(false)
+  useEffect(() => setVisitUnlocked(false), [path])
   // Bumped to remount the rich editor when external content must load in
   // (conflict "Load theirs") — NoteBodyEditor reads `value` once per mount.
   const [editorEpoch, setEditorEpoch] = useState(0)
@@ -146,6 +151,8 @@ export function NotePage({ path }: { path: string }) {
 
   const isScript = isScriptNote(note)
   const protectedNote = isProtectedNote(note)
+  const locked = note.metadata?.['locked'] === true
+  const lockReadOnly = locked && !visitUnlocked
   const title = titleFromPath(note.path)
   const isSaving = (saving[path] ?? 0) > 0 || savingBody
 
@@ -245,6 +252,12 @@ export function NotePage({ path }: { path: string }) {
             <IconShield size={12} />
             canon · {protectionReason(note)}
           </span>
+        )}
+        {locked && (
+          <LockPill
+            unlocked={visitUnlocked}
+            onUnlock={() => setVisitUnlocked(true)}
+          />
         )}
         <span className="note-updated" title={fullTime(note.updatedAt)}>
           {isSaving ? 'saving…' : `edited ${relativeTime(note.updatedAt)}`}
@@ -379,10 +392,12 @@ export function NotePage({ path }: { path: string }) {
         />
       ) : (
         <div className="note-body-wrap">
-          <button className="body-edit-btn" onClick={startEdit} data-testid="edit-body">
-            <IconEdit size={13} />
-            Edit
-          </button>
+          {!lockReadOnly && (
+            <button className="body-edit-btn" onClick={startEdit} data-testid="edit-body">
+              <IconEdit size={13} />
+              Edit
+            </button>
+          )}
           <article
             ref={bodyRef}
             className="prose"

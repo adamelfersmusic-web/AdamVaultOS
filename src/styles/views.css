@@ -2877,6 +2877,76 @@ body.is-dragging .card {
   text-decoration: line-through;
   color: var(--ink-4);
 }
+/* Tier 2 verbs — crossed = renounced-not-done (~~…~~ in the card note). */
+.week-top3-item.is-crossed span {
+  text-decoration: line-through;
+  text-decoration-style: double;
+  color: var(--ink-4);
+  font-style: italic;
+}
+.top3-cross {
+  margin-left: auto;
+  flex: none;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 11.5px;
+  line-height: 1;
+  padding: 2px 4px;
+  opacity: 0.35;
+  transition: opacity 120ms ease;
+}
+.week-top3-item:hover .top3-cross,
+.top3-cross:focus-visible,
+.top3-cross:hover {
+  opacity: 1;
+}
+/* The earned slot — one quiet affordance, only when all three are resolved. */
+.top3-bonus {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 4px 0 1px;
+  font-size: 12px;
+  color: var(--ink-4);
+}
+.top3-bonus:hover { color: var(--gold); }
+.top3-bonus-input,
+.week-next-input,
+.week-next-due {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 4px 9px;
+  font-size: 12px;
+  color: var(--ink);
+}
+.top3-bonus-input:focus,
+.week-next-input:focus,
+.week-next-due:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.top3-bonus-input { margin-top: 4px; }
+/* Tier 2 — the world card's quiet ➕: the committed week is fully done. */
+.week-next {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 6px 0 0;
+  font-size: 12px;
+  color: var(--ink-4);
+  text-align: left;
+}
+.week-next:hover { color: var(--gold); }
+.week-next-row {
+  display: flex;
+  gap: 7px;
+  margin-top: 7px;
+}
+.week-next-input { flex: 1; }
 .week-card-empty {
   margin: 0;
   font-size: 13px;

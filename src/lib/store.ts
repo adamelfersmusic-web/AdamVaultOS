@@ -1287,6 +1287,30 @@ export async function saveContent(
   })
 }
 
+/**
+ * Tier 2 — the verb-gated widgets' write primitive. Re-fetch the note fresh,
+ * hand its exact lines to `mutate` (which changes or inserts ONLY the lines
+ * it means to and throws when its target vanished), and save through the
+ * conflict-safe saveContent flow (optimistic concurrency against the fresh
+ * updatedAt). The doc is never regenerated or re-serialized — every byte the
+ * mutation didn't touch survives. Returning the lines unchanged is a no-op.
+ */
+export async function surgicalLineEdit(
+  path: string,
+  mutate: (lines: string[]) => string[],
+): Promise<Note> {
+  const fresh = await fetchNote(path, { refresh: true })
+  if (!fresh || fresh.content === undefined) {
+    throw new Error(`${path} is missing from the vault`)
+  }
+  const next = mutate(fresh.content.split('\n')).join('\n')
+  if (next === fresh.content) return fresh
+  return saveContent(path, next, {
+    updatedAt: fresh.updatedAt,
+    content: fresh.content,
+  })
+}
+
 /** Explicit human overwrite after reviewing a content conflict. */
 export async function forceContent(
   path: string,

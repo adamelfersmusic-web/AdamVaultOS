@@ -24,25 +24,19 @@ import {
   fetchWeeklyCards,
   fetchWorkspaceTabs,
   loadProjects,
-  saveContent,
   setMetadata,
   toast,
   useStore,
 } from '../lib/store'
-import { announcePageUpdate } from '../lib/ui'
 import { navigate } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
+import { parseDue } from '../lib/dates'
 import { projectProgress, STATUS_COLORS, toProject, type Project } from '../domain/projects'
-import {
-  missionOf,
-  parsePhases,
-  parseWeeklyCard,
-  truncate,
-  type Top3Item,
-} from '../domain/spine'
+import { missionOf, parsePhases, parseWeeklyCard, truncate } from '../domain/spine'
 import { PHASES, TRACKER_DB } from '../domain/tracker'
 import { inferNoteType, summaryOf, TYPE_META } from '../domain/noteType'
 import { IconBack, IconPlus } from '../components/Icons'
+import { WeekCardTop3 } from '../components/WeekCardTop3'
 import { DatabaseView } from './DatabaseView'
 import { NotePage } from './NotePage'
 
@@ -311,10 +305,6 @@ function WorldStatus({ project, taskNotes }: { project: Project; taskNotes: Note
   // The zoom ladder's top rung — the latest desk/weekly review, if any.
   const [weekReviewPath, setWeekReviewPath] = useState<string | null>(null)
   const [laterOpen, setLaterOpen] = useState(false)
-  const [checking, setChecking] = useState(false)
-  // Optimistic overlay while a check is in flight — the box flips the moment
-  // it's clicked, then the vault's truth takes back over (revert on failure).
-  const [pending, setPending] = useState<Record<string, boolean>>({})
   const seq = useRef(0)
 
   useEffect(() => {
@@ -382,44 +372,26 @@ function WorldStatus({ project, taskNotes }: { project: Project; taskNotes: Note
     [mine],
   )
 
-  /** Check a Top-3 item: re-fetch the card fresh, flip `- [ ]` ↔ `- [x]` on
-   * that exact line, save through the conflict-safe flow (law #2 — the card
-   * note is the fact; this view is a lens). */
-  const toggleTop3 = async (item: Top3Item) => {
-    if (!latestPath || checking) return
-    setChecking(true)
-    setPending((p) => ({ ...p, [item.text]: !item.checked }))
-    try {
-      const fresh = await fetchNote(latestPath, { refresh: true })
-      if (!fresh || fresh.content === undefined) {
-        throw new Error('the weekly card is missing from the vault')
-      }
-      const lines = fresh.content.split('\n')
-      const idx = lines.findIndex((l) => {
-        const m = /^\s*(?:[-*+]|\d+[.)])\s*\[( |x|X)\]\s*(.*)$/.exec(l)
-        return Boolean(m) && m![2]!.trim() === item.text
-      })
-      if (idx === -1) throw new Error('that line changed in the vault — try again')
-      lines[idx] = lines[idx]!.replace(/\[( |x|X)\]/, (_m, c: string) =>
-        c === ' ' ? '[x]' : '[ ]',
-      )
-      const updated = await saveContent(latestPath, lines.join('\n'), {
-        updatedAt: fresh.updatedAt,
-        content: fresh.content,
-      })
-      // An open editor on the card re-syncs in place.
-      announcePageUpdate(updated.path, updated.content ?? '', updated.updatedAt)
-    } catch (e) {
-      toast('error', `Couldn’t save the check — ${e instanceof Error ? e.message : e}`)
-    } finally {
-      setChecking(false)
-      setPending((p) => {
-        const next = { ...p }
-        delete next[item.text]
-        return next
-      })
-    }
-  }
+  // Tier 2 — the world card's quiet ➕ gate: the COMMITTED WEEK is fully done
+  // when every this-week tracker task in this world is done:true AND the
+  // card's Top 3 are all resolved (checked or crossed). Completion buys
+  // headroom; nothing shows before that.
+  const committedOpen = useMemo(
+    () =>
+      taskNotes.filter(
+        (n) =>
+          String(n.metadata['project'] ?? '') === project.key &&
+          String(n.metadata['when'] ?? '') === 'this-week' &&
+          n.metadata['done'] !== true,
+      ),
+    [taskNotes, project.key],
+  )
+  const weekDone = Boolean(
+    card &&
+      card.top3.length > 0 &&
+      card.top3.every((t) => t.checked || t.crossed) &&
+      committedOpen.length === 0,
+  )
 
   const pastCount = cardPaths ? Math.max(0, cardPaths.length - 1) : 0
 
@@ -474,26 +446,10 @@ function WorldStatus({ project, taskNotes }: { project: Project; taskNotes: Note
           </div>
           {card.priority && <p className="week-card-priority">{card.priority}</p>}
           {card.top3.length > 0 && (
-            <div className="week-card-top3">
-              {card.top3.map((t) => {
-                const checked = pending[t.text] ?? t.checked
-                return (
-                  <label
-                    key={t.text}
-                    className={`week-top3-item${checked ? ' is-done' : ''}`}
-                    data-testid="week-top3-item"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={checking}
-                      onChange={() => void toggleTop3(t)}
-                    />
-                    <span>{t.text}</span>
-                  </label>
-                )
-              })}
-            </div>
+            <WeekCardTop3 cardPath={card.path} items={card.top3} />
+          )}
+          {weekDone && (
+            <NextTaskMint projectKey={project.key} worldTitle={project.title} />
           )}
         </section>
       ) : cardPaths !== null ? (
@@ -557,6 +513,84 @@ function WorldStatus({ project, taskNotes }: { project: Project; taskNotes: Note
         )}
       </div>
     </div>
+  )
+}
+
+// ——— Tier 2: the world card's quiet ➕ — the committed week is DONE, so one
+// next task may be minted straight into it. An earned affordance, not a
+// standing invitation: it renders only behind the weekDone gate above, and
+// the moment the minted task lands (open, this-week) the gate closes again.
+
+function NextTaskMint({
+  projectKey,
+  worldTitle,
+}: {
+  projectKey: string
+  worldTitle: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState('')
+  const [dueText, setDueText] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const mint = async () => {
+    const t = text.trim()
+    if (!t || busy) return
+    setBusy(true)
+    try {
+      // Optional fine-grain due — parseable → written, else simply absent.
+      const due = parseDue(dueText)
+      await createTask(projectKey, t, {
+        state: 'active',
+        when: 'this-week',
+        ...(due ? { due } : {}),
+      })
+      setOpen(false)
+      setText('')
+      setDueText('')
+      toast('success', 'Next task minted — the week has one thing again')
+    } catch (e) {
+      toast('error', `Couldn’t mint the task — ${e instanceof Error ? e.message : e}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return open ? (
+    <div className="week-next-row">
+      <input
+        autoFocus
+        className="week-next-input"
+        data-testid="world-next-input"
+        placeholder={`Next task for ${worldTitle} — Enter to mint…`}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') void mint()
+          if (e.key === 'Escape') setOpen(false)
+        }}
+      />
+      <input
+        className="week-next-due"
+        data-testid="world-next-due"
+        placeholder="due — friday, jul 22…"
+        value={dueText}
+        onChange={(e) => setDueText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') void mint()
+          if (e.key === 'Escape') setOpen(false)
+        }}
+      />
+    </div>
+  ) : (
+    <button
+      className="week-next"
+      data-testid="world-next-task"
+      title="The committed week is fully done — completion buys one next task"
+      onClick={() => setOpen(true)}
+    >
+      ＋ next task for {worldTitle}
+    </button>
   )
 }
 
