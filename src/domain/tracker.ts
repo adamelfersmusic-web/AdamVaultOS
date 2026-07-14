@@ -131,6 +131,12 @@ export const FIELDS: FieldDef[] = [
     ],
   },
   {
+    key: 'due',
+    label: 'Due',
+    kind: 'date', // 'YYYY-MM-DD' — the fine layer under the when-words
+    indexed: false, // sorted/filtered in memory only (never server-side)
+  },
+  {
     key: 'url',
     label: 'URL',
     kind: 'text',
@@ -144,7 +150,7 @@ export const TRACKER_DB: DatabaseDef = {
   pathPrefix: 'tasks/',
   titleFromContent: true, // the task body IS the title
   fields: FIELDS,
-  tableColumns: ['state', 'project', 'phase', 'track', 'owner', 'done'],
+  tableColumns: ['state', 'project', 'phase', 'track', 'owner', 'due', 'done'],
   board: {
     field: 'state',
     lanes: [...STATE_LANES],

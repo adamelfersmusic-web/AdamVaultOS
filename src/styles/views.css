@@ -480,6 +480,9 @@
 .db-newtask-title {
   width: 210px;
 }
+.db-newtask-due {
+  width: 150px;
+}
 
 /* Saved views (#4) — quiet preset chips above the pipeline */
 .db-views {
@@ -901,6 +904,20 @@
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+/* Craft Phase A — the Due column: quiet toned text (tones live with the
+   Today block: .due-overdue / .due-today / .due-soon / .due-later). */
+.cell-due {
+  white-space: nowrap;
+}
+.due-cell {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.due-unset {
+  color: var(--ink-4);
+  opacity: 0.6;
 }
 .db-table th:last-child .th-btn {
   justify-content: flex-end;
@@ -2673,6 +2690,33 @@ body.is-dragging .card {
   color: var(--ink-4);
   text-transform: uppercase;
 }
+
+/* Craft Phase A — due dates. One tone vocabulary everywhere a date shows:
+   overdue = calm red TEXT (never a banner), today = the gem accent, soon/
+   later recede. Shared by the Today chips and the Tracker's Due column. */
+.due-overdue { color: var(--red); }
+.due-today { color: var(--gold-bright); }
+.due-soon { color: var(--ink-3); }
+.due-later { color: var(--ink-4); }
+.today-due {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.today-item.is-done .today-due { color: var(--ink-4); }
+/* Its own class (NOT today-picker-input — that one means the find-box):
+   same quiet field, one notch smaller. */
+.today-picker-due {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 4px 9px;
+  font-size: 11.5px;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.today-picker-due:focus { outline: none; border-color: var(--gold); }
 
 /* progressive disclosure — the metadata table folds behind one toggle */
 .props-fold { margin: 4px 0; }

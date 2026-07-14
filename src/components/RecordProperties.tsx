@@ -31,7 +31,7 @@ export function RecordProperties({
           <div className="prop-row" key={field.key}>
             <span className="prop-label">{field.label}</span>
             <div className="prop-control">
-              {field.kind === 'text' ? (
+              {field.kind === 'text' || field.kind === 'date' ? (
                 <TextProp field={field} note={note} />
               ) : field.kind === 'bool' ? (
                 <BoolProp field={field} note={note} />
