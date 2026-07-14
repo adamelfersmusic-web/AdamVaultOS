@@ -49,8 +49,9 @@ export function rankNotes(
     }
     if (!allTerms) continue // every term must land somewhere
 
-    // Whole-phrase + all-in-title bonuses.
+    // Whole-phrase + all-in-title bonuses: exact ≫ prefix ≫ substring.
     if (title === q) score += 40
+    else if (title.startsWith(q)) score += 28
     else if (title.includes(q)) score += 20
     if (slug.includes(q)) score += 12
     else if (path.includes(q)) score += 8

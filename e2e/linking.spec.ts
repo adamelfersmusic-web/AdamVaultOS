@@ -184,6 +184,73 @@ test('the 🔗 Link picker searches the whole vault and inserts at the cursor', 
   expect(saved?.content).toContain('[[Amanda/00-home]]')
 })
 
+// ——— the "Link a page" (sub-page) picker: the vault's real search ———
+
+async function openSubPagePicker(page: Page) {
+  await page.locator('.page-prose').getByText('start').click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/subpage')
+  await expect(page.locator('.slash-menu')).toBeVisible()
+  await page.keyboard.press('Enter')
+  const picker = page.getByTestId('subpage-picker')
+  await expect(picker).toBeVisible()
+  return picker
+}
+
+test('"Link a page" ranks title, path-segment, and body matches — rows show the path', async ({ page }) => {
+  await seed(page, 'pages/harbor-plan', '# Harbor plan\n\nThe plan body.')
+  // Title never says "weekly" — only the path does.
+  await seed(page, 'desk/weekly/standup-notes', '# Standup notes\n\nAgenda for the crew.')
+  // "zephyr" in the TITLE of one note, only in the BODY of another.
+  await seed(page, 'pages/zephyr-plan', '# Zephyr plan\n\nNamed for the wind.')
+  await seed(page, 'pages/quarterly-goals', '# Quarterly goals\n\nShip the zephyr initiative next.')
+  await seed(page, 'pages/scratch', '# Scratch\n\nstart')
+  await connectViaStorage(page)
+
+  await openPage(page, 'pages/scratch')
+  const picker = await openSubPagePicker(page)
+  const input = picker.locator('input')
+  const rows = picker.locator('.subpage-row:not(.subpage-create)')
+
+  // Title fragment finds it — and the row carries the muted path, so
+  // same-titled notes are tellable apart.
+  await input.fill('harbor')
+  await expect(rows.first()).toContainText('Harbor Plan')
+  await expect(rows.first()).toContainText('pages/harbor-plan')
+
+  // A path segment finds a note whose title doesn't contain the term.
+  await input.fill('weekly')
+  await expect(
+    picker.locator('.subpage-row', { hasText: 'desk/weekly/standup-notes' }),
+  ).toBeVisible()
+
+  // A body-only keyword matches too (Library's lazy full-text corpus), but
+  // ranks below the note actually NAMED for the term.
+  await input.fill('zephyr')
+  await expect(
+    picker.locator('.subpage-row', { hasText: 'pages/quarterly-goals' }),
+  ).toBeVisible()
+  await expect(rows.first()).toContainText('Zephyr Plan')
+})
+
+test('"Link a page" still creates a new page from a typed title', async ({ page }) => {
+  await seed(page, 'pages/scratch', '# Scratch\n\nstart')
+  await connectViaStorage(page)
+
+  await openPage(page, 'pages/scratch')
+  const picker = await openSubPagePicker(page)
+  await picker.locator('input').fill('Fresh Idea Doc')
+  await picker.locator('.subpage-create').click()
+
+  // Chip in the doc, note in the vault, markdown link in the saved body.
+  await expect(page.locator('.page-prose .subpage-link')).toContainText('Fresh Idea Doc')
+  await expect.poll(async () => mockNote(page, 'pages/fresh-idea-doc')).not.toBeNull()
+  await waitSaved(page)
+  const saved = await mockNote(page, 'pages/scratch')
+  expect(saved?.content).toContain('](pages/fresh-idea-doc)')
+})
+
 test('F1b — path is click-to-edit; a note with no inbound links moves freely', async ({ page }) => {
   await seed(page, 'pages/loose-idea', '# Loose idea\n\nNobody links here.')
   await connectViaStorage(page)
