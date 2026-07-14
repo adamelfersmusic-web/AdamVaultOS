@@ -140,7 +140,16 @@ test('walkthrough — cockpit: project cards and a world', async ({ page }) => {
   for (const [slug, text, phase, state, done] of tasks) {
     await seed(page, `tasks/amanda/${slug}`, text, ['task'], { project: 'amanda', phase, track: 'planable', owner: 'Adam', state, done })
   }
-  // Today-strip data: two tasks promoted to today + a pinned current note.
+  // Week-band data: two tasks promoted to today + the week's review (its
+  // ⭐ Top 3 whispers above the strip). The pin still writes desk/current,
+  // it just has no panel on this page anymore.
+  await seed(page, 'desk/weekly/2026-07-13', [
+    '# Week Plan — Mon July 13, 2026', '',
+    '## ⭐ TOP 3 THIS WEEK', '',
+    '1. **Finish Amanda video edits → hand to Cassy.**',
+    '2. Send Amanda video 8.',
+    '3. Hand the calendar over.',
+  ].join('\n'), ['desk'], {})
   await page.request.patch(`${MOCK}/api/notes/${encodeURIComponent('tasks/amanda/send-video-8')}`, {
     headers: AUTH, data: { metadata: { when: 'today' }, force: true },
   })
@@ -155,6 +164,7 @@ test('walkthrough — cockpit: project cards and a world', async ({ page }) => {
   await expect(page.getByTestId('cockpit')).toBeVisible()
   await expect(page.getByTestId('macro-row')).toHaveCount(4)
   await expect(page.getByTestId('today-strip')).toContainText('Send Amanda video 8')
+  await expect(page.getByTestId('week-top3')).toContainText('Finish Amanda video edits')
   await page.waitForTimeout(400)
   await page.screenshot({ path: `${SHOTS}/07-cockpit.png` })
 

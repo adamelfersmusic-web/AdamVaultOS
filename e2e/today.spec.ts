@@ -1,5 +1,9 @@
-// The NOW drop (build log PART 25/28/29): Today strip on the cockpit,
-// 📍 set-as-current, daily note, F1a auto-slug, the World Landing (1+2),
+// The NOW drop (build log PART 25/28/29), re-tuned by the altitude pass:
+// the Projects page keeps ONE cognitive question ("what worlds are alive?").
+// The Today checklist stays (a short list earns its corner), the ⭐ This-week
+// whisper reads the latest desk/weekly review's Top 3, the daily note is a
+// quiet header button, and the 📍 Current pin lost its panel (the pin itself
+// still writes desk/current). Plus F1a auto-slug, the World Landing (1+2),
 // and the read-view metadata Details-fold.
 
 import { test, expect, type Page } from '@playwright/test'
@@ -48,7 +52,7 @@ test.beforeEach(async ({ page }) => {
   await reset(page)
 })
 
-test('Today strip — lists when:today, toggles done, promotes via picker, opens the daily note', async ({ page }) => {
+test('Today checklist — lists when:today, toggles done, promotes via picker; no pin panel', async ({ page }) => {
   await seed(page, 'projects/amanda', '# Amanda', ['project'], {
     key: 'amanda', tag: 'amanda', status: 'active', order: 1, summary: 'x',
   })
@@ -65,6 +69,10 @@ test('Today strip — lists when:today, toggles done, promotes via picker, opens
   await expect(strip).toBeVisible()
   await expect(strip).toContainText('Send Amanda video 8')
 
+  // The 📍 Current panel is gone — the page holds week altitude.
+  await expect(page.locator('.today-current-note')).toHaveCount(0)
+  await expect(strip).not.toContainText('Current')
+
   // Toggle done → written to the vault.
   await strip.locator('.today-item input[type=checkbox]').first().check()
   await expect
@@ -79,16 +87,26 @@ test('Today strip — lists when:today, toggles done, promotes via picker, opens
   await expect
     .poll(async () => (await mockNote(page, 'tasks/amanda/caption-pass'))?.metadata?.when)
     .toBe('today')
+})
 
-  // Daily note: created on first open, lands in the Pages editor.
-  await page.getByTestId('open-daily').click()
+test('Daily note — the quiet header button creates today’s note and opens it', async ({ page }) => {
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  const btn = page.getByTestId('daily-note-btn')
+  await expect(btn).toBeVisible()
+  // It lives in the header row, beside "New project".
+  await expect(page.locator('.cockpit-actions').getByTestId('daily-note-btn')).toBeVisible()
+  await expect(page.locator('.cockpit-actions').getByTestId('new-project')).toBeVisible()
+
+  await btn.click()
   await expect(page).toHaveURL(/#\/pages\/desk%2F\d{4}-\d{2}-\d{2}/)
   const key = new Date()
   const dateKey = `${key.getFullYear()}-${String(key.getMonth() + 1).padStart(2, '0')}-${String(key.getDate()).padStart(2, '0')}`
   expect(await mockNote(page, `desk/${dateKey}`)).not.toBeNull()
 })
 
-test('📍 set-as-current — pin a page, the strip shows it', async ({ page }) => {
+test('📍 set-as-current — pinning a page still writes desk/current (the panel is gone)', async ({ page }) => {
   await seed(page, 'pages/reel-plan', '# Reel Plan\n\nwork work', ['type/page'], {})
   await connectViaStorage(page)
 
@@ -98,10 +116,124 @@ test('📍 set-as-current — pin a page, the strip shows it', async ({ page }) 
     .poll(async () => (await mockNote(page, 'desk/current'))?.metadata?.target)
     .toBe('pages/reel-plan')
 
+  // The Projects page no longer surfaces it — day furniture moved out.
   await page.goto('http://127.0.0.1:4173/#/projects')
-  await expect(page.getByTestId('today-strip').locator('.today-current-note')).toContainText(
-    'Reel Plan',
+  await expect(page.getByTestId('cockpit')).toBeVisible()
+  await expect(page.locator('.today-current-note')).toHaveCount(0)
+})
+
+// ——— ⭐ This week — the latest desk/weekly review's Top 3, whispered ———
+
+const WEEK_REVIEW = [
+  '# Week Plan — Mon July 13, 2026',
+  '',
+  '*First full run of* [[desk/weekly/template]]*.*',
+  '',
+  '## ⭐ TOP 3 THIS WEEK',
+  '',
+  '*If nothing else happens, this is a win. Ruthless — never more than 3.*',
+  '',
+  '1. **Fire the warm Jonathan text** — unfreezes the entire Escensus pilot.',
+  '2. **Finish Amanda video edits → hand to Cassy** — releases Cassy + Patricia.',
+  '3. **Back up the Escensus scoring work** — irreplaceable, at risk of loss.',
+  '',
+  '*Bonus (2-min): send Amanda video 8.*',
+  '',
+  '## 🎯 MASTER PRIORITY LIST',
+  '',
+  '- Never surfaces on the Projects page.',
+].join('\n')
+
+test('⭐ This week — the latest review’s Top 3 renders; clicking opens the review', async ({ page }) => {
+  // The template and an older week must both LOSE to the latest dated note.
+  await seed(page, 'desk/weekly/template', '# Template\n\n## ⭐ TOP 3 THIS WEEK\n\n1. Template noise', ['desk'], {})
+  await seed(page, 'desk/weekly/2026-07-06', '# Old week\n\n## ⭐ TOP 3 THIS WEEK\n\n1. Old week thing', ['desk'], {})
+  await seed(page, 'desk/weekly/2026-07-13', WEEK_REVIEW, ['desk'], {})
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  const week = page.getByTestId('week-top3')
+  await expect(week).toBeVisible()
+  await expect(week).toContainText('This week')
+
+  // Three quiet lines, markdown stripped to plain text; asides ignored.
+  const items = week.locator('li')
+  await expect(items).toHaveCount(3)
+  await expect(items.nth(0)).toHaveText(
+    'Fire the warm Jonathan text — unfreezes the entire Escensus pilot.',
   )
+  await expect(items.nth(1)).toContainText('Finish Amanda video edits → hand to Cassy')
+  await expect(items.nth(2)).toContainText('Back up the Escensus scoring work')
+  await expect(week).not.toContainText('Bonus')
+  await expect(week).not.toContainText('Old week thing')
+  await expect(week).not.toContainText('Template noise')
+  // Not a checklist — nothing to tick here.
+  await expect(week.locator('input')).toHaveCount(0)
+
+  // The block is one door: click → the weekly review itself.
+  await week.click()
+  await expect(page).toHaveURL(/#\/pages\/desk%2Fweekly%2F2026-07-13/)
+})
+
+test('⭐ This week — no weekly review, no element (air, not an empty state)', async ({ page }) => {
+  await seed(page, 'desk/weekly/template', '# Template\n\n## ⭐ TOP 3 THIS WEEK\n\n1. Template noise', ['desk'], {})
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  await expect(page.getByTestId('cockpit')).toBeVisible()
+  await expect(page.getByTestId('week-top3')).toHaveCount(0)
+})
+
+// ——— The ritual chip + the quiet tracker exit ———
+
+/** This week's Monday (local), same rule the app uses. */
+function thisMonday(): string {
+  const d = new Date()
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+test('Ritual chip — green when this week is minted; click opens the template', async ({ page }) => {
+  const monday = thisMonday()
+  await seed(page, 'desk/weekly/template', '# The Weekly Project Review — Template', ['desk'], {})
+  await seed(page, `desk/weekly/${monday}`, `# Week Plan — ${monday}\n\n## ⭐ TOP 3 THIS WEEK\n\n1. One thing`, ['desk'], {})
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  const chip = page.getByTestId('ritual-chip')
+  await expect(chip).toBeVisible()
+  await expect(chip).toHaveClass(/is-fresh/)
+  await expect(chip).toContainText(`Week of ${monday} ✓`)
+
+  // The chip is ALWAYS the door to the ritual's front door.
+  await chip.click()
+  await expect(page).toHaveURL(/#\/pages\/desk%2Fweekly%2Ftemplate/)
+})
+
+test('Ritual chip — only an old week exists → the calm red "Ritual due"', async ({ page }) => {
+  await seed(page, 'desk/weekly/template', '# The Weekly Project Review — Template', ['desk'], {})
+  await seed(page, 'desk/weekly/2020-01-06', '# Ancient week', ['desk'], {})
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  const chip = page.getByTestId('ritual-chip')
+  await expect(chip).toBeVisible()
+  await expect(chip).toHaveClass(/is-due/)
+  await expect(chip).toContainText('Ritual due')
+  await expect(chip).not.toContainText('✓')
+})
+
+test('Tracker link — the quiet line at the bottom routes to the Tracker', async ({ page }) => {
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  const link = page.getByTestId('tracker-link')
+  await expect(link).toBeVisible()
+  await expect(link).toHaveText('All tasks → Tracker')
+  await link.click()
+  await expect(page).toHaveURL(/#\/tracker/)
+  await expect(page.locator('.db-title')).toHaveText('Tracker')
 })
 
 test('F1a auto-slug — an untitled page follows its first real title', async ({ page }) => {

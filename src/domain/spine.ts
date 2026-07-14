@@ -23,9 +23,15 @@ const CHECKBOX_RE = /^\s*(?:[-*+]|\d+[.)])\s*\[( |x|X)\]\s*(.*)$/
 /**
  * Lines belonging to the first H2/H3 whose heading matches one of `names`
  * (case-insensitive; prefix match, so "blockers" finds "Blockers / waiting
- * on"). The section ends at the next heading of any level.
+ * on"; pass `'contains'` when the heading may lead with decoration, so
+ * "top 3" finds "⭐ TOP 3 THIS WEEK"). The section ends at the next heading
+ * of any level.
  */
-export function sectionLines(content: string, names: string[]): string[] {
+export function sectionLines(
+  content: string,
+  names: string[],
+  match: 'prefix' | 'contains' = 'prefix',
+): string[] {
   const wanted = names.map((n) => n.toLowerCase())
   const out: string[] = []
   let inside = false
@@ -35,7 +41,9 @@ export function sectionLines(content: string, names: string[]): string[] {
       if (inside) break
       if (h[1]!.length >= 2 && h[1]!.length <= 3) {
         const head = h[2]!.trim().toLowerCase()
-        inside = wanted.some((w) => head === w || head.startsWith(w))
+        inside = wanted.some(
+          (w) => head === w || (match === 'contains' ? head.includes(w) : head.startsWith(w)),
+        )
       }
       continue
     }
@@ -171,6 +179,42 @@ export function latestCardNote(notes: Note[], key: string): Note | null {
     if (!best || n.path > best.path) best = n
   }
   return best
+}
+
+// ---------------------------------------------------------------------------
+// The weekly REVIEW (desk/weekly/YYYY-MM-DD) — Monday's mint for the WHOLE
+// week, not one world. The Projects page whispers its ⭐ Top 3.
+// ---------------------------------------------------------------------------
+
+/** Review address shape: desk/weekly/YYYY-MM-DD (dated only — never the
+ * template that lives beside them). */
+export const WEEK_REVIEW_RE = /^desk\/weekly\/\d{4}-\d{2}-\d{2}$/
+
+/** Inline markdown → plain text: bold markers and link syntax fall away. */
+function stripInline(s: string): string {
+  return s
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
+    .replace(/\[\[([^\]]+)\]\]/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\*\*|__/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
+/** The review's Top 3 — list items under the H2 containing "top 3" (fuzzy:
+ * "## ⭐ TOP 3 THIS WEEK" matches), as plain text, capped at 3. The italic
+ * intro and the *Bonus …* aside aren't list items, so they fall away. */
+export function weekTop3Of(content: string | undefined): string[] {
+  if (!content) return []
+  const out: string[] = []
+  for (const line of sectionLines(content, ['top 3', 'top3', 'top three'], 'contains')) {
+    const m = LIST_RE.exec(line)
+    if (!m) continue
+    const text = stripInline(m[1]!.replace(/^\[( |x|X)\]\s*/, ''))
+    if (text) out.push(text)
+    if (out.length === 3) break
+  }
+  return out
 }
 
 /** The macro strip's "one thing": first UNCHECKED Top-3 item of the latest

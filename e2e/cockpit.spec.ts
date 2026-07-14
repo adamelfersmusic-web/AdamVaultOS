@@ -108,7 +108,11 @@ async function seedAmandaWorld(page: Page) {
     phase: 'active',
     milestone: 'Fallback milestone — the card outranks me',
     home: 'Amanda/00-home',
+    deep: 'Amanda/12-process',
     summary: 'Fundraiser campaign — brand system, calendar, videos.',
+  })
+  await seed(page, 'Amanda/12-process', '# The Process\n\nThe deep ops note.', ['amanda'], {
+    summary: 'The master plan — every phase in detail.',
   })
   await seed(page, 'projects/amanda/weekly/2026-07-06', AMANDA_OLD_CARD, [], {})
   await seed(page, 'projects/amanda/weekly/2026-07-13', AMANDA_CARD, [], {})
@@ -240,13 +244,15 @@ test('Status view — mission → phase bar → ⭐ THIS WEEK → blockers, in o
     'Amanda: approval on video 6',
   )
 
-  // The stack renders in THE SYSTEM's exact order.
+  // The stack renders in THE SYSTEM's exact order (the zoom-ladder doors
+  // sit above it, top right).
   const stack = status.locator(':scope > *')
-  await expect(stack.nth(0)).toHaveClass(/status-mission/)
-  await expect(stack.nth(1)).toHaveAttribute('data-testid', 'phase-bar')
-  await expect(stack.nth(2)).toHaveAttribute('data-testid', 'week-card')
-  await expect(stack.nth(3)).toHaveAttribute('data-testid', 'status-blockers')
-  await expect(stack.nth(4)).toHaveClass(/status-tasks/)
+  await expect(stack.nth(0)).toHaveClass(/status-doors/)
+  await expect(stack.nth(1)).toHaveClass(/status-mission/)
+  await expect(stack.nth(2)).toHaveAttribute('data-testid', 'phase-bar')
+  await expect(stack.nth(3)).toHaveAttribute('data-testid', 'week-card')
+  await expect(stack.nth(4)).toHaveAttribute('data-testid', 'status-blockers')
+  await expect(stack.nth(5)).toHaveClass(/status-tasks/)
 
   // 5 · Open tasks — this-week row visible; the later pile is a COUNT.
   const tasks = status.locator('.status-tasks')
@@ -312,6 +318,48 @@ test('Status view — a world with no card shows the quiet empty line', async ({
   await expect(page.getByTestId('week-card')).toHaveCount(0)
   // No spine sections either → mission falls back to metadata.summary.
   await expect(page.locator('.status-mission')).toContainText('Other project.')
+})
+
+test('Zoom-ladder doors — Master plan opens metadata.deep; Week plan opens the latest review', async ({ page }) => {
+  await seedAmandaWorld(page)
+  // The whole-week review lives at desk/weekly/<date>; older weeks lose.
+  await seed(page, 'desk/weekly/2026-07-06', '# Old week', ['desk'], {})
+  await seed(page, 'desk/weekly/2026-07-13', '# Week Plan — Mon July 13', ['desk'], {})
+  await seed(page, 'desk/weekly/template', '# Template — never a destination', ['desk'], {})
+  await connectViaStorage(page)
+
+  await page.goto(
+    'http://127.0.0.1:4173/#/project/' + encodeURIComponent('projects/amanda-bridges'),
+  )
+  const status = page.getByTestId('world-status')
+  await expect(status).toBeVisible()
+
+  // UP one rung: the spine's deep ops note.
+  await status.getByTestId('door-master').click()
+  await expect(page).toHaveURL(/#\/note\/Amanda%2F12-process/)
+  await expect(page.getByTestId('note-body')).toContainText('The deep ops note.')
+
+  // UP to the top rung: the latest weekly review (never the template).
+  await page.goBack()
+  await status.getByTestId('door-week').click()
+  await expect(page).toHaveURL(/#\/pages\/desk%2Fweekly%2F2026-07-13/)
+})
+
+test('Zoom-ladder doors — no deep → Master plan falls back to the spine; no review → no Week plan', async ({ page }) => {
+  await seedOtherWorld(page)
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/project/' + encodeURIComponent('projects/other'))
+  const status = page.getByTestId('world-status')
+  await expect(status).toBeVisible()
+
+  // No desk/weekly note anywhere → the Week-plan door doesn't exist.
+  await expect(status.getByTestId('door-master')).toBeVisible()
+  await expect(status.getByTestId('door-week')).toHaveCount(0)
+
+  // Master plan without metadata.deep = the spine note itself.
+  await status.getByTestId('door-master').click()
+  await expect(page).toHaveURL(/#\/note\/projects%2Fother/)
 })
 
 test('World — overview renders the home note; board is scoped; create task + note inside', async ({ page }) => {

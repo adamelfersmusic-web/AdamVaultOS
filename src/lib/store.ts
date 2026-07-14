@@ -33,6 +33,7 @@ import {
 import { SCRIPTS_DB } from '../domain/scripts'
 import { TRACKER_DB } from '../domain/tracker'
 import { PROJECT_TAG } from '../domain/projects'
+import { WEEK_REVIEW_RE } from '../domain/spine'
 import { NEW_PAGE, newPageContent, TASK_TAG } from '../domain/pages'
 
 // Storage keys are namespaced per-app. AdamVaultOS shares ONE origin with
@@ -524,6 +525,25 @@ export async function fetchWeeklyCards(prefix = 'projects/'): Promise<Note[]> {
     )
     mergeNotes(cards)
     return cards
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+/** The latest weekly REVIEW — desk/weekly/YYYY-MM-DD, the whole-week mint
+ * (dated paths only; the template beside them never counts). Greatest date
+ * wins; fetched WITH content so the Projects page can whisper its Top 3. */
+export async function fetchLatestWeeklyReview(): Promise<Note | null> {
+  try {
+    const list = await requireApi().listByPrefix('desk/weekly/', 100, true)
+    let best: Note | null = null
+    for (const n of list) {
+      if (!WEEK_REVIEW_RE.test(n.path)) continue
+      if (!best || n.path > best.path) best = n
+    }
+    if (best) mergeNote(best)
+    return best
   } catch (e) {
     handleAuthFailure(e)
     throw e

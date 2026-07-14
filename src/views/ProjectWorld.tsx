@@ -18,6 +18,7 @@ import {
   createPage,
   createTask,
   createWorkTab,
+  fetchLatestWeeklyReview,
   fetchNote,
   fetchProjectNotes,
   fetchWeeklyCards,
@@ -294,10 +295,21 @@ function StatusTaskRow({ n }: { n: Note }) {
   )
 }
 
+/** The house note-opening rule: desk/pages paths open in the Pages editor,
+ * everything else in the read view. */
+const openNotePath = (p: string) =>
+  navigate(
+    p.startsWith('pages/') || p.startsWith('desk/')
+      ? { kind: 'pages', path: p }
+      : { kind: 'note', path: p },
+  )
+
 function WorldStatus({ project, taskNotes }: { project: Project; taskNotes: Note[] }) {
   const { notes } = useStore()
   // This world's card stream — one prefix fetch, latest card = greatest date.
   const [cardPaths, setCardPaths] = useState<string[] | null>(null)
+  // The zoom ladder's top rung — the latest desk/weekly review, if any.
+  const [weekReviewPath, setWeekReviewPath] = useState<string | null>(null)
   const [laterOpen, setLaterOpen] = useState(false)
   const [checking, setChecking] = useState(false)
   // Optimistic overlay while a check is in flight — the box flips the moment
@@ -317,6 +329,18 @@ function WorldStatus({ project, taskNotes }: { project: Project; taskNotes: Note
         if (seq.current === id) setCardPaths([])
       })
   }, [project.key])
+
+  useEffect(() => {
+    let alive = true
+    fetchLatestWeeklyReview()
+      .then((n) => {
+        if (alive) setWeekReviewPath(n?.path ?? null)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
 
   // The spine usually arrives with content via loadProjects; a deep link can
   // land it lean, so hydrate the body if it's missing.
@@ -399,8 +423,34 @@ function WorldStatus({ project, taskNotes }: { project: Project; taskNotes: Note
 
   const pastCount = cardPaths ? Math.max(0, cardPaths.length - 1) : 0
 
+  // Doors UP the zoom ladder: summary (here) → the master plan (the spine's
+  // metadata.deep ops note, else the spine itself) → the whole week's review.
+  const deep = project.note.metadata['deep']
+  const masterPath = typeof deep === 'string' && deep.trim() ? deep.trim() : project.path
+
   return (
     <div className="status" data-testid="world-status">
+      <nav className="status-doors" aria-label="Zoom ladder">
+        <button
+          className="btn btn-ghost status-door"
+          data-testid="door-master"
+          title={`Open the master plan — ${masterPath}`}
+          onClick={() => openNotePath(masterPath)}
+        >
+          Master plan
+        </button>
+        {weekReviewPath && (
+          <button
+            className="btn btn-ghost status-door"
+            data-testid="door-week"
+            title={`Open the week's review — ${weekReviewPath}`}
+            onClick={() => navigate({ kind: 'pages', path: weekReviewPath })}
+          >
+            Week plan
+          </button>
+        )}
+      </nav>
+
       {mission && <p className="status-mission">{mission}</p>}
 
       {phases.length > 0 && (
