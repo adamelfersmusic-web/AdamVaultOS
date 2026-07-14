@@ -37,6 +37,7 @@ import { WEEK_REVIEW_RE } from '../domain/spine'
 import { NEW_PAGE, newPageContent, TASK_TAG } from '../domain/pages'
 import {
   promoteTaskLine,
+  setLineDue,
   toggleTaskLine,
   type LooseTask,
 } from '../domain/looseTasks'
@@ -872,6 +873,22 @@ export async function setTaskToday(path: string, on: boolean): Promise<boolean> 
   )
 }
 
+/** Persist a Tasks-tab row reorder: stamp 10-spaced metadata.order onto the
+ * group's rows in their new order — the WorkTabs/Shelves pattern verbatim
+ * (setMetadata's conflict-safe merge; rows already holding the right value
+ * are skipped, so an unchanged tail costs nothing). Dropping is the only
+ * gesture that calls this — a cancelled drag writes nothing. */
+export async function persistTaskOrder(orderedPaths: string[]): Promise<boolean> {
+  const writes: Promise<boolean>[] = []
+  orderedPaths.forEach((p, i) => {
+    const want = (i + 1) * 10
+    if (state.notes[p]?.metadata?.['order'] !== want) {
+      writes.push(setMetadata(p, { order: want }, { silent: true }))
+    }
+  })
+  return (await Promise.all(writes)).every(Boolean)
+}
+
 // ---------------------------------------------------------------------------
 // Work docs (W1, build log PART 30) — Google-Docs-style tabbed workspaces.
 // A WORKSPACE is a spot under desk/: the daily note (desk/<date>) or a
@@ -1185,6 +1202,11 @@ async function mutateNote(
  * Metadata-only write (table cells, board moves, property chips). Only the
  * changed keys are sent; the vault merges them server-side. Optimistic UI
  * with revert + toast on failure.
+ *
+ * REMOVAL: a `null` value is the JSON-merge-patch deletion instruction — the
+ * key is REMOVED (locally and by the vault's merge), never stored as null.
+ * This is how "Clear date" honors the law that due is never written as
+ * null/'' — the key simply ceases to exist.
  */
 export async function setMetadata(
   path: string,
@@ -1193,7 +1215,11 @@ export async function setMetadata(
 ): Promise<boolean> {
   const before = state.notes[path]
   if (before) {
-    mergeNote({ ...before, metadata: { ...before.metadata, ...patch } })
+    const merged: NoteMetadata = { ...before.metadata, ...patch }
+    for (const k of Object.keys(patch)) {
+      if (patch[k] === null) delete merged[k]
+    }
+    mergeNote({ ...before, metadata: merged })
   }
   try {
     await mutateNote(path, () => ({ metadata: patch }))
@@ -1216,7 +1242,7 @@ function describeMetadataPatch(patch: NoteMetadata): string {
   const entries = Object.entries(patch)
   if (entries.length === 1) {
     const [k, v] = entries[0]!
-    return `${k} → ${String(v)}`
+    return v === null ? `${k} removed` : `${k} → ${String(v)}`
   }
   return 'Saved to vault'
 }
@@ -1331,6 +1357,16 @@ export async function surgicalLineEdit(
  * ambiguity throws for the caller's error toast. Byte-stable everywhere else. */
 export async function toggleLooseTask(t: LooseTask): Promise<Note> {
   return surgicalLineEdit(t.notePath, (lines) => toggleTaskLine(lines, t))
+}
+
+/** Set/replace/strip a loose line's trailing `📅 YYYY-MM-DD` token IN PLACE
+ * (null = remove — a cleared date leaves no token, never `📅 null`). Same
+ * byte-exact surgicalLineEdit ride as the checkbox toggle. */
+export async function setLooseTaskDue(
+  t: LooseTask,
+  due: string | null,
+): Promise<Note> {
+  return surgicalLineEdit(t.notePath, (lines) => setLineDue(lines, t, due))
 }
 
 /**

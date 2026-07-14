@@ -127,6 +127,23 @@ export function toggleTaskLine(lines: string[], t: LooseTask): string[] {
   return next
 }
 
+/** Set/replace/remove the trailing `📅 YYYY-MM-DD` token on exactly t's
+ * line. `due` = 'YYYY-MM-DD' appends or replaces the token; null strips it —
+ * a cleared date leaves NO token behind (never `📅 ` or an empty date).
+ * Surgical: every other byte of the note survives. */
+export function setLineDue(lines: string[], t: LooseTask, due: string | null): string[] {
+  const i = locateLine(lines, t)
+  const next = [...lines]
+  next[i] = t.raw.replace(
+    CHECKBOX_RE,
+    (_all, indent: string, mark: string, body: string) => {
+      const bare = DUE_RE.exec(body)?.[1] ?? body
+      return `${indent}- [${mark}] ${bare}${due ? ` 📅 ${due}` : ''}`
+    },
+  )
+  return next
+}
+
 /** PROMOTION's second half: the source line stops being a checkbox and
  * becomes a pointer to the minted row — ownership transferred. */
 export function promoteTaskLine(

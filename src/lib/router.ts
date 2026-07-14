@@ -41,6 +41,11 @@ function decodePath(segments: string[]): string {
 
 export function parseHash(hash: string): Route {
   const h = hash.replace(/^#\/?/, '')
+  // THE GATE — the bare address ('', '#', '#/') is the threshold, and the
+  // Map greets arrivals. Only the truly empty hash opens the gate: any real
+  // hash (deep links, reloads mid-work, bookmarks) sails past untouched, and
+  // a NON-empty unknown head still falls back to the Cockpit below.
+  if (!h) return { kind: 'map' }
   const [head, ...rest] = h.split('/')
   switch (head) {
     case 'connect':

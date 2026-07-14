@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useRef } from 'react'
 import { processOAuthReturn, useStore } from './lib/store'
-import { useUi, openPalette, closePalette, toggleAskAi } from './lib/ui'
+import { useUi, openPalette, closePalette, toggleAskAi, toggleShortcuts } from './lib/ui'
 import { AskAi } from './components/AskAi'
+import { ShortcutsPanel } from './components/ShortcutsPanel'
 import { navigate, useRoute } from './lib/router'
 import { installVaultLinkInterceptor } from './lib/vaultLinks'
 import { Shell } from './views/Shell'
@@ -59,8 +60,9 @@ export default function App() {
   // house note-opening rule instead of hard-navigating into a hosting 404.
   useEffect(() => installVaultLinkInterceptor(), [])
 
-  // Global shortcuts: ⌘K / Ctrl+K opens the palette, ⌘J / Ctrl+J Ask AI —
-  // anywhere, including the full-bleed Pages and Graph layouts.
+  // Global shortcuts: ⌘K / Ctrl+K opens the palette, ⌘J / Ctrl+J Ask AI,
+  // ⌘/ / Ctrl+/ the Shortcuts panel — anywhere, including the full-bleed
+  // Pages and Graph layouts. The keymap itself lives in lib/keymap.ts.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -71,6 +73,10 @@ export default function App() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
         e.preventDefault()
         if (session) toggleAskAi()
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+        e.preventDefault()
+        if (session) toggleShortcuts()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -118,6 +124,7 @@ export default function App() {
           {route.kind === 'commandments' ? <CommandmentsView /> : <MapView />}
         </Suspense>
         {ui.paletteOpen && <Omnibar />}
+        {ui.shortcutsOpen && <ShortcutsPanel />}
         <AskAi />
         <ToastHost />
       </>
@@ -130,6 +137,7 @@ export default function App() {
       <>
         <GraphView />
         {ui.paletteOpen && <Omnibar />}
+        {ui.shortcutsOpen && <ShortcutsPanel />}
         <AskAi />
         <CaptureDock />
         <ToastHost />
@@ -151,6 +159,7 @@ export default function App() {
           <PagesView path={route.path} />
         </Suspense>
         {ui.paletteOpen && <Omnibar />}
+        {ui.shortcutsOpen && <ShortcutsPanel />}
         <AskAi />
         <CaptureDock />
         <ToastHost />
@@ -181,6 +190,7 @@ export default function App() {
       </Shell>
       {ui.newScriptOpen && <NewScriptModal />}
       {ui.paletteOpen && <Omnibar />}
+      {ui.shortcutsOpen && <ShortcutsPanel />}
       <AskAi />
       <CaptureDock />
       <ToastHost />

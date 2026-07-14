@@ -20,13 +20,15 @@
 // real tasks/* rows (the ↗ affordance). No dual bookkeeping — see
 // domain/looseTasks.ts for the law.
 
-import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
 import type { Note } from '../lib/types'
 import {
   createTask,
   loadProjects,
   loadTracker,
+  persistTaskOrder,
   promoteLooseTask,
+  setLooseTaskDue,
   setMetadata,
   toast,
   toggleLooseTask,
@@ -35,7 +37,13 @@ import {
 import { cachedCorpus, corpusFresh, refreshCorpus } from '../lib/corpus'
 import { navigate } from '../lib/router'
 import { dueTone, formatDue, ymd } from '../lib/dates'
-import { mergedTodayTasks, taskDue, taskProject, taskTitle } from '../domain/tasks'
+import {
+  mergedTodayTasks,
+  orderFirst,
+  taskDue,
+  taskProject,
+  taskTitle,
+} from '../domain/tasks'
 import {
   groupLooseByNote,
   scanLooseTasks,
@@ -45,7 +53,7 @@ import {
 import { toProjects, type Project } from '../domain/projects'
 import { MonthPicker } from '../components/MonthPicker'
 import { Popover } from '../components/Popover'
-import { IconPlus } from '../components/Icons'
+import { IconCalendar, IconPlus } from '../components/Icons'
 
 // ————————————————————————— persistence keys —————————————————————————
 
@@ -75,6 +83,53 @@ function loadCollapsed(): Record<string, boolean> {
   } catch {
     return {}
   }
+}
+
+// ——— ROW DRAG & DROP — the house DnD (WorkTabs/Shelves pattern): native
+// HTML5, payload in dataTransfer with a module mirror for dragover (which
+// can't read dataTransfer in protected mode), a thin gold insertion line,
+// window-level dragend sweep. Dropping is the ONLY gesture that writes; a
+// cancelled drag (Escape / let go outside) leaves no trace. Dragging is a
+// pointer-only enhancement — dates, promote, checkboxes, filing all stay
+// button-reachable, so no functionality is exclusive to it. ———
+
+type RowDragPayload = { kind: 'taskrow'; path: string; group: string }
+
+const ROW_DND_MIME = 'application/x-adamvaultos-taskrow-dnd'
+let liveRowDrag: RowDragPayload | null = null
+
+function isRowDragPayload(p: unknown): p is RowDragPayload {
+  if (!p || typeof p !== 'object') return false
+  const d = p as Record<string, unknown>
+  return d.kind === 'taskrow' && typeof d.path === 'string' && typeof d.group === 'string'
+}
+
+/** Drop-time payload: dataTransfer JSON when it parses, else the live mirror. */
+function readRowDragPayload(e: React.DragEvent): RowDragPayload | null {
+  try {
+    const raw = e.dataTransfer.getData(ROW_DND_MIME)
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw)
+      if (isRowDragPayload(parsed)) return parsed
+    }
+  } catch {
+    // fall through to the mirror
+  }
+  return liveRowDrag
+}
+
+/** Top or bottom half of the hovered row → insert before it or after it. */
+function slotFor(e: React.DragEvent, index: number): number {
+  const r = e.currentTarget.getBoundingClientRect()
+  return e.clientY > r.top + r.height / 2 ? index + 1 : index
+}
+
+/** Handlers a draggable row wires up (undefined = not draggable, e.g. the
+ * Upcoming agenda and every loose line — their home orders them). */
+interface RowDrag {
+  group: string
+  onOver: (e: React.DragEvent) => void
+  onDrop: (e: React.DragEvent) => void
 }
 
 // ————————————————————————— shaping helpers —————————————————————————
@@ -146,6 +201,27 @@ export function TasksView() {
   const [leaving, setLeaving] = useState<Record<string, boolean>>({})
   const leaveTimers = useRef<number[]>([])
 
+  // ——— row-level date affordance: ONE MonthPicker, anchored per row.
+  // `write(null)` = Clear date → the key/token is REMOVED, never nulled. ———
+  const [datePick, setDatePick] = useState<{
+    anchor: HTMLElement
+    value: string | null
+    write: (due: string | null) => void
+  } | null>(null)
+
+  // Reorder hover slot (per group; a gold line renders there). Window-level
+  // dragend/drop is the safety net for cancelled drags.
+  const [dropSlot, setDropSlot] = useState<{ group: string; slot: number } | null>(null)
+  useEffect(() => {
+    const clear = () => setDropSlot(null)
+    window.addEventListener('dragend', clear)
+    window.addEventListener('drop', clear)
+    return () => {
+      window.removeEventListener('dragend', clear)
+      window.removeEventListener('drop', clear)
+    }
+  }, [])
+
   useEffect(() => {
     if (trackerStatus === 'idle') void loadTracker()
     if (projectsStatus === 'idle') void loadProjects()
@@ -208,6 +284,47 @@ export function TasksView() {
   /** House note-opening rule (same as the Omnibar/Library). */
   const openLooseNote = (path: string) =>
     navigate(path.startsWith('pages/') ? { kind: 'pages', path } : { kind: 'note', path })
+
+  /** Row task date: metadata.due via the house setMetadata path. Clearing
+   * REMOVES the key (null = merge-patch deletion) — never due:null/''. */
+  const pickRowDate = (n: Note, anchor: HTMLElement) => {
+    const prev = taskDue(n)
+    setDatePick({
+      anchor,
+      value: prev,
+      write: (due) => {
+        if (due === prev) return
+        void setMetadata(n.path, { due }, { undo: { due: prev } })
+      },
+    })
+  }
+
+  /** Loose line date: rewrite the trailing `📅 YYYY-MM-DD` token via the
+   * loose-task machinery (surgicalLineEdit — byte-exact elsewhere). */
+  const pickLooseDate = (t: LooseTask, anchor: HTMLElement) => {
+    setDatePick({
+      anchor,
+      value: t.due ?? null,
+      write: (due) => {
+        if (due === (t.due ?? null)) return
+        void setLooseTaskDue(t, due).catch((e) => {
+          toast('error', `Couldn’t save — ${e instanceof Error ? e.message : e}`)
+        })
+      },
+    })
+  }
+
+  /** THE PHYSICAL PROMOTION GESTURE — dropping a row into another world group
+   * re-files it: metadata.project set to the world key, REMOVED for Inbox
+   * (null = merge-patch deletion). Tracker inclusion follows automatically
+   * from Adam's law (isFiledTask) — nothing else to write. */
+  const refileTask = (path: string, key: string | null) => {
+    const n = notes[path]
+    if (!n) return
+    const prev = taskProject(n)
+    if (prev === key) return
+    void setMetadata(path, { project: key }, { undo: { project: prev } })
+  }
 
   // ——— Craft Phase B: loose checkboxes living inside ordinary notes ———
 
@@ -332,17 +449,50 @@ export function TasksView() {
     }
   }
 
-  // ——— one row, everywhere: check · title (+due) · source chip ———
-  const Row = ({ n, showDue = true }: { n: Note; showDue?: boolean }) => {
+  // ——— one row, everywhere: check · title (+due) · date · source chip ———
+  const Row = ({
+    n,
+    showDue = true,
+    drag,
+  }: {
+    n: Note
+    showDue?: boolean
+    /** Present = draggable (reorder / re-file); absent on the Upcoming agenda. */
+    drag?: RowDrag
+  }) => {
     const done = n.metadata['done'] === true
     const due = taskDue(n)
     const key = taskProject(n)
     const world = key ? worldByKey.get(key) : undefined
     return (
       <div
-        className={`task-row${done ? ' is-done' : ''}${done && leaving[n.path] ? ' is-leaving' : ''}`}
+        className={`task-row${done ? ' is-done' : ''}${done && leaving[n.path] ? ' is-leaving' : ''}${drag ? ' is-draggable' : ''}`}
         data-testid="task-row"
         data-path={n.path}
+        draggable={Boolean(drag)}
+        onDragStart={
+          drag
+            ? (e) => {
+                const payload: RowDragPayload = {
+                  kind: 'taskrow',
+                  path: n.path,
+                  group: drag.group,
+                }
+                liveRowDrag = payload
+                e.dataTransfer.setData(ROW_DND_MIME, JSON.stringify(payload))
+                e.dataTransfer.effectAllowed = 'move'
+              }
+            : undefined
+        }
+        onDragEnd={
+          drag
+            ? () => {
+                liveRowDrag = null
+              }
+            : undefined
+        }
+        onDragOver={drag?.onOver}
+        onDrop={drag?.onDrop}
       >
         <input
           type="checkbox"
@@ -351,14 +501,35 @@ export function TasksView() {
           onChange={() => toggleDone(n)}
           aria-label={taskTitle(n)}
         />
-        <button className="task-row-main" onClick={() => openTask(n.path)} title={n.path}>
-          <span className="task-row-title">{taskTitle(n)}</span>
+        <div className="task-row-main">
+          <button className="task-row-open" onClick={() => openTask(n.path)} title={n.path}>
+            <span className="task-row-title">{taskTitle(n)}</span>
+          </button>
           {showDue && due && (
-            <span className={`task-row-due due-${dueTone(due)}`} data-testid="task-due" title={due}>
-              {formatDue(due)}
-            </span>
+            <button
+              className={`task-row-due due-${dueTone(due)}`}
+              data-testid="row-due-edit"
+              title="Change due date"
+              aria-label={`Change due date for “${taskTitle(n)}”`}
+              onClick={(e) => pickRowDate(n, e.currentTarget)}
+            >
+              <span className={`due-${dueTone(due)}`} data-testid="task-due" title={due}>
+                {formatDue(due)}
+              </span>
+            </button>
           )}
-        </button>
+        </div>
+        {!due && (
+          <button
+            className="row-due-set"
+            data-testid="row-due-set"
+            title="Set due date"
+            aria-label={`Set due date for “${taskTitle(n)}”`}
+            onClick={(e) => pickRowDate(n, e.currentTarget)}
+          >
+            <IconCalendar size={13} />
+          </button>
+        )}
         {key ? (
           <button
             className="task-src"
@@ -380,7 +551,8 @@ export function TasksView() {
     )
   }
 
-  // ——— a loose line's row: same anatomy, source chip = the note ———
+  // ——— a loose line's row: same anatomy, source chip = the note. NOT
+  // draggable — a line's home is its note; the ↗ promote popover is its door. ———
   const LooseRow = ({ t, showDue = true }: { t: LooseTask; showDue?: boolean }) => {
     const k = looseKey(t)
     const done = looseFlips[k] ?? t.checked
@@ -398,22 +570,39 @@ export function TasksView() {
           onChange={() => toggleLoose(t)}
           aria-label={t.text}
         />
-        <button
-          className="task-row-main"
-          onClick={() => openLooseNote(t.notePath)}
-          title={`${t.notePath} · line ${t.lineIndex + 1}`}
-        >
-          <span className="task-row-title">{t.text}</span>
+        <div className="task-row-main">
+          <button
+            className="task-row-open"
+            onClick={() => openLooseNote(t.notePath)}
+            title={`${t.notePath} · line ${t.lineIndex + 1}`}
+          >
+            <span className="task-row-title">{t.text}</span>
+          </button>
           {showDue && t.due && (
-            <span
+            <button
               className={`task-row-due due-${dueTone(t.due)}`}
-              data-testid="task-due"
-              title={t.due}
+              data-testid="row-due-edit"
+              title="Change due date"
+              aria-label={`Change due date for “${t.text}”`}
+              onClick={(e) => pickLooseDate(t, e.currentTarget)}
             >
-              {formatDue(t.due)}
-            </span>
+              <span className={`due-${dueTone(t.due)}`} data-testid="task-due" title={t.due}>
+                {formatDue(t.due)}
+              </span>
+            </button>
           )}
-        </button>
+        </div>
+        {!t.due && (
+          <button
+            className="row-due-set"
+            data-testid="row-due-set"
+            title="Set due date"
+            aria-label={`Set due date for “${t.text}”`}
+            onClick={(e) => pickLooseDate(t, e.currentTarget)}
+          >
+            <IconCalendar size={13} />
+          </button>
+        )}
         <button
           className="loose-promote"
           data-testid="loose-promote"
@@ -431,6 +620,85 @@ export function TasksView() {
         >
           {t.noteTitle}
         </button>
+      </div>
+    )
+  }
+
+  // ——— a group's row stack, drag-enabled. WITHIN the group: reorder →
+  // 10-spaced metadata.order (the tabs' persistence, renumber-on-drop).
+  // ACROSS groups (refile=true — the All/Today chips): dropping re-files the
+  // row (metadata.project → the target world; removed for Inbox). ———
+  const DraggableRows = ({
+    group,
+    rows,
+    refile,
+  }: {
+    group: string
+    rows: Note[]
+    refile: boolean
+  }) => {
+    const accepts = (d: RowDragPayload | null): boolean => {
+      if (!d || d.kind !== 'taskrow') return false
+      return d.group === group || refile
+    }
+    const onDrop = (e: React.DragEvent, slot: number) => {
+      const payload = readRowDragPayload(e)
+      setDropSlot(null)
+      if (!accepts(payload)) return
+      e.preventDefault()
+      e.stopPropagation()
+      if (payload!.group === group) {
+        // Reorder within the group; landing where it already sits writes nothing.
+        const from = rows.findIndex((r) => r.path === payload!.path)
+        if (from === -1) return
+        const next = [...rows]
+        const [moved] = next.splice(from, 1)
+        const at = Math.max(0, Math.min(slot > from ? slot - 1 : slot, next.length))
+        if (at === from) return
+        next.splice(at, 0, moved!)
+        void persistTaskOrder(next.map((r) => r.path))
+      } else {
+        refileTask(payload!.path, group === 'inbox' ? null : group)
+      }
+    }
+    const rowDrag = (i: number): RowDrag => ({
+      group,
+      onOver: (e) => {
+        if (!accepts(liveRowDrag)) return
+        e.preventDefault()
+        e.stopPropagation()
+        e.dataTransfer.dropEffect = 'move'
+        setDropSlot({ group, slot: slotFor(e, i) })
+      },
+      onDrop: (e) => onDrop(e, slotFor(e, i)),
+    })
+    return (
+      <div
+        className="tasks-rows"
+        onDragOver={(e) => {
+          // The gap under the last row — append (or file into this group).
+          if (!accepts(liveRowDrag)) return
+          e.preventDefault()
+          e.dataTransfer.dropEffect = 'move'
+          setDropSlot({ group, slot: rows.length })
+        }}
+        onDragLeave={(e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+          setDropSlot((s) => (s?.group === group ? null : s))
+        }}
+        onDrop={(e) => onDrop(e, rows.length)}
+      >
+        {rows.map((n, i) => (
+          <Fragment key={n.path}>
+            {dropSlot?.group === group && dropSlot.slot === i && (
+              <div className="tasks-drop-line" data-testid="row-drop-line" />
+            )}
+            <Row n={n} drag={rowDrag(i)} />
+          </Fragment>
+        ))}
+        {dropSlot?.group === group && dropSlot.slot === rows.length && rows.length > 0 && (
+          <div className="tasks-drop-line" data-testid="row-drop-line" />
+        )}
       </div>
     )
   }
@@ -470,13 +738,13 @@ export function TasksView() {
         </div>
       ) : (
         <div className="tasks-body">
-          {chip === 'inbox' && <InboxList tasks={openTasks} Row={Row} />}
+          {chip === 'inbox' && <InboxList tasks={openTasks} Rows={DraggableRows} />}
           {chip === 'today' && (
             <TodayList
               tasks={taskNotes}
               leaving={leaving}
               worlds={worlds}
-              Row={Row}
+              Rows={DraggableRows}
               onHeader={openWorld}
               loose={looseToday}
               LooseRow={LooseRow}
@@ -490,7 +758,7 @@ export function TasksView() {
             <AllList
               tasks={openTasks}
               worlds={worlds}
-              Row={Row}
+              Rows={DraggableRows}
               onHeader={openWorld}
               loose={looseOpen}
               LooseRow={LooseRow}
@@ -498,6 +766,16 @@ export function TasksView() {
             />
           )}
         </div>
+      )}
+
+      {datePick && (
+        <MonthPicker
+          anchor={datePick.anchor}
+          value={datePick.value}
+          onPick={(d) => datePick.write(d)}
+          onClear={() => datePick.write(null)}
+          onClose={() => setDatePick(null)}
+        />
       )}
 
       {promote && (
@@ -532,8 +810,14 @@ export function TasksView() {
   )
 }
 
-type RowRenderer = (props: { n: Note; showDue?: boolean }) => ReactElement
+type RowRenderer = (props: { n: Note; showDue?: boolean; drag?: RowDrag }) => ReactElement
 type LooseRowRenderer = (props: { t: LooseTask; showDue?: boolean }) => ReactElement
+/** A drag-enabled group of rows (reorder within; re-file across when refile). */
+type GroupRowsRenderer = (props: {
+  group: string
+  rows: Note[]
+  refile: boolean
+}) => ReactElement
 
 // ————————————————————————— loose note groups —————————————————————————
 
@@ -577,9 +861,10 @@ function LooseNoteGroups({
 
 // ————————————————————————— Inbox —————————————————————————
 
-function InboxList({ tasks, Row }: { tasks: Note[]; Row: RowRenderer }) {
+function InboxList({ tasks, Rows }: { tasks: Note[]; Rows: GroupRowsRenderer }) {
+  // Hand-placed order first (drag-reorder), then the classic due-first sort.
   const unfiled = useMemo(
-    () => sortDueFirst(tasks.filter((n) => !taskProject(n))),
+    () => orderFirst(sortDueFirst(tasks.filter((n) => !taskProject(n)))),
     [tasks],
   )
   if (unfiled.length === 0) {
@@ -587,9 +872,7 @@ function InboxList({ tasks, Row }: { tasks: Note[]; Row: RowRenderer }) {
   }
   return (
     <section className="tasks-group" data-testid="tasks-group" data-group="inbox">
-      {unfiled.map((n) => (
-        <Row key={n.path} n={n} />
-      ))}
+      <Rows group="inbox" rows={unfiled} refile={false} />
     </section>
   )
 }
@@ -600,7 +883,7 @@ function TodayList({
   tasks,
   leaving,
   worlds,
-  Row,
+  Rows,
   onHeader,
   loose,
   LooseRow,
@@ -609,7 +892,7 @@ function TodayList({
   tasks: Note[]
   leaving: Record<string, boolean>
   worlds: Project[]
-  Row: RowRenderer
+  Rows: GroupRowsRenderer
   onHeader: (g: WorldGroup) => void
   /** Loose lines due today/overdue — they join AFTER the world groups. */
   loose: LooseTask[]
@@ -625,7 +908,12 @@ function TodayList({
       ),
     [tasks, leaving],
   )
-  const groups = useMemo(() => groupByWorld(todays, worlds), [todays, worlds])
+  // Within each group, hand-placed order leads (the sort law in domain/tasks).
+  const groups = useMemo(
+    () =>
+      groupByWorld(todays, worlds).map((g) => ({ ...g, tasks: orderFirst(g.tasks) })),
+    [todays, worlds],
+  )
   const looseGroups = useMemo(() => groupLooseByNote(loose), [loose])
   if (groups.length === 0 && looseGroups.length === 0) {
     return <p className="tasks-empty">Nothing claimed today yet — a clear morning.</p>
@@ -655,9 +943,7 @@ function TodayList({
               <span className="tasks-group-count">{g.tasks.length}</span>
             </div>
           )}
-          {g.tasks.map((n) => (
-            <Row key={n.path} n={n} />
-          ))}
+          <Rows group={g.key ?? 'inbox'} rows={g.tasks} refile />
         </section>
       ))}
       {/* Loose lines whose date has arrived — grouped under their notes,
@@ -791,7 +1077,7 @@ const GROUP_PREVIEW = 10
 function AllList({
   tasks,
   worlds,
-  Row,
+  Rows,
   onHeader,
   loose,
   LooseRow,
@@ -799,7 +1085,7 @@ function AllList({
 }: {
   tasks: Note[]
   worlds: Project[]
-  Row: RowRenderer
+  Rows: GroupRowsRenderer
   onHeader: (g: WorldGroup) => void
   /** Open loose lines — the closing "In your notes" section. */
   loose: LooseTask[]
@@ -810,8 +1096,14 @@ function AllList({
   // ops table; this list is only ever "what's still open, by world".
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(loadCollapsed)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  // Within each group, hand-placed order leads (the sort law in domain/tasks),
+  // then the classic due-first sort for the unordered tail.
   const groups = useMemo(
-    () => groupByWorld(sortDueFirst(tasks), worlds),
+    () =>
+      groupByWorld(sortDueFirst(tasks), worlds).map((g) => ({
+        ...g,
+        tasks: orderFirst(g.tasks),
+      })),
     [tasks, worlds],
   )
   const looseGroups = useMemo(() => groupLooseByNote(loose), [loose])
@@ -875,9 +1167,7 @@ function AllList({
             </div>
             {!isCollapsed && (
               <>
-                {shown.map((n) => (
-                  <Row key={n.path} n={n} />
-                ))}
+                <Rows group={id} rows={shown} refile />
                 {hidden > 0 && (
                   <button
                     className="tasks-more"

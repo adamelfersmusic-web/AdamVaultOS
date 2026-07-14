@@ -19,7 +19,7 @@ import {
   useStore,
 } from '../lib/store'
 import { cachedCorpus, corpusFresh, refreshCorpus } from '../lib/corpus'
-import { askAiAsk, closePalette, openAskAi, openNewScript } from '../lib/ui'
+import { askAiAsk, closePalette, openAskAi, openNewScript, openShortcuts } from '../lib/ui'
 import { navigate } from '../lib/router'
 import { fuzzyScore } from '../lib/fuzzy'
 import { relativeTime, titleFromPath } from '../lib/format'
@@ -323,6 +323,13 @@ export function Omnibar() {
         hint: '⌘J',
         icon: <IconSpark size={14} />,
         run: () => openAskAi(),
+      },
+      {
+        key: 'shortcuts',
+        label: 'Keyboard shortcuts',
+        hint: '⌘/',
+        icon: <IconTable size={14} />,
+        run: () => openShortcuts(),
       },
       {
         key: 'disconnect',

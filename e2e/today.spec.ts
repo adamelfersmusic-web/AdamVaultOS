@@ -64,7 +64,7 @@ test('Today checklist — lists when:today, toggles done, promotes via picker; n
   })
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const strip = page.getByTestId('today-strip')
   await expect(strip).toBeVisible()
   await expect(strip).toContainText('Send Amanda video 8')
@@ -97,7 +97,7 @@ test('Picker v2 — typing shows the ➕ create row first; Enter mints a project
   })
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const strip = page.getByTestId('today-strip')
   await strip.locator('.today-add-btn').click()
   const picker = strip.locator('.today-picker')
@@ -151,7 +151,7 @@ test('Picker v2 — this-week tasks rank above later ones in the pick-list', asy
   })
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const strip = page.getByTestId('today-strip')
   await strip.locator('.today-add-btn').click()
   const items = strip.locator('.today-picker-item')
@@ -166,7 +166,7 @@ test('Picker v2 — ✕ demotes to when:later; the note is never deleted', async
   })
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const strip = page.getByTestId('today-strip')
   await expect(strip).toContainText('Send Amanda video 8')
 
@@ -188,7 +188,7 @@ test('Picker v2 — closes like a normal window: outside click, Escape, add, and
   })
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const strip = page.getByTestId('today-strip')
   const picker = strip.locator('.today-picker')
   const addBtn = strip.locator('.today-add-btn')
@@ -221,7 +221,7 @@ test('Picker v2 — closes like a normal window: outside click, Escape, add, and
 test('Daily note — the quiet header button creates today’s note and opens it', async ({ page }) => {
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const btn = page.getByTestId('daily-note-btn')
   await expect(btn).toBeVisible()
   // It lives in the header row, beside "New project".
@@ -280,7 +280,7 @@ test('⭐ This week — the latest review’s Top 3 renders; clicking opens the 
   await seed(page, 'desk/weekly/2026-07-13', WEEK_REVIEW, ['desk'], {})
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const week = page.getByTestId('week-top3')
   await expect(week).toBeVisible()
   await expect(week).toContainText('This week')
@@ -308,7 +308,7 @@ test('⭐ This week — no weekly review, no element (air, not an empty state)',
   await seed(page, 'desk/weekly/template', '# Template\n\n## ⭐ TOP 3 THIS WEEK\n\n1. Template noise', ['desk'], {})
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   await expect(page.getByTestId('cockpit')).toBeVisible()
   await expect(page.getByTestId('week-top3')).toHaveCount(0)
 })
@@ -329,7 +329,7 @@ test('Ritual chip — green when this week is minted; click opens the template',
   await seed(page, `desk/weekly/${monday}`, `# Week Plan — ${monday}\n\n## ⭐ TOP 3 THIS WEEK\n\n1. One thing`, ['desk'], {})
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const chip = page.getByTestId('ritual-chip')
   await expect(chip).toBeVisible()
   await expect(chip).toHaveClass(/is-fresh/)
@@ -345,7 +345,7 @@ test('Ritual chip — only an old week exists → the calm red "Ritual due"', as
   await seed(page, 'desk/weekly/2020-01-06', '# Ancient week', ['desk'], {})
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const chip = page.getByTestId('ritual-chip')
   await expect(chip).toBeVisible()
   await expect(chip).toHaveClass(/is-due/)
@@ -356,7 +356,7 @@ test('Ritual chip — only an old week exists → the calm red "Ritual due"', as
 test('Tracker link — the quiet line at the bottom routes to the Tracker', async ({ page }) => {
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   const link = page.getByTestId('tracker-link')
   await expect(link).toBeVisible()
   await expect(link).toHaveText('All tasks → Tracker')
@@ -401,7 +401,7 @@ test('Landing (1+2) — Continue + milestone + next 3 + doors; checkbox writes',
   }
   await connectViaStorage(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   await page.getByTestId('macro-row').filter({ hasText: 'Amanda' }).click()
   const landing = page.getByTestId('landing')
   await expect(landing).toBeVisible()

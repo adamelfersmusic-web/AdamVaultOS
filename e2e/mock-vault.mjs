@@ -529,7 +529,12 @@ const server = http.createServer(async (req, res) => {
       if (body.content !== undefined) note.content = body.content
       if (body.path !== undefined) note.path = body.path // rename/move, like the real vault
       if (body.metadata !== undefined) {
+        // JSON-merge-patch semantics (RFC 7386): a null value DELETES the
+        // key — how the app clears due/project. Null is never stored.
         note.metadata = { ...note.metadata, ...body.metadata }
+        for (const [k, v] of Object.entries(body.metadata)) {
+          if (v === null) delete note.metadata[k]
+        }
       }
       if (body.tags?.add?.length) {
         for (const t of body.tags.add) {

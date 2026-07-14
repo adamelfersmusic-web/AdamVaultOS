@@ -393,6 +393,44 @@
   }
 }
 
+/* ————————————————— the Shortcuts panel (⌘/) — lib/keymap.ts rendered ————— */
+
+.shortcuts-title {
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+.shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.shortcuts-table td {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: baseline;
+}
+.shortcuts-table tr:last-child td {
+  border-bottom: none;
+}
+.shortcuts-keys {
+  width: 42%;
+  white-space: nowrap;
+  padding-right: 14px;
+}
+.shortcuts-keys kbd {
+  font-size: 11px;
+}
+.shortcuts-does {
+  color: var(--ink-2);
+}
+.shortcuts-where {
+  margin-left: 7px;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
 /* ————————————————————————— toasts ————————————————————————— */
 
 .toast-host {

@@ -160,7 +160,7 @@ test('walkthrough — cockpit: project cards and a world', async ({ page }) => {
   await seed(page, 'desk/current', '# Current', ['desk'], { target: 'pages/gohighlevel-wiring' })
   await connect(page)
 
-  await page.goto('http://127.0.0.1:4173/')
+  await page.goto('http://127.0.0.1:4173/#/projects')
   await expect(page.getByTestId('cockpit')).toBeVisible()
   await expect(page.getByTestId('macro-row')).toHaveCount(4)
   await expect(page.getByTestId('today-strip')).toContainText('Send Amanda video 8')

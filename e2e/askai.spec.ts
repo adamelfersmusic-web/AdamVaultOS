@@ -80,7 +80,7 @@ test.describe('Ask AI panel', () => {
     const captured: unknown[] = []
     await mockAnthropic(page, 'Grounded answer citing atelier/00-home for you. ', captured)
 
-    await page.goto('/')
+    await page.goto('/#/projects')
     await page.getByTestId('askai-open').click()
     await expect(page.getByTestId('askai-panel')).toBeVisible()
 
@@ -118,7 +118,7 @@ test.describe('Ask AI panel', () => {
     const captured: unknown[] = []
     await mockAnthropic(page, 'Deep answer. ', captured)
 
-    await page.goto('/')
+    await page.goto('/#/projects')
     await expect(page.getByTestId('askai-open')).toBeVisible()
     await page.keyboard.press('ControlOrMeta+j')
     await expect(page.getByTestId('askai-panel')).toBeVisible()
