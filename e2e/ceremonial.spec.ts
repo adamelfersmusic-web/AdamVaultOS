@@ -135,6 +135,22 @@ test('the gem door — tapping the wordmark gem opens the Map; the text still op
   await expect(page.getByTestId('cockpit')).toBeVisible()
 })
 
+test('enter the vault — both monuments carry the gem door onto the Cockpit', async ({ page }) => {
+  await connectViaStorage(page)
+
+  // From the stele…
+  await page.goto('http://127.0.0.1:4173/#/commandments')
+  await expect(page.getByTestId('commandments')).toBeVisible()
+  await page.getByTestId('enter-vault').click()
+  await expect(page.getByTestId('cockpit')).toBeVisible()
+
+  // …and from the Map (the gate's own explicit way in).
+  await page.goto('http://127.0.0.1:4173/#/map')
+  await expect(page.getByTestId('vault-map')).toBeVisible()
+  await page.getByTestId('enter-vault').click()
+  await expect(page.getByTestId('cockpit')).toBeVisible()
+})
+
 test('the Omnibar knows the wing — ⌘K → "commandments" enters the room', async ({ page }) => {
   await connectViaStorage(page)
 

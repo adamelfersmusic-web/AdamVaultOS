@@ -33,6 +33,23 @@ function useEscapeToLeave(): void {
   }, [overlayOpen])
 }
 
+/** The way in — on every monument, one pronounced-but-quiet gem door onto
+ * the Cockpit. Sits above the monument cross-link: brighter, bordered, and
+ * unmistakably clickable, but cut from the same stone. */
+function EnterTheVault() {
+  return (
+    <div className="cere-enter">
+      <button
+        type="button"
+        data-testid="enter-vault"
+        onClick={() => navigate({ kind: 'projects' })}
+      >
+        enter the vault
+      </button>
+    </div>
+  )
+}
+
 function Seal({ size }: { size: number }) {
   return (
     <div className="cere-seal" aria-hidden="true">
@@ -146,6 +163,7 @@ export function CommandmentsView() {
           <br />
           and for the machine that keeps it with him
         </p>
+        <EnterTheVault />
         <div className="cere-cross">
           <button type="button" onClick={() => navigate({ kind: 'map' })}>
             the map →
@@ -338,6 +356,7 @@ export function MapView() {
           <br />
           the machine proposes · the human decides
         </p>
+        <EnterTheVault />
         <div className="cere-cross">
           <button type="button" onClick={() => navigate({ kind: 'commandments' })}>
             the commandments →
