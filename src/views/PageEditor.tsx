@@ -48,7 +48,7 @@ import { Modal } from '../components/Modal'
 import { IconLink, IconMic, IconPage, IconPlus, IconTrash } from '../components/Icons'
 import { SubPageLink, convertPageLinks } from '../editor/extensions/SubPageLink'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
-import { WikiLinkSuggest } from '../editor/extensions/WikiLinkSuggest'
+import { WikiLinkSuggest, setContentSilently } from '../editor/extensions/WikiLinkSuggest'
 import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
 import { VaultImage } from '../editor/extensions/VaultImage'
 import { AiBlock } from '../editor/extensions/AiBlock'
@@ -258,10 +258,10 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
     setDirty(false)
 
     const apply = (content: string, updatedAt: string) => {
-      editor.commands.setContent(content, { contentType: 'markdown' })
+      setContentSilently(editor, content, { contentType: 'markdown' })
       const page = convertPageLinks(editor.getJSON())
       const wiki = convertWikiLinks(convertBoardEmbeds(page.doc).doc)
-      if (page.changed || wiki.changed) editor.commands.setContent(wiki.doc)
+      if (page.changed || wiki.changed) setContentSilently(editor, wiki.doc)
       baseRef.current = { content: editor.getMarkdown(), updatedAt }
       loadingRef.current = false
       setStatus('ready')
@@ -513,10 +513,10 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
   // ——— draft restore (stash from a save that died with the session) ———
   const restoreDraft = () => {
     if (!draftStash || !editor || !baseRef.current) return
-    editor.commands.setContent(draftStash.content, { contentType: 'markdown' })
+    setContentSilently(editor, draftStash.content, { contentType: 'markdown' })
     const page = convertPageLinks(editor.getJSON())
     const wiki = convertWikiLinks(convertBoardEmbeds(page.doc).doc)
-    if (page.changed || wiki.changed) editor.commands.setContent(wiki.doc)
+    if (page.changed || wiki.changed) setContentSilently(editor, wiki.doc)
     setDraftStash(null)
     // The buffer is now dirty against the loaded base — the normal debounced
     // save flow takes over (and clears the stash on success).
@@ -532,10 +532,10 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
   const loadTheirs = () => {
     if (!conflict || !editor) return
     loadingRef.current = true
-    editor.commands.setContent(conflict.content ?? '', { contentType: 'markdown' })
+    setContentSilently(editor, conflict.content ?? '', { contentType: 'markdown' })
     const page = convertPageLinks(editor.getJSON())
     const wiki = convertWikiLinks(convertBoardEmbeds(page.doc).doc)
-    if (page.changed || wiki.changed) editor.commands.setContent(wiki.doc)
+    if (page.changed || wiki.changed) setContentSilently(editor, wiki.doc)
     baseRef.current = { content: editor.getMarkdown(), updatedAt: conflict.updatedAt }
     loadingRef.current = false
     setConflict(null)

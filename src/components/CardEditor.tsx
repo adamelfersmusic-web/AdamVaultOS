@@ -26,7 +26,7 @@ import {
 import { KanbanChip } from '../editor/extensions/Kanban'
 import { BoardEmbedChip, convertBoardEmbeds } from '../editor/extensions/BoardEmbed'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
-import { WikiLinkSuggest } from '../editor/extensions/WikiLinkSuggest'
+import { WikiLinkSuggest, setContentSilently } from '../editor/extensions/WikiLinkSuggest'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
 
 export function CardEditor({
@@ -93,11 +93,11 @@ export function CardEditor({
 
   useEffect(() => {
     if (!editor) return
-    editor.commands.setContent(value, { contentType: 'markdown' })
+    setContentSilently(editor, value, { contentType: 'markdown' })
     // Same order as the Pages editor: board markers FIRST (so ![[board:x]]
     // never gets half-eaten as a wikilink), then wikilink chips.
     const wiki = convertWikiLinks(convertBoardEmbeds(editor.getJSON()).doc)
-    if (wiki.changed) editor.commands.setContent(wiki.doc)
+    if (wiki.changed) setContentSilently(editor, wiki.doc)
     editor.commands.focus('end')
     // Load once per mount — the card remounts per edit session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
