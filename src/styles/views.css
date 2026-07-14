@@ -2586,6 +2586,10 @@ body.is-dragging .card {
   cursor: pointer;
 }
 .today-picker-item:hover { background: var(--surface-2); color: var(--ink); }
+.today-add .today-picker { margin-top: 6px; }
+.today-picker-create { color: var(--gold-bright); }
+.today-picker-create:hover { background: var(--surface-2); color: var(--gold-bright); }
+.today-picker-create:disabled { opacity: 0.6; cursor: default; }
 .today-picker-proj {
   font-size: 10px;
   color: var(--ink-4);

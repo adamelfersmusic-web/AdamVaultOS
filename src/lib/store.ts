@@ -566,13 +566,22 @@ export async function fetchProjectNotes(tag: string): Promise<Note[]> {
 }
 
 /** Create a task inside a project's world: tasks/<key>/<slug>, tagged `task`,
- * carrying the tracker defaults. Returns the note (caller opens row-as-page). */
-export async function createTask(projectKey: string, title: string): Promise<Note> {
+ * carrying the tracker defaults. Returns the note (caller opens row-as-page).
+ * A null projectKey mints a PROJECT-LESS task under tasks/inbox/ — `project`
+ * stays unset, so it shows in the Tracker's All view but claims no world.
+ * `extra` metadata (e.g. when:"today" from the Today picker) wins over the
+ * defaults. */
+export async function createTask(
+  projectKey: string | null,
+  title: string,
+  extra: Record<string, unknown> = {},
+): Promise<Note> {
   const a = requireApi()
+  const folder = projectKey || 'inbox'
   const slug = slugify(title) || 'task'
-  let path = `tasks/${projectKey}/${slug}`
+  let path = `tasks/${folder}/${slug}`
   for (let n = 2; (await a.getNote(path)) !== null; n++) {
-    path = `tasks/${projectKey}/${slug}-${n}`
+    path = `tasks/${folder}/${slug}-${n}`
     if (n > 30) throw new Error('Could not find a free path for this task')
   }
   try {
@@ -580,7 +589,12 @@ export async function createTask(projectKey: string, title: string): Promise<Not
       path,
       content: title.trim(),
       tags: [TASK_TAG],
-      metadata: { project: projectKey, state: 'next', done: false },
+      metadata: {
+        ...(projectKey ? { project: projectKey } : {}),
+        state: 'next',
+        done: false,
+        ...extra,
+      },
     })
     mergeNote(note)
     if (state.tracker && !state.tracker.includes(note.path)) {
