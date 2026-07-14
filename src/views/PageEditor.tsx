@@ -70,6 +70,7 @@ import {
 } from '../editor/extensions/ToggleDetails'
 import { FormatBar } from '../components/FormatBar'
 import { TableBar } from '../components/TableBar'
+import { LockPill } from '../components/LockPill'
 
 type Status = 'loading' | 'ready' | 'missing' | 'error'
 type Rec = 'idle' | 'recording' | 'transcribing'
@@ -98,6 +99,12 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
   // /table-from-csv modal (opened by the slash menu via CSV_IMPORT_EVENT).
   const [csvOpen, setCsvOpen] = useState(false)
   const [csvText, setCsvText] = useState('')
+  // Tier 2 — the sacred-handful lock: metadata.locked === true renders the
+  // whole doc read-only. The pill's two-step unlock lasts for THIS visit only
+  // (component state — PagesView remounts per path, and the path effect below
+  // is the seatbelt), so navigating away re-locks. Notes without the key are
+  // untouched. A client-side render rule — API/mint/MCP writes never see it.
+  const [visitUnlocked, setVisitUnlocked] = useState(false)
 
   const baseRef = useRef<{ content: string; updatedAt: string } | null>(null)
   const editorRootRef = useRef<HTMLDivElement>(null)
@@ -207,6 +214,19 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
   })
 
   const isSaving = (saving[path] ?? 0) > 0
+
+  const locked = note?.metadata?.['locked'] === true
+  const readOnly = locked && !visitUnlocked
+
+  // The lock is a live render rule: TipTap follows it via setEditable, so the
+  // toolbar/slash/format affordances (all gated on editor.isEditable) fall
+  // quiet with it. Never persisted — a fresh mount starts locked again.
+  useEffect(() => {
+    setVisitUnlocked(false)
+  }, [path])
+  useEffect(() => {
+    if (editor && editor.isEditable !== !readOnly) editor.setEditable(!readOnly)
+  }, [editor, readOnly])
 
   // ——— save pipeline ———
   const flushSave = async () => {
@@ -726,12 +746,19 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
         >
           {saveLabel}
         </span>
+        {locked && (
+          <LockPill
+            unlocked={visitUnlocked}
+            onUnlock={() => setVisitUnlocked(true)}
+          />
+        )}
         <div className="page-tools">
           <button
             className="page-tool"
             title="Insert a link to any note ([[ also works while typing)"
             aria-label="Insert link"
             data-testid="insert-link"
+            disabled={readOnly}
             onClick={() => setLinkPicker(true)}
           >
             <IconLink size={15} />
@@ -766,7 +793,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
                   : 'Dictate (voice → text)'
             }
             aria-label="Voice"
-            disabled={rec === 'transcribing' || !editor}
+            disabled={rec === 'transcribing' || !editor || readOnly}
             onClick={() => void startVoice()}
           >
             <IconMic size={15} />
@@ -775,6 +802,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
             className="page-tool page-tool-danger"
             title="Delete page"
             aria-label="Delete page"
+            disabled={readOnly}
             onClick={() => setConfirmDelete(true)}
           >
             <IconTrash size={15} />
@@ -790,7 +818,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
               className="page-meta-path page-meta-path-btn"
               title="Click to edit the path — re-file this note anywhere"
               data-testid="path-edit"
-              disabled={moving}
+              disabled={moving || readOnly}
               onClick={() => setPathDraft(path)}
             >
               {path}
@@ -875,7 +903,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
       )}
 
       <div className={`page-canvas${status === 'loading' ? ' is-loading' : ''}`}>
-        {editor && (
+        {editor && !readOnly && (
           <DragHandle editor={editor}>
             <div className="drag-grip" aria-hidden="true">
               <span />

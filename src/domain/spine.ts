@@ -131,8 +131,14 @@ export function phaseLabelOf(project: Project): string | null {
 export const WEEKLY_CARD_RE = /^projects\/.+\/weekly\/\d{4}-\d{2}-\d{2}$/
 
 export interface Top3Item {
+  /** Display text — the cross-off's ~~tildes~~ already stripped. */
   text: string
+  /** The exact text after the checkbox as written (tildes and all) — the
+   * verb widgets' surgical-write key for finding this line again. */
+  raw: string
   checked: boolean
+  /** Wrapped in ~~…~~ — renounced-not-done (the quiet cross-off verb). */
+  crossed: boolean
 }
 
 export interface WeeklyCard {
@@ -153,7 +159,16 @@ export function parseWeeklyCard(note: Note): WeeklyCard {
   const top3: Top3Item[] = []
   for (const line of sectionLines(content, ['top 3', 'top3', 'top three'])) {
     const m = CHECKBOX_RE.exec(line)
-    if (m && m[2]!.trim()) top3.push({ text: m[2]!.trim(), checked: m[1] !== ' ' })
+    if (m && m[2]!.trim()) {
+      const raw = m[2]!.trim()
+      const cross = /^~~(.+)~~$/.exec(raw)
+      top3.push({
+        raw,
+        text: cross ? cross[1]!.trim() : raw,
+        checked: m[1] !== ' ',
+        crossed: Boolean(cross),
+      })
+    }
   }
   const blockers = sectionLines(content, ['blockers'])
     .map((l) => {
@@ -168,6 +183,30 @@ export function parseWeeklyCard(note: Note): WeeklyCard {
     top3,
     blockers,
   }
+}
+
+/**
+ * Line-index range of the Top 3 section's BODY — lines after the `## Top 3`
+ * heading (H2/H3, prefix match like sectionLines) and before the next heading
+ * of any level — or null when the note has no such section. Powers the verb
+ * widgets' surgical writes: find or append lines inside the section ONLY,
+ * never anywhere else in the doc.
+ */
+export function top3SectionRange(
+  lines: string[],
+): { start: number; end: number } | null {
+  const wanted = ['top 3', 'top3', 'top three']
+  let start = -1
+  for (let i = 0; i < lines.length; i++) {
+    const h = /^(#{1,6})\s+(.+?)\s*$/.exec(lines[i]!)
+    if (!h) continue
+    if (start !== -1) return { start, end: i }
+    if (h[1]!.length >= 2 && h[1]!.length <= 3) {
+      const head = h[2]!.trim().toLowerCase()
+      if (wanted.some((w) => head.startsWith(w))) start = i + 1
+    }
+  }
+  return start === -1 ? null : { start, end: lines.length }
 }
 
 /** Latest card under projects/<key>/weekly/ — greatest date path wins. */
@@ -217,10 +256,12 @@ export function weekTop3Of(content: string | undefined): string[] {
   return out
 }
 
-/** The macro strip's "one thing": first UNCHECKED Top-3 item of the latest
- * card → the card's Priority line → metadata.milestone. Truncated ~60ch. */
+/** The macro strip's "one thing": first UNRESOLVED Top-3 item of the latest
+ * card (neither checked nor ~~crossed off~~) → the card's Priority line →
+ * metadata.milestone. Truncated ~60ch. */
 export function oneThingOf(card: WeeklyCard | null, project: Project): string | null {
-  const fromCard = card?.top3.find((t) => !t.checked)?.text ?? card?.priority ?? null
+  const fromCard =
+    card?.top3.find((t) => !t.checked && !t.crossed)?.text ?? card?.priority ?? null
   if (fromCard) return truncate(fromCard, 60)
   const milestone = project.note.metadata['milestone']
   if (typeof milestone === 'string' && milestone.trim()) return truncate(milestone, 60)
