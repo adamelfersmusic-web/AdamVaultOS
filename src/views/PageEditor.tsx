@@ -19,6 +19,7 @@ import {
   ContentDivergedError,
   createPage,
   deletePage,
+  fetchAllNotes,
   fetchLinkTargets,
   fetchNote,
   fetchNoteLinks,
@@ -40,6 +41,7 @@ import { CSV_IMPORT_EVENT, PAGE_EXTERNAL_UPDATE_EVENT } from '../lib/ui'
 import { parseDelimited, rowsToTableJSON } from '../lib/csv'
 import { relativeTime, titleFromPath } from '../lib/format'
 import { fuzzyScore } from '../lib/fuzzy'
+import { rankNotes } from '../lib/search'
 import { databaseForPath } from '../domain/databases'
 import { RecordProperties } from '../components/RecordProperties'
 import { getSettings } from '../lib/editorSettings'
@@ -1107,10 +1109,32 @@ function SubPagePicker({
   const [query, setQuery] = useState('')
   const [busy, setBusy] = useState(false)
 
+  // Same lazy-corpus move as the Pages sidebar (N3): the first search
+  // keystroke pulls every note WITH content once — Library's fetch — so body
+  // keywords match too. Until it lands, title/path carry the ranking.
+  const bodiesRequested = useRef(false)
+  useEffect(() => {
+    if (query.trim() && !bodiesRequested.current) {
+      bodiesRequested.current = true
+      fetchAllNotes().catch(() => {
+        bodiesRequested.current = false // retry on the next keystroke
+      })
+    }
+  }, [query])
+
   const all = (pages ?? []).filter((p) => p !== excludePath)
-  const q = query.trim().toLowerCase()
+  const q = query.trim()
+  // Searching → the app's ONE relevance ranking (lib/search), the same scoring
+  // the Library and Pages sidebar use: title/slug ≫ path/tags ≫ body,
+  // AND-terms, phrase + word-start bonuses, recency as the tiebreak.
   const matches = q
-    ? all.filter((p) => titleFromPath(p).toLowerCase().includes(q) || p.toLowerCase().includes(q))
+    ? rankNotes(
+        q,
+        all.map((p) => notes[p]).filter((n): n is Note => Boolean(n)),
+        (n) => titleFromPath(n.path),
+      )
+        .slice(0, 12)
+        .map((n) => n.path)
     : all
 
   const create = async () => {
@@ -1128,7 +1152,7 @@ function SubPagePicker({
 
   return (
     <Modal onClose={onClose} width={460} labelledBy="subpage-title">
-      <div className="subpage-picker">
+      <div className="subpage-picker" data-testid="subpage-picker">
         <h2 id="subpage-title" className="subpage-picker-title">
           Link a page
         </h2>
@@ -1146,18 +1170,15 @@ function SubPagePicker({
           }}
         />
         <div className="subpage-list">
-          {matches.map((p) => {
-            const note = notes[p]
-            return (
-              <button key={p} className="subpage-row" onClick={() => onPick(p)}>
-                <IconPage size={14} />
-                <span className="subpage-row-title">{titleFromPath(p)}</span>
-                <span className="subpage-row-meta">
-                  {note ? relativeTime(note.updatedAt) : ''}
-                </span>
-              </button>
-            )
-          })}
+          {matches.map((p) => (
+            // Path in the meta slot (house style, same as the 🔗 Link picker)
+            // so same-titled notes are tellable apart — path beats timestamp.
+            <button key={p} className="subpage-row" onClick={() => onPick(p)}>
+              <IconPage size={14} />
+              <span className="subpage-row-title">{titleFromPath(p)}</span>
+              <span className="subpage-row-meta">{p}</span>
+            </button>
+          ))}
           {query.trim() && (
             <button className="subpage-row subpage-create" disabled={busy} onClick={() => void create()}>
               <IconPlus size={14} />

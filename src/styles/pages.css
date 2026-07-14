@@ -826,6 +826,11 @@
   font-size: 11px;
   color: var(--ink-4);
   font-variant-numeric: tabular-nums;
+  /* Paths live here now — long ones ellipsize instead of crushing the title. */
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .subpage-create {
   color: var(--gold-bright);
