@@ -49,6 +49,7 @@ import { transcribe } from '../lib/scribe'
 import { Modal } from '../components/Modal'
 import { IconLink, IconMic, IconPage, IconPlus, IconTrash } from '../components/Icons'
 import { SubPageLink, convertPageLinks } from '../editor/extensions/SubPageLink'
+import { isVaultHref } from '../lib/vaultLinks'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
 import { WikiLinkSuggest, setContentSilently } from '../editor/extensions/WikiLinkSuggest'
 import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
@@ -116,7 +117,18 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        // Link clicks are OURS: the default openOnClick window.open()s the
+        // resolved href, which hard-navigates vault-path links off the SPA.
+        // The global vault-link interceptor (lib/vaultLinks) routes them —
+        // and the URI validator must let bare vault paths (`people/x/y`)
+        // reach the DOM as real hrefs (the default validator blanks them).
+        link: {
+          openOnClick: false,
+          isAllowedUri: (url, ctx) => ctx.defaultValidate(url) || isVaultHref(url),
+        },
+      }),
       TaskList,
       TaskItem.configure({ nested: true }),
       // E1 — highlight: plain amber round-trips as ==…==; colored highlights

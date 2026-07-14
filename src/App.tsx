@@ -3,6 +3,7 @@ import { processOAuthReturn, useStore } from './lib/store'
 import { useUi, openPalette, closePalette, toggleAskAi } from './lib/ui'
 import { AskAi } from './components/AskAi'
 import { navigate, useRoute } from './lib/router'
+import { installVaultLinkInterceptor } from './lib/vaultLinks'
 import { Shell } from './views/Shell'
 import { ConnectView } from './views/ConnectView'
 import { DatabaseView } from './views/DatabaseView'
@@ -44,6 +45,12 @@ export default function App() {
     ranReturn.current = true
     void processOAuthReturn()
   }, [])
+
+  // Stored notes carry plain markdown links whose hrefs are bare vault paths
+  // (`[Title](people/x/y)`). ONE document-level interceptor keeps every such
+  // click inside the SPA — read views and editors alike — routing by the
+  // house note-opening rule instead of hard-navigating into a hosting 404.
+  useEffect(() => installVaultLinkInterceptor(), [])
 
   // Global shortcuts: ⌘K / Ctrl+K opens the palette, ⌘J / Ctrl+J Ask AI —
   // anywhere, including the full-bleed Pages and Graph layouts.

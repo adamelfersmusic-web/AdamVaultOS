@@ -33,6 +33,7 @@ import { WikiLinkSuggest, setContentSilently } from '../editor/extensions/WikiLi
 import { SlashCommand } from '../editor/extensions/SlashCommand'
 import { BlockTypeGuard } from '../editor/extensions/BlockTypeGuard'
 import { handleTabKey } from '../editor/tabKey'
+import { isVaultHref } from '../lib/vaultLinks'
 
 export function NoteBodyEditor({
   value,
@@ -55,7 +56,17 @@ export function NoteBodyEditor({
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        // Vault-path links must not escape the SPA — the global interceptor
+        // in lib/vaultLinks routes clicks instead of Link's window.open, and
+        // bare vault paths must survive as real hrefs (the default URI
+        // validator blanks them).
+        link: {
+          openOnClick: false,
+          isAllowedUri: (url, ctx) => ctx.defaultValidate(url) || isVaultHref(url),
+        },
+      }),
       TaskList,
       TaskItem.configure({ nested: true }),
       RichHighlight,
