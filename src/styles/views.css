@@ -4250,6 +4250,9 @@ tr:hover .row-peek { opacity: 1; }
   flex-wrap: wrap;
 }
 .tasks-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12.5px;
   font-weight: 550;
   color: var(--ink-3);
@@ -4634,4 +4637,159 @@ button.task-row-due:hover {
 }
 .tasks-qc-due.is-unset {
   color: var(--ink-4);
+}
+
+/* ——— THE CALENDAR LENS — the fifth chip's full-surface month grid.
+   MonthPicker's vocabulary grown up: TODAY ringed, the selected day filled,
+   out-of-month dimmed; every color routes through the vars (both themes). ——— */
+
+.task-cal {
+  padding-top: 2px;
+}
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+}
+.cal-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.cal-nav {
+  display: flex;
+  gap: 2px;
+}
+.cal-nav-btn {
+  width: 28px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  color: var(--ink-3);
+  font-size: 15px;
+  line-height: 1;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.cal-nav-btn:hover {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+.cal-bullseye {
+  font-size: 13px;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.cal-wd {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 640;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-4);
+  padding: 2px 0 5px;
+}
+/* A day cell: number badge on top, up to 3 tiny title chips, then '+N'.
+   Empty cells stay clean — no dots, no zero-noise. */
+.cal-cell {
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding: 4px 5px 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.cal-cell:hover {
+  background: var(--surface);
+}
+.cal-cell:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+}
+.cal-cell.is-out {
+  opacity: 0.55;
+}
+.cal-daynum {
+  align-self: flex-start;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+/* TODAY is ringed; the SELECTED day is filled — the MonthPicker's two
+   different statements, on the day-number badge. */
+.cal-cell.is-today .cal-daynum {
+  border-color: color-mix(in srgb, var(--gold) 65%, transparent);
+}
+.cal-cell.is-selected .cal-daynum {
+  background: var(--gold);
+  color: var(--bg);
+  font-weight: 680;
+}
+/* The house drop affordance while a drag hovers the cell. */
+.cal-cell.is-drop {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 9%, transparent);
+}
+.cal-chip {
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 1.5px 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: grab;
+}
+/* The past told truthfully: overdue tone is the calm red, never a nag. */
+.cal-chip.is-overdue {
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 35%, transparent);
+}
+.cal-more {
+  font-size: 10px;
+  color: var(--ink-4);
+  padding: 0 3px;
+}
+
+/* ——— the day panel under the grid — Tasks-tab row anatomy verbatim ——— */
+
+.cal-panel {
+  margin-top: 22px;
+}
+.cal-panel-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 660;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-3);
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2px;
+}
+/* The thin draggable wrapper around each panel row (drag = schedule). */
+.cal-drag {
+  cursor: grab;
 }
