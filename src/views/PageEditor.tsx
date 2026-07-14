@@ -50,6 +50,8 @@ import { SubPageLink, convertPageLinks } from '../editor/extensions/SubPageLink'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
 import { WikiLinkSuggest, setContentSilently } from '../editor/extensions/WikiLinkSuggest'
 import { MarkdownLiteral } from '../editor/extensions/markdownLiteral'
+import { BlockTypeGuard } from '../editor/extensions/BlockTypeGuard'
+import { handleTabKey } from '../editor/tabKey'
 import { VaultImage } from '../editor/extensions/VaultImage'
 import { AiBlock } from '../editor/extensions/AiBlock'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
@@ -155,9 +157,13 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
           fileInputRef.current?.click()
         },
       }),
+      // AFTER StarterKit — its paragraph/heading command overrides must win.
+      BlockTypeGuard,
     ],
     editorProps: {
       attributes: { class: 'page-prose' },
+      // Tab stays home: indent in lists, cell-hop in tables, never focus-walk.
+      handleKeyDown: (view, event) => handleTabKey(view, event),
       handleDrop: (view, event, _slice, moved) => {
         if (moved) return false
         const files = Array.from(event.dataTransfer?.files ?? []).filter((f) =>

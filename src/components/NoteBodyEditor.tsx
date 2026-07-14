@@ -31,6 +31,8 @@ import { BoardEmbed, convertBoardEmbeds } from '../editor/extensions/BoardEmbed'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
 import { WikiLinkSuggest, setContentSilently } from '../editor/extensions/WikiLinkSuggest'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
+import { BlockTypeGuard } from '../editor/extensions/BlockTypeGuard'
+import { handleTabKey } from '../editor/tabKey'
 
 export function NoteBodyEditor({
   value,
@@ -80,10 +82,14 @@ export function NoteBodyEditor({
         // concept.
         exclude: ['image', 'subpage', 'ai', 'voice'],
       }),
+      // AFTER StarterKit — its paragraph/heading command overrides must win.
+      BlockTypeGuard,
     ],
     editorProps: {
       attributes: { class: 'prose note-editor', 'data-testid': 'note-editor' },
-      handleKeyDown: (_view, event) => {
+      handleKeyDown: (view, event) => {
+        // Tab stays home (indent lists, cell-hop tables) — before ⌘S/Escape.
+        if (handleTabKey(view, event)) return true
         if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
           event.preventDefault()
           saveRef.current()

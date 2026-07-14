@@ -13,6 +13,7 @@ import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion'
 import { CSV_IMPORT_EVENT } from '../../lib/ui'
+import { clampBlockTypeSelection } from './BlockTypeGuard'
 import {
   IconBoard,
   IconTable,
@@ -81,6 +82,10 @@ function insertToggle(editor: Editor, range: Range, size: 'h1' | 'h2' | null) {
     .run()
 }
 
+// Every block-type conversion in this menu goes through the boundary clamp so
+// it can never bleed into a neighboring block: text/h1–h3 route through the
+// commands BlockTypeGuard overrides; the list/quote items run the clamp step
+// explicitly below (their toggle commands aren't overridden).
 function buildItems(options: SlashCommandOptions): SlashItem[] {
   return [
     {
@@ -126,7 +131,7 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
       icon: <IconList />,
       keywords: ['bullet', 'unordered', 'list', 'ul'],
       run: ({ editor, range }) =>
-        editor.chain().focus().deleteRange(range).toggleBulletList().run(),
+        editor.chain().focus().deleteRange(range).command(clampBlockTypeSelection).toggleBulletList().run(),
     },
     {
       id: 'ordered',
@@ -135,7 +140,7 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
       icon: <IconListNumbered />,
       keywords: ['numbered', 'ordered', 'list', 'ol', '1'],
       run: ({ editor, range }) =>
-        editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
+        editor.chain().focus().deleteRange(range).command(clampBlockTypeSelection).toggleOrderedList().run(),
     },
     {
       id: 'todo',
@@ -144,7 +149,7 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
       icon: <IconTodo />,
       keywords: ['todo', 'task', 'checkbox', 'check'],
       run: ({ editor, range }) =>
-        editor.chain().focus().deleteRange(range).toggleTaskList().run(),
+        editor.chain().focus().deleteRange(range).command(clampBlockTypeSelection).toggleTaskList().run(),
     },
     {
       id: 'divider',
@@ -162,7 +167,7 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
       icon: <IconQuote />,
       keywords: ['quote', 'blockquote', 'citation'],
       run: ({ editor, range }) =>
-        editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
+        editor.chain().focus().deleteRange(range).command(clampBlockTypeSelection).toggleBlockquote().run(),
     },
     {
       id: 'callout',
@@ -177,6 +182,7 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
           .chain()
           .focus()
           .deleteRange(range)
+          .command(clampBlockTypeSelection)
           .toggleBlockquote()
           .insertContent('[!note] ')
           .run(),
