@@ -89,6 +89,132 @@ test('Today checklist — lists when:today, toggles done, promotes via picker; n
     .toBe('today')
 })
 
+// ——— Today picker v2 — write first, pick second, nothing ever lost ———
+
+test('Picker v2 — typing shows the ➕ create row first; Enter mints a project-less when:today task', async ({ page }) => {
+  await seed(page, 'tasks/amanda/caption-pass', 'Caption pass — all 20 posts', ['task'], {
+    project: 'amanda', state: 'next', done: false, when: 'later',
+  })
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  const strip = page.getByTestId('today-strip')
+  await strip.locator('.today-add-btn').click()
+  const picker = strip.locator('.today-picker')
+  await expect(picker).toBeVisible()
+
+  // Empty input → no create row yet.
+  await expect(page.getByTestId('today-create')).toHaveCount(0)
+
+  await strip.locator('.today-picker-input').fill('Call the venue about parking')
+  const create = page.getByTestId('today-create')
+  await expect(create).toBeVisible()
+  await expect(create).toContainText('Add “Call the venue about parking”')
+  // The create row is ALWAYS the first row of the list.
+  await expect(picker.locator('.today-picker-item').first()).toHaveAttribute(
+    'data-testid', 'today-create',
+  )
+
+  await strip.locator('.today-picker-input').press('Enter')
+  // The new task lands on the Today list immediately, and the picker closes.
+  await expect(strip).toContainText('Call the venue about parking')
+  await expect(picker).toHaveCount(0)
+
+  // The note exists in the vault: #task, when:today, done:false, NO project.
+  const note = await mockNote(page, 'tasks/inbox/call-the-venue-about-parking')
+  expect(note).not.toBeNull()
+  expect(note.tags).toContain('task')
+  expect(note.metadata.when).toBe('today')
+  expect(note.metadata.done).toBe(false)
+  expect(note.metadata.project).toBeUndefined()
+
+  // Project-less tasks still show in the Tracker's All view.
+  await page.goto('http://127.0.0.1:4173/#/tracker')
+  await expect(page.locator('.db-title')).toHaveText('Tracker')
+  await expect(page.locator('body')).toContainText('Call the venue about parking')
+})
+
+test('Picker v2 — this-week tasks rank above later ones in the pick-list', async ({ page }) => {
+  // Seed the later task FIRST so raw vault order would show it first —
+  // the ranking must still lift the this-week task above it.
+  await seed(page, 'tasks/amanda/a-later-task', 'A later task', ['task'], {
+    project: 'amanda', state: 'next', done: false, when: 'later',
+  })
+  await seed(page, 'tasks/amanda/blessed-task', 'Blessed by the ritual', ['task'], {
+    project: 'amanda', state: 'next', done: false, when: 'this-week',
+  })
+  await seed(page, 'tasks/amanda/done-task', 'Already done', ['task'], {
+    project: 'amanda', state: 'done', done: true, when: 'this-week',
+  })
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  const strip = page.getByTestId('today-strip')
+  await strip.locator('.today-add-btn').click()
+  const items = strip.locator('.today-picker-item')
+  await expect(items).toHaveCount(2) // done tasks never appear
+  await expect(items.nth(0)).toContainText('Blessed by the ritual')
+  await expect(items.nth(1)).toContainText('A later task')
+})
+
+test('Picker v2 — ✕ demotes to when:later; the note is never deleted', async ({ page }) => {
+  await seed(page, 'tasks/amanda/video-8', 'Send Amanda video 8', ['task'], {
+    project: 'amanda', state: 'active', done: false, when: 'today',
+  })
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  const strip = page.getByTestId('today-strip')
+  await expect(strip).toContainText('Send Amanda video 8')
+
+  await strip.locator('.today-item-x').click()
+  // Off today's list…
+  await expect(strip).not.toContainText('Send Amanda video 8')
+  // …but the note survives, filed back on the running list.
+  await expect
+    .poll(async () => (await mockNote(page, 'tasks/amanda/video-8'))?.metadata?.when)
+    .toBe('later')
+  const note = await mockNote(page, 'tasks/amanda/video-8')
+  expect(note).not.toBeNull()
+  expect(note.content).toContain('Send Amanda video 8')
+})
+
+test('Picker v2 — closes like a normal window: outside click, Escape, add, and the button again', async ({ page }) => {
+  await seed(page, 'tasks/amanda/caption-pass', 'Caption pass — all 20 posts', ['task'], {
+    project: 'amanda', state: 'next', done: false, when: 'later',
+  })
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/')
+  const strip = page.getByTestId('today-strip')
+  const picker = strip.locator('.today-picker')
+  const addBtn = strip.locator('.today-add-btn')
+
+  // (a) click anywhere outside → closes.
+  await addBtn.click()
+  await expect(picker).toBeVisible()
+  await page.locator('.cockpit-sub').click()
+  await expect(picker).toHaveCount(0)
+
+  // (b) Escape → closes.
+  await addBtn.click()
+  await expect(picker).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(picker).toHaveCount(0)
+
+  // (c) a successful pick → closes (and the pick sticks).
+  await addBtn.click()
+  await strip.locator('.today-picker-item', { hasText: 'Caption pass' }).click()
+  await expect(picker).toHaveCount(0)
+  await expect(strip).toContainText('Caption pass — all 20 posts')
+
+  // (d) the "Add to today" button itself toggles: open → click again → closed.
+  await addBtn.click()
+  await expect(picker).toBeVisible()
+  await addBtn.click()
+  await expect(picker).toHaveCount(0)
+})
+
 test('Daily note — the quiet header button creates today’s note and opens it', async ({ page }) => {
   await connectViaStorage(page)
 
