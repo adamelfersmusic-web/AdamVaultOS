@@ -511,6 +511,25 @@ export async function loadProjects(): Promise<void> {
   }
 }
 
+/** Weekly cards (THE SYSTEM's heartbeat mint): notes at
+ * projects/<key>/weekly/YYYY-MM-DD, fetched WITH content — the Priority
+ * paragraph and Top 3 task list ARE the card. One prefix fetch covers a
+ * single world (`projects/<key>/weekly/`) or every world's card stream at
+ * once (the default `projects/`). */
+export async function fetchWeeklyCards(prefix = 'projects/'): Promise<Note[]> {
+  try {
+    const list = await requireApi().listByPrefix(prefix, 500, true)
+    const cards = list.filter((n) =>
+      /^projects\/.+\/weekly\/\d{4}-\d{2}-\d{2}$/.test(n.path),
+    )
+    mergeNotes(cards)
+    return cards
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
 /** Lean notes carrying a project's knowledge tag (the world's Notes section).
  * Tasks are excluded — they live on the world's Board, not among the notes. */
 export async function fetchProjectNotes(tag: string): Promise<Note[]> {

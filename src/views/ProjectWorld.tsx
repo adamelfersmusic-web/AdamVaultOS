@@ -1,11 +1,16 @@
 // A project's WORLD — everything about one big thing in one place.
-// Header (title · status · live progress) + three sections:
+// The front face is THE SYSTEM §6's STATUS VIEW ("Where are we?"): mission
+// line → phase bar → ⭐ THIS WEEK card (checkable, writes through) →
+// blockers → open tasks (later pile folded) → quiet footer links. Below a
+// divider, the original landing (Continue + next 3 + doors) and the section
+// rooms survive intact:
 //   Overview — the project's front-door note, rendered (backlinks and all)
 //   Board    — the Tracker scoped to this project (drag between lanes works)
 //   Notes    — the project's knowledge notes, master-detail style, with
 //              create-in-world (“＋ New note” born carrying the project tag)
+//   Docs     — tabbed working documents under desk/<key>
 // Composition of shipped pieces: NotePage, DatabaseView(presetFilter), NoteRow
-// patterns. Build log PART 22.
+// patterns. Build log PART 22; Status stack per desk/the-system §6.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Note } from '../lib/types'
@@ -13,16 +18,27 @@ import {
   createPage,
   createTask,
   createWorkTab,
+  fetchNote,
   fetchProjectNotes,
+  fetchWeeklyCards,
   fetchWorkspaceTabs,
   loadProjects,
+  saveContent,
   setMetadata,
   toast,
   useStore,
 } from '../lib/store'
+import { announcePageUpdate } from '../lib/ui'
 import { navigate } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
 import { projectProgress, STATUS_COLORS, toProject, type Project } from '../domain/projects'
+import {
+  missionOf,
+  parsePhases,
+  parseWeeklyCard,
+  truncate,
+  type Top3Item,
+} from '../domain/spine'
 import { PHASES, TRACKER_DB } from '../domain/tracker'
 import { inferNoteType, summaryOf, TYPE_META } from '../domain/noteType'
 import { IconBack, IconPlus } from '../components/Icons'
@@ -115,7 +131,11 @@ export function ProjectWorld({ path }: { path: string }) {
       </header>
 
       {section === 'landing' && (
-        <WorldLanding project={project} taskNotes={taskNotes} onDoor={setSection} />
+        <div className="world-statuswrap">
+          <WorldStatus project={project} taskNotes={taskNotes} />
+          <div className="status-divider" role="separator" />
+          <WorldLanding project={project} taskNotes={taskNotes} onDoor={setSection} />
+        </div>
       )}
 
       {section === 'overview' && (
@@ -236,6 +256,260 @@ function WorldDocs({ projectKey }: { projectKey: string }) {
   )
 }
 
+// ——— THE SYSTEM §6 — the Status view: "Where are we?" ———
+
+/** The existing done-toggle affordance, shared by the Status stack's Open
+ * tasks and the landing's next-3: metadata write with undo. */
+const toggleTaskDone = (n: Note): void => {
+  const done = n.metadata['done'] === true
+  void setMetadata(
+    n.path,
+    { done: !done, state: done ? 'active' : 'done' },
+    { undo: { done, state: String(n.metadata['state'] ?? 'next') } },
+  )
+}
+
+const whenRank = (n: Note): number => {
+  const w = String(n.metadata['when'] ?? '')
+  return w === 'today' ? 0 : w === 'this-week' ? 1 : 2
+}
+
+function StatusTaskRow({ n }: { n: Note }) {
+  return (
+    <div className="landing-item status-task">
+      <input
+        type="checkbox"
+        checked={n.metadata['done'] === true}
+        onChange={() => toggleTaskDone(n)}
+        aria-label={taskLine(n)}
+      />
+      <button
+        className="landing-item-title"
+        onClick={() => navigate({ kind: 'pages', path: n.path })}
+        title={n.path}
+      >
+        {taskLine(n)}
+      </button>
+    </div>
+  )
+}
+
+function WorldStatus({ project, taskNotes }: { project: Project; taskNotes: Note[] }) {
+  const { notes } = useStore()
+  // This world's card stream — one prefix fetch, latest card = greatest date.
+  const [cardPaths, setCardPaths] = useState<string[] | null>(null)
+  const [laterOpen, setLaterOpen] = useState(false)
+  const [checking, setChecking] = useState(false)
+  // Optimistic overlay while a check is in flight — the box flips the moment
+  // it's clicked, then the vault's truth takes back over (revert on failure).
+  const [pending, setPending] = useState<Record<string, boolean>>({})
+  const seq = useRef(0)
+
+  useEffect(() => {
+    const id = ++seq.current
+    setCardPaths(null)
+    setLaterOpen(false)
+    fetchWeeklyCards(`projects/${project.key}/weekly/`)
+      .then((list) => {
+        if (seq.current === id) setCardPaths(list.map((n) => n.path).sort())
+      })
+      .catch(() => {
+        if (seq.current === id) setCardPaths([])
+      })
+  }, [project.key])
+
+  // The spine usually arrives with content via loadProjects; a deep link can
+  // land it lean, so hydrate the body if it's missing.
+  const spine = notes[project.path]
+  useEffect(() => {
+    if (spine && spine.content === undefined) {
+      fetchNote(project.path).catch(() => {})
+    }
+  }, [spine, project.path])
+
+  const latestPath = cardPaths?.length ? cardPaths[cardPaths.length - 1]! : null
+  const cardNote = latestPath ? notes[latestPath] : undefined
+  const card = useMemo(
+    () => (cardNote?.content !== undefined ? parseWeeklyCard(cardNote) : null),
+    [cardNote],
+  )
+  const mission = missionOf(spine?.content) ?? (project.summary || null)
+  const phases = useMemo(() => parsePhases(spine?.content), [spine?.content])
+
+  // Open tasks: today/this-week first; the `later` pile is always a count.
+  const mine = useMemo(
+    () =>
+      taskNotes.filter(
+        (n) =>
+          String(n.metadata['project'] ?? '') === project.key &&
+          n.metadata['done'] !== true,
+      ),
+    [taskNotes, project.key],
+  )
+  const nowTasks = useMemo(
+    () =>
+      mine
+        .filter((n) => String(n.metadata['when'] ?? '') !== 'later')
+        .sort((a, b) => whenRank(a) - whenRank(b) || phaseIdx(a) - phaseIdx(b)),
+    [mine],
+  )
+  const laterTasks = useMemo(
+    () => mine.filter((n) => String(n.metadata['when'] ?? '') === 'later'),
+    [mine],
+  )
+
+  /** Check a Top-3 item: re-fetch the card fresh, flip `- [ ]` ↔ `- [x]` on
+   * that exact line, save through the conflict-safe flow (law #2 — the card
+   * note is the fact; this view is a lens). */
+  const toggleTop3 = async (item: Top3Item) => {
+    if (!latestPath || checking) return
+    setChecking(true)
+    setPending((p) => ({ ...p, [item.text]: !item.checked }))
+    try {
+      const fresh = await fetchNote(latestPath, { refresh: true })
+      if (!fresh || fresh.content === undefined) {
+        throw new Error('the weekly card is missing from the vault')
+      }
+      const lines = fresh.content.split('\n')
+      const idx = lines.findIndex((l) => {
+        const m = /^\s*(?:[-*+]|\d+[.)])\s*\[( |x|X)\]\s*(.*)$/.exec(l)
+        return Boolean(m) && m![2]!.trim() === item.text
+      })
+      if (idx === -1) throw new Error('that line changed in the vault — try again')
+      lines[idx] = lines[idx]!.replace(/\[( |x|X)\]/, (_m, c: string) =>
+        c === ' ' ? '[x]' : '[ ]',
+      )
+      const updated = await saveContent(latestPath, lines.join('\n'), {
+        updatedAt: fresh.updatedAt,
+        content: fresh.content,
+      })
+      // An open editor on the card re-syncs in place.
+      announcePageUpdate(updated.path, updated.content ?? '', updated.updatedAt)
+    } catch (e) {
+      toast('error', `Couldn’t save the check — ${e instanceof Error ? e.message : e}`)
+    } finally {
+      setChecking(false)
+      setPending((p) => {
+        const next = { ...p }
+        delete next[item.text]
+        return next
+      })
+    }
+  }
+
+  const pastCount = cardPaths ? Math.max(0, cardPaths.length - 1) : 0
+
+  return (
+    <div className="status" data-testid="world-status">
+      {mission && <p className="status-mission">{mission}</p>}
+
+      {phases.length > 0 && (
+        <div className="phase-bar" data-testid="phase-bar">
+          {phases.map((s, i) => (
+            <span key={i} className={`phase-step is-${s.state}`} title={s.label}>
+              <span className="phase-step-label">
+                {s.state === 'done' ? '✓ ' : s.state === 'blocked' ? '⛔ ' : ''}
+                {truncate(s.label, s.state === 'current' ? 40 : 22)}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {card ? (
+        <section className="week-card" data-testid="week-card">
+          <div className="week-card-head">
+            <span className="week-card-label">⭐ This week</span>
+            <span className="week-card-date">{card.date}</span>
+          </div>
+          {card.priority && <p className="week-card-priority">{card.priority}</p>}
+          {card.top3.length > 0 && (
+            <div className="week-card-top3">
+              {card.top3.map((t) => {
+                const checked = pending[t.text] ?? t.checked
+                return (
+                  <label
+                    key={t.text}
+                    className={`week-top3-item${checked ? ' is-done' : ''}`}
+                    data-testid="week-top3-item"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={checking}
+                      onChange={() => void toggleTop3(t)}
+                    />
+                    <span>{t.text}</span>
+                  </label>
+                )
+              })}
+            </div>
+          )}
+        </section>
+      ) : cardPaths !== null ? (
+        <p className="week-card-empty" data-testid="week-card-empty">
+          No card yet — mint one in Monday’s review.
+        </p>
+      ) : null}
+
+      {card && card.blockers.length > 0 && (
+        <section className="status-blockers" data-testid="status-blockers">
+          <div className="status-label">⚠️ Blockers / waiting on</div>
+          <ul>
+            {card.blockers.map((b, i) => (
+              <li key={i}>{b}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(nowTasks.length > 0 || laterTasks.length > 0) && (
+        <section className="status-tasks">
+          <div className="status-label">Open tasks</div>
+          {nowTasks.map((n) => (
+            <StatusTaskRow key={n.path} n={n} />
+          ))}
+          {laterTasks.length > 0 && (
+            <>
+              <button
+                className="status-later"
+                onClick={() => setLaterOpen((o) => !o)}
+                aria-expanded={laterOpen}
+                data-testid="later-pile"
+              >
+                {laterOpen ? '−' : '+'} {laterTasks.length} later
+              </button>
+              {laterOpen && laterTasks.map((n) => <StatusTaskRow key={n.path} n={n} />)}
+            </>
+          )}
+        </section>
+      )}
+
+      <div className="status-foot">
+        <button
+          className="status-link"
+          onClick={() => navigate({ kind: 'note', path: project.path })}
+        >
+          Open the spine →
+        </button>
+        {card && (
+          <button
+            className="status-link"
+            onClick={() => navigate({ kind: 'pages', path: `desk/weekly/${card.date}` })}
+          >
+            Week of {card.date} review →
+          </button>
+        )}
+        {pastCount > 0 && (
+          <span className="status-past">
+            {pastCount} past {pastCount === 1 ? 'card' : 'cards'}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ——— the Landing: Continue + milestone + next 3 + quiet doors (1+2) ———
 
 const phaseIdx = (n: Note): number => {
@@ -327,15 +601,6 @@ function WorldLanding({
     )
   }
 
-  const toggleDone = (n: Note) => {
-    const done = n.metadata['done'] === true
-    void setMetadata(
-      n.path,
-      { done: !done, state: done ? 'active' : 'done' },
-      { undo: { done, state: String(n.metadata['state'] ?? 'next') } },
-    )
-  }
-
   return (
     <div className="landing" data-testid="landing">
       <button className="landing-continue" onClick={openContinue} disabled={!contReady}>
@@ -371,7 +636,7 @@ function WorldLanding({
               <input
                 type="checkbox"
                 checked={n.metadata['done'] === true}
-                onChange={() => toggleDone(n)}
+                onChange={() => toggleTaskDone(n)}
                 aria-label={taskLine(n)}
               />
               <button
