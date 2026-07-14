@@ -1531,6 +1531,19 @@
 }
 .worktabs-input:focus { outline: none; border-color: var(--gold); }
 .worktabs-loading { color: var(--ink-4); padding: 4px 8px; }
+/* Tab drag & drop — same calm affordances as the shelves: a grab cursor on
+   the rows that actually drag and a thin gold insertion line at the slot.
+   Dropping is the only gesture that writes; a cancelled drag leaves no trace. */
+.worktabs-item-draggable { cursor: grab; }
+.worktabs-item-draggable:active { cursor: grabbing; }
+.worktabs-drop-line {
+  height: 2px;
+  border-radius: 999px;
+  background: var(--gold);
+  margin: 0 4px;
+  pointer-events: none;
+  flex: none;
+}
 
 /* ── Supervised editor drop: format bar + toggles ─────────────────────── */
 

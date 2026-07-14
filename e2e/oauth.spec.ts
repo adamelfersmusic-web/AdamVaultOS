@@ -133,14 +133,28 @@ test('proactive refresh: tokens near expiry rotate before requests, silently', a
   await page.request.post(`${MOCK}/__test/oauth`, { data: { expiresIn: 10 } })
   await signInWithOAuth(page)
 
-  const state = await oauthState(page)
-  expect(state.rotationCount).toBeGreaterThanOrEqual(1)
+  // The cockpit shell renders as soon as the session lands — BEFORE the first
+  // data request has necessarily finished its silent pre-request refresh. An
+  // immediate one-shot read here races that in-flight rotation (and used to
+  // flake ~1 in 4 with rotationCount still 0), so poll instead.
+  await expect
+    .poll(async () => (await oauthState(page)).rotationCount)
+    .toBeGreaterThanOrEqual(1)
 
   // Still fully functional after rotation, and the rotation was persisted.
-  const session = JSON.parse(
-    (await page.evaluate(() => localStorage.getItem('adamvaultos.session.v1')))!,
-  )
-  expect(session.token.refreshToken).toBe(state.currentRefreshToken)
+  // With expiresIn:10 EVERY minted token sits inside the 30s window, so any
+  // later request rotates again — a fixed snapshot of the hub's current
+  // refresh token can go stale between reads. Compare storage against a
+  // fresh hub read each attempt and poll until the pair agrees (quiescence).
+  await expect
+    .poll(async () => {
+      const state = await oauthState(page)
+      const session = JSON.parse(
+        (await page.evaluate(() => localStorage.getItem('adamvaultos.session.v1')))!,
+      )
+      return session.token.refreshToken === state.currentRefreshToken
+    })
+    .toBe(true)
   await page.goto('/#/scripts/table')
   await page.fill('.db-search', 'fake map')
   await expect(page.locator('.db-table tbody tr')).toHaveCount(1)

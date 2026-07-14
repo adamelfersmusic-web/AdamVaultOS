@@ -879,6 +879,25 @@ export function workspaceRootFor(path: string): string | null {
   return `desk/${segs[1]}`
 }
 
+/** A tab's persisted rail position: metadata.tab_order when it's a finite
+ * number (written 10-spaced — 10, 20, 30… — so later inserts don't cascade
+ * rewrites), else null. */
+function tabOrderOf(n: Note): number | null {
+  const v = n.metadata?.tab_order
+  return typeof v === 'number' && Number.isFinite(v) ? v : null
+}
+
+/** Rail order: tabs carrying tab_order first (ascending), then the rest in
+ * creation order — a stable mix, so vaults from before the reorder feature
+ * (or tabs minted elsewhere) keep their familiar Google-Docs order. */
+export function sortWorkTabs(children: Note[]): Note[] {
+  const byCreated = [...children].sort((x, y) => (x.createdAt < y.createdAt ? -1 : 1))
+  const ordered = byCreated.filter((n) => tabOrderOf(n) !== null)
+  const rest = byCreated.filter((n) => tabOrderOf(n) === null)
+  ordered.sort((a, b) => tabOrderOf(a)! - tabOrderOf(b)!) // stable → created-at tiebreak
+  return [...ordered, ...rest]
+}
+
 export async function fetchWorkspaceTabs(
   root: string,
 ): Promise<{ root: Note | null; children: Note[] }> {
@@ -890,13 +909,26 @@ export async function fetchWorkspaceTabs(
     ])
     if (rootNote) mergeNote(rootNote)
     mergeNotes(children)
-    // Tab order = creation order, like Google Docs.
-    const sorted = [...children].sort((x, y) => (x.createdAt < y.createdAt ? -1 : 1))
-    return { root: rootNote, children: sorted }
+    return { root: rootNote, children: sortWorkTabs(children) }
   } catch (e) {
     handleAuthFailure(e)
     throw e
   }
+}
+
+/** Persist a rail reorder: stamp 10-spaced metadata.tab_order onto the
+ * sibling tabs in their new order. Every write funnels through setMetadata —
+ * the store's conflict-safe merge patch — and notes already holding the
+ * right value are skipped, so an unchanged tail costs nothing. */
+export async function persistTabOrder(orderedPaths: string[]): Promise<boolean> {
+  const writes: Promise<boolean>[] = []
+  orderedPaths.forEach((p, i) => {
+    const want = (i + 1) * 10
+    if (state.notes[p]?.metadata?.tab_order !== want) {
+      writes.push(setMetadata(p, { tab_order: want }, { silent: true }))
+    }
+  })
+  return (await Promise.all(writes)).every(Boolean)
 }
 
 /** Add a tab (sub-note) to a workspace; returns the new note. */
@@ -908,12 +940,21 @@ export async function createWorkTab(root: string, title: string): Promise<Note> 
     path = `${root}/${slug}-${n}`
     if (n > 30) throw new Error('Could not find a free path for this tab')
   }
+  // A new tab lands at the END of the rail. When every sibling already has a
+  // tab_order, appending means max+10; in a mixed/legacy rail the unordered
+  // group sorts by creation anyway, so the newest note is last without one.
+  const metadata: NoteMetadata = { type: 'note' }
+  const siblings = await a.listByPrefix(`${root}/`)
+  const orders = siblings.map(tabOrderOf)
+  if (siblings.length > 0 && orders.every((o) => o !== null)) {
+    metadata.tab_order = Math.max(...(orders as number[])) + 10
+  }
   try {
     const note = await a.createNote({
       path,
       content: `# ${title.trim()}\n\n`,
       tags: ['desk'],
-      metadata: { type: 'note' },
+      metadata,
     })
     mergeNote(note)
     if (state.pages && !state.pages.includes(note.path)) {

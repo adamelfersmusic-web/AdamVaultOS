@@ -4,12 +4,19 @@
 // (desk/<x>/<tab>), searchable and linkable like everything else. "＋" adds
 // a tab. Minimal and quiet — tabs are for the FEW parallel threads of a
 // working session, never a filing system.
+//
+// Tabs drag-to-reorder vertically (same house DnD as the sidebar shelves:
+// native HTML5, payload in dataTransfer with a module mirror for dragover,
+// a thin gold insertion line, window-level dragend sweep). Dropping is the
+// only gesture that writes — the new order lands in the vault as 10-spaced
+// metadata.tab_order on the sibling notes; a cancelled drag leaves no trace.
 
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { Note } from '../lib/types'
 import {
   createWorkTab,
   fetchWorkspaceTabs,
+  persistTabOrder,
   toast,
   useStore,
   workspaceRootFor,
@@ -34,6 +41,43 @@ function tabTitle(path: string, n?: Note): string {
   return titleFromPath(path)
 }
 
+// ——— DRAG & DROP — mirrors the shelves pattern in PagesView. dragover can't
+// read dataTransfer (HTML5 protected mode), so the in-flight payload is
+// mirrored here for hover affordances; drop still prefers the real
+// dataTransfer JSON. Cleared on dragend — a cancelled drag leaves no trace. ———
+
+type TabDragPayload = { kind: 'worktab'; path: string; root: string }
+
+const TAB_DND_MIME = 'application/x-adamvaultos-worktab-dnd'
+let liveTabDrag: TabDragPayload | null = null
+
+function isTabDragPayload(p: unknown): p is TabDragPayload {
+  if (!p || typeof p !== 'object') return false
+  const d = p as Record<string, unknown>
+  return d.kind === 'worktab' && typeof d.path === 'string' && typeof d.root === 'string'
+}
+
+/** The drop-time payload: the dataTransfer JSON when it parses, else the live
+ * mirror. Malformed/foreign data (someone dropping random text) → null. */
+function readTabDragPayload(e: React.DragEvent): TabDragPayload | null {
+  try {
+    const raw = e.dataTransfer.getData(TAB_DND_MIME)
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw)
+      if (isTabDragPayload(parsed)) return parsed
+    }
+  } catch {
+    // fall through to the mirror
+  }
+  return liveTabDrag
+}
+
+/** Top or bottom half of the hovered tab → insert before it or after it. */
+function slotFor(e: React.DragEvent, index: number): number {
+  const r = e.currentTarget.getBoundingClientRect()
+  return e.clientY > r.top + r.height / 2 ? index + 1 : index
+}
+
 export function WorkTabs({ path }: { path: string }) {
   const { notes } = useStore()
   const root = workspaceRootFor(path)
@@ -45,6 +89,19 @@ export function WorkTabs({ path }: { path: string }) {
   const [newTitle, setNewTitle] = useState('')
   const [busy, setBusy] = useState(false)
   const seq = useRef(0)
+
+  // Reorder hover slot (index into `children`; a gold line renders there).
+  // Window-level dragend/drop is the safety net for cancelled drags.
+  const [dropSlot, setDropSlot] = useState<number | null>(null)
+  useEffect(() => {
+    const clear = () => setDropSlot(null)
+    window.addEventListener('dragend', clear)
+    window.addEventListener('drop', clear)
+    return () => {
+      window.removeEventListener('dragend', clear)
+      window.removeEventListener('drop', clear)
+    }
+  }, [])
 
   useEffect(() => {
     if (!root) return
@@ -86,6 +143,33 @@ export function WorkTabs({ path }: { path: string }) {
     }
   }
 
+  /** A drop landed: move the dragged tab into `slot` (an insertion index in
+   * the CURRENT children), reflect it instantly, persist tab_order. A drop
+   * that lands the tab where it already sits writes nothing. */
+  const applyReorder = (dragPath: string, slot: number) => {
+    const children = tabs?.children ?? []
+    const from = children.findIndex((c) => c.path === dragPath)
+    if (from === -1) return
+    const next = [...children]
+    const [moved] = next.splice(from, 1)
+    const at = Math.max(0, Math.min(slot > from ? slot - 1 : slot, next.length))
+    if (at === from) return
+    next.splice(at, 0, moved!)
+    setTabs((prev) => (prev ? { ...prev, children: next } : prev))
+    void persistTabOrder(next.map((c) => c.path))
+  }
+
+  const acceptsHere = () => liveTabDrag?.kind === 'worktab' && liveTabDrag.root === root
+
+  const onTabDrop = (e: React.DragEvent, slot: number) => {
+    const payload = readTabDragPayload(e)
+    setDropSlot(null)
+    if (!payload || payload.root !== root) return
+    e.preventDefault()
+    e.stopPropagation()
+    applyReorder(payload.path, slot)
+  }
+
   if (collapsed) {
     return (
       <button
@@ -100,11 +184,7 @@ export function WorkTabs({ path }: { path: string }) {
     )
   }
 
-  const items: { path: string; label: string }[] = []
-  if (tabs?.root) items.push({ path: root, label: tabTitle(root, notes[root] ?? tabs.root) })
-  for (const c of tabs?.children ?? []) {
-    items.push({ path: c.path, label: tabTitle(c.path, notes[c.path] ?? c) })
-  }
+  const children = tabs?.children ?? []
 
   return (
     <aside className="worktabs" data-testid="worktabs">
@@ -114,20 +194,70 @@ export function WorkTabs({ path }: { path: string }) {
           ◂
         </button>
       </div>
-      <div className="worktabs-list">
+      <div
+        className="worktabs-list"
+        onDragOver={(e) => {
+          // The gap under the last tab — append.
+          if (!acceptsHere()) return
+          e.preventDefault()
+          e.dataTransfer.dropEffect = 'move'
+          setDropSlot(children.length)
+        }}
+        onDragLeave={(e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+          setDropSlot(null)
+        }}
+        onDrop={(e) => onTabDrop(e, children.length)}
+      >
         {tabs === null ? (
           <span className="worktabs-loading">…</span>
         ) : (
-          items.map((it) => (
-            <a
-              key={it.path}
-              className={`worktabs-item${it.path === path ? ' is-active' : ''}`}
-              href={hrefFor({ kind: 'pages', path: it.path })}
-              title={it.path}
-            >
-              {it.label}
-            </a>
-          ))
+          <>
+            {tabs.root && (
+              <a
+                className={`worktabs-item${root === path ? ' is-active' : ''}`}
+                href={hrefFor({ kind: 'pages', path: root })}
+                title={root}
+              >
+                {tabTitle(root, notes[root] ?? tabs.root)}
+              </a>
+            )}
+            {children.map((c, i) => (
+              <Fragment key={c.path}>
+                {dropSlot === i && (
+                  <div className="worktabs-drop-line" data-testid="drop-line" />
+                )}
+                <a
+                  className={`worktabs-item worktabs-item-draggable${c.path === path ? ' is-active' : ''}`}
+                  href={hrefFor({ kind: 'pages', path: c.path })}
+                  title={c.path}
+                  draggable
+                  onDragStart={(e) => {
+                    const payload: TabDragPayload = { kind: 'worktab', path: c.path, root }
+                    liveTabDrag = payload
+                    e.dataTransfer.setData(TAB_DND_MIME, JSON.stringify(payload))
+                    e.dataTransfer.effectAllowed = 'move'
+                  }}
+                  onDragEnd={() => {
+                    liveTabDrag = null
+                  }}
+                  onDragOver={(e) => {
+                    if (!acceptsHere()) return
+                    e.preventDefault()
+                    e.stopPropagation()
+                    e.dataTransfer.dropEffect = 'move'
+                    setDropSlot(slotFor(e, i))
+                  }}
+                  onDrop={(e) => onTabDrop(e, slotFor(e, i))}
+                >
+                  {tabTitle(c.path, notes[c.path] ?? c)}
+                </a>
+              </Fragment>
+            ))}
+            {dropSlot === children.length && children.length > 0 && (
+              <div className="worktabs-drop-line" data-testid="drop-line" />
+            )}
+          </>
         )}
         {adding ? (
           <input
