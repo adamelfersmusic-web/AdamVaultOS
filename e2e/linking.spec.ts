@@ -296,6 +296,157 @@ test('F1b — moving a linked-to note offers to rewrite the linking notes', asyn
   expect(await mockNote(page, 'pages/target-doc')).toBeNull()
 })
 
+// ——— page-link chips + vault-path links survive the round trip ———
+//
+// The bug: a chip to a note OUTSIDE pages/ serialized fine but reloaded as a
+// plain <a> whose relative href hard-navigated off the SPA — the hosting 404
+// fallback rebooted the app hashless, dumping the user on Projects.
+
+test('a chip to a NON-pages note survives save → reload → click (note route, not Projects)', async ({ page }) => {
+  await seed(page, 'atelier/parachute/aaron-feature-request', '# Aaron feature request\n\nThe ask.')
+  await seed(page, 'pages/scratch', '# Scratch\n\nstart')
+  await connectViaStorage(page)
+
+  await openPage(page, 'pages/scratch')
+  const picker = await openSubPagePicker(page)
+  await picker.locator('input').fill('aaron feature')
+  await picker
+    .locator('.subpage-row', { hasText: 'atelier/parachute/aaron-feature-request' })
+    .first()
+    .click()
+
+  const chip = page.locator('.page-prose .subpage-link')
+  await expect(chip).toContainText('Aaron Feature Request')
+
+  // Storage law: a plain, readable markdown link — de-slugged title, raw path.
+  await waitSaved(page)
+  const saved = await mockNote(page, 'pages/scratch')
+  expect(saved?.content).toContain(
+    '[Aaron Feature Request](atelier/parachute/aaron-feature-request)',
+  )
+
+  // Leave and come back — the chip is rebuilt from saved markdown, then clicked.
+  await page.reload()
+  await expect(page.locator('.page-prose')).toBeVisible()
+  await expect(chip).toContainText('Aaron Feature Request')
+  await chip.click()
+  await expect(page).toHaveURL(/#\/note\/atelier%2Fparachute%2Faaron-feature-request$/)
+})
+
+test('a chip to a pages/ note survives save → reload → click (pages route)', async ({ page }) => {
+  await seed(page, 'pages/harbor-plan', '# Harbor plan\n\nThe plan body.')
+  await seed(page, 'pages/scratch', '# Scratch\n\nstart')
+  await connectViaStorage(page)
+
+  await openPage(page, 'pages/scratch')
+  const picker = await openSubPagePicker(page)
+  await picker.locator('input').fill('harbor')
+  await picker.locator('.subpage-row', { hasText: 'pages/harbor-plan' }).first().click()
+
+  const chip = page.locator('.page-prose .subpage-link')
+  await expect(chip).toContainText('Harbor Plan')
+  await waitSaved(page)
+  const saved = await mockNote(page, 'pages/scratch')
+  expect(saved?.content).toContain('[Harbor Plan](pages/harbor-plan)')
+
+  await page.reload()
+  await expect(page.locator('.page-prose')).toBeVisible()
+  await expect(chip).toContainText('Harbor Plan')
+  await chip.click()
+  await expect(page).toHaveURL(/#\/pages\/pages%2Fharbor-plan$/)
+})
+
+test('a chip whose target is gone: quiet toast, no navigation, no byte drift', async ({ page }) => {
+  const body = '# Scratch\n\nsee [Ghost Note](atelier/ghost-note) end\n'
+  await seed(page, 'pages/scratch', body)
+  await connectViaStorage(page)
+
+  await openPage(page, 'pages/scratch')
+  const chip = page.locator('.page-prose .subpage-link')
+  await expect(chip).toContainText('Ghost Note')
+
+  await chip.click()
+  await expect(page.locator('.toast', { hasText: 'Page not found' })).toBeVisible()
+  await expect(page).toHaveURL(/#\/pages\/pages%2Fscratch$/)
+
+  // Opening (no edit) never rewrites the stored note.
+  const saved = await mockNote(page, 'pages/scratch')
+  expect(saved?.content).toBe(body)
+})
+
+test('a plain vault-path link in the read view routes in-app — the page never unloads', async ({ page }) => {
+  await seed(page, 'people/arianne/00-profile', '# Profile\n\nHer file.')
+  await seed(
+    page,
+    'projects/dossier',
+    '# Dossier\n\nsee [Custom Label](people/arianne/00-profile) for more',
+  )
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/note/' + encodeURIComponent('projects/dossier'))
+  const body = page.getByTestId('note-body')
+  await expect(body).toBeVisible()
+
+  // Sentinel survives only if the document is never unloaded (no hard 404 trip).
+  await page.evaluate(() => {
+    ;(window as unknown as { __stayed?: boolean }).__stayed = true
+  })
+  await body.locator('a', { hasText: 'Custom Label' }).click()
+  await expect(page).toHaveURL(/#\/note\/people%2Farianne%2F00-profile$/)
+  expect(
+    await page.evaluate(() => (window as unknown as { __stayed?: boolean }).__stayed),
+  ).toBe(true)
+})
+
+test('a plain vault-path link to a missing note: toast + stays put', async ({ page }) => {
+  await seed(page, 'projects/dossier', '# Dossier\n\nsee [Lost Doc](people/lost/lost-doc) maybe')
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/note/' + encodeURIComponent('projects/dossier'))
+  const body = page.getByTestId('note-body')
+  await expect(body).toBeVisible()
+  await body.locator('a', { hasText: 'Lost Doc' }).click()
+
+  await expect(page.locator('.toast', { hasText: 'Page not found' })).toBeVisible()
+  await expect(page).toHaveURL(/#\/note\/projects%2Fdossier$/)
+})
+
+test('in the Pages editor, a custom-text vault link stays plain (byte law) but routes in-app', async ({ page }) => {
+  await seed(page, 'people/arianne/00-profile', '# Profile\n\nHer file.')
+  await seed(
+    page,
+    'pages/scratch',
+    '# Scratch\n\nstart [Custom Label](people/arianne/00-profile) end',
+  )
+  await connectViaStorage(page)
+
+  await openPage(page, 'pages/scratch')
+  // Custom text ≠ the chip's own serialized title → must NOT convert (a chip
+  // would re-serialize with a different label and rewrite the stored bytes).
+  await expect(page.locator('.page-prose .subpage-link')).toHaveCount(0)
+  await page.locator('.page-prose a', { hasText: 'Custom Label' }).click()
+  await expect(page).toHaveURL(/#\/note\/people%2Farianne%2F00-profile$/)
+})
+
+test('an external https link in the editor still opens in a new tab', async ({ page }) => {
+  await page
+    .context()
+    .route('https://example.com/**', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<h1>external</h1>' }),
+    )
+  await seed(page, 'pages/scratch', '# Scratch\n\nvisit [Example](https://example.com/x) now')
+  await connectViaStorage(page)
+
+  await openPage(page, 'pages/scratch')
+  const popupPromise = page.context().waitForEvent('page')
+  await page.locator('.page-prose a', { hasText: 'Example' }).click()
+  const popup = await popupPromise
+  await popup.waitForLoadState('domcontentloaded')
+  expect(popup.url()).toContain('example.com')
+  // The editor itself never navigated.
+  await expect(page).toHaveURL(/#\/pages\/pages%2Fscratch$/)
+})
+
 test('board — dragging into done also flips the done bool (progress feeds)', async ({ page }) => {
   await seed(page, 'tasks/amanda/wrap-up', 'Wrap up the shoot', ['task'], {
     project: 'amanda', phase: '4', track: 'photos', state: 'active', done: false,
