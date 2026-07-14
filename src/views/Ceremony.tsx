@@ -4,10 +4,11 @@
 // Both stay torch-lit in either app theme: a stele does not switch to day
 // mode. The only interactive thing in the Commandments room is leaving it.
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { navigate } from '../lib/router'
 import { openVaultPath } from '../lib/vaultLinks'
 import { openPalette, useUi } from '../lib/ui'
+import { fetchNote, fetchVaultAsset } from '../lib/store'
 
 /** Return to wherever the visitor came from; a fresh tab lands on the front
  * door instead of backing out of the app. */
@@ -64,6 +65,48 @@ function Seal({ size }: { size: number }) {
 /** Clicking the void (not the monument) leaves the room. */
 function voidClick(e: React.MouseEvent<HTMLDivElement>): void {
   if (e.target === e.currentTarget) leave()
+}
+
+// ————————————————————————————————— The sky ———————————————————————————————
+
+/** The vault controls the sky: the Map's backdrop is whatever image lives in
+ * this note. Replace the image there and the heavens update — no deploy. */
+const SKY_NOTE = 'pages/knowledge-graph'
+
+/** First vault-storage image in the sky note, resolved to an auth-safe blob
+ * URL (the same machinery note bodies use). Any failure → no sky, no error:
+ * the void is a perfectly good sky. */
+function useMapSky(): string | null {
+  const [sky, setSky] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    let created: string | null = null
+    fetchNote(SKY_NOTE)
+      .then((note) => {
+        if (cancelled || !note?.content) return
+        const m = note.content.match(
+          /<img[^>]*src="(\/api\/storage\/[^"]+)"|!\[[^\]]*\]\((\/api\/storage\/[^)\s]+)/,
+        )
+        const path = m?.[1] ?? m?.[2]
+        if (!path) return
+        return fetchVaultAsset(path).then((url) => {
+          if (cancelled) {
+            URL.revokeObjectURL(url)
+            return
+          }
+          created = url
+          setSky(url)
+        })
+      })
+      .catch(() => {
+        /* the void is a perfectly good sky */
+      })
+    return () => {
+      cancelled = true
+      if (created) URL.revokeObjectURL(created)
+    }
+  }, [])
+  return sky
 }
 
 // ————————————————————————————————— The Commandments ——————————————————————————
@@ -233,8 +276,20 @@ function Level({ label }: { label: string }) {
 
 export function MapView() {
   useEscapeToLeave()
+  const sky = useMapSky()
   return (
     <div className="cere-void" onClick={voidClick} data-testid="vault-map">
+      {sky && (
+        <>
+          <div
+            className="cere-sky"
+            data-testid="map-sky"
+            style={{ backgroundImage: `url(${sky})` }}
+            aria-hidden="true"
+          />
+          <div className="cere-sky-veil" aria-hidden="true" />
+        </>
+      )}
       <div className="cere-temple">
         <Seal size={46} />
         <h1 className="cere-title cere-title-map">The Map</h1>

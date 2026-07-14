@@ -135,6 +135,52 @@ test('the gem door — tapping the wordmark gem opens the Map; the text still op
   await expect(page.getByTestId('cockpit')).toBeVisible()
 })
 
+test('the sky — the Map wears the constellation from pages/knowledge-graph, as a whisper', async ({ page }) => {
+  // The vault controls the sky: the note's first storage image becomes the
+  // Map's backdrop (auth-safe blob), at whisper opacity.
+  await seedNote(
+    page,
+    'pages/knowledge-graph',
+    '# Knowledge Graph\n\n<img src="/api/storage/2026-07-14/constellation.png" alt="sky" width="820">\n',
+  )
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('http://127.0.0.1:4173/#/map')
+  await expect(page.getByTestId('vault-map')).toBeVisible()
+  const sky = page.getByTestId('map-sky')
+  await expect(sky).toBeAttached()
+  await expect
+    .poll(async () => sky.evaluate((el) => (el as HTMLElement).style.backgroundImage))
+    .toContain('blob:')
+
+  // The whisper law: hardly visible, never interactive.
+  const style = await sky.evaluate((el) => {
+    const cs = getComputedStyle(el as HTMLElement)
+    return { opacity: Number(cs.opacity), pointerEvents: cs.pointerEvents }
+  })
+  expect(style.opacity).toBeLessThanOrEqual(0.1)
+  expect(style.pointerEvents).toBe('none')
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
+test('the sky — no note, no sky: the void alone, no errors', async ({ page }) => {
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('http://127.0.0.1:4173/#/map')
+  await expect(page.getByTestId('vault-map')).toBeVisible()
+  await expect(page.getByTestId('chamber-vault')).toBeVisible()
+  await expect(page.getByTestId('map-sky')).toHaveCount(0)
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
 test('enter the vault — both monuments carry the gem door onto the Cockpit', async ({ page }) => {
   await connectViaStorage(page)
 
