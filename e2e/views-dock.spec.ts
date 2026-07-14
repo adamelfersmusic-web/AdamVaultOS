@@ -46,12 +46,12 @@ test.beforeEach(async ({ page }) => {
   await reset(page)
 })
 
-test('Tracker views — Now shows only moving work; owner chips slice per person', async ({ page }) => {
+test('Tracker views — Now shows only moving work; world chips slice per project', async ({ page }) => {
   await seedTask(page, 'shoot', 'Shoot the photos', {
     project: 'amanda', phase: '3', track: 'photos', owner: 'Adam', state: 'active', done: false,
   })
-  await seedTask(page, 'plan', 'Plan the captions', {
-    project: 'amanda', phase: '4', track: 'captions', owner: 'Cassy', state: 'next', done: false,
+  await seedTask(page, 'stakes', 'Send the stakes text', {
+    project: 'escensus', phase: '1', track: 'pilot', owner: 'Adam', state: 'next', done: false,
   })
   await seedTask(page, 'archive', 'Archive the drafts', {
     project: 'amanda', phase: '1', track: 'planable', owner: 'Adam', state: 'done', done: true,
@@ -70,16 +70,17 @@ test('Tracker views — Now shows only moving work; owner chips slice per person
   await views.getByRole('button', { name: 'Now' }).click()
   await expect(page.getByText('Archive the drafts')).toHaveCount(0)
   await expect(page.getByText('Shoot the photos')).toBeVisible()
-  await expect(page.getByText('Plan the captions')).toBeVisible()
+  await expect(page.getByText('Send the stakes text')).toBeVisible()
 
-  // Cassy's list: only hers.
-  await views.getByRole('button', { name: 'Cassy' }).click()
+  // Escensus world: only that project's rows. No people chips anymore.
+  await expect(views.getByRole('button', { name: 'Adam' })).toHaveCount(0)
+  await views.getByRole('button', { name: 'Escensus' }).click()
   await expect(page.getByText('Shoot the photos')).toHaveCount(0)
-  await expect(page.getByText('Plan the captions')).toBeVisible()
+  await expect(page.getByText('Send the stakes text')).toBeVisible()
 
   // The view survives a reload (same persistence as hand-built filters)…
   await page.reload()
-  await expect(page.getByText('Plan the captions')).toBeVisible()
+  await expect(page.getByText('Send the stakes text')).toBeVisible()
   await expect(page.getByText('Shoot the photos')).toHaveCount(0)
 
   // …and All brings everything back.

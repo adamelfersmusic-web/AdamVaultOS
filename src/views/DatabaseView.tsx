@@ -568,7 +568,7 @@ export function DatabaseView({
           <TrackerViews
             filters={filters}
             setFilters={setFilters}
-            owners={[...(observed.get('owner') ?? [])].filter(Boolean).sort()}
+            worlds={VIEW_WORLDS.filter((w) => (observed.get('project') ?? new Set()).has(w))}
           />
         )}
 
@@ -835,25 +835,33 @@ function TrackerNewTask() {
 }
 
 // ——— saved views (#4): one-tap named slices of the Tracker ———
-// "Now" = what's moving (active + next). Owner chips = per-person lists.
-// These are filter presets, so they compose with the pipeline + filter UI and
-// persist through the same localStorage key as hand-built filters.
+// "Now" = what's moving (active + next). World chips = the projects Adam
+// actually wants pre-filtered in one tap (his call 2026-07-14: Amanda +
+// Escensus — the only worlds that earn a chip; people-chips folded into the
+// worlds). These are filter presets, so they compose with the pipeline +
+// filter UI and persist through the same localStorage key as hand-built
+// filters.
+
+/** Worlds that earn a one-tap chip. Grow deliberately — a chip must be a
+ * button Adam would actually press. */
+const VIEW_WORLDS = ['amanda', 'escensus']
 
 function TrackerViews({
   filters,
   setFilters,
-  owners,
+  worlds,
 }: {
   filters: Filters
   setFilters: (f: Filters) => void
-  owners: string[]
+  worlds: string[]
 }) {
   const keys = Object.keys(filters)
   const isAll = keys.length === 0
   const isNow =
     keys.length === 1 &&
     [...(filters.state ?? [])].sort().join(',') === 'active,next'
-  const ownerOf = keys.length === 1 && (filters.owner?.length ?? 0) === 1 ? filters.owner[0] : null
+  const worldOf =
+    keys.length === 1 && (filters.project?.length ?? 0) === 1 ? filters.project[0] : null
 
   return (
     <div className="db-views" data-testid="db-views" role="group" aria-label="Saved views">
@@ -868,14 +876,15 @@ function TrackerViews({
       >
         Now
       </button>
-      {owners.map((o) => (
+      {worlds.map((w) => (
         <button
-          key={o}
-          className={`db-view${ownerOf === o ? ' is-on' : ''}`}
-          title={`${o}'s tasks`}
-          onClick={() => setFilters({ owner: [o] })}
+          key={w}
+          className={`db-view${worldOf === w ? ' is-on' : ''}`}
+          title={`${w[0].toUpperCase()}${w.slice(1)} — this world's tasks`}
+          onClick={() => setFilters({ project: [w] })}
         >
-          {o}
+          {w[0].toUpperCase()}
+          {w.slice(1)}
         </button>
       ))}
     </div>
