@@ -387,6 +387,18 @@ const server = http.createServer(async (req, res) => {
     })
   }
 
+  // ——— /api/storage/* — vault image attachments (auth-gated, like the real
+  // server). Any path under /api/storage serves a fixed 320×200 image so the
+  // editor/read views have real pixels to size and drag against. ———
+  if (path.startsWith('/api/storage/') && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'image/svg+xml', ...res.corsHeaders })
+    return res.end(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200">' +
+        '<rect width="320" height="200" fill="#C4923A"/>' +
+        '<circle cx="160" cy="100" r="60" fill="#1e2126"/></svg>',
+    )
+  }
+
   // ——— /api/tags ———
   if (path === '/api/tags' && req.method === 'GET') {
     return json(res, 200, TAGS)

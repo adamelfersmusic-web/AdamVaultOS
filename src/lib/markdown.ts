@@ -43,10 +43,22 @@ marked.use({
 // flash); useVaultImages swaps in an auth-resolved URL after render. External
 // http(s)/data images are left untouched.
 function stageVaultImages(src: string): string {
-  return src.replace(
-    /!\[([^\]]*)\]\((\/[^)\s]+)\)/g,
-    (_m, alt: string, path: string) =>
-      `<img alt="${alt.replace(/"/g, '&quot;')}" data-vault-src="${path}" class="vault-img" />`,
+  return (
+    src
+      .replace(
+        /!\[([^\]]*)\]\((\/[^)\s]+)\)/g,
+        (_m, alt: string, path: string) =>
+          `<img alt="${alt.replace(/"/g, '&quot;')}" data-vault-src="${path}" class="vault-img" />`,
+      )
+      // #23 — sized/aligned images are stored as raw HTML
+      // (`<img src="/api/storage/…" width="420" style="float:left…">`). Same
+      // staging: swap the root-relative src for data-vault-src, keep the
+      // width/style attributes so the read view renders the same size/float.
+      .replace(
+        /<img\b([^>]*?)\bsrc="(\/[^"]*)"([^>]*)>/g,
+        (_m, pre: string, path: string, post: string) =>
+          `<img${pre}data-vault-src="${path}"${post} class="vault-img">`,
+      )
   )
 }
 
