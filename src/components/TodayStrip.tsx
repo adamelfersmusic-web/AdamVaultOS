@@ -14,6 +14,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Note } from '../lib/types'
 import { createTask, setMetadata, setTaskToday, toast, useStore } from '../lib/store'
 import { navigate } from '../lib/router'
+import { dueTone, formatDue, parseDue } from '../lib/dates'
 import { titleFromPath } from '../lib/format'
 import { IconPlus } from './Icons'
 
@@ -23,6 +24,12 @@ const TODAY_CAP = 5
 // the later/running list, then everything else. Stable within each group.
 const WHEN_RANK: Record<string, number> = { 'this-week': 0, later: 1 }
 const whenRank = (n: Note) => WHEN_RANK[String(n.metadata['when'] ?? '')] ?? 2
+
+/** The task's due ('YYYY-MM-DD') when set, else null — never '' or junk. */
+function taskDue(n: Note): string | null {
+  const v = n.metadata['due']
+  return typeof v === 'string' && v ? v : null
+}
 
 /** A task's display line is its body's first line (same rule as the Tracker). */
 function taskTitle(n: Note): string {
@@ -37,6 +44,7 @@ export function TodayStrip() {
   const { tracker, notes } = useStore()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerQuery, setPickerQuery] = useState('')
+  const [pickerDue, setPickerDue] = useState('')
   const [busy, setBusy] = useState(false)
   const addRef = useRef<HTMLDivElement>(null)
 
@@ -44,29 +52,42 @@ export function TodayStrip() {
     () => (tracker ?? []).map((p) => notes[p]).filter((n): n is Note => Boolean(n)),
     [tracker, notes],
   )
-  const todays = useMemo(
-    () =>
-      taskNotes
-        .filter((n) => n.metadata['when'] === 'today')
-        .sort((a, b) => Number(a.metadata['done'] === true) - Number(b.metadata['done'] === true)),
-    [taskNotes],
-  )
+  // The day's list: picked tasks (when:"today") PLUS any not-done task whose
+  // due date has arrived (today or overdue) — the date claims the day even
+  // when the when-word says later. Deduped by construction: the due pull
+  // skips anything already picked.
+  const todays = useMemo(() => {
+    const picked = taskNotes.filter((n) => n.metadata['when'] === 'today')
+    const dued = taskNotes.filter((n) => {
+      if (n.metadata['when'] === 'today' || n.metadata['done'] === true) return false
+      const due = taskDue(n)
+      if (!due) return false
+      const tone = dueTone(due)
+      return tone === 'today' || tone === 'overdue'
+    })
+    return [...picked, ...dued].sort(
+      (a, b) => Number(a.metadata['done'] === true) - Number(b.metadata['done'] === true),
+    )
+  }, [taskNotes])
   const openCount = todays.filter((n) => n.metadata['done'] !== true).length
 
-  // Picker candidates: not-done tasks not already on today, this-week first
-  // (ritual-blessed), then later, then the rest — stable within groups.
+  // Picker candidates: not-done tasks not already on the day's list (picked
+  // OR due-pulled), this-week first (ritual-blessed), then later, then the
+  // rest — stable within groups.
   const candidates = useMemo(() => {
+    const onToday = new Set(todays.map((n) => n.path))
     const q = pickerQuery.trim().toLowerCase()
     return taskNotes
-      .filter((n) => n.metadata['done'] !== true && n.metadata['when'] !== 'today')
+      .filter((n) => n.metadata['done'] !== true && !onToday.has(n.path))
       .filter((n) => !q || taskTitle(n).toLowerCase().includes(q))
       .sort((a, b) => whenRank(a) - whenRank(b))
       .slice(0, 8)
-  }, [taskNotes, pickerQuery])
+  }, [taskNotes, todays, pickerQuery])
 
   const closePicker = () => {
     setPickerOpen(false)
     setPickerQuery('')
+    setPickerDue('')
   }
 
   // The picker closes like a normal window: outside pointerdown or Escape
@@ -78,6 +99,7 @@ export function TodayStrip() {
       if (el && !el.contains(e.target as Node)) {
         setPickerOpen(false)
         setPickerQuery('')
+        setPickerDue('')
       }
     }
     const onKey = (e: KeyboardEvent) => {
@@ -85,6 +107,7 @@ export function TodayStrip() {
         e.stopPropagation()
         setPickerOpen(false)
         setPickerQuery('')
+        setPickerDue('')
       }
     }
     document.addEventListener('pointerdown', onDown, true)
@@ -97,12 +120,14 @@ export function TodayStrip() {
 
   // Write-OR-find: Enter (or the ➕ row) mints a brand-new project-less task
   // straight onto today. Zero-cost capture — file it to a world later, or not.
+  // The due entry is optional fine-grain: parseable → written, else omitted.
   const createAndAdd = async () => {
     const t = pickerQuery.trim()
     if (!t || busy) return
     setBusy(true)
     try {
-      await createTask(null, t, { when: 'today' })
+      const due = parseDue(pickerDue)
+      await createTask(null, t, { when: 'today', ...(due ? { due } : {}) })
       closePicker()
     } catch (e) {
       toast('error', `Couldn’t create task — ${e instanceof Error ? e.message : e}`)
@@ -138,6 +163,7 @@ export function TodayStrip() {
       )}
       {todays.map((n) => {
         const done = n.metadata['done'] === true
+        const due = taskDue(n)
         return (
           <div key={n.path} className={`today-item${done ? ' is-done' : ''}`}>
             <input
@@ -153,6 +179,12 @@ export function TodayStrip() {
             >
               {taskTitle(n)}
             </button>
+            {/* Due chip — quiet text, overdue in calm red. Never a banner. */}
+            {due && (
+              <span className={`today-due due-${dueTone(due)}`} title={due} data-testid="today-due">
+                {formatDue(due)}
+              </span>
+            )}
             {/* ✕ DEMOTES, never deletes: the task goes back to when:"later"
                 (the running list). The note itself is never touched. */}
             <button
@@ -186,16 +218,28 @@ export function TodayStrip() {
                 onChange={(e) => setPickerQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && void createAndAdd()}
               />
-              {/* Write first: any typed text is one Enter from being a task. */}
+              {/* Write first: any typed text is one Enter from being a task.
+                  The due line is the optional fine layer — parses on mint,
+                  invalid/empty just means no date. */}
               {pickerQuery.trim() && (
-                <button
-                  className="today-picker-item today-picker-create"
-                  data-testid="today-create"
-                  disabled={busy}
-                  onClick={() => void createAndAdd()}
-                >
-                  ➕ Add “{pickerQuery.trim()}”
-                </button>
+                <>
+                  <input
+                    className="today-picker-due"
+                    placeholder="due — friday, jul 22…"
+                    value={pickerDue}
+                    data-testid="today-due-input"
+                    onChange={(e) => setPickerDue(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && void createAndAdd()}
+                  />
+                  <button
+                    className="today-picker-item today-picker-create"
+                    data-testid="today-create"
+                    disabled={busy}
+                    onClick={() => void createAndAdd()}
+                  >
+                    ➕ Add “{pickerQuery.trim()}”
+                  </button>
+                </>
               )}
               {candidates.map((n) => (
                 <button

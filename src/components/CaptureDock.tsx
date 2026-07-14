@@ -17,6 +17,7 @@ import {
 } from '../lib/store'
 import { toProjects } from '../domain/projects'
 import { navigate } from '../lib/router'
+import { parseDue } from '../lib/dates'
 import { IconBolt } from './Icons'
 
 type Tab = 'capture' | 'todos' | 'pad'
@@ -53,6 +54,7 @@ export function CaptureDock() {
   const { projects, projectsStatus, notes } = useStore()
   const [assigning, setAssigning] = useState<string | null>(null)
   const [assignKey, setAssignKey] = useState('')
+  const [assignDue, setAssignDue] = useState('')
   const [filing, setFiling] = useState(false)
   useEffect(() => {
     if (assigning && projectsStatus === 'idle') void loadProjects()
@@ -69,9 +71,12 @@ export function CaptureDock() {
     if (!assignKey || filing) return
     setFiling(true)
     try {
-      await createTask(assignKey, todo.text)
+      // Due is the optional fine layer: parseable entry → written, else omitted.
+      const due = parseDue(assignDue)
+      await createTask(assignKey, todo.text, due ? { due } : {})
       setTodos((list) => list.filter((x) => x.id !== todo.id))
       setAssigning(null)
+      setAssignDue('')
       toast('success', `Filed to ${assignKey} — it's on the board now`)
     } catch (e) {
       toast('error', `Couldn’t file the task — ${e instanceof Error ? e.message : e}`)
@@ -243,7 +248,10 @@ export function CaptureDock() {
                         className="dock-todo-file"
                         title="File to a project — becomes a real task on its board"
                         data-testid="todo-to-project"
-                        onClick={() => setAssigning(assigning === t.id ? null : t.id)}
+                        onClick={() => {
+                          setAssigning(assigning === t.id ? null : t.id)
+                          setAssignDue('')
+                        }}
                       >
                         ➜
                       </button>
@@ -265,6 +273,13 @@ export function CaptureDock() {
                             </option>
                           ))}
                         </select>
+                        <input
+                          className="dock-input dock-due-input"
+                          placeholder="due — friday, jul 22…"
+                          value={assignDue}
+                          data-testid="todo-due-input"
+                          onChange={(e) => setAssignDue(e.target.value)}
+                        />
                         <button
                           className="dock-add-btn"
                           disabled={filing || !assignKey}

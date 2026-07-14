@@ -11,6 +11,7 @@ import {
 } from '../lib/store'
 import { navigate } from '../lib/router'
 import { openNewScript } from '../lib/ui'
+import { parseDue } from '../lib/dates'
 import { titleFromPath } from '../lib/format'
 import { toProjects } from '../domain/projects'
 import { Chip, chipFor } from '../components/Chip'
@@ -279,7 +280,7 @@ function FilterMenu({
       <Popover anchor={anchor} onClose={onClose} width={200}>
         <div className="menu-label">Filter by</div>
         {def.fields
-          .filter((f) => f.kind !== 'text')
+          .filter((f) => f.kind !== 'text' && f.kind !== 'date')
           .map((f) => (
           <button key={f.key} className="menu-item" onClick={() => setFieldKey(f.key)}>
             <span className="menu-item-text">{f.label}</span>
@@ -747,6 +748,7 @@ function TrackerNewTask() {
   const { projects, projectsStatus, notes } = useStore()
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
+  const [dueText, setDueText] = useState('')
   const [projectKey, setProjectKey] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -769,10 +771,13 @@ function TrackerNewTask() {
     if (!t || !projectKey || busy) return
     setBusy(true)
     try {
-      await createTask(projectKey, t)
+      // Due is ALWAYS optional: invalid/empty entry → the key is never written.
+      const due = parseDue(dueText)
+      await createTask(projectKey, t, due ? { due } : {})
       // Stay HERE — the row appears below and every field edits inline.
       // (Open it beside the tracker with the row's 📄 if you want the page.)
       setTitle('')
+      setDueText('')
       toast('success', 'Task added — fill the chips right in the row')
     } catch (e) {
       toast('error', `Couldn’t create task — ${e instanceof Error ? e.message : e}`)
@@ -815,6 +820,17 @@ function TrackerNewTask() {
         placeholder="Task title — Enter to create…"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') void submit()
+          if (e.key === 'Escape') setOpen(false)
+        }}
+      />
+      <input
+        className="db-search db-newtask-due"
+        placeholder="due — friday, jul 22…"
+        value={dueText}
+        data-testid="newtask-due"
+        onChange={(e) => setDueText(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') void submit()
           if (e.key === 'Escape') setOpen(false)

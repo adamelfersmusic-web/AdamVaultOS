@@ -84,7 +84,7 @@ export class VaultConflictError extends VaultError {
 
 export type LensKind = 'table' | 'board' | 'gallery'
 
-export type FieldKind = 'enum' | 'bool' | 'text'
+export type FieldKind = 'enum' | 'bool' | 'text' | 'date'
 
 export interface EnumOption {
   value: string

@@ -1,4 +1,5 @@
 import { relativeTime, fullTime } from '../lib/format'
+import { dueTone, formatDue } from '../lib/dates'
 import { isProtectedNote } from '../domain/scripts'
 import { ChipSelect } from '../components/EnumMenu'
 import { IconPage, IconShield } from '../components/Icons'
@@ -78,6 +79,22 @@ export function TableLens({
                   const f = def.fields.find((x) => x.key === key)
                   if (!f) return null
                   const value = row.note.metadata[f.key]
+                  // Date fields render as quiet toned text, not a chip menu:
+                  // overdue = calm red, today = the gem accent, else muted.
+                  if (f.kind === 'date') {
+                    const due = typeof value === 'string' && value ? value : null
+                    return (
+                      <td key={key} className="cell-due">
+                        {due ? (
+                          <span className={`due-cell due-${dueTone(due)}`} title={due}>
+                            {formatDue(due)}
+                          </span>
+                        ) : (
+                          <span className="due-cell due-unset">—</span>
+                        )}
+                      </td>
+                    )
+                  }
                   return (
                     <td key={key} className="cell-chip-td">
                       <ChipSelect
