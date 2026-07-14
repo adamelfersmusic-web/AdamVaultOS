@@ -51,6 +51,8 @@ import {
   type LooseTask,
 } from '../domain/looseTasks'
 import { toProjects, type Project } from '../domain/projects'
+import { ringOf, type CheckboxRing } from '../domain/checkboxRing'
+import { ProgressRing } from '../components/ProgressRing'
 import { MonthPicker } from '../components/MonthPicker'
 import { Popover } from '../components/Popover'
 import { IconCalendar, IconPlus } from '../components/Icons'
@@ -347,19 +349,34 @@ export function TasksView() {
     }
   }, [])
 
-  // Scan memoized on the corpus reference — with the store's fresher note
-  // bodies overlaid first, so a toggle (ours, or a Pages-editor save) shows
-  // up the moment it merges instead of waiting out the staleness window.
-  const loose = useMemo(() => {
-    if (!corpus) return []
-    const merged = corpus.map((n) => {
+  // The corpus with the store's fresher note bodies overlaid — so a toggle
+  // (ours, or a Pages-editor save) shows up the moment it merges instead of
+  // waiting out the staleness window.
+  const mergedCorpus = useMemo(() => {
+    if (!corpus) return null
+    return corpus.map((n) => {
       const live = notes[n.path]
       return live && live.content !== undefined && live.updatedAt > n.updatedAt
         ? live
         : n
     })
-    return scanLooseTasks(merged)
   }, [corpus, notes])
+
+  // Scan memoized on the merged corpus reference.
+  const loose = useMemo(
+    () => (mergedCorpus ? scanLooseTasks(mergedCorpus) : []),
+    [mergedCorpus],
+  )
+
+  // The note-group headers' progress rings — the WHOLE note's checkbox tally
+  // (done included; no think-space excludes), from the same merged corpus.
+  const ringFor = useMemo(() => {
+    const byPath = new Map<string, string>()
+    for (const n of mergedCorpus ?? []) {
+      if (typeof n.content === 'string') byPath.set(n.path, n.content)
+    }
+    return (path: string): CheckboxRing | null => ringOf(byPath.get(path) ?? '')
+  }, [mergedCorpus])
 
   // Optimistic checkbox state, keyed by line. An entry exists only while the
   // vault hasn't confirmed the flip; once the scan agrees, it's pruned.
@@ -749,6 +766,7 @@ export function TasksView() {
               loose={looseToday}
               LooseRow={LooseRow}
               onNote={openLooseNote}
+              ringFor={ringFor}
             />
           )}
           {chip === 'upcoming' && (
@@ -763,6 +781,7 @@ export function TasksView() {
               loose={looseOpen}
               LooseRow={LooseRow}
               onNote={openLooseNote}
+              ringFor={ringFor}
             />
           )}
         </div>
@@ -822,19 +841,24 @@ type GroupRowsRenderer = (props: {
 // ————————————————————————— loose note groups —————————————————————————
 
 /** Bold note-title headers (doors into the note) over loose rows — shared by
- * Today's tail and All's "In your notes" section. */
+ * Today's tail and All's "In your notes" section. Each header carries the
+ * note's mini progress ring (its WHOLE checkbox tally, done included). */
 function LooseNoteGroups({
   groups,
   LooseRow,
   onNote,
+  ringFor,
 }: {
   groups: LooseNoteGroup[]
   LooseRow: LooseRowRenderer
   onNote: (path: string) => void
+  ringFor: (path: string) => CheckboxRing | null
 }) {
   return (
     <>
-      {groups.map((g) => (
+      {groups.map((g) => {
+        const ring = ringFor(g.path)
+        return (
         <section
           key={g.path}
           className="tasks-group"
@@ -849,12 +873,14 @@ function LooseNoteGroups({
           >
             {g.title}
             <span className="tasks-group-count">{g.items.length}</span>
+            {ring && <ProgressRing ring={ring} size={14} />}
           </button>
           {g.items.map((t) => (
             <LooseRow key={`${t.notePath}#${t.lineIndex}`} t={t} />
           ))}
         </section>
-      ))}
+        )
+      })}
     </>
   )
 }
@@ -888,6 +914,7 @@ function TodayList({
   loose,
   LooseRow,
   onNote,
+  ringFor,
 }: {
   tasks: Note[]
   leaving: Record<string, boolean>
@@ -898,6 +925,7 @@ function TodayList({
   loose: LooseTask[]
   LooseRow: LooseRowRenderer
   onNote: (path: string) => void
+  ringFor: (path: string) => CheckboxRing | null
 }) {
   // The shared merged-today rule (identical to the Cockpit's TodayStrip),
   // then open-only — done rows leave the day (mid-exit rows linger).
@@ -948,7 +976,12 @@ function TodayList({
       ))}
       {/* Loose lines whose date has arrived — grouped under their notes,
           AFTER the Inbox + world groups (rows outrank lines on the day). */}
-      <LooseNoteGroups groups={looseGroups} LooseRow={LooseRow} onNote={onNote} />
+      <LooseNoteGroups
+        groups={looseGroups}
+        LooseRow={LooseRow}
+        onNote={onNote}
+        ringFor={ringFor}
+      />
     </>
   )
 }
@@ -1082,6 +1115,7 @@ function AllList({
   loose,
   LooseRow,
   onNote,
+  ringFor,
 }: {
   tasks: Note[]
   worlds: Project[]
@@ -1091,6 +1125,7 @@ function AllList({
   loose: LooseTask[]
   LooseRow: LooseRowRenderer
   onNote: (path: string) => void
+  ringFor: (path: string) => CheckboxRing | null
 }) {
   // Done tasks are deliberately absent here — the Tracker is the archive and
   // ops table; this list is only ever "what's still open, by world".
@@ -1189,7 +1224,12 @@ function AllList({
           <div className="tasks-loose-head" data-testid="tasks-loose-head">
             In your notes
           </div>
-          <LooseNoteGroups groups={looseGroups} LooseRow={LooseRow} onNote={onNote} />
+          <LooseNoteGroups
+            groups={looseGroups}
+            LooseRow={LooseRow}
+            onNote={onNote}
+            ringFor={ringFor}
+          />
         </section>
       )}
     </>

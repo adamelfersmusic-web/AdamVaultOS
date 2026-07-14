@@ -1108,6 +1108,37 @@
   color: var(--ink-4);
 }
 
+/* The mini checkbox progress ring (Craft's doc-title ring) — Pages topbar +
+   the Tasks tab's note-group headers. Accent arc over a hairline track; a
+   finished ring goes quiet green, never a celebration. */
+.checkbox-ring {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.checkbox-ring svg {
+  display: block;
+}
+.checkbox-ring-track {
+  stroke: var(--line-2);
+}
+.checkbox-ring-arc {
+  stroke: var(--gold);
+  transition: stroke-dasharray 0.25s ease, stroke 0.25s ease;
+}
+.checkbox-ring.is-full .checkbox-ring-arc {
+  stroke: var(--green);
+}
+.checkbox-ring.is-full .checkbox-ring-count {
+  color: var(--green);
+}
+
 /* The Atelier gem breathing — shared AI waiting state. */
 .gem-breathe {
   color: var(--accent);

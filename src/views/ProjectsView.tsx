@@ -24,12 +24,15 @@ import {
 } from '../lib/store'
 import { navigate } from '../lib/router'
 import { toProjects, type Project } from '../domain/projects'
+import { taskProject, taskTitle } from '../domain/tasks'
 import {
   latestCardNote,
   oneThingOf,
   parseWeeklyCard,
   phaseLabelOf,
+  truncate,
   weekTop3Of,
+  type WeeklyCard,
 } from '../domain/spine'
 import { IconPage, IconPlus, IconRefresh } from '../components/Icons'
 import { TodayStrip } from '../components/TodayStrip'
@@ -37,27 +40,73 @@ import { TodayStrip } from '../components/TodayStrip'
 /** The strip is capped — six big things, no more. Calm by law. */
 const MAX_PROJECTS = 6
 
-function MacroRow({ project, weeklies }: { project: Project; weeklies: Note[] }) {
+/** Active rows lead — the same rank the world's Landing uses. */
+const stateRank = (n: Note): number => {
+  const s = String(n.metadata['state'] ?? '')
+  return s === 'active' ? 0 : s === 'next' ? 1 : s === 'blocked' ? 2 : 3
+}
+
+/** The card's ONE muted preview line (the Craft Home carousel, restrained):
+ * the world's current week-card Priority → the next open task (active
+ * first) → nothing at all. Never a placeholder. */
+function previewOf(card: WeeklyCard | null, key: string, tasks: Note[]): string | null {
+  const priority = card?.priority?.trim()
+  if (priority) return priority
+  let best: Note | null = null
+  for (const n of tasks) {
+    if (taskProject(n) !== key || n.metadata['done'] === true) continue
+    if (
+      !best ||
+      stateRank(n) < stateRank(best) ||
+      (stateRank(n) === stateRank(best) && n.createdAt < best.createdAt)
+    ) {
+      best = n
+    }
+  }
+  return best ? taskTitle(best) : null
+}
+
+function MacroRow({
+  project,
+  weeklies,
+  tasks,
+}: {
+  project: Project
+  weeklies: Note[]
+  tasks: Note[]
+}) {
   const cardNote = latestCardNote(weeklies, project.key)
   const card = cardNote ? parseWeeklyCard(cardNote) : null
   const one = oneThingOf(card, project)
   const phase = phaseLabelOf(project)
+  // The preview line — skipped when it would just repeat the one-thing
+  // (a card with no unresolved Top 3 falls back to the same Priority line):
+  // MORE readable, never twice as busy.
+  const raw = previewOf(card, project.key, tasks)
+  const preview = raw && one && truncate(raw, 60) === one ? null : raw
   return (
     <button
       className="macro-row"
       onClick={() => navigate({ kind: 'project', path: project.path })}
       data-testid="macro-row"
     >
-      <span className="macro-name">{project.title}</span>
-      <span className="macro-top" data-testid="macro-top">
-        {one && (
-          <>
-            <span className="macro-top-mark">▸</span>
-            {one}
-          </>
-        )}
+      <span className="macro-row-line">
+        <span className="macro-name">{project.title}</span>
+        <span className="macro-top" data-testid="macro-top">
+          {one && (
+            <>
+              <span className="macro-top-mark">▸</span>
+              {one}
+            </>
+          )}
+        </span>
+        {phase && <span className="macro-phase">{phase}</span>}
       </span>
-      {phase && <span className="macro-phase">{phase}</span>}
+      {preview && (
+        <span className="macro-preview" data-testid="macro-preview">
+          {preview}
+        </span>
+      )}
     </button>
   )
 }
@@ -119,7 +168,8 @@ function RitualChip({ weekly }: { weekly: Note | null | undefined }) {
 }
 
 export function ProjectsView() {
-  const { projects, projectsStatus, projectsError, notes } = useStore()
+  const { projects, projectsStatus, projectsError, notes, tracker, trackerStatus } =
+    useStore()
   const [newOpen, setNewOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [busy, setBusy] = useState(false)
@@ -151,6 +201,17 @@ export function ProjectsView() {
       alive = false
     }
   }, [])
+
+  // The preview lines' task fallback reads the tracker already in the store;
+  // an idle tracker gets the same lazy nudge the Tasks tab gives it.
+  useEffect(() => {
+    if (trackerStatus === 'idle') void loadTracker()
+  }, [trackerStatus])
+
+  const taskNotes = useMemo(
+    () => (tracker ?? []).map((p) => notes[p]).filter((n): n is Note => Boolean(n)),
+    [tracker, notes],
+  )
 
   const worlds = useMemo(
     () =>
@@ -298,7 +359,7 @@ export function ProjectsView() {
       ) : (
         <div className="macro-strip" data-testid="macro-strip">
           {alive.map((p) => (
-            <MacroRow key={p.path} project={p} weeklies={weeklies ?? []} />
+            <MacroRow key={p.path} project={p} weeklies={weeklies ?? []} tasks={taskNotes} />
           ))}
           {paused.length > 0 && (
             <div className="macro-paused">
@@ -313,7 +374,12 @@ export function ProjectsView() {
               </button>
               {pausedOpen &&
                 paused.map((p) => (
-                  <MacroRow key={p.path} project={p} weeklies={weeklies ?? []} />
+                  <MacroRow
+                    key={p.path}
+                    project={p}
+                    weeklies={weeklies ?? []}
+                    tasks={taskNotes}
+                  />
                 ))}
             </div>
           )}
