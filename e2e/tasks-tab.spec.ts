@@ -1,5 +1,5 @@
 // THE TASKS TAB — the Craft-style daily driver (#/tasks): chip lenses
-// (Inbox · Today · Upcoming · All), world grouping, the agenda, the
+// (Inbox · Today · Week · All), world grouping, the agenda, the
 // quick-create bar with its MonthPicker, and the source-chip doors. Also
 // pins Adam's law (2026-07-14): unfiled (inbox) tasks NEVER reach the
 // Tracker — filing to a world is the promotion gesture.
@@ -164,7 +164,7 @@ test('Today — unfiled under the Inbox header first, amanda task under its worl
   await expect(page).toHaveURL(/#\/project\/projects%2Famanda/)
 })
 
-test('Upcoming — calm-red Overdue, Tomorrow section, and an empty near day still renders', async ({ page }) => {
+test('Week runway — calm-red Overdue, Tomorrow section, and an empty near day still renders', async ({ page }) => {
   await seedAmandaProject(page)
   await seed(page, 'tasks/amanda/final-cut', 'Deliver the final cut', ['task'], {
     project: 'amanda', state: 'active', when: 'later', done: false, due: ymd(daysFromNow(-2)),
@@ -178,7 +178,7 @@ test('Upcoming — calm-red Overdue, Tomorrow section, and an empty near day sti
   await connectViaStorage(page)
 
   await page.goto('http://127.0.0.1:4173/#/tasks')
-  await chips(page).getByRole('tab', { name: 'Upcoming' }).click()
+  await chips(page).getByRole('tab', { name: 'Week' }).click()
 
   // Overdue leads, in the calm-red tone — a section, never a banner.
   const overdue = page.locator('[data-day="overdue"]')
@@ -197,10 +197,10 @@ test('Upcoming — calm-red Overdue, Tomorrow section, and an empty near day sti
   await expect(quiet.getByTestId('tasks-day-head')).toHaveText(longLabel(daysFromNow(4)))
   await expect(quiet.locator('.tasks-day-empty')).toHaveText('—')
 
-  // The coarse layer's tail: this-week tasks without a date close the agenda.
-  const undated = page.locator('[data-day="this-week"]')
-  await expect(undated.getByTestId('tasks-day-head')).toHaveText('This week — no date')
-  await expect(undated).toContainText('Sort the samples')
+  // The old 'This week — no date' trailing section is GONE — the undated
+  // this-week task now lives in the This week ZONE at the top instead.
+  await expect(page.locator('[data-day="this-week"]')).toHaveCount(0)
+  await expect(page.locator('[data-zone="this-week"]')).toContainText('Sort the samples')
 })
 
 test('quick-create — default chip says Tomorrow; Create mints tasks/inbox/<slug>, due tomorrow, NO project key', async ({ page }) => {

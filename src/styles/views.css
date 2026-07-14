@@ -4493,8 +4493,49 @@ button.task-row-due:hover {
     opacity: 0.35;
   }
 }
+/* The mirror of the bow: a row pulled onto today via the find bar arrives
+   with a soft rise — never a teleport. */
+@keyframes task-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.task-row.is-arriving {
+  animation: task-arrive 0.42s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .task-row.is-arriving {
+    animation: none;
+  }
+}
 
-/* ——— Upcoming: agenda day sections ——— */
+/* ——— WEEK: two zones — This week (the ritual's commitments) over The
+   runway (the dated agenda). Zone headers sit in the same quiet register
+   as the loose-section head; every color routes through vars (both themes). ——— */
+
+.tasks-zone {
+  margin-bottom: 34px;
+}
+.tasks-zone-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 660;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-3);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+
+/* ——— Week runway: agenda day sections ——— */
 
 .tasks-day {
   margin-bottom: 18px;
@@ -4511,9 +4552,6 @@ button.task-row-due:hover {
 }
 .tasks-day-head.is-overdue {
   color: var(--red);
-}
-.tasks-day-head.is-undated {
-  color: var(--ink-4);
 }
 /* An empty day is signal — a quiet dash, never a hidden header. */
 .tasks-day-empty {
@@ -4665,6 +4703,55 @@ button.task-row-due:hover {
 }
 .tasks-qc-due.is-unset {
   color: var(--ink-4);
+}
+
+/* ——— FIND-INTO-TODAY: the Today chip's write-OR-find dropdown, floating
+   above the docked bar. Same pop vocabulary as the MonthPicker; every
+   color routes through the vars (both themes). ——— */
+.tasks-qc-find {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
+  z-index: 6;
+}
+.tasks-qc-find-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 7px 9px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  color: var(--ink);
+  text-align: left;
+}
+.tasks-qc-find-item:hover,
+.tasks-qc-find-item:focus-visible {
+  background: var(--surface-2);
+}
+.tasks-qc-find-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tasks-qc-find-due {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* ——— THE CALENDAR LENS — the fifth chip's full-surface month grid.

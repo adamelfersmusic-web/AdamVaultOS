@@ -4,8 +4,10 @@
 //   Inbox    — unfiled brain-pops (no metadata.project), due-dated first
 //   Today    — the ONE shared merged-today rule (domain/tasks.ts): picked
 //              when:"today" + anything due today/overdue, grouped by world
-//   Upcoming — an agenda by day; the next 7 days render EVEN WHEN EMPTY
-//              (an empty day is signal, not noise)
+//   Week     — Adam's week-centric lens, two zones: THIS WEEK (every open
+//              when:"this-week" row, grouped by world, reorderable) over
+//              THE RUNWAY (the dated agenda; the next 7 days render EVEN
+//              WHEN EMPTY — an empty day is signal, not noise)
 //   All      — Inbox first, then a collapsible group per world
 //
 // Every list shows only open work. Done tasks are NOT shown anywhere here —
@@ -16,7 +18,7 @@
 //
 // CRAFT PHASE B — LIVE CHECKBOXES: loose `- [ ]` lines inside ordinary notes
 // join these lists too ("In your notes" on All; due-dated ones on Today and
-// Upcoming), toggle IN PLACE via surgicalLineEdit, and can be PROMOTED into
+// the Week runway), toggle IN PLACE via surgicalLineEdit, and can be PROMOTED into
 // real tasks/* rows (the ↗ affordance). No dual bookkeeping — see
 // domain/looseTasks.ts for the law.
 
@@ -30,6 +32,7 @@ import {
   promoteLooseTask,
   setLooseTaskDue,
   setMetadata,
+  setTaskToday,
   toast,
   toggleLooseTask,
   useStore,
@@ -38,6 +41,7 @@ import { cachedCorpus, corpusFresh, refreshCorpus } from '../lib/corpus'
 import { navigate } from '../lib/router'
 import { dueTone, formatDue, ymd } from '../lib/dates'
 import {
+  findTodayCandidates,
   mergedTodayTasks,
   orderFirst,
   taskDue,
@@ -73,7 +77,10 @@ type ChipKind = 'inbox' | 'today' | 'upcoming' | 'all' | 'calendar'
 const CHIPS: { key: ChipKind; label: string }[] = [
   { key: 'inbox', label: 'Inbox' },
   { key: 'today', label: 'Today' },
-  { key: 'upcoming', label: 'Upcoming' },
+  // UPCOMING → WEEK (Adam's ratified redesign: "upcoming/this week becomes a
+  // place i go to"). The KEY deliberately stays 'upcoming' so saved chip
+  // choices in localStorage keep working — a rename, not a migration.
+  { key: 'upcoming', label: 'Week' },
   { key: 'all', label: 'All' },
   // THE CALENDAR LENS — time as a lens over the same one pool (TaskCalendar).
   { key: 'calendar', label: 'Calendar' },
@@ -146,7 +153,7 @@ function slotFor(e: React.DragEvent, index: number): number {
 }
 
 /** Handlers a draggable row wires up (undefined = not draggable, e.g. the
- * Upcoming agenda and every loose line — their home orders them). */
+ * Week runway agenda and every loose line — their home orders them). */
 interface RowDrag {
   group: string
   onOver: (e: React.DragEvent) => void
@@ -179,7 +186,7 @@ interface WorldGroup {
 
 /** Craft's group anatomy: 'Inbox' (unfiled) first, then one group per world —
  * known worlds in Cockpit order, unknown keys alphabetically after. Empty
- * groups are dropped (emptiness is only signal on the Upcoming agenda). */
+ * groups are dropped (emptiness is only signal on the runway agenda). */
 function groupByWorld(list: Note[], worlds: Project[]): WorldGroup[] {
   const buckets = new Map<string | null, Note[]>()
   for (const n of list) {
@@ -225,6 +232,9 @@ export function TasksView() {
   // graceful exit, not a teleport. The vault write fires immediately.
   const [leaving, setLeaving] = useState<Record<string, boolean>>({})
   const leaveTimers = useRef<number[]>([])
+  // The mirror gesture: a row pulled onto today via the find bar ARRIVES —
+  // a brief is-arriving entrance so it animates into the Today list.
+  const [arriving, setArriving] = useState<string | null>(null)
 
   // ——— row-level date affordance: ONE MonthPicker, anchored per row.
   // `write(null)` = Clear date → the key/token is REMOVED, never nulled. ———
@@ -337,6 +347,17 @@ export function TasksView() {
         })
       },
     })
+  }
+
+  /** FIND-INTO-TODAY (the Today chip's find bar): pull an existing task onto
+   * the day — metadata when:"today" via the house setTaskToday path, due
+   * untouched. The row then takes its entrance bow in the Today list. */
+  const pullOntoToday = (path: string) => {
+    void setTaskToday(path, true)
+    setArriving(path)
+    leaveTimers.current.push(
+      window.setTimeout(() => setArriving((a) => (a === path ? null : a)), 700),
+    )
   }
 
   /** THE PHYSICAL PROMOTION GESTURE — dropping a row into another world group
@@ -502,7 +523,7 @@ export function TasksView() {
   }: {
     n: Note
     showDue?: boolean
-    /** Present = draggable (reorder / re-file); absent on the Upcoming agenda. */
+    /** Present = draggable (reorder / re-file); absent on the runway agenda. */
     drag?: RowDrag
   }) => {
     const done = n.metadata['done'] === true
@@ -511,7 +532,7 @@ export function TasksView() {
     const world = key ? worldByKey.get(key) : undefined
     return (
       <div
-        className={`task-row${done ? ' is-done' : ''}${done && leaving[n.path] ? ' is-leaving' : ''}${drag ? ' is-draggable' : ''}`}
+        className={`task-row${done ? ' is-done' : ''}${done && leaving[n.path] ? ' is-leaving' : ''}${arriving === n.path ? ' is-arriving' : ''}${drag ? ' is-draggable' : ''}`}
         data-testid="task-row"
         data-path={n.path}
         draggable={Boolean(drag)}
@@ -876,7 +897,15 @@ export function TasksView() {
             />
           )}
           {chip === 'upcoming' && (
-            <UpcomingList tasks={openTasks} Row={Row} loose={looseOpen} LooseRow={LooseRow} />
+            <WeekList
+              tasks={openTasks}
+              worlds={worlds}
+              Rows={DraggableRows}
+              onHeader={openWorld}
+              Row={Row}
+              loose={looseOpen}
+              LooseRow={LooseRow}
+            />
           )}
           {chip === 'all' && (
             <AllList
@@ -943,8 +972,17 @@ export function TasksView() {
       )}
 
       {/* While the Calendar chip has a day selected, quick-create mints onto
-          THAT day (null everywhere else keeps the Tomorrow default). */}
-      <QuickCreate worlds={worlds} calendarDay={chip === 'calendar' ? calDay : null} />
+          THAT day (null everywhere else keeps the Tomorrow default).
+          FIND-INTO-TODAY: the bar is write-OR-find ON THE TODAY CHIP ONLY —
+          Today is the one chip where "pull an existing task onto the day" is
+          the natural gesture; everywhere else typing means minting, so the
+          bar stays pure-create (findPool null). */}
+      <QuickCreate
+        worlds={worlds}
+        calendarDay={chip === 'calendar' ? calDay : null}
+        findPool={chip === 'today' ? taskNotes : null}
+        onPickExisting={pullOntoToday}
+      />
     </div>
   )
 }
@@ -964,6 +1002,50 @@ type GroupRowsRenderer = (props: {
   rows: Note[]
   refile: boolean
 }) => ReactElement
+
+/** One world-group section per bucket — Inbox's header is a label, a world's
+ * is a door — with drag-enabled rows (reorder within, re-file across).
+ * Shared by the Today chip and the Week chip's THIS WEEK zone. */
+function WorldGroupSections({
+  groups,
+  Rows,
+  onHeader,
+}: {
+  groups: WorldGroup[]
+  Rows: GroupRowsRenderer
+  onHeader: (g: WorldGroup) => void
+}) {
+  return (
+    <>
+      {groups.map((g) => (
+        <section
+          key={g.key ?? 'inbox'}
+          className="tasks-group"
+          data-testid="tasks-group"
+          data-group={g.key ?? 'inbox'}
+        >
+          {g.path ? (
+            <button
+              className="tasks-group-head is-link"
+              data-testid="tasks-group-head"
+              onClick={() => onHeader(g)}
+              title={`Open the ${g.title} world`}
+            >
+              {g.title}
+              <span className="tasks-group-count">{g.tasks.length}</span>
+            </button>
+          ) : (
+            <div className="tasks-group-head" data-testid="tasks-group-head">
+              {g.title}
+              <span className="tasks-group-count">{g.tasks.length}</span>
+            </div>
+          )}
+          <Rows group={g.key ?? 'inbox'} rows={g.tasks} refile />
+        </section>
+      ))}
+    </>
+  )
+}
 
 // ————————————————————————— loose note groups —————————————————————————
 
@@ -1108,32 +1190,7 @@ function TodayList({
   }
   return (
     <>
-      {groups.map((g) => (
-        <section
-          key={g.key ?? 'inbox'}
-          className="tasks-group"
-          data-testid="tasks-group"
-          data-group={g.key ?? 'inbox'}
-        >
-          {g.path ? (
-            <button
-              className="tasks-group-head is-link"
-              data-testid="tasks-group-head"
-              onClick={() => onHeader(g)}
-              title={`Open the ${g.title} world`}
-            >
-              {g.title}
-              <span className="tasks-group-count">{g.tasks.length}</span>
-            </button>
-          ) : (
-            <div className="tasks-group-head" data-testid="tasks-group-head">
-              {g.title}
-              <span className="tasks-group-count">{g.tasks.length}</span>
-            </div>
-          )}
-          <Rows group={g.key ?? 'inbox'} rows={g.tasks} refile />
-        </section>
-      ))}
+      <WorldGroupSections groups={groups} Rows={Rows} onHeader={onHeader} />
       {/* Loose lines whose date has arrived — grouped under their notes,
           AFTER the Inbox + world groups (rows outrank lines on the day). */}
       <LooseNoteGroups
@@ -1147,9 +1204,81 @@ function TodayList({
   )
 }
 
-// ————————————————————————— Upcoming —————————————————————————
+// ————————————————————————— Week —————————————————————————
+// UPCOMING → WEEK. Adam's system is week-centric — a Monday ritual blesses
+// tasks with when:"this-week" — so the chip renders TWO zones over the one
+// task pool:
+//
+//   A · THIS WEEK — every open row carrying when:"this-week", dated or not,
+//       grouped per world (Inbox-first should an unfiled row carry the
+//       blessing), reorderable within groups and drag-to-file across them.
+//   B · THE RUNWAY — the dated agenda exactly as Upcoming always drew it.
+//
+// A DATED this-week task appears in BOTH zones — deliberate, not a bug: the
+// runway is a radar (where time is fixed), the This week zone is the
+// commitment (what the week holds); one task can be both committed and
+// time-fixed. The old "This week — no date" trailing section is gone —
+// zone A's population is exactly its superset.
 
-function UpcomingList({
+function WeekList({
+  tasks,
+  worlds,
+  Rows,
+  onHeader,
+  Row,
+  loose,
+  LooseRow,
+}: {
+  tasks: Note[]
+  worlds: Project[]
+  Rows: GroupRowsRenderer
+  onHeader: (g: WorldGroup) => void
+  Row: RowRenderer
+  loose: LooseTask[]
+  LooseRow: LooseRowRenderer
+}) {
+  // Zone A population: when:"this-week" rows only. Loose 📅 lines NEVER
+  // join this zone — they carry no when metadata (note-space is not
+  // ritual-space); their only Week home is the runway's day buckets.
+  const week = useMemo(
+    () => tasks.filter((n) => n.metadata['when'] === 'this-week'),
+    [tasks],
+  )
+  // Grouped like Today: Inbox first if any unfiled row carries the blessing
+  // (shouldn't normally happen — handled gracefully, not specially), then
+  // worlds in Cockpit order; hand-placed order leads within each group.
+  const groups = useMemo(
+    () => groupByWorld(week, worlds).map((g) => ({ ...g, tasks: orderFirst(g.tasks) })),
+    [week, worlds],
+  )
+  return (
+    <>
+      <section className="tasks-zone" data-testid="tasks-zone" data-zone="this-week">
+        <div className="tasks-zone-head" data-testid="tasks-zone-head">
+          This week
+          <span className="tasks-group-count">{week.length}</span>
+        </div>
+        {groups.length === 0 ? (
+          <p className="tasks-empty">
+            Nothing blessed for the week yet — Monday’s ritual fills this.
+          </p>
+        ) : (
+          <WorldGroupSections groups={groups} Rows={Rows} onHeader={onHeader} />
+        )}
+      </section>
+      <section className="tasks-zone" data-testid="tasks-zone" data-zone="runway">
+        <div className="tasks-zone-head" data-testid="tasks-zone-head">
+          The runway
+        </div>
+        <RunwayAgenda tasks={tasks} Row={Row} loose={loose} LooseRow={LooseRow} />
+      </section>
+    </>
+  )
+}
+
+/** THE RUNWAY — the dated agenda (the pre-Week Upcoming lens, verbatim):
+ * Overdue lead, then today + 7 days even when empty, then dated far days. */
+function RunwayAgenda({
   tasks,
   Row,
   loose,
@@ -1170,7 +1299,7 @@ function UpcomingList({
   const todayK = dayKey(0)
   const horizonK = dayKey(7)
 
-  const { overdue, byDue, beyond, thisWeek, looseByDue } = useMemo(() => {
+  const { overdue, byDue, beyond, looseByDue } = useMemo(() => {
     const dued = tasks.filter((n) => taskDue(n))
     const byDue = new Map<string, Note[]>()
     for (const n of dued) {
@@ -1193,11 +1322,9 @@ function UpcomingList({
     const beyond = [...new Set([...byDue.keys(), ...looseByDue.keys()])]
       .filter((d) => d > horizonK)
       .sort()
-    // The coarse layer's tail: blessed for the week but not yet dated.
-    const thisWeek = tasks
-      .filter((n) => !taskDue(n) && n.metadata['when'] === 'this-week')
-      .sort(byCreated)
-    return { overdue, byDue, beyond, thisWeek, looseByDue }
+    // NOTE: the old "This week — no date" trailing section is gone — the
+    // THIS WEEK zone above the runway now holds every when:"this-week" row.
+    return { overdue, byDue, beyond, looseByDue }
   }, [tasks, loose, todayK, horizonK])
 
   return (
@@ -1253,16 +1380,6 @@ function UpcomingList({
           ))}
         </section>
       ))}
-      {thisWeek.length > 0 && (
-        <section className="tasks-day" data-testid="tasks-day" data-day="this-week">
-          <div className="tasks-day-head is-undated" data-testid="tasks-day-head">
-            This week — no date
-          </div>
-          {thisWeek.map((n) => (
-            <Row key={n.path} n={n} />
-          ))}
-        </section>
-      )}
     </>
   )
 }
@@ -1412,13 +1529,26 @@ function AllList({
 function QuickCreate({
   worlds,
   calendarDay,
+  findPool,
+  onPickExisting,
 }: {
   worlds: Project[]
   /** The Calendar lens's selected day — the date chip defaults to it. */
   calendarDay: string | null
+  /** WRITE-OR-FIND (Today chip only): the task pool the find dropdown
+   * searches. null everywhere else — on the other chips the bar stays
+   * pure-create, because Today is the only chip where "pull an existing
+   * task onto the day" is the natural gesture; elsewhere typing means
+   * minting a new thought, and a dropdown would just be in the way. */
+  findPool: Note[] | null
+  /** Fires when a find result is tapped — the caller writes when:"today". */
+  onPickExisting: (path: string) => void
 }) {
   const [dest, setDest] = useState('') // '' = Inbox (unfiled)
   const [text, setText] = useState('')
+  // Escape parks the dropdown without touching the typed text; any further
+  // keystroke un-parks it (dismissal is about THIS moment, not this query).
+  const [findDismissed, setFindDismissed] = useState(false)
   // The date chip defaults to Tomorrow — the calm default for a new thought.
   const tomorrow = () => {
     const now = new Date()
@@ -1431,6 +1561,24 @@ function QuickCreate({
   const [pickerOpen, setPickerOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const chipRef = useRef<HTMLButtonElement>(null)
+
+  // The find dropdown's candidates — the ONE shared ranking (domain/tasks:
+  // findTodayCandidates, the TodayStrip picker's rule, never forked):
+  // not-done, not already on today's merged list, title-substring matched,
+  // this-week ranked first, capped at 6. It wakes at ≥2 typed characters —
+  // one letter matches half the vault and would flicker under every thought.
+  const query = text.trim()
+  const matches = useMemo(
+    () => (findPool && query.length >= 2 ? findTodayCandidates(findPool, query, 6) : []),
+    [findPool, query],
+  )
+  const findOpen = !findDismissed && matches.length > 0
+
+  const pickExisting = (n: Note) => {
+    onPickExisting(n.path)
+    setText('') // the pull is done — the bar resets for the next thought
+    setFindDismissed(false)
+  }
 
   const create = async () => {
     const t = text.trim()
@@ -1451,6 +1599,50 @@ function QuickCreate({
 
   return (
     <div className="tasks-qc" data-testid="qc-bar">
+      {/* The find dropdown floats ABOVE the docked bar — compact rows of
+          title · due · world chip; a tap pulls the task onto today. */}
+      {findOpen && (
+        <div
+          className="tasks-qc-find"
+          data-testid="qc-find"
+          role="listbox"
+          aria-label="Pull an existing task onto today"
+        >
+          {matches.map((n) => {
+            const due = taskDue(n)
+            const key = taskProject(n)
+            const world = key ? worlds.find((w) => w.key === key) : undefined
+            return (
+              <button
+                key={n.path}
+                className="tasks-qc-find-item"
+                data-testid="qc-find-item"
+                data-path={n.path}
+                role="option"
+                aria-selected={false}
+                onClick={() => pickExisting(n)}
+              >
+                <span className="tasks-qc-find-title">{taskTitle(n)}</span>
+                {due && (
+                  <span
+                    className={`tasks-qc-find-due due-${dueTone(due)}`}
+                    title={due}
+                  >
+                    {formatDue(due)}
+                  </span>
+                )}
+                {key ? (
+                  <span className="task-src">
+                    {world?.title ?? key.charAt(0).toUpperCase() + key.slice(1)}
+                  </span>
+                ) : (
+                  <span className="task-src is-inbox">Inbox</span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
       <select
         className="tasks-qc-dest"
         data-testid="qc-dest"
@@ -1472,10 +1664,22 @@ function QuickCreate({
       <input
         className="tasks-qc-input"
         data-testid="qc-input"
-        placeholder="New task…"
+        placeholder={findPool ? 'New task — or type to find one…' : 'New task…'}
         value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && void create()}
+        onChange={(e) => {
+          setText(e.target.value)
+          setFindDismissed(false)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && findOpen) {
+            // Escape closes the dropdown but keeps the typed text — the
+            // thought isn't discarded just because the finder was noisy.
+            e.stopPropagation()
+            setFindDismissed(true)
+            return
+          }
+          if (e.key === 'Enter') void create()
+        }}
       />
       <button
         ref={chipRef}

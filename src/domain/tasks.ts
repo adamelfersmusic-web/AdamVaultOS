@@ -82,3 +82,34 @@ export function mergedTodayTasks(taskNotes: Note[]): Note[] {
     (a, b) => Number(a.metadata['done'] === true) - Number(b.metadata['done'] === true),
   )
 }
+
+// ——— the pull-onto-today pick-list — ONE ranking, never forked ———
+
+/** Pick-list ranking: this-week tasks first (the Monday ritual blessed
+ * them), then the later/running list, then everything else (when unset or
+ * anything stranger). Stable within each group (Array.sort is stable). */
+const WHEN_RANK: Record<string, number> = { 'this-week': 0, later: 1 }
+export function whenRank(n: Note): number {
+  return WHEN_RANK[String(n.metadata['when'] ?? '')] ?? 2
+}
+
+/**
+ * The write-OR-find candidate list, shared by the Cockpit TodayStrip's
+ * picker and the Tasks tab's Today-chip find bar: not-done tasks NOT
+ * already on the day's merged list (picked OR due-pulled), title-substring
+ * filtered (empty query = everything), this-week ranked first via
+ * whenRank, capped at `limit`.
+ */
+export function findTodayCandidates(
+  taskNotes: Note[],
+  query: string,
+  limit: number,
+): Note[] {
+  const onToday = new Set(mergedTodayTasks(taskNotes).map((n) => n.path))
+  const q = query.trim().toLowerCase()
+  return taskNotes
+    .filter((n) => n.metadata['done'] !== true && !onToday.has(n.path))
+    .filter((n) => !q || taskTitle(n).toLowerCase().includes(q))
+    .sort((a, b) => whenRank(a) - whenRank(b))
+    .slice(0, limit)
+}

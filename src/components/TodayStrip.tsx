@@ -15,15 +15,10 @@ import type { Note } from '../lib/types'
 import { createTask, setMetadata, setTaskToday, toast, useStore } from '../lib/store'
 import { navigate } from '../lib/router'
 import { dueTone, formatDue, parseDue } from '../lib/dates'
-import { mergedTodayTasks, taskDue, taskTitle } from '../domain/tasks'
+import { findTodayCandidates, mergedTodayTasks, taskDue, taskTitle } from '../domain/tasks'
 import { IconPlus } from './Icons'
 
 const TODAY_CAP = 5
-
-// Pick-list ranking: this-week tasks first (the ritual blessed them), then
-// the later/running list, then everything else. Stable within each group.
-const WHEN_RANK: Record<string, number> = { 'this-week': 0, later: 1 }
-const whenRank = (n: Note) => WHEN_RANK[String(n.metadata['when'] ?? '')] ?? 2
 
 export function TodayStrip() {
   const { tracker, notes } = useStore()
@@ -42,18 +37,13 @@ export function TodayStrip() {
   const todays = useMemo(() => mergedTodayTasks(taskNotes), [taskNotes])
   const openCount = todays.filter((n) => n.metadata['done'] !== true).length
 
-  // Picker candidates: not-done tasks not already on the day's list (picked
-  // OR due-pulled), this-week first (ritual-blessed), then later, then the
-  // rest — stable within groups.
-  const candidates = useMemo(() => {
-    const onToday = new Set(todays.map((n) => n.path))
-    const q = pickerQuery.trim().toLowerCase()
-    return taskNotes
-      .filter((n) => n.metadata['done'] !== true && !onToday.has(n.path))
-      .filter((n) => !q || taskTitle(n).toLowerCase().includes(q))
-      .sort((a, b) => whenRank(a) - whenRank(b))
-      .slice(0, 8)
-  }, [taskNotes, todays, pickerQuery])
+  // Picker candidates — the ONE shared ranking (domain/tasks.ts), identical
+  // to the Tasks tab's Today-chip find bar: not on the day's list, this-week
+  // first (ritual-blessed), then later, then the rest.
+  const candidates = useMemo(
+    () => findTodayCandidates(taskNotes, pickerQuery, 8),
+    [taskNotes, pickerQuery],
+  )
 
   const closePicker = () => {
     setPickerOpen(false)

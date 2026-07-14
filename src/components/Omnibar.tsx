@@ -253,7 +253,7 @@ export function Omnibar() {
       },
       {
         key: 'tasks',
-        label: 'Tasks — inbox · today · upcoming',
+        label: 'Tasks — inbox · today · week',
         icon: <IconTodo size={14} />,
         run: () => navigate({ kind: 'tasks' }),
       },
