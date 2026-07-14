@@ -1,0 +1,518 @@
+/* ————————————————————————— The ceremonial wing ——————————————————————————
+   Two monument rooms: the Commandments (a basalt stele) and the Map (the
+   system as a temple cross-section). Deliberately single-theme — a monument
+   is lit by torchlight in any century; it does not switch to day mode. The
+   palette is scoped here and does not touch the app tokens. */
+
+.cere-void {
+  --cv-void: #0a0a09;
+  --cv-basalt: #181614;
+  --cv-basalt-hi: #242119;
+  --cv-bone: #e9dfcc;
+  --cv-bone-dim: #a2977f;
+  --cv-bone-faint: #6e6654;
+  --cv-gem: #35b8ad;
+  --cv-gem-deep: #17877f;
+  --cv-serif: 'Fraunces Variable', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia,
+    serif;
+
+  min-height: 100dvh;
+  background: var(--cv-void);
+  color: var(--cv-bone);
+  font-family: var(--cv-serif);
+  padding: 56px 16px 96px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* the chiseled-grain overlay shared by every stone surface */
+.cere-stele::before,
+.cere-chamber::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+.cere-seal {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+.cere-seal svg {
+  filter: drop-shadow(0 0 14px rgba(53, 184, 173, 0.35));
+}
+
+.cere-title {
+  margin: 0;
+  text-align: center;
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  text-transform: uppercase;
+  color: var(--cv-bone);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05),
+    0 -1px 1px rgba(0, 0, 0, 0.8);
+  text-wrap: balance;
+}
+.cere-title-map {
+  font-size: 22px;
+  letter-spacing: 0.46em;
+  text-indent: 0.46em;
+}
+.cere-subtitle {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
+  text-transform: uppercase;
+  color: var(--cv-gem-deep);
+}
+.cere-provenance {
+  margin: 18px auto 0;
+  text-align: center;
+  max-width: 42ch;
+  font-style: italic;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--cv-bone-dim);
+  letter-spacing: 0.03em;
+}
+
+/* ——————————————————————————— the stele ——————————————————————————— */
+
+.cere-stele {
+  position: relative;
+  max-width: 660px;
+  margin: 0 auto;
+  background: radial-gradient(
+    120% 60% at 50% -8%,
+    var(--cv-basalt-hi) 0%,
+    var(--cv-basalt) 46%,
+    #131110 100%
+  );
+  border-radius: 190px 190px 10px 10px;
+  padding: 88px 56px 64px;
+  box-shadow:
+    0 0 0 1px #26221c,
+    0 2px 0 1px #000 inset,
+    0 60px 120px -40px rgba(0, 0, 0, 0.9),
+    0 0 180px -60px rgba(53, 184, 173, 0.14);
+  animation: cere-rise 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.cere-stele::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgba(233, 223, 204, 0.07),
+    inset 0 -14px 40px rgba(0, 0, 0, 0.55);
+}
+@keyframes cere-rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 560px) {
+  .cere-stele {
+    padding: 64px 26px 48px;
+    border-radius: 130px 130px 10px 10px;
+  }
+}
+
+.cere-rule {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 44px 0 8px;
+}
+.cere-rule::before,
+.cere-rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #35322a 40%, #35322a 60%, transparent);
+}
+.cere-rule span {
+  color: var(--cv-gem-deep);
+  font-size: 11px;
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+}
+
+.cere-laws {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cere-laws li {
+  padding: 30px 4px 28px;
+  border-bottom: 1px solid rgba(233, 223, 204, 0.06);
+}
+.cere-laws li:last-child {
+  border-bottom: none;
+}
+.cere-num {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.5em;
+  text-indent: 0.05em;
+  color: var(--cv-gem);
+  margin-bottom: 12px;
+  text-shadow: 0 0 12px rgba(53, 184, 173, 0.25);
+  font-variant-numeric: tabular-nums;
+}
+.cere-law {
+  display: block;
+  font-size: 20px;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cv-bone);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.045),
+    0 -1px 1px rgba(0, 0, 0, 0.85);
+  text-wrap: balance;
+}
+.cere-gloss {
+  display: block;
+  margin-top: 12px;
+  font-style: italic;
+  font-size: 14.5px;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+  color: var(--cv-bone-dim);
+  max-width: 52ch;
+}
+
+.cere-epilogue {
+  margin: 56px 0 0;
+  text-align: center;
+  font-style: italic;
+  font-size: 16.5px;
+  line-height: 1.7;
+  color: var(--cv-bone);
+  letter-spacing: 0.06em;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04),
+    0 -1px 1px rgba(0, 0, 0, 0.8);
+}
+.cere-colophon {
+  margin: 40px 0 0;
+  text-align: center;
+  font-size: 10.5px;
+  letter-spacing: 0.38em;
+  text-indent: 0.38em;
+  text-transform: uppercase;
+  color: var(--cv-bone-faint);
+  line-height: 2.1;
+}
+.cere-gemline {
+  color: var(--cv-gem-deep);
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+}
+
+/* the quiet cross-link between the two monuments */
+.cere-cross {
+  margin-top: 34px;
+  text-align: center;
+}
+.cere-cross button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--cv-serif);
+  font-style: italic;
+  font-size: 12.5px;
+  letter-spacing: 0.14em;
+  color: var(--cv-bone-faint);
+  padding: 6px 10px;
+  transition: color 0.25s ease;
+}
+.cere-cross button:hover,
+.cere-cross button:focus-visible {
+  color: var(--cv-gem);
+  outline: none;
+}
+
+/* ——————————————————————————— the temple ——————————————————————————— */
+
+.cere-temple {
+  max-width: 640px;
+  margin: 0 auto;
+  animation: cere-rise 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.cere-level {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 46px 0 14px;
+}
+.cere-level::before,
+.cere-level::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #35322a 40%, #35322a 60%, transparent);
+}
+.cere-level span {
+  color: var(--cv-bone-faint);
+  font-size: 10.5px;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cere-chamber {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  font-family: var(--cv-serif);
+  background: radial-gradient(
+    130% 90% at 50% -10%,
+    var(--cv-basalt-hi) 0%,
+    var(--cv-basalt) 55%,
+    #131110 100%
+  );
+  border-radius: 14px;
+  padding: 26px 26px 24px;
+  box-shadow:
+    0 0 0 1px #26221c,
+    0 30px 60px -30px rgba(0, 0, 0, 0.85);
+}
+button.cere-chamber {
+  cursor: pointer;
+  transition: box-shadow 0.3s ease;
+}
+button.cere-chamber:hover,
+button.cere-chamber:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 1px rgba(53, 184, 173, 0.45),
+    0 30px 60px -30px rgba(0, 0, 0, 0.85),
+    0 0 60px -20px rgba(53, 184, 173, 0.35);
+}
+
+.cere-eyebrow {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.4em;
+  text-indent: 0.02em;
+  text-transform: uppercase;
+  color: var(--cv-gem);
+  text-shadow: 0 0 10px rgba(53, 184, 173, 0.25);
+  margin-bottom: 10px;
+}
+.cere-name {
+  display: block;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cv-bone);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.045),
+    0 -1px 1px rgba(0, 0, 0, 0.85);
+}
+.cere-chamber-gloss {
+  display: block;
+  margin-top: 10px;
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--cv-bone-dim);
+  letter-spacing: 0.02em;
+  max-width: 48ch;
+}
+.cere-addr {
+  display: inline-block;
+  margin-top: 14px;
+  font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--cv-bone-faint);
+  border: 1px solid rgba(233, 223, 204, 0.12);
+  border-radius: 5px;
+  padding: 3px 8px;
+}
+
+.cere-doors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.cere-doors .cere-chamber {
+  padding: 22px 20px 20px;
+}
+.cere-doors .cere-name {
+  font-size: 15.5px;
+}
+.cere-doors .cere-chamber-gloss {
+  font-size: 13px;
+}
+@media (max-width: 420px) {
+  .cere-doors {
+    gap: 10px;
+  }
+  .cere-doors .cere-chamber {
+    padding: 18px 14px 16px;
+  }
+}
+
+.cere-mint {
+  display: block;
+  margin-top: 18px;
+  padding: 16px 18px 14px;
+  border: 1px solid rgba(53, 184, 173, 0.25);
+  border-radius: 10px;
+  background: rgba(53, 184, 173, 0.04);
+}
+.cere-mint-title {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--cv-gem);
+  margin-bottom: 10px;
+}
+.cere-mint-item {
+  display: block;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--cv-bone-dim);
+  letter-spacing: 0.02em;
+}
+.cere-mint-item::before {
+  content: '◆';
+  color: var(--cv-gem-deep);
+  font-size: 9px;
+  margin-right: 10px;
+  vertical-align: 1px;
+}
+.cere-mint-item.is-return {
+  color: var(--cv-bone);
+  font-style: italic;
+}
+
+.cere-worlds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.cere-world {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-indent: 0.05em;
+  text-transform: uppercase;
+  color: var(--cv-bone);
+  border: 1px solid rgba(233, 223, 204, 0.16);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: rgba(233, 223, 204, 0.03);
+}
+
+.cere-passage {
+  position: relative;
+  width: 2px;
+  height: 52px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, transparent, #35322a 30%, #35322a 70%, transparent);
+}
+.cere-passage::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cv-gem);
+  box-shadow: 0 0 10px rgba(53, 184, 173, 0.8);
+  animation: cere-descend 2.6s linear infinite;
+}
+@keyframes cere-descend {
+  from {
+    top: -4px;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  to {
+    top: calc(100% - 2px);
+    opacity: 0;
+  }
+}
+.cere-passage.p2::after {
+  animation-delay: 0.9s;
+}
+.cere-passage.p3::after {
+  animation-delay: 1.7s;
+}
+.cere-passage.p4::after {
+  animation-delay: 0.4s;
+}
+.cere-passage.p5::after {
+  animation-delay: 1.3s;
+}
+.cere-passage.dashed {
+  background: none;
+  border-left: 1px dashed rgba(233, 223, 204, 0.22);
+  width: 1px;
+  height: 40px;
+}
+.cere-passage.dashed::after {
+  display: none;
+}
+
+.cere-chamber.is-side {
+  border: 1px dashed rgba(233, 223, 204, 0.18);
+  background: radial-gradient(130% 90% at 50% -10%, #1d1a16 0%, #151310 60%, #121010 100%);
+  box-shadow: 0 24px 50px -30px rgba(0, 0, 0, 0.8);
+}
+.cere-chamber.is-side .cere-eyebrow {
+  color: var(--cv-bone-faint);
+  text-shadow: none;
+}
+
+.cere-chamber.is-crypt {
+  border-radius: 14px 14px 120px 120px;
+  padding-bottom: 44px;
+  box-shadow:
+    0 0 0 1px #26221c,
+    0 30px 60px -30px rgba(0, 0, 0, 0.85),
+    0 0 120px -50px rgba(53, 184, 173, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cere-stele,
+  .cere-temple {
+    animation: none;
+  }
+  .cere-passage::after {
+    display: none;
+  }
+}

@@ -1,0 +1,120 @@
+// The ceremonial wing: the Commandments stele + the Map of chambers.
+// Hidden routes (no nav tabs) reached via the Omnibar; every Map chamber is
+// a real door into the corresponding room of the app.
+
+import { test, expect, type Page } from '@playwright/test'
+
+const MOCK = 'http://127.0.0.1:8787'
+const TOKEN = 'atelier-test-token'
+const AUTH = { Authorization: `Bearer ${TOKEN}` }
+const SESSION_KEY = 'adamvaultos.session.v1'
+
+async function reset(page: Page) {
+  await page.request.post(`${MOCK}/__test/reset`)
+}
+async function seedNote(page: Page, path: string, content: string) {
+  const res = await page.request.post(`${MOCK}/api/notes`, {
+    headers: AUTH,
+    data: { path, content, tags: ['desk'], metadata: {} },
+  })
+  expect(res.status(), await res.text()).toBe(201)
+}
+async function connectViaStorage(page: Page) {
+  await page.addInitScript(
+    ([key, url, token]) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({ vaultUrl: url, mode: 'token', token: { accessToken: token } }),
+      )
+    },
+    [SESSION_KEY, MOCK, TOKEN] as const,
+  )
+}
+
+test.beforeEach(async ({ page }) => {
+  await reset(page)
+})
+
+test('the Commandments — ten laws on the stele; Escape leaves the room', async ({ page }) => {
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('http://127.0.0.1:4173/#/projects')
+  await expect(page.getByTestId('cockpit')).toBeVisible()
+
+  // Enter through the hash (same as any door) — the stele rises.
+  await page.evaluate(() => {
+    window.location.hash = '#/commandments'
+  })
+  const stele = page.getByTestId('commandments')
+  await expect(stele).toBeVisible()
+  await expect(stele.locator('.cere-laws li')).toHaveCount(10)
+  await expect(stele.getByText('The machine proposes. The human decides.')).toBeVisible()
+
+  // Escape returns to wherever you were.
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('cockpit')).toBeVisible()
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
+test('the Map — chambers are real doors; monuments cross-link', async ({ page }) => {
+  await seedNote(page, 'desk/00-plan', '# The Plan\n\nOne door.')
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('http://127.0.0.1:4173/#/map')
+  const map = page.getByTestId('vault-map')
+  await expect(map).toBeVisible()
+
+  // The Mirror sleeps — it is a chamber, not a door.
+  await expect(page.getByTestId('chamber-mirror')).toBeVisible()
+  expect(
+    await page.getByTestId('chamber-mirror').evaluate((el) => el.tagName.toLowerCase()),
+  ).toBe('div')
+
+  // The Tracker chamber opens the real Tracker…
+  await page.getByTestId('chamber-tracker').click()
+  await expect(page.getByTestId('db-views')).toBeVisible()
+
+  // …and the Plan chamber opens the real Plan note.
+  await page.goto('http://127.0.0.1:4173/#/map')
+  await page.getByTestId('chamber-plan').click()
+  await expect(page).toHaveURL(/note\/desk%2F00-plan/)
+
+  // The two monuments point at each other.
+  await page.goto('http://127.0.0.1:4173/#/map')
+  await page.getByRole('button', { name: 'the commandments →' }).click()
+  await expect(page.getByTestId('commandments')).toBeVisible()
+  await page.getByRole('button', { name: 'the map →' }).click()
+  await expect(page.getByTestId('vault-map')).toBeVisible()
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
+test('the Omnibar knows the wing — ⌘K → "commandments" enters the room', async ({ page }) => {
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/projects')
+  await expect(page.getByTestId('cockpit')).toBeVisible()
+
+  await page.keyboard.press('ControlOrMeta+k')
+  const input = page.locator('.palette-input')
+  await expect(input).toBeVisible()
+  await input.fill('commandments')
+  await page
+    .locator('.palette-item', { hasText: 'The Commandments — the laws of the vault' })
+    .click()
+  await expect(page.getByTestId('commandments')).toBeVisible()
+
+  // And the Omnibar still opens INSIDE the wing (the doors never lock).
+  await page.keyboard.press('ControlOrMeta+k')
+  await expect(page.locator('.palette-input')).toBeVisible()
+  await page.locator('.palette-input').fill('map — chambers')
+  await page.locator('.palette-item', { hasText: 'The Map — chambers of the vault' }).click()
+  await expect(page.getByTestId('vault-map')).toBeVisible()
+})

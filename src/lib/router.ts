@@ -20,6 +20,8 @@ export type Route =
   | { kind: 'explore' }
   | { kind: 'explore-tag'; tag: string }
   | { kind: 'pages'; path?: string }
+  | { kind: 'commandments' }
+  | { kind: 'map' }
 
 /** Decode a hash path back to a vault path. Accepts the single %2F-encoded
  * segment form (Amanda%2F00-home) and the legacy per-segment form
@@ -58,6 +60,12 @@ export function parseHash(hash: string): Route {
     }
     case 'graph':
       return { kind: 'graph' }
+    // The ceremonial wing — two monument rooms, deliberately unlisted in the
+    // nav. Reached through the Omnibar and each other.
+    case 'commandments':
+      return { kind: 'commandments' }
+    case 'map':
+      return { kind: 'map' }
     case 'explore': {
       // #/explore/tag/<tag> — tags can themselves contain slashes
       // (capture/voice), so everything after /tag/ is decoded greedily as
@@ -110,6 +118,10 @@ export function hrefFor(route: Route): string {
       return `#/project/${encodeURIComponent(route.path)}`
     case 'graph':
       return '#/graph'
+    case 'commandments':
+      return '#/commandments'
+    case 'map':
+      return '#/map'
     case 'explore':
       return '#/explore'
     case 'explore-tag':
