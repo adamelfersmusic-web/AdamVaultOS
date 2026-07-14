@@ -4423,6 +4423,52 @@ button.tasks-group-head:hover {
   padding: 6px 8px;
 }
 
+/* ——— Craft Phase B: loose checkboxes from inside ordinary notes ——— */
+
+.tasks-loose {
+  margin-top: 30px;
+}
+/* The section label sits in the same register as an agenda day header —
+   a quiet boundary between the row world and the note world. */
+.tasks-loose-head {
+  font-size: 11px;
+  font-weight: 660;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-3);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+/* The ↗ promote affordance: invisible until the row is engaged (hover or
+   keyboard focus); always faintly present where hover doesn't exist. */
+.loose-promote {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: var(--ink-4);
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+.task-row:hover .loose-promote,
+.task-row:focus-within .loose-promote,
+.loose-promote:focus-visible {
+  opacity: 1;
+}
+.loose-promote:hover {
+  color: var(--gold-bright);
+}
+@media (hover: none) {
+  .loose-promote {
+    opacity: 0.55;
+  }
+}
+
 /* ——— quick-create bar, docked at the bottom of the view ——— */
 
 .tasks-qc {

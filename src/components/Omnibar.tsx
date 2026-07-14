@@ -15,10 +15,10 @@ import { createPortal } from 'react-dom'
 import {
   createPage,
   disconnect,
-  fetchAllNotes,
   toast,
   useStore,
 } from '../lib/store'
+import { cachedCorpus, corpusFresh, refreshCorpus } from '../lib/corpus'
 import { askAiAsk, closePalette, openAskAi, openNewScript } from '../lib/ui'
 import { navigate } from '../lib/router'
 import { fuzzyScore } from '../lib/fuzzy'
@@ -153,9 +153,9 @@ function openNote(path: string): void {
   navigate(path.startsWith('pages/') ? { kind: 'pages', path } : { kind: 'note', path })
 }
 
-// ————————————————————————— corpus (lazy, like the Library) —————————————————————————
-
-let corpusCache: { at: number; notes: Note[] } | null = null
+// The full-text corpus comes from lib/corpus.ts — the ONE shared 60s cache
+// (Craft Phase B moved it there so the Tasks tab's loose-checkbox scanner
+// reads the same corpus instead of forking a second one).
 
 // ————————————————————————— highlighting —————————————————————————
 
@@ -182,7 +182,7 @@ export function Omnibar() {
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
   const [active, setActive] = useState(0)
-  const [corpus, setCorpus] = useState<Note[] | null>(corpusCache?.notes ?? null)
+  const [corpus, setCorpus] = useState<Note[] | null>(() => cachedCorpus())
   const [recents] = useState<string[]>(loadRecents)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -190,10 +190,9 @@ export function Omnibar() {
   // Full-text corpus, lazily on first open — the Library's own pattern.
   useEffect(() => {
     let alive = true
-    if (!corpusCache || Date.now() - corpusCache.at > 60_000) {
-      fetchAllNotes()
+    if (!corpusFresh()) {
+      refreshCorpus()
         .then((list) => {
-          corpusCache = { at: Date.now(), notes: list }
           if (alive) setCorpus(list)
         })
         .catch(() => {
