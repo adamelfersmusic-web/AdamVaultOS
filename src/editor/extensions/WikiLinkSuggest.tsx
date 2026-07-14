@@ -12,6 +12,7 @@ import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { Extension } from '@tiptap/core'
 import type { Editor, ChainedCommands } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
+import type { EditorState } from '@tiptap/pm/state'
 import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion'
@@ -30,6 +31,12 @@ interface WikiItem {
 // Suggestion state lives under this key; hoisted so onStart can re-check
 // "still active?" after the async items fetch resolves.
 const wikiSuggestKey = new PluginKey('wikiLinkSuggest')
+
+/** Is the wikilink suggester currently live? The shared Tab handler asks so
+ * it can step aside — this menu accepts its highlighted entry with Tab. */
+export function isWikiSuggestOpen(state: EditorState): boolean {
+  return Boolean((wikiSuggestKey.getState(state) as { active?: boolean } | undefined)?.active)
+}
 
 /** Transactions carrying this meta never wake the suggester. Loading a note
  * whose markdown still contains literal `[[…]]` text used to look exactly

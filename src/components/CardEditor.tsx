@@ -28,6 +28,8 @@ import { BoardEmbedChip, convertBoardEmbeds } from '../editor/extensions/BoardEm
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
 import { WikiLinkSuggest, setContentSilently } from '../editor/extensions/WikiLinkSuggest'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
+import { BlockTypeGuard } from '../editor/extensions/BlockTypeGuard'
+import { handleTabKey } from '../editor/tabKey'
 
 export function CardEditor({
   value,
@@ -74,10 +76,14 @@ export function CardEditor({
         // about PRESERVING them, not authoring them in a little card.
         exclude: ['image', 'subpage', 'ai', 'voice', 'toggle', 'toggle-h1', 'toggle-h2', 'table', 'table-csv', 'board', 'kanban'],
       }),
+      // AFTER StarterKit — its paragraph/heading command overrides must win.
+      BlockTypeGuard,
     ],
     editorProps: {
       attributes: { class: 'card-prose' },
-      handleKeyDown: (_view, event) => {
+      handleKeyDown: (view, event) => {
+        // Tab stays home (the C3 "Tab nests" promise) — checked before Escape.
+        if (handleTabKey(view, event)) return true
         if (event.key === 'Escape') {
           cancelRef.current()
           return true
