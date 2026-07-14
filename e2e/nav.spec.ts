@@ -126,7 +126,7 @@ test('Cockpit — + New project creates a card; the deck caps at 6', async ({ pa
   await connectViaStorage(page)
 
   await page.goto('http://127.0.0.1:4173/')
-  await expect(page.getByTestId('project-card')).toHaveCount(5)
+  await expect(page.getByTestId('macro-row')).toHaveCount(5)
 
   // Create #6 → lands inside the new world.
   await page.getByTestId('new-project').click()
@@ -135,9 +135,9 @@ test('Cockpit — + New project creates a card; the deck caps at 6', async ({ pa
   await expect(page.getByTestId('world')).toBeVisible()
   await expect(page.locator('.world-title')).toHaveText('Big Thing Six')
 
-  // Back at the deck: 6 cards, and the button is now capped.
+  // Back at the strip: 6 rows, and the button is now capped.
   await page.locator('.canvas-back').click()
-  await expect(page.getByTestId('project-card')).toHaveCount(6)
+  await expect(page.getByTestId('macro-row')).toHaveCount(6)
   await expect(page.getByTestId('new-project')).toBeDisabled()
   await expect(page.getByText('6 of 6 — a full deck')).toBeVisible()
 })

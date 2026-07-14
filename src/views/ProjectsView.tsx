@@ -1,72 +1,96 @@
-// The Cockpit — the app's front door. A calm deck of project cards (title,
-// one-liner, status, live task progress), each opening into its world.
-// Composition over construction: cards derive entirely from `project`-tagged
-// notes + the already-loaded tracker slice. Build log PART 22.
+// The Projects front door — THE SYSTEM §6's MACRO STRIP ("What worlds are
+// alive?"). One calm line per world: name ▸ the one thing (from that world's
+// latest weekly card) with the current phase on the right. Paused worlds fold
+// into a quiet count at the bottom. Nothing else — click a world to enter it.
+// Derives entirely from #project spines + projects/<key>/weekly/ cards.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Note } from '../lib/types'
-import { createProject, loadProjects, loadTracker, toast, useStore } from '../lib/store'
+import {
+  createProject,
+  fetchWeeklyCards,
+  loadProjects,
+  loadTracker,
+  toast,
+  useStore,
+} from '../lib/store'
 import { navigate } from '../lib/router'
-import { projectProgress, STATUS_COLORS, toProjects, type Project } from '../domain/projects'
+import { toProjects, type Project } from '../domain/projects'
+import {
+  latestCardNote,
+  oneThingOf,
+  parseWeeklyCard,
+  phaseLabelOf,
+} from '../domain/spine'
 import { IconPlus, IconRefresh } from '../components/Icons'
 import { TodayStrip } from '../components/TodayStrip'
 
-/** The deck is capped — six big things, no more. Calm by law. */
+/** The strip is capped — six big things, no more. Calm by law. */
 const MAX_PROJECTS = 6
 
-function ProgressBar({ done, total }: { done: number; total: number }) {
-  if (total === 0) return <span className="proj-noprog">no tasks yet</span>
-  const pct = Math.round((done / total) * 100)
-  return (
-    <div className="proj-progress" title={`${done} of ${total} tasks done`}>
-      <div className="proj-progress-track">
-        <i className="proj-progress-fill" style={{ width: `${pct}%` }} />
-      </div>
-      <span className="proj-progress-label">
-        {done}/{total} · {pct}%
-      </span>
-    </div>
-  )
-}
-
-function ProjectCard({ project, taskNotes }: { project: Project; taskNotes: Note[] }) {
-  const { done, total } = projectProgress(project.key, taskNotes)
-  const color = STATUS_COLORS[project.status] ?? 'neutral'
+function MacroRow({ project, weeklies }: { project: Project; weeklies: Note[] }) {
+  const cardNote = latestCardNote(weeklies, project.key)
+  const card = cardNote ? parseWeeklyCard(cardNote) : null
+  const one = oneThingOf(card, project)
+  const phase = phaseLabelOf(project)
   return (
     <button
-      className="proj-card"
+      className="macro-row"
       onClick={() => navigate({ kind: 'project', path: project.path })}
-      data-testid="project-card"
+      data-testid="macro-row"
     >
-      <div className="proj-card-top">
-        <h2 className="proj-card-title">{project.title}</h2>
-        <span className={`proj-status proj-status-${color}`}>{project.status}</span>
-      </div>
-      {project.summary && <p className="proj-card-summary">{project.summary}</p>}
-      <div className="proj-card-foot">
-        <ProgressBar done={done} total={total} />
-        <span className="proj-open">open →</span>
-      </div>
+      <span className="macro-name">{project.title}</span>
+      <span className="macro-top" data-testid="macro-top">
+        {one && (
+          <>
+            <span className="macro-top-mark">▸</span>
+            {one}
+          </>
+        )}
+      </span>
+      {phase && <span className="macro-phase">{phase}</span>}
     </button>
   )
 }
 
 export function ProjectsView() {
-  const { projects, projectsStatus, projectsError, notes, tracker } = useStore()
+  const { projects, projectsStatus, projectsError, notes } = useStore()
   const [newOpen, setNewOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [busy, setBusy] = useState(false)
+  // The card layer: every world's weekly stream in ONE prefix fetch.
+  const [weeklies, setWeeklies] = useState<Note[] | null>(null)
+  const [pausedOpen, setPausedOpen] = useState(false)
 
-  const cards = useMemo(
+  useEffect(() => {
+    let alive = true
+    fetchWeeklyCards()
+      .then((list) => {
+        if (alive) setWeeklies(list)
+      })
+      .catch(() => {
+        if (alive) setWeeklies([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const worlds = useMemo(
     () =>
       toProjects((projects ?? []).map((p) => notes[p]).filter((n): n is Note => Boolean(n))),
     [projects, notes],
   )
-  const taskNotes = useMemo(
-    () => (tracker ?? []).map((p) => notes[p]).filter((n): n is Note => Boolean(n)),
-    [tracker, notes],
+  // Paused worlds fold away — same disclosure law as the sidebar's Pinned.
+  const alive = useMemo(
+    () => worlds.filter((p) => String(p.note.metadata['phase'] ?? '') !== 'paused'),
+    [worlds],
   )
-  const full = cards.length >= MAX_PROJECTS
+  const paused = useMemo(
+    () => worlds.filter((p) => String(p.note.metadata['phase'] ?? '') === 'paused'),
+    [worlds],
+  )
+  const full = worlds.length >= MAX_PROJECTS
 
   const submitNew = async () => {
     const name = newName.trim()
@@ -84,12 +108,20 @@ export function ProjectsView() {
     }
   }
 
+  const refresh = () => {
+    void loadProjects()
+    void loadTracker()
+    fetchWeeklyCards()
+      .then(setWeeklies)
+      .catch(() => {})
+  }
+
   return (
     <div className="cockpit" data-testid="cockpit">
       <header className="cockpit-head">
         <div>
           <h1 className="db-title">Projects</h1>
-          <p className="cockpit-sub">The big things. Open one and work inside its world.</p>
+          <p className="cockpit-sub">The worlds that are alive. Open one to see where it stands.</p>
         </div>
         <div className="cockpit-actions">
           {newOpen ? (
@@ -119,7 +151,7 @@ export function ProjectsView() {
               disabled={full}
               title={
                 full
-                  ? 'The Cockpit holds 6 projects max — finish or park one first'
+                  ? 'The strip holds 6 projects max — finish or park one first'
                   : 'Add a project'
               }
               onClick={() => setNewOpen(true)}
@@ -129,14 +161,7 @@ export function ProjectsView() {
             </button>
           )}
           {full && <span className="cockpit-cap">6 of 6 — a full deck</span>}
-          <button
-            className="icon-btn"
-            title="Refresh projects"
-            onClick={() => {
-              void loadProjects()
-              void loadTracker()
-            }}
-          >
+          <button className="icon-btn" title="Refresh projects" onClick={refresh}>
             <IconRefresh size={14} />
           </button>
         </div>
@@ -158,7 +183,7 @@ export function ProjectsView() {
             <div className="skel-row" key={i} style={{ animationDelay: `${i * 90}ms` }} />
           ))}
         </div>
-      ) : cards.length === 0 ? (
+      ) : worlds.length === 0 ? (
         <div className="db-state">
           <p className="db-state-title">No projects yet</p>
           <p className="db-state-msg">
@@ -167,10 +192,27 @@ export function ProjectsView() {
           </p>
         </div>
       ) : (
-        <div className="cockpit-grid">
-          {cards.map((p) => (
-            <ProjectCard key={p.path} project={p} taskNotes={taskNotes} />
+        <div className="macro-strip" data-testid="macro-strip">
+          {alive.map((p) => (
+            <MacroRow key={p.path} project={p} weeklies={weeklies ?? []} />
           ))}
+          {paused.length > 0 && (
+            <div className="macro-paused">
+              <button
+                className="macro-paused-head"
+                onClick={() => setPausedOpen((o) => !o)}
+                aria-expanded={pausedOpen}
+                data-testid="macro-paused"
+              >
+                <span className="pages-group-chevron">{pausedOpen ? '▾' : '▸'}</span>
+                Paused · {paused.length}
+              </button>
+              {pausedOpen &&
+                paused.map((p) => (
+                  <MacroRow key={p.path} project={p} weeklies={weeklies ?? []} />
+                ))}
+            </div>
+          )}
         </div>
       )}
     </div>

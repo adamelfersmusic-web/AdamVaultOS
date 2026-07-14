@@ -97,13 +97,36 @@ test('walkthrough — navigation: tag tree + pages sidebar', async ({ page }) =>
 
 test('walkthrough — cockpit: project cards and a world', async ({ page }) => {
   await reset(page)
+  const AMANDA_SPINE = [
+    '# Amanda Bridges', '',
+    '## Purpose',
+    'A calm brand system that raises the money without burning the week.', '',
+    '## The phases',
+    '1. ✅ Brand system',
+    '2. ✅ Content calendar',
+    '3. Final polish — CURRENT',
+    '4. Launch week',
+    '5. Wrap + handoff',
+  ].join('\n')
   const projects: Array<[string, string, Record<string, unknown>]> = [
-    ['projects/escensus', '# Escensus', { key: 'escensus', tag: 'escensus', status: 'active', order: 1, summary: 'The sales-performance OS venture with Jonathan — Signalcraft pilot with Bree Starr: training, practice, weekly real-call scoring.' }],
-    ['projects/jonathan', '# Jonathan Gaietto', { key: 'jonathan', tag: 'jonathan', status: 'active', order: 2, summary: 'Brand + recruiting intelligence system on his Parachute vault: Brand Brain, content engine, weekly ops.' }],
-    ['projects/amanda', '# Amanda Bridges', { key: 'amanda', tag: 'amanda', status: 'active', order: 3, home: 'Amanda/00-home', summary: "'This World Needs You' fundraiser: brand system, 20-post calendar, DTC videos + photos; campaign runs on the Tracker." }],
-    ['projects/parachute', '# Parachute', { key: 'parachute', tag: 'parachute', status: 'active', order: 4, summary: "Content delivery for Aaron's Parachute: Boulder session footage → backup → edit → deliver." }],
+    ['projects/escensus', '# Escensus', { key: 'escensus', tag: 'escensus', status: 'active', order: 1, milestone: 'Fire the Jonathan stakes text', phase: 'active', summary: 'The sales-performance OS venture with Jonathan — Signalcraft pilot with Bree Starr: training, practice, weekly real-call scoring.' }],
+    ['projects/jonathan', '# Jonathan Gaietto', { key: 'jonathan', tag: 'jonathan', status: 'active', order: 2, milestone: 'Brand Brain v2 review', phase: 'planning', summary: 'Brand + recruiting intelligence system on his Parachute vault: Brand Brain, content engine, weekly ops.' }],
+    ['projects/amanda', AMANDA_SPINE, { key: 'amanda', tag: 'amanda', status: 'active', order: 3, home: 'Amanda/00-home', summary: "'This World Needs You' fundraiser: brand system, 20-post calendar, DTC videos + photos; campaign runs on the Tracker." }],
+    ['projects/parachute', '# Parachute', { key: 'parachute', tag: 'parachute', status: 'active', order: 4, milestone: 'Boulder footage → backup → edit', phase: 'active', summary: "Content delivery for Aaron's Parachute: Boulder session footage → backup → edit → deliver." }],
   ]
   for (const [path, content, meta] of projects) await seed(page, path, content, ['project'], meta)
+  // Amanda's weekly card — the strip's one-thing + the world's ⭐ THIS WEEK.
+  await seed(page, 'projects/amanda/weekly/2026-07-13', [
+    '# Amanda — week of 2026-07-13', '',
+    '## Priority',
+    'Ship the last videos and hand the calendar to Cassy.', '',
+    '## Top 3',
+    '- [ ] Finish video edits → hand to Cassy',
+    '- [ ] Caption pass on the 20 posts',
+    '- [x] Send Amanda video 8', '',
+    '## Blockers / waiting on',
+    '- Amanda: approval on video 6',
+  ].join('\n'), [], {})
   await seed(page, 'Amanda/00-home', '# Amanda Bridges — Home\n\nFront door. See [[Amanda/01-campaign-overview]] and [[Amanda/02-work-log]].', ['amanda', 'client'], { summary: 'Front door for the Amanda Bridges project — orientation + link index only.' })
   await seed(page, 'Amanda/01-campaign-overview', '# Campaign Overview', ['amanda'], { summary: 'Strategy layer — goal, two engines, four pillars.' })
   await seed(page, 'Amanda/02-work-log', '# Work Log', ['amanda'], { summary: 'Master work log — every completed phase in order.' })
@@ -130,12 +153,14 @@ test('walkthrough — cockpit: project cards and a world', async ({ page }) => {
 
   await page.goto('http://127.0.0.1:4173/')
   await expect(page.getByTestId('cockpit')).toBeVisible()
-  await expect(page.getByTestId('project-card')).toHaveCount(4)
+  await expect(page.getByTestId('macro-row')).toHaveCount(4)
   await expect(page.getByTestId('today-strip')).toContainText('Send Amanda video 8')
   await page.waitForTimeout(400)
   await page.screenshot({ path: `${SHOTS}/07-cockpit.png` })
 
-  await page.getByTestId('project-card').filter({ hasText: 'Amanda Bridges' }).click()
+  await page.getByTestId('macro-row').filter({ hasText: 'Amanda Bridges' }).click()
+  await expect(page.getByTestId('world-status')).toBeVisible()
+  await expect(page.getByTestId('week-card')).toBeVisible()
   await expect(page.getByTestId('landing')).toBeVisible()
   await expect(page.locator('.landing-continue')).toBeEnabled()
   await page.waitForTimeout(400)

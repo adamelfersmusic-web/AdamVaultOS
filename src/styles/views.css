@@ -2085,6 +2085,94 @@ body.is-dragging .card {
   color: var(--gold-bright, var(--gold));
 }
 
+/* ——————— THE SYSTEM §6 — the macro strip ("What worlds are alive?") ——————— */
+
+.macro-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 860px;
+}
+.macro-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 13px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: border-color 0.14s, transform 0.14s, box-shadow 0.14s;
+}
+.macro-row:hover {
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--line));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+.macro-name {
+  font-family: var(--font-display);
+  font-size: 16.5px;
+  color: var(--ink);
+  flex: none;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.macro-top {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.macro-top-mark {
+  color: var(--gold-bright, var(--gold));
+  margin-right: 7px;
+}
+.macro-phase {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 9px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.macro-paused {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.macro-paused-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--ink-4);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 4px 6px 4px 0;
+  border-radius: var(--r-sm);
+}
+.macro-paused-head:hover { color: var(--ink-2); }
+.macro-paused .macro-row { opacity: 0.65; }
+
 /* ————————————————————————— Project World ————————————————————————— */
 
 .world {
@@ -2465,6 +2553,192 @@ body.is-dragging .card {
 }
 
 /* ————————————————————————— World Landing (1+2) ————————————————————————— */
+
+/* ——— THE SYSTEM §6 — the Status view stack ("Where are we?") ——— */
+
+.world-statuswrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+/* Inside the status scroll, the landing is a guest below the divider — it
+   gives up its own scroll + throne padding. */
+.world-statuswrap .landing {
+  flex: none;
+  overflow: visible;
+  padding-top: 26px;
+}
+.status {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 34px 28px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.status-mission {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink-3);
+  font-style: italic;
+}
+.phase-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 8px;
+  font-size: 12px;
+}
+.phase-step {
+  color: var(--ink-4);
+  white-space: nowrap;
+}
+.phase-step:not(:first-child)::before {
+  content: '›';
+  margin: 0 9px;
+  color: var(--ink-4);
+  opacity: 0.6;
+}
+.phase-step.is-done {
+  opacity: 0.55;
+  font-size: 11px;
+}
+.phase-step.is-current {
+  color: var(--gold-bright, var(--gold));
+  font-weight: 640;
+}
+.phase-step.is-current .phase-step-label {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  border-radius: 999px;
+  padding: 3px 11px;
+}
+.phase-step.is-blocked { color: var(--red); }
+.week-card {
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--gold) 26%, var(--line));
+  border-radius: var(--r-lg);
+  padding: 16px 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-card);
+}
+.week-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.week-card-label {
+  font-size: 10.5px;
+  font-weight: 660;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--gold-bright, var(--gold));
+}
+.week-card-date {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+.week-card-priority {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.week-card-top3 {
+  display: flex;
+  flex-direction: column;
+}
+.week-top3-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 6px 0;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink);
+}
+.week-top3-item input[type='checkbox'] {
+  accent-color: var(--gold);
+  width: 15px;
+  height: 15px;
+  flex: none;
+  cursor: pointer;
+}
+.week-top3-item.is-done span {
+  text-decoration: line-through;
+  color: var(--ink-4);
+}
+.week-card-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-4);
+  font-style: italic;
+}
+.status-label {
+  font-size: 10px;
+  font-weight: 660;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--ink-4);
+  margin-bottom: 8px;
+}
+.status-blockers ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.status-blockers li {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.status-tasks {
+  display: flex;
+  flex-direction: column;
+}
+.status-task { padding: 5px 0; }
+.status-later {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--ink-4);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 6px 0;
+}
+.status-later:hover { color: var(--ink-2); }
+.status-foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.status-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--ink-4);
+  font-size: 12px;
+  cursor: pointer;
+}
+.status-link:hover { color: var(--gold-bright, var(--gold)); }
+.status-past {
+  font-size: 12px;
+  color: var(--ink-4);
+}
+.status-divider {
+  max-width: 584px;
+  margin: 26px auto 0;
+  width: calc(100% - 56px);
+  border-top: 1px solid var(--line);
+}
 
 .landing {
   flex: 1 1 auto;

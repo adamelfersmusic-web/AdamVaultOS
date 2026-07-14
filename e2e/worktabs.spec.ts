@@ -81,7 +81,7 @@ test('world Docs door — create a project work doc, tabbed under desk/<key>', a
   await connectViaStorage(page)
 
   await page.goto('http://127.0.0.1:4173/')
-  await page.getByTestId('project-card').filter({ hasText: 'Amanda' }).click()
+  await page.getByTestId('macro-row').filter({ hasText: 'Amanda' }).click()
   await page.locator('.landing-doors button', { hasText: 'docs' }).click()
   await expect(page.getByTestId('world-docs')).toBeVisible()
 

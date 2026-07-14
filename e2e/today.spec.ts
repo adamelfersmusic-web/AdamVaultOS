@@ -141,7 +141,7 @@ test('Landing (1+2) — Continue + milestone + next 3 + doors; checkbox writes',
   await connectViaStorage(page)
 
   await page.goto('http://127.0.0.1:4173/')
-  await page.getByTestId('project-card').filter({ hasText: 'Amanda' }).click()
+  await page.getByTestId('macro-row').filter({ hasText: 'Amanda' }).click()
   const landing = page.getByTestId('landing')
   await expect(landing).toBeVisible()
 
