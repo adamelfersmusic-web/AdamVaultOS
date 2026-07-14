@@ -84,6 +84,69 @@ test('[[ opens the note menu; picking inserts a chip; vault gets [[path]]', asyn
   expect(errors, errors.join('\n')).toEqual([])
 })
 
+test('loading a wikilinked note never wakes the suggest menu; typing still does', async ({ page }) => {
+  await seed(page, 'projects/amanda', '# Amanda\n\nplan')
+  await seed(page, 'projects/escensus/engine', '# Engine\n\ncore')
+  // Two chips mid-sentence with trailing text — the exact shape that used to
+  // strand a "No notes match" ghost: the load's setContent parks the caret at
+  // the end of the doc, right after literal [[…]] markdown.
+  await seed(
+    page,
+    'projects/escensus',
+    '# Escensus\n\nSpine: [[projects/amanda]] and [[projects/escensus/engine]] hold the plan.',
+  )
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/note/' + encodeURIComponent('projects/escensus'))
+  await expect(page.getByTestId('note-page')).toBeVisible()
+  await page.getByTestId('edit-body').click()
+  const editor = page.getByTestId('note-editor')
+  await expect(editor).toBeVisible()
+  await expect(editor.locator('.wikilink')).toHaveCount(2)
+  // The ghost used to appear only after the vault list fetch resolved — give
+  // that race time to lose before declaring victory.
+  await page.waitForTimeout(600)
+  await expect(page.locator('.slash-menu')).toHaveCount(0)
+
+  // Real typing still opens the picker…
+  await editor.click()
+  await editor.press('Control+End')
+  await page.keyboard.type(' [[amanda')
+  const menu = page.getByTestId('wiki-menu')
+  await expect(menu).toBeVisible()
+  await expect(menu).toContainText('projects/amanda')
+  // …and erasing the query closes it again (Escape here is the note editor's
+  // leave-edit-mode key, so back out with Backspace).
+  for (let i = 0; i < ' [[amanda'.length; i++) await page.keyboard.press('Backspace')
+  await expect(page.locator('.slash-menu')).toHaveCount(0)
+})
+
+test('loading a wikilinked page never wakes the suggest menu; typing still does', async ({ page }) => {
+  await seed(page, 'escensus/pitch', '# Pitch\n\nThe deck.')
+  await seed(
+    page,
+    'pages/spine',
+    '# Spine\n\nstart [[escensus/pitch]] then [[projects/amanda]] end.',
+  )
+  await connectViaStorage(page)
+
+  await openPage(page, 'pages/spine')
+  await expect(page.locator('.page-prose .wikilink')).toHaveCount(2)
+  await page.waitForTimeout(600)
+  await expect(page.locator('.slash-menu')).toHaveCount(0)
+
+  // Click a chip-free spot (the title), then jump to the end of the doc —
+  // clicking the paragraph itself could land on a chip and navigate away.
+  await page.locator('.page-prose h1').click()
+  await page.keyboard.press('Control+End')
+  await page.keyboard.type(' [[pitch')
+  const menu = page.getByTestId('wiki-menu')
+  await expect(menu).toBeVisible()
+  await expect(menu).toContainText('escensus/pitch')
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.slash-menu')).toHaveCount(0)
+})
+
 test('typing a full [[path]] by hand converts to a chip on ]]', async ({ page }) => {
   await seed(page, 'escensus/pitch', '# Pitch\n\nThe deck.')
   await seed(page, 'pages/scratch', '# Scratch\n\nstart')

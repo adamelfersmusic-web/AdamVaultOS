@@ -10,6 +10,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { Extension } from '@tiptap/core'
+import type { Editor, ChainedCommands } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
 import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
@@ -24,6 +25,27 @@ interface WikiItem {
   title: string
   meta: string
   asTyped?: boolean
+}
+
+// Suggestion state lives under this key; hoisted so onStart can re-check
+// "still active?" after the async items fetch resolves.
+const wikiSuggestKey = new PluginKey('wikiLinkSuggest')
+
+/** Transactions carrying this meta never wake the suggester. Loading a note
+ * whose markdown still contains literal `[[…]]` text used to look exactly
+ * like typing to @tiptap/suggestion (setContent parks the caret at the end of
+ * the doc, right after the last wikilink) — the menu must only ever open for
+ * real keystrokes. */
+export const PREVENT_SUGGEST = 'preventSuggest'
+
+/** setContent for programmatic loads: same call, but the transaction is
+ * tagged with PREVENT_SUGGEST so a doc that already contains `[[…]]` can't
+ * pop the "No notes match" ghost over content nobody is typing in. */
+export function setContentSilently(
+  editor: Editor,
+  ...args: Parameters<ChainedCommands['setContent']>
+): void {
+  editor.chain().setMeta(PREVENT_SUGGEST, true).setContent(...args).run()
 }
 
 const MAX_ITEMS = 8
@@ -152,10 +174,14 @@ export const WikiLinkSuggest = Extension.create({
     return [
       Suggestion<WikiItem, WikiItem>({
         editor: this.editor,
-        pluginKey: new PluginKey('wikiLinkSuggest'),
+        pluginKey: wikiSuggestKey,
         char: '[[',
         startOfLine: false,
         allowSpaces: true,
+        // Only genuine typing opens (or keeps open) the menu — content loads
+        // tag their transactions with PREVENT_SUGGEST, which also force-closes
+        // an open menu if a programmatic replacement lands mid-suggestion.
+        shouldShow: ({ transaction }) => !transaction.getMeta(PREVENT_SUGGEST),
         items: ({ query }) => wikiItems(query),
         command: ({ editor, range, props }) => {
           editor
@@ -172,6 +198,11 @@ export const WikiLinkSuggest = Extension.create({
           let renderer: ReactRenderer<WikiMenuRef, WikiMenuProps> | null = null
           return {
             onStart: (props: SuggestionProps<WikiItem, WikiItem>) => {
+              // onStart fires AFTER the async items fetch. If a transaction
+              // deactivated the suggestion meanwhile (a load's second
+              // setContent, say), mounting now would strand the menu on
+              // document.body with nothing left to ever remove it.
+              if (!wikiSuggestKey.getState(props.editor.state)?.active) return
               renderer = new ReactRenderer<WikiMenuRef, WikiMenuProps>(WikiMenu, {
                 editor: props.editor,
                 props: {
