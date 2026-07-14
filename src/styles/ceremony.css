@@ -285,9 +285,40 @@
   outline: none;
 }
 
+/* ——————————————————————————— the sky ——————————————————————————— */
+
+/* The constellation behind the Map — a whisper, hardly visible (Adam's
+   spec). Fixed so it never scrolls with the temple; over-scaled so no edge
+   ever shows; the veil is a separate layer because a ::after would inherit
+   the whisper opacity and vanish. */
+.cere-sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.07;
+  transform: scale(1.06);
+}
+.cere-sky-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    70% 55% at 50% 40%,
+    rgba(10, 10, 9, 0.65) 0%,
+    rgba(10, 10, 9, 0.25) 55%,
+    transparent 100%
+  );
+}
+
 /* ——————————————————————————— the temple ——————————————————————————— */
 
 .cere-temple {
+  position: relative;
+  z-index: 1;
   max-width: 640px;
   margin: 0 auto;
   animation: cere-rise 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
