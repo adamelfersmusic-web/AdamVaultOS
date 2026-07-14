@@ -21,8 +21,10 @@ const MONTH_SHORT = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ] as const
 
-/** Local calendar key, the same shape the daily note uses: 'YYYY-MM-DD'. */
-function ymd(d: Date): string {
+/** Local calendar key, the same shape the daily note uses: 'YYYY-MM-DD'.
+ * Exported for the calendar surfaces (Tasks agenda, MonthPicker) so every
+ * date key in the app is minted by the same local-clock rule. */
+export function ymd(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   return `${d.getFullYear()}-${m}-${String(d.getDate()).padStart(2, '0')}`
 }

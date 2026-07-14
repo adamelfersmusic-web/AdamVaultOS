@@ -128,10 +128,13 @@ test('Picker v2 — typing shows the ➕ create row first; Enter mints a project
   expect(note.metadata.done).toBe(false)
   expect(note.metadata.project).toBeUndefined()
 
-  // Project-less tasks still show in the Tracker's All view.
+  // Adam's law (2026-07-14): unfiled tasks NEVER reach the Tracker — filing
+  // to a world is the promotion gesture. The inbox mint stays invisible here.
   await page.goto('http://127.0.0.1:4173/#/tracker')
   await expect(page.locator('.db-title')).toHaveText('Tracker')
-  await expect(page.locator('body')).toContainText('Call the venue about parking')
+  // The filed (amanda) row proves the table rendered before we assert absence.
+  await expect(page.locator('body')).toContainText('Caption pass — all 20 posts')
+  await expect(page.locator('body')).not.toContainText('Call the venue about parking')
 })
 
 test('Picker v2 — this-week tasks rank above later ones in the pick-list', async ({ page }) => {

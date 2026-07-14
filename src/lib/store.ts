@@ -568,7 +568,8 @@ export async function fetchProjectNotes(tag: string): Promise<Note[]> {
 /** Create a task inside a project's world: tasks/<key>/<slug>, tagged `task`,
  * carrying the tracker defaults. Returns the note (caller opens row-as-page).
  * A null projectKey mints a PROJECT-LESS task under tasks/inbox/ — `project`
- * stays unset, so it shows in the Tracker's All view but claims no world.
+ * stays unset, so it lives in the Tasks tab's Inbox and stays INVISIBLE to
+ * the Tracker until it's filed to a world (Adam's law, 2026-07-14).
  * `extra` metadata (e.g. when:"today" from the Today picker) wins over the
  * defaults. */
 export async function createTask(

@@ -11,6 +11,7 @@ export type Route =
   | { kind: 'connect' }
   | { kind: 'scripts'; lens?: LensKind }
   | { kind: 'tracker'; lens?: LensKind }
+  | { kind: 'tasks' }
   | { kind: 'canvas' }
   | { kind: 'projects' }
   | { kind: 'project'; path: string }
@@ -94,6 +95,10 @@ export function parseHash(hash: string): Route {
       }
       return { kind: 'tracker' }
     }
+    // The Tasks tab — the Craft-style daily driver over the same task notes
+    // the Tracker manages (the Tracker stays the ops table / archive).
+    case 'tasks':
+      return { kind: 'tasks' }
     default:
       // The Cockpit is the app's front door — a calm deck of project cards.
       return { kind: 'projects' }
@@ -108,6 +113,8 @@ export function hrefFor(route: Route): string {
       return route.lens ? `#/scripts/${route.lens}` : '#/scripts'
     case 'tracker':
       return route.lens ? `#/tracker/${route.lens}` : '#/tracker'
+    case 'tasks':
+      return '#/tasks'
     case 'library':
       return '#/library'
     case 'canvas':
