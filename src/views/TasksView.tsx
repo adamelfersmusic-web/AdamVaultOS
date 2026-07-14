@@ -54,6 +54,7 @@ import { toProjects, type Project } from '../domain/projects'
 import { ringOf, type CheckboxRing } from '../domain/checkboxRing'
 import { ProgressRing } from '../components/ProgressRing'
 import { MonthPicker } from '../components/MonthPicker'
+import { TaskCalendar } from '../components/TaskCalendar'
 import { Popover } from '../components/Popover'
 import { IconCalendar, IconPlus } from '../components/Icons'
 
@@ -62,17 +63,23 @@ import { IconCalendar, IconPlus } from '../components/Icons'
 const CHIP_KEY = 'adamvaultos.tasks.chip'
 const COLLAPSE_KEY = 'adamvaultos.tasks.collapsed'
 
-type ChipKind = 'inbox' | 'today' | 'upcoming' | 'all'
+type ChipKind = 'inbox' | 'today' | 'upcoming' | 'all' | 'calendar'
 const CHIPS: { key: ChipKind; label: string }[] = [
   { key: 'inbox', label: 'Inbox' },
   { key: 'today', label: 'Today' },
   { key: 'upcoming', label: 'Upcoming' },
   { key: 'all', label: 'All' },
+  // THE CALENDAR LENS — time as a lens over the same one pool (TaskCalendar).
+  { key: 'calendar', label: 'Calendar' },
 ]
 
 function loadChip(): ChipKind {
   const raw = localStorage.getItem(CHIP_KEY)
-  return raw === 'inbox' || raw === 'today' || raw === 'upcoming' || raw === 'all'
+  return raw === 'inbox' ||
+    raw === 'today' ||
+    raw === 'upcoming' ||
+    raw === 'all' ||
+    raw === 'calendar'
     ? raw
     : 'today'
 }
@@ -198,6 +205,10 @@ export function TasksView() {
   const { tracker, trackerStatus, trackerError, projects, projectsStatus, notes } =
     useStore()
   const [chip, setChipState] = useState<ChipKind>(loadChip)
+  // The Calendar lens's explicitly-tapped day (null = nothing selected; its
+  // panel then shows today). Also threaded to quick-create as the date-chip
+  // default while the Calendar chip is up.
+  const [calDay, setCalDay] = useState<string | null>(null)
   // Done rows linger briefly (is-leaving) so checking off feels like a
   // graceful exit, not a teleport. The vault write fires immediately.
   const [leaving, setLeaving] = useState<Record<string, boolean>>({})
@@ -733,6 +744,7 @@ export function TasksView() {
               className={`tasks-chip${chip === c.key ? ' is-on' : ''}`}
               onClick={() => setChip(c.key)}
             >
+              {c.key === 'calendar' && <IconCalendar size={12} />}
               {c.label}
             </button>
           ))}
@@ -784,6 +796,16 @@ export function TasksView() {
               ringFor={ringFor}
             />
           )}
+          {chip === 'calendar' && (
+            <TaskCalendar
+              tasks={openTasks}
+              loose={looseOpen}
+              selected={calDay}
+              onSelect={setCalDay}
+              Row={Row}
+              LooseRow={LooseRow}
+            />
+          )}
         </div>
       )}
 
@@ -824,7 +846,9 @@ export function TasksView() {
         </Popover>
       )}
 
-      <QuickCreate worlds={worlds} />
+      {/* While the Calendar chip has a day selected, quick-create mints onto
+          THAT day (null everywhere else keeps the Tomorrow default). */}
+      <QuickCreate worlds={worlds} calendarDay={chip === 'calendar' ? calDay : null} />
     </div>
   )
 }
@@ -1238,14 +1262,25 @@ function AllList({
 
 // ————————————————————————— quick create —————————————————————————
 
-function QuickCreate({ worlds }: { worlds: Project[] }) {
+function QuickCreate({
+  worlds,
+  calendarDay,
+}: {
+  worlds: Project[]
+  /** The Calendar lens's selected day — the date chip defaults to it. */
+  calendarDay: string | null
+}) {
   const [dest, setDest] = useState('') // '' = Inbox (unfiled)
   const [text, setText] = useState('')
   // The date chip defaults to Tomorrow — the calm default for a new thought.
-  const [due, setDue] = useState<string | null>(() => {
+  const tomorrow = () => {
     const now = new Date()
     return ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1))
-  })
+  }
+  const [due, setDue] = useState<string | null>(tomorrow)
+  // CALENDAR SYNERGY: while a day is selected on the Calendar chip, the date
+  // chip defaults to THAT day; clearing the selection restores Tomorrow.
+  useEffect(() => setDue(calendarDay ?? tomorrow()), [calendarDay])
   const [pickerOpen, setPickerOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const chipRef = useRef<HTMLButtonElement>(null)
