@@ -47,6 +47,27 @@ export const EXCLUDES: ReadonlyArray<(n: Note) => boolean> = [
   (n) => n.metadata?.['locked'] === true, // the sacred handful stays untouched
 ]
 
+/** The ONE fence-aware checkbox walk — every `- [ ] text` line outside code
+ * fences, in order. Shared by the loose-task scanner and the progress rings
+ * (domain/checkboxRing.ts) so the two can never disagree about what counts. */
+export function eachCheckboxLine(
+  lines: string[],
+  visit: (hit: { index: number; raw: string; checked: boolean; body: string }) => void,
+): void {
+  let inFence = false
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!
+    if (FENCE_RE.test(line)) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) continue
+    const m = CHECKBOX_RE.exec(line)
+    if (!m) continue
+    visit({ index: i, raw: line, checked: m[2] !== ' ', body: m[3]! })
+  }
+}
+
 /** Display title — the note's first heading, else the de-slugged path
  * (the Omnibar's own rule). */
 function noteTitleOf(n: Note): string {
@@ -70,29 +91,18 @@ export function scanLooseTasks(notes: Note[]): LooseTask[] {
     if (EXCLUDES.some((excluded) => excluded(n))) continue
     if (!n.content.includes('- [')) continue // cheap pre-check before splitting
     const noteTitle = noteTitleOf(n)
-    const lines = n.content.split('\n')
-    let inFence = false
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]!
-      if (FENCE_RE.test(line)) {
-        inFence = !inFence
-        continue
-      }
-      if (inFence) continue
-      const m = CHECKBOX_RE.exec(line)
-      if (!m) continue
-      const body = m[3]!
+    eachCheckboxLine(n.content.split('\n'), ({ index, raw, checked, body }) => {
       const dm = DUE_RE.exec(body)
       out.push({
         notePath: n.path,
         noteTitle,
-        lineIndex: i,
-        raw: line,
+        lineIndex: index,
+        raw,
         text: dm ? dm[1]! : body,
-        checked: m[2] !== ' ',
+        checked,
         ...(dm ? { due: dm[2]! } : {}),
       })
-    }
+    })
   }
   return out
 }

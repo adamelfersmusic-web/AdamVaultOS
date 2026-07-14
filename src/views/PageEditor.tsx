@@ -71,6 +71,8 @@ import {
 import { FormatBar } from '../components/FormatBar'
 import { TableBar } from '../components/TableBar'
 import { LockPill } from '../components/LockPill'
+import { ProgressRing } from '../components/ProgressRing'
+import { ringOf, type CheckboxRing } from '../domain/checkboxRing'
 
 type Status = 'loading' | 'ready' | 'missing' | 'error'
 type Rec = 'idle' | 'recording' | 'transcribing'
@@ -105,6 +107,10 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
   // is the seatbelt), so navigating away re-locks. Notes without the key are
   // untouched. A client-side render rule — API/mint/MCP writes never see it.
   const [visitUnlocked, setVisitUnlocked] = useState(false)
+  // The topbar's Craft-style progress ring — the note's checkbox tally,
+  // derived from the editor's CURRENT markdown (display-only, no save path):
+  // it moves the moment a box is checked, not when the save lands.
+  const [ring, setRing] = useState<CheckboxRing | null>(null)
 
   const baseRef = useRef<{ content: string; updatedAt: string } | null>(null)
   const editorRootRef = useRef<HTMLDivElement>(null)
@@ -279,6 +285,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
       if (loadingRef.current || !baseRef.current || !editor) return
       const md = editor.getMarkdown()
       setDirty(md !== baseRef.current.content)
+      setRing(ringOf(md)) // live — checking a box moves the ring before any save
       if (saveTimer.current) clearTimeout(saveTimer.current)
       saveTimer.current = window.setTimeout(() => {
         saveTimer.current = null
@@ -302,7 +309,9 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
       const page = convertPageLinks(editor.getJSON())
       const wiki = convertWikiLinks(convertBoardEmbeds(page.doc).doc)
       if (page.changed || wiki.changed) setContentSilently(editor, wiki.doc)
-      baseRef.current = { content: editor.getMarkdown(), updatedAt }
+      const md = editor.getMarkdown()
+      baseRef.current = { content: md, updatedAt }
+      setRing(ringOf(md))
       loadingRef.current = false
       setStatus('ready')
     }
@@ -576,7 +585,9 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
     const page = convertPageLinks(editor.getJSON())
     const wiki = convertWikiLinks(convertBoardEmbeds(page.doc).doc)
     if (page.changed || wiki.changed) setContentSilently(editor, wiki.doc)
-    baseRef.current = { content: editor.getMarkdown(), updatedAt: conflict.updatedAt }
+    const md = editor.getMarkdown()
+    baseRef.current = { content: md, updatedAt: conflict.updatedAt }
+    setRing(ringOf(md))
     loadingRef.current = false
     setConflict(null)
     setDirty(false)
@@ -746,6 +757,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
         >
           {saveLabel}
         </span>
+        {ring && <ProgressRing ring={ring} />}
         {locked && (
           <LockPill
             unlocked={visitUnlocked}
