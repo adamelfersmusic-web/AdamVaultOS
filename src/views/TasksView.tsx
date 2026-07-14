@@ -13,6 +13,12 @@
 // turn never sees UNFILED tasks: filing to a world is the promotion gesture.
 // Checking a row off writes done:true through the house setMetadata path
 // (undo toast included) and the row animates out gracefully.
+//
+// CRAFT PHASE B — LIVE CHECKBOXES: loose `- [ ]` lines inside ordinary notes
+// join these lists too ("In your notes" on All; due-dated ones on Today and
+// Upcoming), toggle IN PLACE via surgicalLineEdit, and can be PROMOTED into
+// real tasks/* rows (the ↗ affordance). No dual bookkeeping — see
+// domain/looseTasks.ts for the law.
 
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
 import type { Note } from '../lib/types'
@@ -20,15 +26,25 @@ import {
   createTask,
   loadProjects,
   loadTracker,
+  promoteLooseTask,
   setMetadata,
   toast,
+  toggleLooseTask,
   useStore,
 } from '../lib/store'
+import { cachedCorpus, corpusFresh, refreshCorpus } from '../lib/corpus'
 import { navigate } from '../lib/router'
 import { dueTone, formatDue, ymd } from '../lib/dates'
 import { mergedTodayTasks, taskDue, taskProject, taskTitle } from '../domain/tasks'
+import {
+  groupLooseByNote,
+  scanLooseTasks,
+  type LooseNoteGroup,
+  type LooseTask,
+} from '../domain/looseTasks'
 import { toProjects, type Project } from '../domain/projects'
 import { MonthPicker } from '../components/MonthPicker'
+import { Popover } from '../components/Popover'
 import { IconPlus } from '../components/Icons'
 
 // ————————————————————————— persistence keys —————————————————————————
@@ -189,6 +205,132 @@ export function TasksView() {
   const openWorld = (g: { key: string | null; path: string | null }) => {
     if (g.path) navigate({ kind: 'project', path: g.path })
   }
+  /** House note-opening rule (same as the Omnibar/Library). */
+  const openLooseNote = (path: string) =>
+    navigate(path.startsWith('pages/') ? { kind: 'pages', path } : { kind: 'note', path })
+
+  // ——— Craft Phase B: loose checkboxes living inside ordinary notes ———
+
+  // The shared 60s corpus (lib/corpus.ts — the Omnibar's cache, not a fork).
+  // No refresh affordance by design: the same staleness rule re-fetches.
+  const [corpus, setCorpus] = useState<Note[] | null>(() => cachedCorpus())
+  useEffect(() => {
+    let alive = true
+    if (!corpusFresh()) {
+      refreshCorpus()
+        .then((list) => {
+          if (alive) setCorpus(list)
+        })
+        .catch(() => {
+          /* the loose section stays quiet; the row lists still work */
+        })
+    }
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  // Scan memoized on the corpus reference — with the store's fresher note
+  // bodies overlaid first, so a toggle (ours, or a Pages-editor save) shows
+  // up the moment it merges instead of waiting out the staleness window.
+  const loose = useMemo(() => {
+    if (!corpus) return []
+    const merged = corpus.map((n) => {
+      const live = notes[n.path]
+      return live && live.content !== undefined && live.updatedAt > n.updatedAt
+        ? live
+        : n
+    })
+    return scanLooseTasks(merged)
+  }, [corpus, notes])
+
+  // Optimistic checkbox state, keyed by line. An entry exists only while the
+  // vault hasn't confirmed the flip; once the scan agrees, it's pruned.
+  const [looseFlips, setLooseFlips] = useState<Record<string, boolean>>({})
+  const [looseLeaving, setLooseLeaving] = useState<Record<string, boolean>>({})
+  const looseKey = (t: LooseTask) => `${t.notePath}#${t.lineIndex}`
+  useEffect(() => {
+    setLooseFlips((f) => {
+      let changed = false
+      const next = { ...f }
+      for (const t of loose) {
+        const k = `${t.notePath}#${t.lineIndex}`
+        if (k in next && next[k] === t.checked) {
+          delete next[k]
+          changed = true
+        }
+      }
+      return changed ? next : f
+    })
+  }, [loose])
+
+  const toggleLoose = (t: LooseTask) => {
+    const k = looseKey(t)
+    const on = !(looseFlips[k] ?? t.checked)
+    setLooseFlips((f) => ({ ...f, [k]: on }))
+    if (on) {
+      setLooseLeaving((l) => ({ ...l, [k]: true }))
+      leaveTimers.current.push(
+        window.setTimeout(() => {
+          setLooseLeaving((l) => {
+            const next = { ...l }
+            delete next[k]
+            return next
+          })
+        }, 460),
+      )
+    }
+    void toggleLooseTask(t).catch((e) => {
+      // Revert the optimism; the house error toast carries the message.
+      setLooseFlips((f) => {
+        const next = { ...f }
+        delete next[k]
+        return next
+      })
+      setLooseLeaving((l) => {
+        const next = { ...l }
+        delete next[k]
+        return next
+      })
+      toast('error', `Couldn’t save — ${e instanceof Error ? e.message : e}`)
+    })
+  }
+
+  // Only unchecked lines surface (checked ones linger just for the exit bow).
+  const looseOpen = useMemo(
+    () =>
+      loose.filter(
+        (t) =>
+          !(looseFlips[`${t.notePath}#${t.lineIndex}`] ?? t.checked) ||
+          looseLeaving[`${t.notePath}#${t.lineIndex}`],
+      ),
+    [loose, looseFlips, looseLeaving],
+  )
+  const looseToday = useMemo(
+    () =>
+      looseOpen.filter((t) => {
+        if (!t.due) return false
+        const tone = dueTone(t.due)
+        return tone === 'today' || tone === 'overdue'
+      }),
+    [looseOpen],
+  )
+
+  // ——— promote-to-row: the ↗ popover ———
+  const [promote, setPromote] = useState<{ t: LooseTask; anchor: HTMLElement } | null>(
+    null,
+  )
+  const promoteTo = async (t: LooseTask, key: string | null, title: string) => {
+    setPromote(null)
+    try {
+      await promoteLooseTask(t, key)
+      toast('success', `Promoted to ${title} — the line now points at the row`)
+    } catch (e) {
+      // Mint-then-rewrite: if the rewrite failed the row still exists — the
+      // duplicate is visible, never silent. Say so plainly.
+      toast('error', `Couldn’t promote — ${e instanceof Error ? e.message : e}`)
+    }
+  }
 
   // ——— one row, everywhere: check · title (+due) · source chip ———
   const Row = ({ n, showDue = true }: { n: Note; showDue?: boolean }) => {
@@ -238,6 +380,61 @@ export function TasksView() {
     )
   }
 
+  // ——— a loose line's row: same anatomy, source chip = the note ———
+  const LooseRow = ({ t, showDue = true }: { t: LooseTask; showDue?: boolean }) => {
+    const k = looseKey(t)
+    const done = looseFlips[k] ?? t.checked
+    return (
+      <div
+        className={`task-row is-loose${done ? ' is-done' : ''}${done && looseLeaving[k] ? ' is-leaving' : ''}`}
+        data-testid="loose-row"
+        data-path={t.notePath}
+        data-line={t.lineIndex}
+      >
+        <input
+          type="checkbox"
+          className="task-check"
+          checked={done}
+          onChange={() => toggleLoose(t)}
+          aria-label={t.text}
+        />
+        <button
+          className="task-row-main"
+          onClick={() => openLooseNote(t.notePath)}
+          title={`${t.notePath} · line ${t.lineIndex + 1}`}
+        >
+          <span className="task-row-title">{t.text}</span>
+          {showDue && t.due && (
+            <span
+              className={`task-row-due due-${dueTone(t.due)}`}
+              data-testid="task-due"
+              title={t.due}
+            >
+              {formatDue(t.due)}
+            </span>
+          )}
+        </button>
+        <button
+          className="loose-promote"
+          data-testid="loose-promote"
+          title="Promote to a task row"
+          aria-label={`Promote “${t.text}” to a task`}
+          onClick={(e) => setPromote({ t, anchor: e.currentTarget })}
+        >
+          ↗
+        </button>
+        <button
+          className="task-src"
+          data-testid="task-src"
+          title={`Open ${t.noteTitle}`}
+          onClick={() => openLooseNote(t.notePath)}
+        >
+          {t.noteTitle}
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="tasks" data-testid="tasks-view">
       <header className="tasks-head">
@@ -275,13 +472,59 @@ export function TasksView() {
         <div className="tasks-body">
           {chip === 'inbox' && <InboxList tasks={openTasks} Row={Row} />}
           {chip === 'today' && (
-            <TodayList tasks={taskNotes} leaving={leaving} worlds={worlds} Row={Row} onHeader={openWorld} />
+            <TodayList
+              tasks={taskNotes}
+              leaving={leaving}
+              worlds={worlds}
+              Row={Row}
+              onHeader={openWorld}
+              loose={looseToday}
+              LooseRow={LooseRow}
+              onNote={openLooseNote}
+            />
           )}
-          {chip === 'upcoming' && <UpcomingList tasks={openTasks} Row={Row} />}
+          {chip === 'upcoming' && (
+            <UpcomingList tasks={openTasks} Row={Row} loose={looseOpen} LooseRow={LooseRow} />
+          )}
           {chip === 'all' && (
-            <AllList tasks={openTasks} worlds={worlds} Row={Row} onHeader={openWorld} />
+            <AllList
+              tasks={openTasks}
+              worlds={worlds}
+              Row={Row}
+              onHeader={openWorld}
+              loose={looseOpen}
+              LooseRow={LooseRow}
+              onNote={openLooseNote}
+            />
           )}
         </div>
+      )}
+
+      {promote && (
+        <Popover anchor={promote.anchor} onClose={() => setPromote(null)} width={200}>
+          <div className="menu-label">Promote to</div>
+          <button
+            role="menuitem"
+            className="menu-item"
+            data-testid="promote-dest"
+            data-dest="inbox"
+            onClick={() => void promoteTo(promote.t, null, 'Inbox')}
+          >
+            <span className="menu-item-text">Inbox</span>
+          </button>
+          {worlds.map((w) => (
+            <button
+              key={w.key}
+              role="menuitem"
+              className="menu-item"
+              data-testid="promote-dest"
+              data-dest={w.key}
+              onClick={() => void promoteTo(promote.t, w.key, w.title)}
+            >
+              <span className="menu-item-text">{w.title}</span>
+            </button>
+          ))}
+        </Popover>
       )}
 
       <QuickCreate worlds={worlds} />
@@ -290,6 +533,47 @@ export function TasksView() {
 }
 
 type RowRenderer = (props: { n: Note; showDue?: boolean }) => ReactElement
+type LooseRowRenderer = (props: { t: LooseTask; showDue?: boolean }) => ReactElement
+
+// ————————————————————————— loose note groups —————————————————————————
+
+/** Bold note-title headers (doors into the note) over loose rows — shared by
+ * Today's tail and All's "In your notes" section. */
+function LooseNoteGroups({
+  groups,
+  LooseRow,
+  onNote,
+}: {
+  groups: LooseNoteGroup[]
+  LooseRow: LooseRowRenderer
+  onNote: (path: string) => void
+}) {
+  return (
+    <>
+      {groups.map((g) => (
+        <section
+          key={g.path}
+          className="tasks-group"
+          data-testid="tasks-group"
+          data-group={`note:${g.path}`}
+        >
+          <button
+            className="tasks-group-head is-link"
+            data-testid="tasks-group-head"
+            onClick={() => onNote(g.path)}
+            title={`Open ${g.title}`}
+          >
+            {g.title}
+            <span className="tasks-group-count">{g.items.length}</span>
+          </button>
+          {g.items.map((t) => (
+            <LooseRow key={`${t.notePath}#${t.lineIndex}`} t={t} />
+          ))}
+        </section>
+      ))}
+    </>
+  )
+}
 
 // ————————————————————————— Inbox —————————————————————————
 
@@ -318,12 +602,19 @@ function TodayList({
   worlds,
   Row,
   onHeader,
+  loose,
+  LooseRow,
+  onNote,
 }: {
   tasks: Note[]
   leaving: Record<string, boolean>
   worlds: Project[]
   Row: RowRenderer
   onHeader: (g: WorldGroup) => void
+  /** Loose lines due today/overdue — they join AFTER the world groups. */
+  loose: LooseTask[]
+  LooseRow: LooseRowRenderer
+  onNote: (path: string) => void
 }) {
   // The shared merged-today rule (identical to the Cockpit's TodayStrip),
   // then open-only — done rows leave the day (mid-exit rows linger).
@@ -335,7 +626,8 @@ function TodayList({
     [tasks, leaving],
   )
   const groups = useMemo(() => groupByWorld(todays, worlds), [todays, worlds])
-  if (groups.length === 0) {
+  const looseGroups = useMemo(() => groupLooseByNote(loose), [loose])
+  if (groups.length === 0 && looseGroups.length === 0) {
     return <p className="tasks-empty">Nothing claimed today yet — a clear morning.</p>
   }
   return (
@@ -368,20 +660,34 @@ function TodayList({
           ))}
         </section>
       ))}
+      {/* Loose lines whose date has arrived — grouped under their notes,
+          AFTER the Inbox + world groups (rows outrank lines on the day). */}
+      <LooseNoteGroups groups={looseGroups} LooseRow={LooseRow} onNote={onNote} />
     </>
   )
 }
 
 // ————————————————————————— Upcoming —————————————————————————
 
-function UpcomingList({ tasks, Row }: { tasks: Note[]; Row: RowRenderer }) {
+function UpcomingList({
+  tasks,
+  Row,
+  loose,
+  LooseRow,
+}: {
+  tasks: Note[]
+  Row: RowRenderer
+  /** All open loose lines — only future-dued ones slot into the agenda. */
+  loose: LooseTask[]
+  LooseRow: LooseRowRenderer
+}) {
   const now = new Date()
   const dayKey = (offset: number) =>
     ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset))
   const todayK = dayKey(0)
   const horizonK = dayKey(7)
 
-  const { overdue, byDue, beyond, thisWeek } = useMemo(() => {
+  const { overdue, byDue, beyond, thisWeek, looseByDue } = useMemo(() => {
     const dued = tasks.filter((n) => taskDue(n))
     const byDue = new Map<string, Note[]>()
     for (const n of dued) {
@@ -392,13 +698,24 @@ function UpcomingList({ tasks, Row }: { tasks: Note[]; Row: RowRenderer }) {
     }
     for (const arr of byDue.values()) arr.sort(byCreated)
     const overdue = sortDueFirst(dued.filter((n) => taskDue(n)! < todayK))
-    const beyond = [...byDue.keys()].filter((d) => d > horizonK).sort()
+    // Loose lines with FUTURE inline dues slot under their day headers
+    // (today/overdue ones belong to the Today chip, not the agenda).
+    const looseByDue = new Map<string, LooseTask[]>()
+    for (const t of loose) {
+      if (!t.due || t.due <= todayK) continue
+      const arr = looseByDue.get(t.due)
+      if (arr) arr.push(t)
+      else looseByDue.set(t.due, [t])
+    }
+    const beyond = [...new Set([...byDue.keys(), ...looseByDue.keys()])]
+      .filter((d) => d > horizonK)
+      .sort()
     // The coarse layer's tail: blessed for the week but not yet dated.
     const thisWeek = tasks
       .filter((n) => !taskDue(n) && n.metadata['when'] === 'this-week')
       .sort(byCreated)
-    return { overdue, byDue, beyond, thisWeek }
-  }, [tasks, todayK, horizonK])
+    return { overdue, byDue, beyond, thisWeek, looseByDue }
+  }, [tasks, loose, todayK, horizonK])
 
   return (
     <>
@@ -416,17 +733,25 @@ function UpcomingList({ tasks, Row }: { tasks: Note[]; Row: RowRenderer }) {
           header is the calendar telling you it's clear. */}
       {Array.from({ length: 8 }, (_, i) => dayKey(i)).map((d) => {
         const dayTasks = byDue.get(d) ?? []
+        const dayLoose = looseByDue.get(d) ?? []
         return (
           <section className="tasks-day" data-testid="tasks-day" data-day={d} key={d}>
             <div className="tasks-day-head" data-testid="tasks-day-head">
               {formatDue(d)}
             </div>
-            {dayTasks.length === 0 ? (
+            {dayTasks.length === 0 && dayLoose.length === 0 ? (
               <div className="tasks-day-empty" aria-label="Nothing due">
                 —
               </div>
             ) : (
-              dayTasks.map((n) => <Row key={n.path} n={n} showDue={false} />)
+              <>
+                {dayTasks.map((n) => (
+                  <Row key={n.path} n={n} showDue={false} />
+                ))}
+                {dayLoose.map((t) => (
+                  <LooseRow key={`${t.notePath}#${t.lineIndex}`} t={t} showDue={false} />
+                ))}
+              </>
             )}
           </section>
         )
@@ -437,8 +762,11 @@ function UpcomingList({ tasks, Row }: { tasks: Note[]; Row: RowRenderer }) {
           <div className="tasks-day-head" data-testid="tasks-day-head">
             {formatDue(d)}
           </div>
-          {byDue.get(d)!.map((n) => (
+          {(byDue.get(d) ?? []).map((n) => (
             <Row key={n.path} n={n} showDue={false} />
+          ))}
+          {(looseByDue.get(d) ?? []).map((t) => (
+            <LooseRow key={`${t.notePath}#${t.lineIndex}`} t={t} showDue={false} />
           ))}
         </section>
       ))}
@@ -465,11 +793,18 @@ function AllList({
   worlds,
   Row,
   onHeader,
+  loose,
+  LooseRow,
+  onNote,
 }: {
   tasks: Note[]
   worlds: Project[]
   Row: RowRenderer
   onHeader: (g: WorldGroup) => void
+  /** Open loose lines — the closing "In your notes" section. */
+  loose: LooseTask[]
+  LooseRow: LooseRowRenderer
+  onNote: (path: string) => void
 }) {
   // Done tasks are deliberately absent here — the Tracker is the archive and
   // ops table; this list is only ever "what's still open, by world".
@@ -479,6 +814,7 @@ function AllList({
     () => groupByWorld(sortDueFirst(tasks), worlds),
     [tasks, worlds],
   )
+  const looseGroups = useMemo(() => groupLooseByNote(loose), [loose])
 
   const toggleCollapse = (id: string) => {
     setCollapsed((c) => {
@@ -492,7 +828,7 @@ function AllList({
     })
   }
 
-  if (groups.length === 0) {
+  if (groups.length === 0 && looseGroups.length === 0) {
     return <p className="tasks-empty">No open tasks anywhere. Savor it.</p>
   }
   return (
@@ -556,6 +892,16 @@ function AllList({
           </section>
         )
       })}
+      {/* The prize: every `- [ ]` living inside an ordinary note, checkable
+          right here. Rows stay rows; lines stay lines (no dual bookkeeping). */}
+      {looseGroups.length > 0 && (
+        <section className="tasks-loose" data-testid="tasks-loose">
+          <div className="tasks-loose-head" data-testid="tasks-loose-head">
+            In your notes
+          </div>
+          <LooseNoteGroups groups={looseGroups} LooseRow={LooseRow} onNote={onNote} />
+        </section>
+      )}
     </>
   )
 }

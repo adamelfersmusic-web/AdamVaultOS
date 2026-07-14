@@ -35,6 +35,11 @@ import { TRACKER_DB } from '../domain/tracker'
 import { PROJECT_TAG } from '../domain/projects'
 import { WEEK_REVIEW_RE } from '../domain/spine'
 import { NEW_PAGE, newPageContent, TASK_TAG } from '../domain/pages'
+import {
+  promoteTaskLine,
+  toggleTaskLine,
+  type LooseTask,
+} from '../domain/looseTasks'
 
 // Storage keys are namespaced per-app. AdamVaultOS shares ONE origin with
 // AtelierVaultOS on github.io (localStorage is keyed by origin, not by the
@@ -571,11 +576,13 @@ export async function fetchProjectNotes(tag: string): Promise<Note[]> {
  * stays unset, so it lives in the Tasks tab's Inbox and stays INVISIBLE to
  * the Tracker until it's filed to a world (Adam's law, 2026-07-14).
  * `extra` metadata (e.g. when:"today" from the Today picker) wins over the
- * defaults. */
+ * defaults. `body` (optional) lands under the title line — e.g. promotion's
+ * `from [[source]]` provenance line. */
 export async function createTask(
   projectKey: string | null,
   title: string,
   extra: Record<string, unknown> = {},
+  body?: string,
 ): Promise<Note> {
   const a = requireApi()
   const folder = projectKey || 'inbox'
@@ -588,7 +595,7 @@ export async function createTask(
   try {
     const note = await a.createNote({
       path,
-      content: title.trim(),
+      content: body ? `${title.trim()}\n\n${body.trim()}` : title.trim(),
       tags: [TASK_TAG],
       metadata: {
         ...(projectKey ? { project: projectKey } : {}),
@@ -1310,6 +1317,41 @@ export async function surgicalLineEdit(
     updatedAt: fresh.updatedAt,
     content: fresh.content,
   })
+}
+
+// ---------------------------------------------------------------------------
+// Loose tasks (Craft Phase B) — checkboxes living inside ordinary notes.
+// NO DUAL BOOKKEEPING: state lives in the LINE or in a ROW, never both
+// (the law lives in domain/looseTasks.ts). Both writes ride surgicalLineEdit,
+// so only the intended line ever changes.
+// ---------------------------------------------------------------------------
+
+/** Check/uncheck a loose line IN PLACE. Verifies the line's exact bytes
+ * before flipping; a moved line is accepted only when it's unique, and any
+ * ambiguity throws for the caller's error toast. Byte-stable everywhere else. */
+export async function toggleLooseTask(t: LooseTask): Promise<Note> {
+  return surgicalLineEdit(t.notePath, (lines) => toggleTaskLine(lines, t))
+}
+
+/**
+ * PROMOTION — transfer ownership from the line to a real tasks/* row.
+ * Mint FIRST (title = the line's text, due carried over, `from [[source]]`
+ * provenance line), THEN rewrite the source line into `- ➜ [[<row path>]]`.
+ * If the rewrite fails the minted row STAYS — a visible duplicate beats a
+ * silent loss — and the error bubbles for the house toast.
+ */
+export async function promoteLooseTask(
+  t: LooseTask,
+  projectKey: string | null,
+): Promise<Note> {
+  const row = await createTask(
+    projectKey,
+    t.text,
+    { when: 'later', ...(t.due ? { due: t.due } : {}) },
+    `from [[${t.notePath}]]`,
+  )
+  await surgicalLineEdit(t.notePath, (lines) => promoteTaskLine(lines, t, row.path))
+  return row
 }
 
 /** Explicit human overwrite after reviewing a content conflict. */
