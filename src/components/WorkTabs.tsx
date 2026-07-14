@@ -24,6 +24,7 @@ import {
 import { hrefFor } from '../lib/router'
 import { navigate } from '../lib/router'
 import { titleFromPath } from '../lib/format'
+import { startTouchDrag, useTouchDropTarget } from '../lib/touchDrag'
 import { IconPlus } from './Icons'
 
 const COLLAPSE_KEY = 'adamvaultos.worktabs.collapsed'
@@ -161,14 +162,46 @@ export function WorkTabs({ path }: { path: string }) {
 
   const acceptsHere = () => liveTabDrag?.kind === 'worktab' && liveTabDrag.root === root
 
-  const onTabDrop = (e: React.DragEvent, slot: number) => {
-    const payload = readTabDragPayload(e)
+  // ——— THE SHARED BEHAVIOR CONTRACT — the drop write as a plain closure;
+  // the HTML5 handlers and the touch backend (lib/touchDrag.ts — HTML5 drag
+  // never fires on iOS Safari) both call THIS. One write path. ———
+  const performTabDrop = (payload: TabDragPayload | null, slot: number) => {
     setDropSlot(null)
     if (!payload || payload.root !== root) return
-    e.preventDefault()
-    e.stopPropagation()
     applyReorder(payload.path, slot)
   }
+
+  const onTabDrop = (e: React.DragEvent, slot: number) => {
+    const payload = readTabDragPayload(e)
+    if (payload && payload.root === root) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    performTabDrop(payload, slot)
+  }
+
+  // The touch backend: the rail is ONE registered drop target; the hovered
+  // slot comes from the pointer's y against the live tab rects (the same
+  // top/bottom-half rule as slotFor).
+  const listRef = useRef<HTMLDivElement | null>(null)
+  const slotFromPoint = (clientY: number): number => {
+    const list = listRef.current
+    const count = tabs?.children.length ?? 0
+    if (!list) return count
+    const els = list.querySelectorAll<HTMLElement>('.worktabs-item-draggable')
+    for (let i = 0; i < els.length; i++) {
+      const r = els[i]!.getBoundingClientRect()
+      if (clientY < r.top + r.height / 2) return i
+      if (clientY < r.bottom) return i + 1
+    }
+    return els.length
+  }
+  const touchListRef = useTouchDropTarget({
+    accepts: acceptsHere,
+    enter: (_x, y) => setDropSlot(slotFromPoint(y)),
+    leave: () => setDropSlot(null),
+    drop: (_x, y) => performTabDrop(liveTabDrag, slotFromPoint(y)),
+  })
 
   if (collapsed) {
     return (
@@ -196,6 +229,10 @@ export function WorkTabs({ path }: { path: string }) {
       </div>
       <div
         className="worktabs-list"
+        ref={(el) => {
+          listRef.current = el
+          touchListRef(el)
+        }}
         onDragOver={(e) => {
           // The gap under the last tab — append.
           if (!acceptsHere()) return
@@ -249,6 +286,18 @@ export function WorkTabs({ path }: { path: string }) {
                     setDropSlot(slotFor(e, i))
                   }}
                   onDrop={(e) => onTabDrop(e, slotFor(e, i))}
+                  onPointerDown={(e) =>
+                    startTouchDrag(e, {
+                      label: tabTitle(c.path, notes[c.path] ?? c),
+                      onStart: () => {
+                        liveTabDrag = { kind: 'worktab', path: c.path, root }
+                      },
+                      onEnd: () => {
+                        liveTabDrag = null
+                        setDropSlot(null)
+                      },
+                    })
+                  }
                 >
                   {tabTitle(c.path, notes[c.path] ?? c)}
                 </a>

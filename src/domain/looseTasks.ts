@@ -26,6 +26,11 @@ export interface LooseTask {
   checked: boolean
   /** Inline due — the trailing `📅 YYYY-MM-DD` token, when present. */
   due?: string
+  /** Indentation level of the line: floor(leadingSpaces / 2), tabs counting
+   * one level each, capped at 3. NESTING LIVES IN THE NOTE — this is pure
+   * READ-SIDE derivation from the bytes already there (the TipTap editor's
+   * Tab writes the indentation); no parent IDs, no new storage concepts. */
+  depth: number
 }
 
 /** A checkbox line: `- [ ] text` / `- [x] text`, any leading indent. */
@@ -52,7 +57,14 @@ export const EXCLUDES: ReadonlyArray<(n: Note) => boolean> = [
  * (domain/checkboxRing.ts) so the two can never disagree about what counts. */
 export function eachCheckboxLine(
   lines: string[],
-  visit: (hit: { index: number; raw: string; checked: boolean; body: string }) => void,
+  visit: (hit: {
+    index: number
+    raw: string
+    checked: boolean
+    body: string
+    /** The line's leading whitespace, verbatim. */
+    indent: string
+  }) => void,
 ): void {
   let inFence = false
   for (let i = 0; i < lines.length; i++) {
@@ -64,8 +76,21 @@ export function eachCheckboxLine(
     if (inFence) continue
     const m = CHECKBOX_RE.exec(line)
     if (!m) continue
-    visit({ index: i, raw: line, checked: m[2] !== ' ', body: m[3]! })
+    visit({ index: i, raw: line, checked: m[2] !== ' ', body: m[3]!, indent: m[1]! })
   }
+}
+
+/** Indent → outline level: two spaces per level (the TipTap editor's Tab),
+ * a tab counts as one whole level, capped at 3 — deeper indents render at
+ * the cap rather than marching off the row. */
+export function depthOf(indent: string): number {
+  let spaces = 0
+  let tabs = 0
+  for (const ch of indent) {
+    if (ch === '\t') tabs++
+    else spaces++
+  }
+  return Math.min(tabs + Math.floor(spaces / 2), 3)
 }
 
 /** Display title — the note's first heading, else the de-slugged path
@@ -91,7 +116,7 @@ export function scanLooseTasks(notes: Note[]): LooseTask[] {
     if (EXCLUDES.some((excluded) => excluded(n))) continue
     if (!n.content.includes('- [')) continue // cheap pre-check before splitting
     const noteTitle = noteTitleOf(n)
-    eachCheckboxLine(n.content.split('\n'), ({ index, raw, checked, body }) => {
+    eachCheckboxLine(n.content.split('\n'), ({ index, raw, checked, body, indent }) => {
       const dm = DUE_RE.exec(body)
       out.push({
         notePath: n.path,
@@ -101,6 +126,7 @@ export function scanLooseTasks(notes: Note[]): LooseTask[] {
         text: dm ? dm[1]! : body,
         checked,
         ...(dm ? { due: dm[2]! } : {}),
+        depth: depthOf(indent),
       })
     })
   }
@@ -155,7 +181,14 @@ export function setLineDue(lines: string[], t: LooseTask, due: string | null): s
 }
 
 /** PROMOTION's second half: the source line stops being a checkbox and
- * becomes a pointer to the minted row — ownership transferred. */
+ * becomes a pointer to the minted row — ownership transferred.
+ *
+ * NESTING NOTE: promoting a PARENT rewrites ONLY that one line. Any child
+ * lines beneath it keep their bytes — indentation included — so they simply
+ * sit at their old depth under the pointer line (i.e., the outline reads as
+ * children of the pointer, siblings of nothing new). No cascade, no
+ * re-indent: the note stays the single truth and untouched lines stay
+ * untouched. */
 export function promoteTaskLine(
   lines: string[],
   t: LooseTask,
@@ -174,6 +207,106 @@ export interface LooseNoteGroup {
   path: string
   title: string
   items: LooseTask[]
+}
+
+// ————————————————————————— the nested tree (render-only) —————————————————————————
+//
+// Adam thinks in nested task trees — "maybe the task subtask is just visual
+// nesting… it helps me think way clearer." THE LAW: nesting lives in the
+// note (markdown indentation under checkbox lines) and the Tasks tab only
+// RENDERS the tree. No parent IDs, no new metadata, no cascade writes —
+// checking a parent flips exactly that parent's line, nothing else.
+
+/** One node of the rendered outline: a task and the tasks indented under it. */
+export interface LooseTaskNode {
+  task: LooseTask
+  children: LooseTaskNode[]
+}
+
+/**
+ * Shape a flat scan into outline trees — pure, standard outline semantics:
+ * a task's parent is the nearest PRECEDING task with a lower depth, within
+ * the same note. Non-task lines between them break nothing (markdown lists
+ * tolerate wrapped text — the scanner already skipped those lines). A depth
+ * jump with no shallower predecessor roots the task. Crossing into another
+ * note resets the outline (nesting never spans notes).
+ *
+ * Callers pass whatever list they RENDER (usually the open-only filter), so
+ * this is arrangement only: a task whose parent isn't in the list attaches
+ * to its nearest present ancestor, or becomes a root. Visibility rules are
+ * untouched.
+ */
+export function treeifyLoose(tasks: LooseTask[]): LooseTaskNode[] {
+  const roots: LooseTaskNode[] = []
+  // The current outline spine: strictly increasing depths, innermost last.
+  let stack: { depth: number; node: LooseTaskNode }[] = []
+  let notePath: string | null = null
+  for (const t of tasks) {
+    if (t.notePath !== notePath) {
+      notePath = t.notePath
+      stack = []
+    }
+    const node: LooseTaskNode = { task: t, children: [] }
+    while (stack.length > 0 && stack[stack.length - 1]!.depth >= t.depth) stack.pop()
+    const parent = stack[stack.length - 1]
+    if (parent) parent.node.children.push(node)
+    else roots.push(node)
+    stack.push({ depth: t.depth, node })
+  }
+  return roots
+}
+
+/** A tree flattened back to render order: each task with its RENDERED indent
+ * (position in the tree, not the raw line depth — an orphan at raw depth 2
+ * whose parent isn't in the list renders flush, never floating) and how many
+ * children render beneath it. */
+export interface LooseTreeRow {
+  t: LooseTask
+  indent: number
+  childCount: number
+}
+
+/** DFS the outline into row order — what every loose list actually maps over. */
+export function flattenLooseTree(nodes: LooseTaskNode[]): LooseTreeRow[] {
+  const out: LooseTreeRow[] = []
+  const walk = (list: LooseTaskNode[], indent: number) => {
+    for (const n of list) {
+      out.push({ t: n.task, indent, childCount: n.children.length })
+      walk(n.children, indent + 1)
+    }
+  }
+  walk(nodes, 0)
+  return out
+}
+
+export interface SubtreeTally {
+  done: number
+  total: number
+}
+
+/** The stable key every loose surface already uses for a line. */
+export const looseTaskKey = (t: LooseTask): string => `${t.notePath}#${t.lineIndex}`
+
+/**
+ * Per-line subtree tallies (self + all descendants, done included) from the
+ * FULL scan — checked lines count here even though the open-only lists drop
+ * them, so a parent's "2/5" tells the truth about the whole subtree in the
+ * note. Keyed by looseTaskKey.
+ */
+export function subtreeTallies(tasks: LooseTask[]): Map<string, SubtreeTally> {
+  const map = new Map<string, SubtreeTally>()
+  const walk = (node: LooseTaskNode): SubtreeTally => {
+    const tally: SubtreeTally = { done: node.task.checked ? 1 : 0, total: 1 }
+    for (const c of node.children) {
+      const ct = walk(c)
+      tally.done += ct.done
+      tally.total += ct.total
+    }
+    map.set(looseTaskKey(node.task), tally)
+    return tally
+  }
+  for (const root of treeifyLoose(tasks)) walk(root)
+  return map
 }
 
 /** Group loose tasks under their note (corpus order preserved) — the
