@@ -32,6 +32,12 @@ const ExploreView = lazy(() =>
   import('./views/ExploreView').then((m) => ({ default: m.ExploreView })),
 )
 
+// The ceremonial wing — visited rarely, loaded only when entered.
+const CommandmentsView = lazy(() =>
+  import('./views/Ceremony').then((m) => ({ default: m.CommandmentsView })),
+)
+const MapView = lazy(() => import('./views/Ceremony').then((m) => ({ default: m.MapView })))
+
 export default function App() {
   const { session, oauthStatus, oauthError } = useStore()
   const ui = useUi()
@@ -97,6 +103,21 @@ export default function App() {
     return (
       <>
         <ConnectView />
+        <ToastHost />
+      </>
+    )
+  }
+
+  // The ceremonial wing is full-bleed and chromeless: just the monument in
+  // the void. The Omnibar stays reachable so every door still works.
+  if (route.kind === 'commandments' || route.kind === 'map') {
+    return (
+      <>
+        <Suspense fallback={null}>
+          {route.kind === 'commandments' ? <CommandmentsView /> : <MapView />}
+        </Suspense>
+        {ui.paletteOpen && <Omnibar />}
+        <AskAi />
         <ToastHost />
       </>
     )

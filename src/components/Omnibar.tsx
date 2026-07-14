@@ -300,6 +300,18 @@ export function Omnibar() {
         run: () => navigate({ kind: 'scripts', lens: 'gallery' }),
       },
       {
+        key: 'commandments',
+        label: 'The Commandments — the laws of the vault',
+        icon: <IconGem size={14} />,
+        run: () => navigate({ kind: 'commandments' }),
+      },
+      {
+        key: 'map',
+        label: 'The Map — chambers of the vault',
+        icon: <IconGem size={14} />,
+        run: () => navigate({ kind: 'map' }),
+      },
+      {
         key: 'askai',
         label: 'Ask AI',
         hint: '⌘J',
