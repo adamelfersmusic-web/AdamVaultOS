@@ -1804,6 +1804,14 @@ body.is-dragging .card {
 .palette-foot-ops {
   opacity: 0.85;
 }
+/* First-ever semantic index build — a one-time murmur, right-aligned in the
+   foot. Token vars only, so it reads correctly in both themes. */
+.palette-foot-status {
+  float: right;
+  color: var(--ink-4);
+  font-style: italic;
+  letter-spacing: 0.03em;
+}
 
 /* ————————————————————————— capture modal ————————————————————————— */
 
