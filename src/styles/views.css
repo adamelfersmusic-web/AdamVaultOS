@@ -4568,6 +4568,34 @@ button.task-row-due:hover {
   }
 }
 
+/* ——— NESTED SUBTASK TREES — the note's own indentation, rendered. Quiet
+   depth steps plus the house left hairline (the toggle-content / sidebar
+   nested-list vocabulary: border-left 2px var(--line)). Flat notes carry
+   data-depth="0" and match the pre-tree rendering exactly. ——— */
+.task-row.is-loose[data-depth='1'],
+.task-row.is-loose[data-depth='2'],
+.task-row.is-loose[data-depth='3'] {
+  border-left: 2px solid var(--line);
+  padding-left: 10px;
+}
+.task-row.is-loose[data-depth='1'] {
+  margin-left: 22px;
+}
+.task-row.is-loose[data-depth='2'] {
+  margin-left: 44px;
+}
+.task-row.is-loose[data-depth='3'] {
+  margin-left: 66px;
+}
+/* The parent's subtree count ("2/5" — done/total, self included): muted and
+   tabular, quieter than the due chip beside it. */
+.loose-subcount {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ——— quick-create bar, docked at the bottom of the view ——— */
 
 .tasks-qc {

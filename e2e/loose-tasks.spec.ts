@@ -271,3 +271,87 @@ test('promote — ↗ to amanda mints the row (due + provenance), rewrites the l
 
   expect(errors, errors.join('\n')).toEqual([])
 })
+
+// ————————————————————————— nested subtask trees —————————————————————————
+// NESTING LIVES IN THE NOTE: indentation under checkbox lines IS the tree,
+// and the Tasks tab only renders it — no parent IDs, no cascade writes.
+
+test('nested tree — children render indented under their parent (tabs = one level) with a truthful subtree count; done children are counted but not shown', async ({ page }) => {
+  const lines = [
+    '# Outline', // 0
+    '- [ ] Parent quest', // 1 — depth 0
+    '  - [ ] child one', // 2 — depth 1 (two spaces)
+    '  - [x] child two', // 3 — depth 1, already done
+    '\t- [ ] tab child', // 4 — depth 1 (one tab = one level)
+    '- [ ] Flat sibling', // 5 — depth 0
+  ]
+  await seed(page, 'pages/outline', lines.join('\n'))
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('http://127.0.0.1:4173/#/tasks')
+  await chips(page).getByRole('tab', { name: 'All' }).click()
+  const looseSection = page.getByTestId('tasks-loose')
+
+  // Visible rows: parent, its two OPEN children, the flat sibling. The done
+  // child stays in the note (and in the count) but off the open list —
+  // visibility rules are untouched, only arrangement.
+  await expect(looseSection.getByTestId('loose-row')).toHaveCount(4)
+  const row = (line: number) =>
+    looseSection.locator(`[data-testid="loose-row"][data-line="${line}"]`)
+  await expect(row(1)).toHaveAttribute('data-depth', '0')
+  await expect(row(2)).toHaveAttribute('data-depth', '1')
+  await expect(row(4)).toHaveAttribute('data-depth', '1')
+  await expect(row(5)).toHaveAttribute('data-depth', '0')
+
+  // The parent's mini count: subtree done/total, self included — 1 of 4
+  // (parent + three children, child two already checked).
+  await expect(row(1).getByTestId('loose-subcount')).toHaveText('1/4')
+  // Leaves and the flat sibling carry no count.
+  await expect(row(2).getByTestId('loose-subcount')).toHaveCount(0)
+  await expect(row(5).getByTestId('loose-subcount')).toHaveCount(0)
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
+test('checking a parent flips ONLY the parent line — no cascade, children byte-untouched', async ({ page }) => {
+  const lines = [
+    '# Outline', // 0
+    '- [ ] Parent quest', // 1
+    '  - [ ] child one', // 2
+    '  - [x] child two', // 3
+    '\t- [ ] tab child', // 4
+    '- [ ] Flat sibling', // 5
+  ]
+  await seed(page, 'pages/outline-check', lines.join('\n'))
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/tasks')
+  await chips(page).getByRole('tab', { name: 'All' }).click()
+  const parent = page.locator('[data-testid="loose-row"][data-line="1"]')
+  await expect(parent).toBeVisible()
+  await parent.locator('.task-check').click()
+
+  // Byte-exact: the parent's brackets flip; every child line — indentation,
+  // checked state, tab — survives untouched. The note is the truth.
+  const expected = [...lines]
+  expected[1] = '- [x] Parent quest'
+  await expect
+    .poll(() => savedContent(page, 'pages/outline-check'))
+    .toBe(expected.join('\n'))
+})
+
+test('a flat note (all depth 0) renders exactly as before — no indents, no counts', async ({ page }) => {
+  await seed(page, 'pages/flat', '# Flat\n- [ ] one\n- [ ] two')
+  await connectViaStorage(page)
+
+  await page.goto('http://127.0.0.1:4173/#/tasks')
+  await chips(page).getByRole('tab', { name: 'All' }).click()
+  const rows = page.getByTestId('tasks-loose').getByTestId('loose-row')
+  await expect(rows).toHaveCount(2)
+  await expect(rows.nth(0)).toHaveAttribute('data-depth', '0')
+  await expect(rows.nth(1)).toHaveAttribute('data-depth', '0')
+  await expect(page.getByTestId('loose-subcount')).toHaveCount(0)
+})

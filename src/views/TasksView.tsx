@@ -45,11 +45,17 @@ import {
   taskTitle,
 } from '../domain/tasks'
 import {
+  flattenLooseTree,
   groupLooseByNote,
+  looseTaskKey,
   scanLooseTasks,
+  subtreeTallies,
+  treeifyLoose,
   type LooseNoteGroup,
   type LooseTask,
+  type SubtreeTally,
 } from '../domain/looseTasks'
+import { startTouchDrag, useTouchDropTarget } from '../lib/touchDrag'
 import { toProjects, type Project } from '../domain/projects'
 import { ringOf, type CheckboxRing } from '../domain/checkboxRing'
 import { ProgressRing } from '../components/ProgressRing'
@@ -100,7 +106,13 @@ function loadCollapsed(): Record<string, boolean> {
 // window-level dragend sweep. Dropping is the ONLY gesture that writes; a
 // cancelled drag (Escape / let go outside) leaves no trace. Dragging is a
 // pointer-only enhancement — dates, promote, checkboxes, filing all stay
-// button-reachable, so no functionality is exclusive to it. ———
+// button-reachable, so no functionality is exclusive to it.
+//
+// TWO INPUT BACKENDS, ONE CONTRACT: HTML5 drag events never fire on iOS
+// Safari, so the same enter/leave/drop closures are ALSO driven by the
+// long-press pointer fallback (lib/touchDrag.ts) — the group container is a
+// registered touch drop target, and every draggable row arms a touch drag on
+// pointerdown. The write logic below is shared, never forked. ———
 
 type RowDragPayload = { kind: 'taskrow'; path: string; group: string }
 
@@ -379,6 +391,11 @@ export function TasksView() {
     [mergedCorpus],
   )
 
+  // Subtree done/total per line, from the FULL scan (checked lines included)
+  // — so a parent's "2/5" counts the children the open-only lists have
+  // already dropped. Render-only derivation; nothing is ever written from it.
+  const looseTallies = useMemo(() => subtreeTallies(loose), [loose])
+
   // The note-group headers' progress rings — the WHOLE note's checkbox tally
   // (done included; no think-space excludes), from the same merged corpus.
   const ringFor = useMemo(() => {
@@ -393,7 +410,7 @@ export function TasksView() {
   // vault hasn't confirmed the flip; once the scan agrees, it's pruned.
   const [looseFlips, setLooseFlips] = useState<Record<string, boolean>>({})
   const [looseLeaving, setLooseLeaving] = useState<Record<string, boolean>>({})
-  const looseKey = (t: LooseTask) => `${t.notePath}#${t.lineIndex}`
+  const looseKey = looseTaskKey // the domain's one key rule, aliased locally
   useEffect(() => {
     setLooseFlips((f) => {
       let changed = false
@@ -521,6 +538,23 @@ export function TasksView() {
         }
         onDragOver={drag?.onOver}
         onDrop={drag?.onDrop}
+        onPointerDown={
+          drag
+            ? (e) =>
+                // The touch backend: long-press arms, then the group
+                // containers' registered handlers take enter/leave/drop.
+                startTouchDrag(e, {
+                  label: taskTitle(n),
+                  onStart: () => {
+                    liveRowDrag = { kind: 'taskrow', path: n.path, group: drag.group }
+                  },
+                  onEnd: () => {
+                    liveRowDrag = null
+                    setDropSlot(null)
+                  },
+                })
+            : undefined
+        }
       >
         <input
           type="checkbox"
@@ -580,8 +614,21 @@ export function TasksView() {
   }
 
   // ——— a loose line's row: same anatomy, source chip = the note. NOT
-  // draggable — a line's home is its note; the ↗ promote popover is its door. ———
-  const LooseRow = ({ t, showDue = true }: { t: LooseTask; showDue?: boolean }) => {
+  // draggable — a line's home is its note; the ↗ promote popover is its door.
+  // `indent` = the RENDERED tree depth (quiet padding steps + hairline);
+  // `tally` = the subtree's done/total, shown only on parents whose children
+  // render beneath them. Flat notes pass neither — zero visual change. ———
+  const LooseRow = ({
+    t,
+    showDue = true,
+    indent = 0,
+    tally = null,
+  }: {
+    t: LooseTask
+    showDue?: boolean
+    indent?: number
+    tally?: SubtreeTally | null
+  }) => {
     const k = looseKey(t)
     const done = looseFlips[k] ?? t.checked
     return (
@@ -590,6 +637,7 @@ export function TasksView() {
         data-testid="loose-row"
         data-path={t.notePath}
         data-line={t.lineIndex}
+        data-depth={indent}
       >
         <input
           type="checkbox"
@@ -606,6 +654,17 @@ export function TasksView() {
           >
             <span className="task-row-title">{t.text}</span>
           </button>
+          {/* The parent's mini count: the whole subtree's done/total (a
+              plain muted count — quieter than a ring at row size). */}
+          {tally && (
+            <span
+              className="loose-subcount"
+              data-testid="loose-subcount"
+              title={`${tally.done} of ${tally.total} in this subtree done`}
+            >
+              {tally.done}/{tally.total}
+            </span>
+          )}
           {showDue && t.due && (
             <button
               className={`task-row-due due-${dueTone(t.due)}`}
@@ -669,12 +728,13 @@ export function TasksView() {
       if (!d || d.kind !== 'taskrow') return false
       return d.group === group || refile
     }
-    const onDrop = (e: React.DragEvent, slot: number) => {
-      const payload = readRowDragPayload(e)
+    // ——— THE SHARED BEHAVIOR CONTRACT — enter (hover slot) and drop (the
+    // one write) as plain closures; the HTML5 handlers and the touch backend
+    // both call THESE. The write logic exists exactly once. ———
+    const enterAt = (slot: number) => setDropSlot({ group, slot })
+    const performDrop = (payload: RowDragPayload | null, slot: number) => {
       setDropSlot(null)
       if (!accepts(payload)) return
-      e.preventDefault()
-      e.stopPropagation()
       if (payload!.group === group) {
         // Reorder within the group; landing where it already sits writes nothing.
         const from = rows.findIndex((r) => r.path === payload!.path)
@@ -689,6 +749,14 @@ export function TasksView() {
         refileTask(payload!.path, group === 'inbox' ? null : group)
       }
     }
+    const onDrop = (e: React.DragEvent, slot: number) => {
+      const payload = readRowDragPayload(e)
+      if (accepts(payload)) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+      performDrop(payload, slot)
+    }
     const rowDrag = (i: number): RowDrag => ({
       group,
       onOver: (e) => {
@@ -696,19 +764,44 @@ export function TasksView() {
         e.preventDefault()
         e.stopPropagation()
         e.dataTransfer.dropEffect = 'move'
-        setDropSlot({ group, slot: slotFor(e, i) })
+        enterAt(slotFor(e, i))
       },
       onDrop: (e) => onDrop(e, slotFor(e, i)),
+    })
+    // ——— the touch backend's view of this group: the container is ONE
+    // registered target; the hovered slot comes from the pointer's y against
+    // the live row rects (the same top/bottom-half rule as slotFor). ———
+    const boxRef = useRef<HTMLDivElement | null>(null)
+    const slotFromPoint = (clientY: number): number => {
+      const box = boxRef.current
+      if (!box) return rows.length
+      const els = box.querySelectorAll<HTMLElement>('[data-testid="task-row"]')
+      for (let i = 0; i < els.length; i++) {
+        const r = els[i]!.getBoundingClientRect()
+        if (clientY < r.top + r.height / 2) return i
+        if (clientY < r.bottom) return i + 1
+      }
+      return els.length
+    }
+    const touchRef = useTouchDropTarget({
+      accepts: () => accepts(liveRowDrag),
+      enter: (_x, y) => enterAt(slotFromPoint(y)),
+      leave: () => setDropSlot((s) => (s?.group === group ? null : s)),
+      drop: (_x, y) => performDrop(liveRowDrag, slotFromPoint(y)),
     })
     return (
       <div
         className="tasks-rows"
+        ref={(el) => {
+          boxRef.current = el
+          touchRef(el)
+        }}
         onDragOver={(e) => {
           // The gap under the last row — append (or file into this group).
           if (!accepts(liveRowDrag)) return
           e.preventDefault()
           e.dataTransfer.dropEffect = 'move'
-          setDropSlot({ group, slot: rows.length })
+          enterAt(rows.length)
         }}
         onDragLeave={(e) => {
           if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
@@ -779,6 +872,7 @@ export function TasksView() {
               LooseRow={LooseRow}
               onNote={openLooseNote}
               ringFor={ringFor}
+              tallies={looseTallies}
             />
           )}
           {chip === 'upcoming' && (
@@ -794,6 +888,7 @@ export function TasksView() {
               LooseRow={LooseRow}
               onNote={openLooseNote}
               ringFor={ringFor}
+              tallies={looseTallies}
             />
           )}
           {chip === 'calendar' && (
@@ -804,6 +899,7 @@ export function TasksView() {
               onSelect={setCalDay}
               Row={Row}
               LooseRow={LooseRow}
+              tallies={looseTallies}
             />
           )}
         </div>
@@ -854,7 +950,14 @@ export function TasksView() {
 }
 
 type RowRenderer = (props: { n: Note; showDue?: boolean; drag?: RowDrag }) => ReactElement
-type LooseRowRenderer = (props: { t: LooseTask; showDue?: boolean }) => ReactElement
+type LooseRowRenderer = (props: {
+  t: LooseTask
+  showDue?: boolean
+  /** Rendered tree depth (0 = flush) — the quiet indent steps. */
+  indent?: number
+  /** Subtree done/total, shown on parents with visible children. */
+  tally?: SubtreeTally | null
+}) => ReactElement
 /** A drag-enabled group of rows (reorder within; re-file across when refile). */
 type GroupRowsRenderer = (props: {
   group: string
@@ -864,6 +967,37 @@ type GroupRowsRenderer = (props: {
 
 // ————————————————————————— loose note groups —————————————————————————
 
+/** THE RENDERED OUTLINE — one note-group's visible loose lines shaped into
+ * the tree the note already contains (treeify → flatten), each row carrying
+ * its indent step and, when its children render beneath it, the subtree's
+ * done/total tally. Flat notes flatten to indent 0 across the board — they
+ * render exactly as before this existed. */
+function LooseTreeRows({
+  items,
+  LooseRow,
+  tallies,
+  showDue = true,
+}: {
+  items: LooseTask[]
+  LooseRow: LooseRowRenderer
+  tallies: Map<string, SubtreeTally>
+  showDue?: boolean
+}) {
+  return (
+    <>
+      {flattenLooseTree(treeifyLoose(items)).map(({ t, indent, childCount }) => (
+        <LooseRow
+          key={looseTaskKey(t)}
+          t={t}
+          showDue={showDue}
+          indent={indent}
+          tally={childCount > 0 ? (tallies.get(looseTaskKey(t)) ?? null) : null}
+        />
+      ))}
+    </>
+  )
+}
+
 /** Bold note-title headers (doors into the note) over loose rows — shared by
  * Today's tail and All's "In your notes" section. Each header carries the
  * note's mini progress ring (its WHOLE checkbox tally, done included). */
@@ -872,11 +1006,13 @@ function LooseNoteGroups({
   LooseRow,
   onNote,
   ringFor,
+  tallies,
 }: {
   groups: LooseNoteGroup[]
   LooseRow: LooseRowRenderer
   onNote: (path: string) => void
   ringFor: (path: string) => CheckboxRing | null
+  tallies: Map<string, SubtreeTally>
 }) {
   return (
     <>
@@ -899,9 +1035,7 @@ function LooseNoteGroups({
             <span className="tasks-group-count">{g.items.length}</span>
             {ring && <ProgressRing ring={ring} size={14} />}
           </button>
-          {g.items.map((t) => (
-            <LooseRow key={`${t.notePath}#${t.lineIndex}`} t={t} />
-          ))}
+          <LooseTreeRows items={g.items} LooseRow={LooseRow} tallies={tallies} />
         </section>
         )
       })}
@@ -939,6 +1073,7 @@ function TodayList({
   LooseRow,
   onNote,
   ringFor,
+  tallies,
 }: {
   tasks: Note[]
   leaving: Record<string, boolean>
@@ -950,6 +1085,7 @@ function TodayList({
   LooseRow: LooseRowRenderer
   onNote: (path: string) => void
   ringFor: (path: string) => CheckboxRing | null
+  tallies: Map<string, SubtreeTally>
 }) {
   // The shared merged-today rule (identical to the Cockpit's TodayStrip),
   // then open-only — done rows leave the day (mid-exit rows linger).
@@ -1005,6 +1141,7 @@ function TodayList({
         LooseRow={LooseRow}
         onNote={onNote}
         ringFor={ringFor}
+        tallies={tallies}
       />
     </>
   )
@@ -1020,7 +1157,10 @@ function UpcomingList({
 }: {
   tasks: Note[]
   Row: RowRenderer
-  /** All open loose lines — only future-dued ones slot into the agenda. */
+  /** All open loose lines — only future-dued ones slot into the agenda.
+   * They render FLAT here: the agenda buckets by day, and a parent and its
+   * children rarely share a due — an orphan child indented under a day
+   * header with no parent above it would read as noise, not structure. */
   loose: LooseTask[]
   LooseRow: LooseRowRenderer
 }) {
@@ -1129,6 +1269,10 @@ function UpcomingList({
 
 // ————————————————————————— All —————————————————————————
 
+// The per-world preview cap. Applies to ROW tasks only (rows never nest);
+// loose note-groups render whole. If loose sections ever grow a cap, subtree
+// rows count INDIVIDUALLY toward it — a parent and its children are each one
+// row against the limit (simplest rule; no subtree-aware slicing).
 const GROUP_PREVIEW = 10
 
 function AllList({
@@ -1140,6 +1284,7 @@ function AllList({
   LooseRow,
   onNote,
   ringFor,
+  tallies,
 }: {
   tasks: Note[]
   worlds: Project[]
@@ -1150,6 +1295,7 @@ function AllList({
   LooseRow: LooseRowRenderer
   onNote: (path: string) => void
   ringFor: (path: string) => CheckboxRing | null
+  tallies: Map<string, SubtreeTally>
 }) {
   // Done tasks are deliberately absent here — the Tracker is the archive and
   // ops table; this list is only ever "what's still open, by world".
@@ -1253,6 +1399,7 @@ function AllList({
             LooseRow={LooseRow}
             onNote={onNote}
             ringFor={ringFor}
+            tallies={tallies}
           />
         </section>
       )}

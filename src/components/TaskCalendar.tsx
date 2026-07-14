@@ -21,12 +21,19 @@
 // writes NOTHING. Pointer-only enhancement: the row-due-edit button in the
 // panel remains the accessible path to the very same write.
 
-import { useEffect, useMemo, useState, type ReactElement } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
 import type { Note } from '../lib/types'
 import { setLooseTaskDue, setMetadata, toast } from '../lib/store'
 import { formatDue, ymd } from '../lib/dates'
 import { taskDue, taskTitle } from '../domain/tasks'
-import type { LooseTask } from '../domain/looseTasks'
+import {
+  flattenLooseTree,
+  looseTaskKey,
+  treeifyLoose,
+  type LooseTask,
+  type SubtreeTally,
+} from '../domain/looseTasks'
+import { startTouchDrag, useTouchDropTarget } from '../lib/touchDrag'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 const MONTHS = [
@@ -55,7 +62,13 @@ function monthGrid(year: number, month: number): Cell[] {
 // ——— CALENDAR DRAG — the house DnD (WorkTabs/Tasks pattern): native HTML5,
 // payload in dataTransfer with a module mirror for dragover (which can't
 // read dataTransfer in protected mode), window-level dragend sweep.
-// Dropping on a cell is the ONLY gesture that writes. ———
+// Dropping on a cell is the ONLY gesture that writes.
+//
+// TWO INPUT BACKENDS, ONE CONTRACT: iOS Safari never fires HTML5 drag
+// events, so the grid is ALSO a registered touch drop target
+// (lib/touchDrag.ts) — a long-press on a chip or panel row arms the same
+// payload mirror, and enter/drop resolve the hovered cell by hit-test. The
+// writeDrop below is the single write path for both backends. ———
 
 type CalDragPayload =
   | { kind: 'cal-row'; path: string }
@@ -103,7 +116,12 @@ interface DayPool {
  * anatomy as every other chip (checkbox toggle, due edit, ↗ promote, source
  * chip) — not a calendar-flavored fork. */
 type PanelRowRenderer = (props: { n: Note; showDue?: boolean }) => ReactElement
-type PanelLooseRowRenderer = (props: { t: LooseTask; showDue?: boolean }) => ReactElement
+type PanelLooseRowRenderer = (props: {
+  t: LooseTask
+  showDue?: boolean
+  indent?: number
+  tally?: SubtreeTally | null
+}) => ReactElement
 
 export function TaskCalendar({
   tasks,
@@ -112,6 +130,7 @@ export function TaskCalendar({
   onSelect,
   Row,
   LooseRow,
+  tallies,
 }: {
   /** Open row tasks (not-done, plus rows mid-exit for the panel's bow). */
   tasks: Note[]
@@ -122,6 +141,8 @@ export function TaskCalendar({
   onSelect: (day: string | null) => void
   Row: PanelRowRenderer
   LooseRow: PanelLooseRowRenderer
+  /** Subtree done/total per loose line (the Tasks tab's full-scan map). */
+  tallies: Map<string, SubtreeTally>
 }) {
   const today = ymd(new Date())
   // Open on the selected day's month when there is one, else the current.
@@ -205,6 +226,41 @@ export function TaskCalendar({
     }
   }
 
+  // ——— the touch backend: the WHOLE GRID is one registered drop target;
+  // the hovered cell is resolved by hit-test, and enter/drop drive the very
+  // same setDropDay/writeDrop the HTML5 handlers use. ———
+  const gridRef = useRef<HTMLDivElement | null>(null)
+  const dayAtPoint = (x: number, y: number): string | null => {
+    const el = document.elementFromPoint(x, y)
+    const cellEl = el?.closest('[data-testid="cal-cell"]')
+    if (!cellEl || !gridRef.current?.contains(cellEl)) return null
+    return cellEl.getAttribute('data-date')
+  }
+  const touchGridRef = useTouchDropTarget({
+    accepts: () => liveCalDrag !== null,
+    enter: (x, y) => setDropDay(dayAtPoint(x, y)),
+    leave: () => setDropDay(null),
+    drop: (x, y) => {
+      const d = dayAtPoint(x, y)
+      const payload = liveCalDrag
+      setDropDay(null)
+      if (d && payload) writeDrop(payload, d)
+    },
+  })
+  /** Arm a long-press drag on a chip / panel row (the source half of the
+   * touch contract — same payload mirror the HTML5 dragstart sets). */
+  const touchStart = (e: React.PointerEvent, payload: CalDragPayload, label: string) =>
+    startTouchDrag(e, {
+      label,
+      onStart: () => {
+        liveCalDrag = payload
+      },
+      onEnd: () => {
+        liveCalDrag = null
+        setDropDay(null)
+      },
+    })
+
   // Tap = select; tapping the selected day again CLEARS the selection (the
   // panel falls back to today, quick-create back to Tomorrow).
   const tapDay = (key: string) => onSelect(key === selected ? null : key)
@@ -251,7 +307,16 @@ export function TaskCalendar({
         </div>
       </div>
 
-      <div className="cal-grid" data-testid="cal-grid" role="grid" aria-label="Month of tasks">
+      <div
+        className="cal-grid"
+        data-testid="cal-grid"
+        role="grid"
+        aria-label="Month of tasks"
+        ref={(el) => {
+          gridRef.current = el
+          touchGridRef(el)
+        }}
+      >
         {WEEKDAYS.map((w) => (
           <span key={w} className="cal-wd" aria-hidden="true">
             {w}
@@ -316,6 +381,9 @@ export function TaskCalendar({
                     onDragEnd={() => {
                       liveCalDrag = null
                     }}
+                    onPointerDown={(e) =>
+                      touchStart(e, { kind: 'cal-row', path: entry.path }, taskTitle(entry))
+                    }
                   >
                     {taskTitle(entry)}
                   </div>
@@ -339,6 +407,17 @@ export function TaskCalendar({
                     onDragEnd={() => {
                       liveCalDrag = null
                     }}
+                    onPointerDown={(e) =>
+                      touchStart(
+                        e,
+                        {
+                          kind: 'cal-loose',
+                          notePath: entry.notePath,
+                          lineIndex: entry.lineIndex,
+                        },
+                        entry.text,
+                      )
+                    }
                   >
                     {entry.text}
                   </div>
@@ -376,13 +455,19 @@ export function TaskCalendar({
                 onDragEnd={() => {
                   liveCalDrag = null
                 }}
+                onPointerDown={(e) =>
+                  touchStart(e, { kind: 'cal-row', path: n.path }, taskTitle(n))
+                }
               >
                 <Row n={n} />
               </div>
             ))}
-            {panelLoose.map((t) => (
+            {/* Loose rows in the note's own outline shape — children indent
+                under their parent when both share the day (arrangement only;
+                the due filter is untouched). */}
+            {flattenLooseTree(treeifyLoose(panelLoose)).map(({ t, indent, childCount }) => (
               <div
-                key={`${t.notePath}#${t.lineIndex}`}
+                key={looseTaskKey(t)}
                 className="cal-drag"
                 draggable
                 onDragStart={(e) =>
@@ -395,8 +480,19 @@ export function TaskCalendar({
                 onDragEnd={() => {
                   liveCalDrag = null
                 }}
+                onPointerDown={(e) =>
+                  touchStart(
+                    e,
+                    { kind: 'cal-loose', notePath: t.notePath, lineIndex: t.lineIndex },
+                    t.text,
+                  )
+                }
               >
-                <LooseRow t={t} />
+                <LooseRow
+                  t={t}
+                  indent={indent}
+                  tally={childCount > 0 ? (tallies.get(looseTaskKey(t)) ?? null) : null}
+                />
               </div>
             ))}
           </>

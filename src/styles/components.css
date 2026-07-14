@@ -1155,3 +1155,36 @@
     transform: scale(1.06);
   }
 }
+
+/* ——— TOUCH DRAG (lib/touchDrag.ts) — the floating mirror chip that follows
+   the finger once a long-press arms a drag. Fixed, hit-transparent (so
+   elementFromPoint sees the target beneath it), every color through the
+   vars — both themes for free. ——— */
+.touch-drag-mirror {
+  position: fixed;
+  z-index: 1250; /* over popovers (1100), under toasts (1300) */
+  transform: translate(-50%, -130%);
+  pointer-events: none;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  border-radius: 999px;
+  padding: 5px 12px;
+  box-shadow: var(--shadow-pop);
+}
+/* Long-pressable drag sources: no iOS text-selection loupe / callout while
+   the finger holds. Scrolling stays native — touch-action is untouched. */
+.task-row.is-draggable,
+.cal-chip,
+.cal-drag,
+.worktabs-item-draggable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
