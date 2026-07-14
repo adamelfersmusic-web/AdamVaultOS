@@ -10,7 +10,14 @@
 // extended (not forked) with the operator grammar (tag:/path:/is:/when:/
 // done:/"phrase"), best-line snippets, and the edit-distance-1 typo net.
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react'
 import { createPortal } from 'react-dom'
 import {
   createPage,
@@ -19,6 +26,14 @@ import {
   useStore,
 } from '../lib/store'
 import { cachedCorpus, corpusFresh, refreshCorpus } from '../lib/corpus'
+import {
+  semanticSearch,
+  semanticStatus,
+  semanticVersion,
+  subscribeSemantic,
+  syncSemanticIndex,
+  type SemanticHit,
+} from '../lib/embed'
 import { askAiAsk, closePalette, openAskAi, openNewScript, openShortcuts } from '../lib/ui'
 import { navigate } from '../lib/router'
 import { fuzzyScore } from '../lib/fuzzy'
@@ -57,6 +72,8 @@ import {
 const GROUP_CAP = 8
 const TOTAL_CAP = 20
 const RECENTS_CAP = 6
+/** ✨ Related is a suggestion, not a result list — four rows, tops. */
+const RELATED_CAP = 4
 
 const RECENTS_KEY = 'adamvaultos.omnibar.recents'
 
@@ -65,6 +82,7 @@ type GroupKey =
   | 'notes'
   | 'tasks'
   | 'projects'
+  | 'related'
   | 'tags'
   | 'recent'
   | 'recent-notes'
@@ -75,6 +93,7 @@ const GROUP_LABELS: Record<GroupKey, string> = {
   notes: 'Notes',
   tasks: 'Tasks',
   projects: 'Projects',
+  related: '✨ Related',
   tags: 'Tags',
   recent: 'Recent searches',
   'recent-notes': 'Recently opened',
@@ -188,16 +207,22 @@ export function Omnibar() {
   const listRef = useRef<HTMLDivElement>(null)
 
   // Full-text corpus, lazily on first open — the Library's own pattern.
+  // The semantic index sync PIGGYBACKS this effect (no polling anywhere):
+  // whenever the corpus lands, the vector index diffs itself against it.
   useEffect(() => {
     let alive = true
     if (!corpusFresh()) {
       refreshCorpus()
         .then((list) => {
           if (alive) setCorpus(list)
+          void syncSemanticIndex(list)
         })
         .catch(() => {
           /* an empty notes group beats a broken bar */
         })
+    } else {
+      const held = cachedCorpus()
+      if (held) void syncSemanticIndex(held)
     }
     return () => {
       alive = false
@@ -209,6 +234,40 @@ export function Omnibar() {
     const id = window.setTimeout(() => setDebounced(query), 80)
     return () => window.clearTimeout(id)
   }, [query])
+
+  // ——— ✨ Related: meaning-ish neighbors from the local vector index ———
+  // Index status (for the first-build foot line, and to re-query the moment
+  // the index becomes ready under a query typed before the build finished).
+  const semVersion = useSyncExternalStore(subscribeSemantic, semanticVersion)
+  const [related, setRelated] = useState<SemanticHit[]>([])
+  useEffect(() => {
+    const q = debounced.trim()
+    if (!q) {
+      setRelated([])
+      return
+    }
+    const parsed = parseQuery(q)
+    // Free text only — constraint-only queries (tag:x, path:y…) are exact
+    // navigation, and Related has no business guessing next to them.
+    const rankQ = [...parsed.terms, ...parsed.phrases].join(' ')
+    if (!hasFreeText(parsed) || rankQ.length < 3) {
+      setRelated([])
+      return
+    }
+    let alive = true
+    // Over-fetch past the cap: dedup against keyword hits and tag:/path:/
+    // phrase filters happen downstream and eat candidates.
+    semanticSearch(rankQ, RELATED_CAP * 4)
+      .then((hits) => {
+        if (alive) setRelated(hits)
+      })
+      .catch(() => {
+        if (alive) setRelated([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [debounced, semVersion])
 
   // ——— Commands: everything the old palette offered, and the missing verbs ———
   const commands = useMemo<OmniItem[]>(() => {
@@ -525,7 +584,17 @@ export function Omnibar() {
       }
     }
 
-    return (raw: string): { items: OmniItem[]; markTerms: string[] } => {
+    return (
+      raw: string,
+    ): {
+      items: OmniItem[]
+      markTerms: string[]
+      /** null in the zero state — Related never renders there. */
+      parsed: ParsedQuery | null
+      /** Paths already shown by the keyword Notes/Tasks/Projects groups —
+       * the ✨ Related dedup set (exact hits are sacred; no echoes). */
+      keywordPaths: Set<string>
+    } => {
       const q = raw.trim()
 
       // ——— Zero-state: recents + recently touched notes + top commands ———
@@ -560,7 +629,12 @@ export function Omnibar() {
           })
         }
         for (const c of commands.slice(0, 6)) items.push(c)
-        return { items: items.slice(0, TOTAL_CAP), markTerms: [] }
+        return {
+          items: items.slice(0, TOTAL_CAP),
+          markTerms: [],
+          parsed: null,
+          keywordPaths: new Set<string>(),
+        }
       }
 
       const parsed = parseQuery(q)
@@ -600,11 +674,78 @@ export function Omnibar() {
         label: q,
         run: () => askAiAsk(q),
       })
-      return { items, markTerms }
+      const keywordPaths = new Set<string>()
+      for (const it of [...groups.notes, ...groups.tasks, ...groups.projects]) {
+        if (it.path) keywordPaths.add(it.path)
+      }
+      return { items, markTerms, parsed, keywordPaths }
     }
   }, [commands, corpus, tracker, projects, storeNotes, recents])
 
-  const { items, markTerms } = useMemo(() => build(debounced), [build, debounced])
+  const corpusByPath = useMemo(
+    () => new Map((corpus ?? []).map((n) => [n.path, n] as const)),
+    [corpus],
+  )
+
+  /**
+   * Weave ✨ Related into a built result — below Notes/Tasks/Projects,
+   * above Tags. Additive by law: it NEVER filters or reorders the exact/
+   * operator hits, only appends its own rows. Rules: free text ≥3 chars
+   * (enforced where `related` is fetched), score ≥ SEMANTIC_FLOOR (enforced
+   * in semanticSearch), not already a keyword hit, and every tag:/path:/
+   * "phrase" constraint still holds. Snippets are honest: the best matching
+   * body line if one exists, else the note's own metadata summary, else
+   * nothing — never a fabricated excerpt.
+   */
+  const compose = (built: ReturnType<typeof build>): {
+    items: OmniItem[]
+    markTerms: string[]
+  } => {
+    const { items: base, markTerms, parsed, keywordPaths } = built
+    if (!parsed || related.length === 0 || !hasFreeText(parsed)) {
+      return { items: base, markTerms }
+    }
+    // Same visibility scope as the Notes group — is:task/when:/done: users
+    // asked for tasks, not neighboring prose.
+    const scopeOk =
+      (parsed.is === null || parsed.is === 'note' || parsed.is === 'page') &&
+      parsed.when === null &&
+      parsed.done === null
+    if (!scopeOk) return { items: base, markTerms }
+    const rows: OmniItem[] = []
+    for (const hit of related) {
+      if (rows.length >= RELATED_CAP) break
+      if (keywordPaths.has(hit.path)) continue
+      const n = corpusByPath.get(hit.path)
+      if (!n) continue
+      if (!noteMatchesFilters(n, parsed, noteTitle)) continue
+      const summary = n.metadata?.['summary']
+      rows.push({
+        key: `related:${n.path}`,
+        group: 'related' as const,
+        label: noteTitle(n),
+        dot: TYPE_META[inferNoteType(n)].color,
+        path: n.path,
+        snippet:
+          snippetFor(n.content, markTerms) ??
+          (typeof summary === 'string' && summary ? summary : undefined),
+        hint: 'related',
+        run: () => openNote(n.path),
+      })
+    }
+    if (rows.length === 0) return { items: base, markTerms }
+    const at = base.findIndex((it) => it.group === 'tags' || it.group === 'ask')
+    const items =
+      at < 0 ? [...base, ...rows] : [...base.slice(0, at), ...rows, ...base.slice(at)]
+    return { items, markTerms }
+  }
+
+  const built = useMemo(() => build(debounced), [build, debounced])
+  const { items, markTerms } = useMemo(
+    () => compose(built),
+    // compose reads only `related`/`corpusByPath` beyond `built` itself.
+    [built, related, corpusByPath],
+  )
 
   useEffect(() => setActive(0), [query])
   useEffect(() => {
@@ -624,7 +765,9 @@ export function Omnibar() {
   }
 
   /** Enter mustn't act on a stale (pre-debounce) list — flush synchronously. */
-  const liveItems = () => (query === debounced ? items : build(query).items)
+  const liveItems = () => (query === debounced ? items : compose(build(query)).items)
+
+  const sem = semanticStatus()
 
   return createPortal(
     <div
@@ -724,6 +867,11 @@ export function Omnibar() {
         <div className="palette-foot">
           <kbd>↑↓</kbd> navigate · <kbd>↵</kbd> open · <kbd>esc</kbd> close ·{' '}
           <span className="palette-foot-ops">tag: path: is: when: done: “phrase”</span>
+          {sem.building && sem.firstEver && (
+            <span className="palette-foot-status" data-testid="omnibar-indexing">
+              indexing your vault…
+            </span>
+          )}
         </div>
       </div>
     </div>,
