@@ -3,11 +3,19 @@
 // latest weekly card) with the current phase on the right. Paused worlds fold
 // into a quiet count at the bottom. Nothing else — click a world to enter it.
 // Derives entirely from #project spines + projects/<key>/weekly/ cards.
+//
+// The altitude pass: one calm band above the strip — the weekly review's
+// ⭐ Top 3 whispered beside the kept Today checklist. The 📍 Current pin
+// panel moved out entirely, and the daily note shrank to a quiet header
+// button. One screen, one cognitive question — with the day's short list
+// earning its corner.
 
 import { useEffect, useMemo, useState } from 'react'
 import type { Note } from '../lib/types'
 import {
   createProject,
+  ensureTodayNote,
+  fetchLatestWeeklyReview,
   fetchWeeklyCards,
   loadProjects,
   loadTracker,
@@ -21,8 +29,9 @@ import {
   oneThingOf,
   parseWeeklyCard,
   phaseLabelOf,
+  weekTop3Of,
 } from '../domain/spine'
-import { IconPlus, IconRefresh } from '../components/Icons'
+import { IconPage, IconPlus, IconRefresh } from '../components/Icons'
 import { TodayStrip } from '../components/TodayStrip'
 
 /** The strip is capped — six big things, no more. Calm by law. */
@@ -53,6 +62,62 @@ function MacroRow({ project, weeklies }: { project: Project; weeklies: Note[] })
   )
 }
 
+/** ⭐ This week — the latest weekly review's Top 3, whispered above the
+ * strip. Three muted lines, nothing interactive except the block itself,
+ * which opens the review. No review yet → nothing at all (air, not an
+ * empty state). */
+function WeekTop3({ weekly }: { weekly: Note | null | undefined }) {
+  const items = useMemo(() => (weekly ? weekTop3Of(weekly.content) : []), [weekly])
+  if (!weekly || items.length === 0) return null
+  return (
+    <button
+      className="week-top3"
+      data-testid="week-top3"
+      title="Open this week’s review"
+      onClick={() => navigate({ kind: 'pages', path: weekly.path })}
+    >
+      <span className="week-top3-label">This week</span>
+      <ol className="week-top3-list">
+        {items.map((t, i) => (
+          <li key={i}>{t}</li>
+        ))}
+      </ol>
+    </button>
+  )
+}
+
+/** This week's Monday (local clock) as YYYY-MM-DD — the ritual's due date. */
+function mondayKey(): string {
+  const d = new Date()
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** The weekly ritual's status chip: green when this week is minted, a calm
+ * red when Monday came and went without one. Always one click from the
+ * ritual's front door (desk/weekly/template). */
+function RitualChip({ weekly }: { weekly: Note | null | undefined }) {
+  if (weekly === undefined) return null // still loading — no verdicts yet
+  const monday = mondayKey()
+  const noteDate = weekly ? (weekly.path.split('/').pop() ?? '') : ''
+  const fresh = Boolean(weekly) && noteDate >= monday
+  const daysLate = (new Date().getDay() + 6) % 7
+  return (
+    <button
+      className={`ritual-chip ${fresh ? 'is-fresh' : 'is-due'}`}
+      data-testid="ritual-chip"
+      title="The Monday ritual — dictate, approve, the week mints itself"
+      onClick={() => navigate({ kind: 'pages', path: 'desk/weekly/template' })}
+    >
+      <span className="ritual-dot" />
+      {fresh
+        ? `Week of ${noteDate} ✓`
+        : `Ritual due${daysLate > 0 ? ` · ${daysLate} ${daysLate === 1 ? 'day' : 'days'} late` : ''}`}
+    </button>
+  )
+}
+
 export function ProjectsView() {
   const { projects, projectsStatus, projectsError, notes } = useStore()
   const [newOpen, setNewOpen] = useState(false)
@@ -61,6 +126,10 @@ export function ProjectsView() {
   // The card layer: every world's weekly stream in ONE prefix fetch.
   const [weeklies, setWeeklies] = useState<Note[] | null>(null)
   const [pausedOpen, setPausedOpen] = useState(false)
+  const [openingDaily, setOpeningDaily] = useState(false)
+  // The whole-week review (desk/weekly/<date>) — feeds the ⭐ Top-3 whisper
+  // AND the ritual chip. undefined = still loading, null = none exists.
+  const [weekly, setWeekly] = useState<Note | null | undefined>(undefined)
 
   useEffect(() => {
     let alive = true
@@ -70,6 +139,13 @@ export function ProjectsView() {
       })
       .catch(() => {
         if (alive) setWeeklies([])
+      })
+    fetchLatestWeeklyReview()
+      .then((n) => {
+        if (alive) setWeekly(n)
+      })
+      .catch(() => {
+        if (alive) setWeekly(null)
       })
     return () => {
       alive = false
@@ -105,6 +181,21 @@ export function ProjectsView() {
       toast('error', `${e instanceof Error ? e.message : e}`)
     } finally {
       setBusy(false)
+    }
+  }
+
+  // Open (create if needed) today's desk/<date> note — the same door the old
+  // DAILY NOTE panel opened, now a quiet header button.
+  const openDaily = async () => {
+    if (openingDaily) return
+    setOpeningDaily(true)
+    try {
+      const path = await ensureTodayNote()
+      navigate({ kind: 'pages', path })
+    } catch (e) {
+      toast('error', `Couldn’t open today’s note — ${e instanceof Error ? e.message : e}`)
+    } finally {
+      setOpeningDaily(false)
     }
   }
 
@@ -161,13 +252,26 @@ export function ProjectsView() {
             </button>
           )}
           {full && <span className="cockpit-cap">6 of 6 — a full deck</span>}
+          <button
+            className="btn btn-ghost"
+            disabled={openingDaily}
+            title="Open (or create) today’s daily note"
+            onClick={() => void openDaily()}
+            data-testid="daily-note-btn"
+          >
+            <IconPage size={13} /> {openingDaily ? 'Opening…' : 'Today’s note'}
+          </button>
+          <RitualChip weekly={weekly} />
           <button className="icon-btn" title="Refresh projects" onClick={refresh}>
             <IconRefresh size={14} />
           </button>
         </div>
       </header>
 
-      <TodayStrip />
+      <section className="week-band">
+        <WeekTop3 weekly={weekly} />
+        <TodayStrip />
+      </section>
 
       {projectsStatus === 'error' ? (
         <div className="db-state">
@@ -215,6 +319,14 @@ export function ProjectsView() {
           )}
         </div>
       )}
+
+      <button
+        className="tracker-link"
+        data-testid="tracker-link"
+        onClick={() => navigate({ kind: 'tracker' })}
+      >
+        All tasks → Tracker
+      </button>
     </div>
   )
 }
