@@ -320,7 +320,7 @@ test('loose-line dates — the calendar appends the 📅 token surgically; Clear
 
 // ————————————————————————— no dragging where dates rule —————————————————————
 
-test('Upcoming is an agenda — its rows are not draggable; loose lines never are', async ({ page }) => {
+test('The Week runway is an agenda — its rows are not draggable; loose lines never are', async ({ page }) => {
   await seedAmandaProject(page)
   await seed(page, 'tasks/amanda/dated', 'The dated edit', ['task'], {
     project: 'amanda', state: 'next', when: 'later', done: false, due: ymd(daysFromNow(1)),
@@ -329,7 +329,7 @@ test('Upcoming is an agenda — its rows are not draggable; loose lines never ar
   await connectViaStorage(page)
 
   await page.goto('http://127.0.0.1:4173/#/tasks')
-  await chips(page).getByRole('tab', { name: 'Upcoming' }).click()
+  await chips(page).getByRole('tab', { name: 'Week' }).click()
   const agendaRow = page.locator(`[data-day="${ymd(daysFromNow(1))}"]`).getByTestId('task-row')
   await expect(agendaRow).toBeVisible()
   await expect(agendaRow).not.toHaveAttribute('draggable', 'true')
