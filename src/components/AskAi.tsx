@@ -7,7 +7,13 @@
 // when Adam clicks Insert (propose-don't-apply, as law).
 
 import { useEffect, useRef, useState } from 'react'
-import { announcePageUpdate, closeAskAi, openAskAi, useUi } from '../lib/ui'
+import {
+  announcePageUpdate,
+  ASK_AI_ASK_EVENT,
+  closeAskAi,
+  openAskAi,
+  useUi,
+} from '../lib/ui'
 import { useRoute } from '../lib/router'
 import { saveContent, toast, useStore } from '../lib/store'
 import { useEditorSettings, openPagesSettings } from '../lib/editorSettings'
@@ -45,6 +51,7 @@ export function AskAi() {
   )
   const threadRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const sendRef = useRef<(text?: string) => Promise<void>>(async () => {})
 
   // The page Adam has open right now (Pages view or a Library note).
   const pagePath =
@@ -74,30 +81,13 @@ export function AskAi() {
     }
   }, [askAiOpen])
 
-  // Closed: a quiet spiral circle folded under the capture dock — same size,
-  // same deep-brown/off-white palette, in every layout (incl. full-bleed
-  // Pages/Graph, which have no rail). ⌘J works everywhere too.
-  if (!askAiOpen) {
-    return (
-      <button
-        className="askai-fab"
-        data-testid="askai-fab"
-        title="Ask AI (⌘J)"
-        aria-label="Ask AI"
-        onClick={openAskAi}
-      >
-        <IconSpiral size={17} />
-      </button>
-    )
-  }
-
   const pickModel = (m: AskModel) => {
     setModel(m)
     localStorage.setItem(MODEL_KEY, m)
   }
 
-  const send = async () => {
-    const prompt = input.trim()
+  const send = async (textOverride?: string) => {
+    const prompt = (textOverride ?? input).trim()
     if (!prompt || busy) return
     if (!settings.anthropicKey) {
       toast('info', 'Add your Anthropic API key first (opens settings).')
@@ -186,6 +176,37 @@ export function AskAi() {
     } catch {
       toast('error', 'Copy failed')
     }
+  }
+
+  // The Omnibar's Ask-the-vault handoff: askAiAsk(query) opens the panel and
+  // sends the query as one gesture. The listener lives for the component's
+  // whole life (the fab keeps us mounted); the ref always points at the
+  // freshest send closure.
+  sendRef.current = send
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      const q = (e as CustomEvent<{ query?: string }>).detail?.query
+      if (typeof q === 'string' && q.trim()) void sendRef.current(q)
+    }
+    window.addEventListener(ASK_AI_ASK_EVENT, onAsk)
+    return () => window.removeEventListener(ASK_AI_ASK_EVENT, onAsk)
+  }, [])
+
+  // Closed: a quiet spiral circle folded under the capture dock — same size,
+  // same deep-brown/off-white palette, in every layout (incl. full-bleed
+  // Pages/Graph, which have no rail). ⌘J works everywhere too.
+  if (!askAiOpen) {
+    return (
+      <button
+        className="askai-fab"
+        data-testid="askai-fab"
+        title="Ask AI (⌘J)"
+        aria-label="Ask AI"
+        onClick={openAskAi}
+      >
+        <IconSpiral size={17} />
+      </button>
+    )
   }
 
   return (

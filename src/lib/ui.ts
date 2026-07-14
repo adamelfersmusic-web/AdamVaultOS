@@ -34,6 +34,15 @@ export const openAskAi = () => set({ askAiOpen: true, paletteOpen: false })
 export const closeAskAi = () => set({ askAiOpen: false })
 export const toggleAskAi = () => set({ askAiOpen: !state.askAiOpen })
 
+/** The Omnibar's "🔮 Ask the vault" handoff: open the Ask AI panel AND send
+ * the query — one continuous gesture. AskAi is always mounted (it renders the
+ * fab when closed), so it listens for this event for the panel's lifetime. */
+export const ASK_AI_ASK_EVENT = 'adamvaultos:askai-ask'
+export function askAiAsk(query: string): void {
+  set({ askAiOpen: true, paletteOpen: false })
+  window.dispatchEvent(new CustomEvent(ASK_AI_ASK_EVENT, { detail: { query } }))
+}
+
 /** Fired by the slash menu's "Table — from CSV" item; the focused PageEditor
  * listens and opens its paste-CSV modal (the slash command itself stays dumb —
  * it neither parses nor inserts). */

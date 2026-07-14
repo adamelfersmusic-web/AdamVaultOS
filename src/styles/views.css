@@ -1676,6 +1676,84 @@ body.is-dragging .card {
   color: var(--ink-4);
 }
 
+/* ————————————————————————— the omnibar ————————————————————————— */
+/* Same calm palette shell, grown into the one "where is it?" surface:
+   grouped results, type dots, muted paths, marked snippets, the Ask row. */
+
+.omnibar {
+  width: 640px;
+}
+.omnibar .palette-list {
+  max-height: 430px;
+  padding-bottom: 8px;
+}
+.palette-group {
+  padding: 9px 12px 3px;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  user-select: none;
+}
+.omnibar .type-dot {
+  flex: none;
+  margin: 0 3px;
+}
+.omni-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+.omni-title-line {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+.omni-title-line .palette-label {
+  flex: 0 1 auto;
+}
+.omni-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10.5px;
+  color: var(--ink-4);
+}
+.omni-snippet {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+.palette-label mark,
+.omni-snippet mark {
+  background: color-mix(in srgb, var(--gold) 24%, transparent);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.palette-ask {
+  margin-top: 5px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+  padding-top: 10px;
+}
+.palette-ask em {
+  font-style: normal;
+  color: var(--gold);
+}
+.palette-foot-ops {
+  opacity: 0.85;
+}
+
 /* ————————————————————————— capture modal ————————————————————————— */
 
 .capture {
