@@ -25,6 +25,7 @@ import {
   streamAsk,
   type AskModel,
   type AskTurn,
+  type ToolStatus,
 } from '../lib/anthropic'
 import { IconClose, IconGem, IconSpark, IconSpiral } from './Icons'
 
@@ -33,6 +34,14 @@ interface PanelMsg {
   text: string
   /** Still receiving deltas. */
   streaming?: boolean
+  /** The research trail — one whisper row per tool call, kept in the
+   * transcript above the answer they produced. */
+  steps?: ToolStatus[]
+}
+
+/** Whisper copy for one tool call — quiet, one line, never competing. */
+function stepLabel(s: ToolStatus): string {
+  return s.kind === 'read' ? `📖 reading ${s.label}` : `🔍 searching "${s.label}"`
 }
 
 const MODEL_KEY = 'adamvaultos.askai.model'
@@ -125,12 +134,27 @@ export function AskAi() {
             return next
           })
         },
+        (step) => {
+          // Whisper a status row into the streaming message; the trail stays
+          // in the transcript above the final answer.
+          setMsgs((prev) => {
+            const next = [...prev]
+            const last = next[next.length - 1]
+            if (last?.role === 'assistant' && last.streaming) {
+              next[next.length - 1] = {
+                ...last,
+                steps: [...(last.steps ?? []), step],
+              }
+            }
+            return next
+          })
+        },
       )
       setMsgs((prev) => {
         const next = [...prev]
         const last = next[next.length - 1]
         if (last?.role === 'assistant') {
-          next[next.length - 1] = { role: 'assistant', text: full }
+          next[next.length - 1] = { role: 'assistant', text: full, steps: last.steps }
         }
         return next
       })
@@ -138,8 +162,11 @@ export function AskAi() {
       const msg =
         e instanceof AnthropicError ? e.message : 'Something went wrong.'
       setMsgs((prev) => {
-        // Drop the empty streaming stub, keep the question.
-        const next = prev.filter((m) => !(m.streaming && !m.text))
+        // Drop an empty streaming stub, but keep the question — and keep the
+        // research trail if tools already ran before the failure.
+        const next = prev
+          .map((m) => (m.streaming ? { ...m, streaming: false } : m))
+          .filter((m) => m.text || (m.steps?.length ?? 0) > 0)
         return [...next, { role: 'assistant', text: `⚠️ ${msg}` }]
       })
     } finally {
@@ -258,17 +285,26 @@ export function AskAi() {
             </div>
           ) : (
             <div className="askai-msg askai-assistant" key={i}>
+              {(m.steps?.length ?? 0) > 0 && (
+                <div className="askai-steps" data-testid="askai-steps">
+                  {m.steps!.map((s, j) => (
+                    <div className="askai-step" data-testid="askai-step" key={j}>
+                      {stepLabel(s)}
+                    </div>
+                  ))}
+                </div>
+              )}
               {m.text ? (
                 <div
                   className="askai-prose"
                   // renderMarkdown output is DOMPurify-sanitized
                   dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }}
                 />
-              ) : (
+              ) : m.streaming ? (
                 <div className="askai-thinking">
                   <IconGem size={18} className="gem-breathe" />
                 </div>
-              )}
+              ) : null}
               {!m.streaming && m.text && !m.text.startsWith('⚠️') && (
                 <div className="askai-actions">
                   <button onClick={() => copyText(m.text)}>Copy</button>

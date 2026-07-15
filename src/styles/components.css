@@ -999,6 +999,22 @@
   font-size: 12px;
   font-style: italic;
 }
+/* Tool whispers — the research trail (🔍 searching / 📖 reading). Quiet by
+   law: small, dim, one line each, never competing with the answer below. */
+.askai-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 6px;
+}
+.askai-step {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .askai-actions {
   display: flex;
   gap: 6px;
