@@ -19,6 +19,7 @@ import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion
 import { fetchLinkTargets } from '../../lib/store'
 import { fuzzyScore } from '../../lib/fuzzy'
 import { titleFromPath } from '../../lib/format'
+import { semanticLinkCandidates } from '../../lib/embed/suggest'
 import { IconPage, IconPlus } from '../../components/Icons'
 
 interface WikiItem {
@@ -26,6 +27,8 @@ interface WikiItem {
   title: string
   meta: string
   asTyped?: boolean
+  /** A ✨ meaning-match from the vector index, not a keyword hit. */
+  semantic?: boolean
 }
 
 // Suggestion state lives under this key; hoisted so onStart can re-check
@@ -57,7 +60,15 @@ export function setContentSilently(
 
 const MAX_ITEMS = 8
 
+// Monotonic call counter for wikiItems — the same drop-stale-results idea as
+// PR #50's onStart active-check, one layer down: semanticLinkCandidates is a
+// second await inside items(), so a slow tail from an OLD query could resolve
+// after a newer call already started. Stale calls skip their semantic append
+// (only the newest call may add ✨ rows); the plugin still renders newest-last.
+let wikiItemsSeq = 0
+
 async function wikiItems(query: string): Promise<WikiItem[]> {
+  const seq = ++wikiItemsSeq
   const q = query.trim()
   const all = await fetchLinkTargets()
   let list: WikiItem[]
@@ -81,6 +92,25 @@ async function wikiItems(query: string): Promise<WikiItem[]> {
       .sort((a, b) => b.s - a.s)
       .slice(0, MAX_ITEMS)
       .map(({ n, title }) => ({ target: n.path, title, meta: n.path }))
+  }
+  // ✨ Semantic tail: up to 3 meaning-matches AFTER the keyword rows —
+  // link-time is when you can't remember the note's name. Never throws,
+  // never builds the index, dedups against the keyword hits above.
+  if (q) {
+    const sem = await semanticLinkCandidates(q, new Set(list.map((it) => it.target)))
+    // Stale call (the query changed while semanticSearch was in flight):
+    // skip the tail — only the newest call may append ✨ rows. The render
+    // layer's own stale-query check drops the whole stale frame anyway.
+    if (seq === wikiItemsSeq) {
+      for (const hit of sem) {
+        list.push({
+          target: hit.path,
+          title: titleFromPath(hit.path),
+          meta: hit.path,
+          semantic: true,
+        })
+      }
+    }
   }
   // Escape hatch: link exactly what was typed (a future note is a valid target).
   if (q && !list.some((it) => it.target === q)) {
@@ -135,19 +165,25 @@ const WikiMenu = forwardRef<WikiMenuRef, WikiMenuProps>((props, ref) => {
     <div className="slash-menu wiki-menu" role="listbox" data-testid="wiki-menu">
       {props.items.map((it, i) => (
         <button
-          key={`${it.target}·${it.asTyped ? 'typed' : 'note'}`}
-          className={`slash-item${it.asTyped ? ' wiki-as-typed' : ''}`}
+          key={`${it.target}·${it.asTyped ? 'typed' : it.semantic ? 'sem' : 'note'}`}
+          className={`slash-item${it.asTyped ? ' wiki-as-typed' : ''}${it.semantic ? ' wiki-semantic' : ''}`}
           role="option"
           aria-selected={i === active}
           data-active={i === active}
+          data-semantic={it.semantic ? 'true' : undefined}
           onMouseEnter={() => setActive(i)}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => props.command(it)}
         >
-          <span className="slash-icon">{it.asTyped ? <IconPlus /> : <IconPage />}</span>
+          <span className="slash-icon">
+            {it.asTyped ? <IconPlus /> : it.semantic ? <span aria-hidden>✨</span> : <IconPage />}
+          </span>
           <span className="slash-text">
             <span className="slash-title">{it.title}</span>
-            <span className="slash-sub">{it.meta}</span>
+            <span className="slash-sub">
+              {it.meta}
+              {it.semantic && <span className="wiki-related-hint"> · related</span>}
+            </span>
           </span>
         </button>
       ))}
@@ -221,6 +257,15 @@ export const WikiLinkSuggest = Extension.create({
               place(renderer.element, props.clientRect)
             },
             onUpdate: (props: SuggestionProps<WikiItem, WikiItem>) => {
+              // Same race, one frame later: the semantic tail makes items()
+              // latency VARY per call, so an old query's update can resolve
+              // after a newer one already rendered. If the query this frame
+              // was built for is no longer the live one, drop it — the call
+              // that matches the live query renders (or already has).
+              const live = wikiSuggestKey.getState(props.editor.state) as
+                | { active?: boolean; query?: string | null }
+                | undefined
+              if (live?.active && (live.query ?? '') !== (props.query ?? '')) return
               renderer?.updateProps({
                 items: props.items,
                 command: (it: WikiItem) => props.command(it),
