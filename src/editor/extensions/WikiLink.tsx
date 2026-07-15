@@ -17,6 +17,10 @@ import { IconPage } from '../../components/Icons'
 
 function WikiLinkView({ node }: NodeViewProps) {
   const target = (node.attrs.target as string) || ''
+  const label = node.attrs.label as string | null | undefined
+  // Display the alias when present, else the raw target (byte-identical bits
+  // are stored verbatim; trim only for what the human sees / navigates to).
+  const shown = (label ?? target).trim() || target
   return (
     <NodeViewWrapper as="span" className="wikilink-wrap">
       <button
@@ -29,10 +33,10 @@ function WikiLinkView({ node }: NodeViewProps) {
           const t = target.trim()
           if (t) navigate({ kind: 'pages', path: t })
         }}
-        title={target}
+        title={target.trim()}
       >
         <IconPage size={12} />
-        <span className="wikilink-text">{target}</span>
+        <span className="wikilink-text">{shown}</span>
       </button>
     </NodeViewWrapper>
   )
@@ -53,6 +57,15 @@ export const WikiLink = Node.create({
         parseHTML: (el) => el.getAttribute('data-target') ?? '',
         renderHTML: (attrs) => ({ 'data-target': attrs.target }),
       },
+      // `[[path|display]]` alias. null when the source has no pipe — that node
+      // serializes back to plain `[[path]]`, byte-identical to the pre-alias
+      // world (no regression). Stored VERBATIM (untrimmed) like `target`.
+      label: {
+        default: null,
+        parseHTML: (el) => el.getAttribute('data-label'),
+        renderHTML: (attrs) =>
+          attrs.label == null ? {} : { 'data-label': attrs.label },
+      },
     }
   },
 
@@ -62,10 +75,11 @@ export const WikiLink = Node.create({
 
   renderHTML({ node, HTMLAttributes }) {
     const target = (node.attrs.target as string) || ''
+    const label = node.attrs.label as string | null | undefined
     return [
       'a',
       mergeAttributes(HTMLAttributes, { 'data-wikilink': '', class: 'wikilink' }),
-      `[[${target}]]`,
+      label != null ? `[[${target}|${label}]]` : `[[${target}]]`,
     ]
   },
 
@@ -82,18 +96,33 @@ export const WikiLink = Node.create({
       nodeInputRule({
         find: /\[\[[^[\]\n]+?\]\]$/,
         type: this.type,
-        getAttributes: (match) => ({ target: match[0].slice(2, -2) }),
+        getAttributes: (match) => splitAlias(match[0].slice(2, -2)),
       }),
     ]
   },
 
-  // @tiptap/markdown: write back EXACTLY `[[target]]` — never escaped. `target`
-  // is stored verbatim (no trimming) so the round-trip is byte-identical.
+  // @tiptap/markdown: write back EXACTLY the source — never escaped. Both
+  // `target` and `label` are stored verbatim (no trimming), so `[[a/b]]`
+  // reproduces `[[a/b]]` and `[[a/b|Nice Name]]` reproduces `[[a/b|Nice Name]]`
+  // byte-for-byte. The pipe form is emitted ONLY when a label exists.
   renderMarkdown: (node) => {
     const target = (node.attrs?.target as string) ?? ''
-    return target ? `[[${target}]]` : ''
+    if (!target) return ''
+    const label = node.attrs?.label as string | null | undefined
+    return label != null ? `[[${target}|${label}]]` : `[[${target}]]`
   },
 })
+
+/**
+ * Split a wikilink inner string on its FIRST `|` into a stored target + label.
+ * Segments are kept VERBATIM (untrimmed) so renderMarkdown reproduces the
+ * source byte-for-byte; the view/navigation trim at use. No pipe → label null.
+ */
+export function splitAlias(inner: string): { target: string; label: string | null } {
+  const pipe = inner.indexOf('|')
+  if (pipe === -1) return { target: inner, label: null }
+  return { target: inner.slice(0, pipe), label: inner.slice(pipe + 1) }
+}
 
 // `[[Target]]` — target is any run that isn't a bracket or newline.
 const WIKILINK_RE = /\[\[([^[\]\n]+?)\]\]/g
@@ -138,8 +167,9 @@ function splitWikiText(textNode: JSONContent): JSONContent[] {
   let m: RegExpExecArray | null
   while ((m = WIKILINK_RE.exec(text)) !== null) {
     if (m.index > last) out.push({ ...textNode, text: text.slice(last, m.index) })
-    // Target stored verbatim so renderMarkdown reproduces the source exactly.
-    out.push({ type: 'wikiLink', attrs: { target: m[1] } })
+    // Target/label stored verbatim so renderMarkdown reproduces the source
+    // exactly (plain `[[a/b]]` → label null → `[[a/b]]`; aliased form kept).
+    out.push({ type: 'wikiLink', attrs: splitAlias(m[1]) })
     last = m.index + m[0].length
   }
   if (out.length === 0) return [textNode]
