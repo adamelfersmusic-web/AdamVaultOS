@@ -4,7 +4,7 @@
 // concurrency via saveContent, the conflict bar, setRouteGuard + beforeunload —
 // but the editing surface is blocks (slash menu, drag handles, /ai, /voice).
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskList, TaskItem } from '@tiptap/extension-list'
@@ -41,6 +41,8 @@ import { CSV_IMPORT_EVENT, PAGE_EXTERNAL_UPDATE_EVENT } from '../lib/ui'
 import { parseDelimited, rowsToTableJSON } from '../lib/csv'
 import { relativeTime, titleFromPath } from '../lib/format'
 import { fuzzyScore } from '../lib/fuzzy'
+import { semanticLinkCandidates } from '../lib/embed/suggest'
+import type { SemanticHit } from '../lib/embed'
 import { rankNotes } from '../lib/search'
 import { databaseForPath } from '../domain/databases'
 import { RecordProperties } from '../components/RecordProperties'
@@ -1080,25 +1082,56 @@ function LinkPicker({
   }, [])
 
   const q = query.trim()
-  const list = all ?? []
-  const matches = (
-    q
-      ? list
-          .map((n) => {
-            const title = titleFromPath(n.path)
-            const s = Math.max(
-              fuzzyScore(q, title) ?? -Infinity,
-              (fuzzyScore(q, n.path) ?? -Infinity) - 1,
-            )
-            return { n, s }
-          })
-          .filter((x) => x.s !== -Infinity)
-          .sort((a, b) => b.s - a.s)
-          .map((x) => x.n)
-      : [...list].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+  const matches = useMemo(() => {
+    const list = all ?? []
+    return (
+      q
+        ? list
+            .map((n) => {
+              const title = titleFromPath(n.path)
+              const s = Math.max(
+                fuzzyScore(q, title) ?? -Infinity,
+                (fuzzyScore(q, n.path) ?? -Infinity) - 1,
+              )
+              return { n, s }
+            })
+            .filter((x) => x.s !== -Infinity)
+            .sort((a, b) => b.s - a.s)
+            .map((x) => x.n)
+        : [...list].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+    )
+      .filter((n) => n.path !== excludePath)
+      .slice(0, 24)
+  }, [q, all, excludePath])
+
+  // ✨ Related — the quiet semantic tail under the keyword results. Same
+  // engine as the Omnibar's Related group; consumes the index only when it's
+  // already built (never triggers a build), dedups against the keyword rows
+  // and the page being edited, caps at 3. Stale async results are dropped
+  // via the `alive` flag, mirroring the Omnibar's own fetch effect.
+  const [related, setRelated] = useState<SemanticHit[]>([])
+  useEffect(() => {
+    if (!q) {
+      setRelated([])
+      return
+    }
+    let alive = true
+    const exclude = new Set(matches.map((n) => n.path))
+    exclude.add(excludePath)
+    void semanticLinkCandidates(q, exclude).then((hits) => {
+      if (alive) setRelated(hits)
+    })
+    return () => {
+      alive = false
+    }
+  }, [q, matches, excludePath])
+
+  // Belt over the effect's braces: while a semantic fetch for the NEW query
+  // is still in flight, `related` can briefly hold last query's hits — never
+  // let one render as an echo of a row the keyword list already shows.
+  const relatedRows = related.filter(
+    (h) => h.path !== excludePath && !matches.some((n) => n.path === h.path),
   )
-    .filter((n) => n.path !== excludePath)
-    .slice(0, 24)
 
   return (
     <Modal onClose={onClose} width={460} labelledBy="linkpicker-title">
@@ -1139,6 +1172,27 @@ function LinkPicker({
                 <span className="subpage-row-meta">{n.path}</span>
               </button>
             ))
+          )}
+          {all !== null && relatedRows.length > 0 && (
+            <>
+              <div className="subpage-related-head" data-testid="link-picker-related">
+                ✨ Related
+              </div>
+              {relatedRows.map((h) => (
+                <button
+                  key={`sem:${h.path}`}
+                  className="subpage-row subpage-related"
+                  data-semantic="true"
+                  onClick={() => onPick(h.path)}
+                >
+                  <span className="subpage-related-icon" aria-hidden>
+                    ✨
+                  </span>
+                  <span className="subpage-row-title">{titleFromPath(h.path)}</span>
+                  <span className="subpage-row-meta">{h.path}</span>
+                </button>
+              ))}
+            </>
           )}
         </div>
       </div>

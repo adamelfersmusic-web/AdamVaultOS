@@ -832,6 +832,25 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* ✨ Related — the Link picker's quiet semantic tail (theme tokens only). */
+.subpage-related-head {
+  margin-top: 6px;
+  padding: 4px 10px 2px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.subpage-related-icon {
+  flex: none;
+  width: 14px;
+  font-size: 11px;
+  line-height: 1;
+  text-align: center;
+  color: var(--ink-3);
+}
+.subpage-related .subpage-row-title { color: var(--ink-2); }
 .subpage-create {
   color: var(--gold-bright);
 }
@@ -1115,6 +1134,13 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px;
 }
 .wiki-as-typed .slash-title { color: var(--gold); }
+/* ✨ semantic tail — meaning-matches appended after the keyword rows.
+   Everything keys off theme tokens, so both themes come for free. */
+.wiki-semantic .slash-icon { font-size: 12px; border-style: dashed; }
+.wiki-related-hint {
+  font-family: var(--font-sans, inherit);
+  color: color-mix(in srgb, var(--gold) 62%, var(--ink-4));
+}
 .page-meta-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .page-meta-tag {
   font-size: 11.5px; color: var(--accent, #46b3a6); text-decoration: none;
