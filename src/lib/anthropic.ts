@@ -32,8 +32,8 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 // to high automatically when the question reads vault-wide; always high on
 // Opus (reaching for it means you want the deep pass).
 export const ASK_MODELS = {
-  sonnet: { id: 'claude-sonnet-5', label: 'Sonnet 5', hint: 'fast · default' },
-  opus: { id: 'claude-opus-4-8', label: 'Opus 4.8', hint: 'deepest' },
+  sonnet: { id: 'claude-sonnet-5', label: 'Wizard', hint: 'Sonnet 5 · fast · default' },
+  opus: { id: 'claude-opus-4-8', label: 'Oracle', hint: 'Opus 4.8 · deepest' },
 } as const
 export type AskModel = keyof typeof ASK_MODELS
 
