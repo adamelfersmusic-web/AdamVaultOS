@@ -85,6 +85,8 @@ export interface ParsedQuery {
   tags: string[]
   /** `path:prefix/` constraints. */
   paths: string[]
+  /** `title:x` constraints — must appear in the display title (only). */
+  titles: string[]
   /** `is:task|note|project|page` — scopes which groups render. */
   is: 'task' | 'note' | 'project' | 'page' | null
   /** `when:today|this-week|later` — task scheduling constraint. */
@@ -102,6 +104,7 @@ export function parseQuery(raw: string): ParsedQuery {
     phrases: [],
     tags: [],
     paths: [],
+    titles: [],
     is: null,
     when: null,
     done: null,
@@ -123,6 +126,10 @@ export function parseQuery(raw: string): ParsedQuery {
       }
       if (key === 'path' && v) {
         out.paths.push(v)
+        continue
+      }
+      if (key === 'title' && v) {
+        out.titles.push(v)
         continue
       }
       if (key === 'is' && IS_VALUES.has(v)) {
@@ -149,6 +156,7 @@ export function hasConstraints(q: ParsedQuery): boolean {
   return (
     q.tags.length > 0 ||
     q.paths.length > 0 ||
+    q.titles.length > 0 ||
     q.phrases.length > 0 ||
     q.is !== null ||
     q.when !== null ||
@@ -168,8 +176,10 @@ export function noteHasTagDeep(n: Note, tag: string): boolean {
 
 /**
  * Constraint filters applied BEFORE ranking: every tag: (hierarchical), every
- * path: prefix, and every quoted phrase (verbatim in title or body) must hold.
- * is:/when:/done: are group-level scopes and live with the caller.
+ * path: prefix, every title: substring (display title ONLY — the same field
+ * the ranking scores as title), and every quoted phrase (verbatim in title
+ * or body) must hold. is:/when:/done: are group-level scopes and live with
+ * the caller.
  */
 export function noteMatchesFilters(
   n: Note,
@@ -180,6 +190,10 @@ export function noteMatchesFilters(
   if (q.paths.length > 0) {
     const p = (n.path ?? '').toLowerCase()
     if (!q.paths.every((prefix) => p.startsWith(prefix))) return false
+  }
+  if (q.titles.length > 0) {
+    const t = titleOf(n).toLowerCase()
+    if (!q.titles.every((s) => t.includes(s))) return false
   }
   if (q.phrases.length > 0) {
     const title = titleOf(n).toLowerCase()

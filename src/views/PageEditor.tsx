@@ -40,7 +40,7 @@ import { navigate, setRouteGuard } from '../lib/router'
 import { CSV_IMPORT_EVENT, PAGE_EXTERNAL_UPDATE_EVENT } from '../lib/ui'
 import { parseDelimited, rowsToTableJSON } from '../lib/csv'
 import { relativeTime, titleFromPath } from '../lib/format'
-import { fuzzyScore } from '../lib/fuzzy'
+import { fuzzyScore, tokenPrefixScore } from '../lib/fuzzy'
 import { semanticLinkCandidates } from '../lib/embed/suggest'
 import type { SemanticHit } from '../lib/embed'
 import { rankNotes } from '../lib/search'
@@ -1092,6 +1092,8 @@ function LinkPicker({
               const s = Math.max(
                 fuzzyScore(q, title) ?? -Infinity,
                 (fuzzyScore(q, n.path) ?? -Infinity) - 1,
+                // Any-order token prefixes — same matcher as the [[ suggester.
+                tokenPrefixScore(q, title, n.path) ?? -Infinity,
               )
               return { n, s }
             })
