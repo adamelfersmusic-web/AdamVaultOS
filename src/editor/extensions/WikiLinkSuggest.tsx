@@ -281,6 +281,19 @@ export const WikiLinkSuggest = Extension.create({
         // tag their transactions with PREVENT_SUGGEST, which also force-closes
         // an open menu if a programmatic replacement lands mid-suggestion.
         shouldShow: ({ transaction }) => !transaction.getMeta(PREVENT_SUGGEST),
+        // Escape files the run's range under `dismissedRange`, and with
+        // allowSpaces the upstream keep-dismissed rule is "same `[[` anchor"
+        // — mapped through every edit, so the run stays DEAD until the
+        // trigger is retyped. (Leaving the run clears the dismissal — the
+        // stuck case is exactly editing inside it.) Reset on any real user
+        // gesture in the run: typing/deleting (docChanged) or a pointer
+        // click, so a live `[[…` context always reopens with the current
+        // query. PREVENT_SUGGEST transactions never reach this hook
+        // (shouldShow already vetoed them); the guard just keeps the
+        // "programmatic loads never wake the menu" invariant readable here.
+        shouldResetDismissed: ({ transaction }) =>
+          !transaction.getMeta(PREVENT_SUGGEST) &&
+          (transaction.docChanged || Boolean(transaction.getMeta('pointer'))),
         items: ({ query }) => wikiItems(query),
         command: ({ editor, range, props }) => {
           editor
