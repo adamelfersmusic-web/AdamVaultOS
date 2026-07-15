@@ -16,6 +16,15 @@ import { Highlight } from '@tiptap/extension-highlight'
 const SAFE_COLOR = /^(#[0-9a-fA-F]{3,8}|rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(?:,\s*[\d.]+\s*)?\)|[a-zA-Z]{3,20})$/
 
 export const RichHighlight = Highlight.extend({
+  // Canonical mark-nesting order: the colour span/mark serializes OUTERMOST,
+  // wrapping the inline `**`/`*` markdown — the form a human authors and the
+  // one `marked` emits in the read view (`<mark><strong>…`). TextStyle already
+  // defaults to priority 101; Highlight defaults to 100, which put it INSIDE
+  // bold and rewrote a stored `<mark …>**x**</mark>` to `**<mark …>x</mark>**`
+  // on save (a byte-stability break). Matching 101 makes both style marks
+  // outermost and deterministic, so highlight+bold/italic round-trips clean.
+  priority: 101,
+
   renderMarkdown: (node, h) => {
     const color = (node.attrs as { color?: string } | undefined)?.color
     const children = h.renderChildren(node)
