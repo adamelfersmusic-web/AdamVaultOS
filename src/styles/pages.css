@@ -1141,6 +1141,13 @@
   font-family: var(--font-sans, inherit);
   color: color-mix(in srgb, var(--gold) 62%, var(--ink-4));
 }
+/* Content-fallback rows — body matches filling in when title/path matching
+   runs thin. Quiet by law: dimmed title, whisper hint, nothing competing. */
+.wiki-content-row .slash-title { color: var(--ink-2); }
+.wiki-content-hint {
+  font-family: var(--font-sans, inherit);
+  color: var(--ink-4);
+}
 .page-meta-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .page-meta-tag {
   font-size: 11.5px; color: var(--accent, #46b3a6); text-decoration: none;

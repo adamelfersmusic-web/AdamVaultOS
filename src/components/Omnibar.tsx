@@ -7,8 +7,8 @@
 // contract is preserved for the existing e2e specs.
 //
 // Ranking is lib/search.ts's rankNotes — the app's ONE relevance engine —
-// extended (not forked) with the operator grammar (tag:/path:/is:/when:/
-// done:/"phrase"), best-line snippets, and the edit-distance-1 typo net.
+// extended (not forked) with the operator grammar (tag:/path:/title:/is:/
+// when:/done:/"phrase"), best-line snippets, and the edit-distance-1 typo net.
 
 import {
   useEffect,
@@ -113,6 +113,8 @@ interface OmniItem {
   snippet?: string
   /** Right-aligned muted hint (status, when, counts, time). */
   hint?: string
+  /** Whisper created-date, right edge — universal on note-backed rows. */
+  date?: string
   /** Recent-search rows refill the input instead of closing the bar. */
   keepOpen?: boolean
   run: () => void
@@ -485,6 +487,7 @@ export function Omnibar() {
           path: n.path,
           snippet: snippetFor(n.content, markTerms) ?? undefined,
           hint: relativeTime(n.updatedAt),
+          date: relativeTime(n.createdAt),
           run: () => openNote(n.path),
         }))
       }
@@ -516,6 +519,7 @@ export function Omnibar() {
             path: n.path,
             snippet: snippetFor(taskBody(n), markTerms) ?? undefined,
             hint: [project, when].filter(Boolean).join(' · ') || undefined,
+            date: relativeTime(n.createdAt),
             run: () => navigate({ kind: 'pages', path: n.path }),
           }
         })
@@ -544,6 +548,7 @@ export function Omnibar() {
           dot: TYPE_META.project.color,
           path: p.path,
           hint: p.status,
+          date: relativeTime(p.note.createdAt),
           run: () => navigate({ kind: 'project', path: p.path }),
         }))
       }
@@ -625,6 +630,7 @@ export function Omnibar() {
             dot: TYPE_META[inferNoteType(n)].color,
             path: n.path,
             hint: relativeTime(n.updatedAt),
+            date: relativeTime(n.createdAt),
             run: () => openNote(n.path),
           })
         }
@@ -730,6 +736,7 @@ export function Omnibar() {
           snippetFor(n.content, markTerms) ??
           (typeof summary === 'string' && summary ? summary : undefined),
         hint: 'related',
+        date: relativeTime(n.createdAt),
         run: () => openNote(n.path),
       })
     }
@@ -780,7 +787,7 @@ export function Omnibar() {
           autoFocus
           className="palette-input"
           data-testid="omnibar-input"
-          placeholder="Search everything — notes, tasks, commands…  (tag: path: is: when: “phrase”)"
+          placeholder="Search everything — notes, tasks, commands…  (tag: path: title: is: when: “phrase”)"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -858,6 +865,7 @@ export function Omnibar() {
                       )}
                     </span>
                     {item.hint && <span className="palette-hint">{item.hint}</span>}
+                    {item.date && <span className="omni-date">{item.date}</span>}
                   </button>
                 )}
               </div>
@@ -866,7 +874,7 @@ export function Omnibar() {
         </div>
         <div className="palette-foot">
           <kbd>↑↓</kbd> navigate · <kbd>↵</kbd> open · <kbd>esc</kbd> close ·{' '}
-          <span className="palette-foot-ops">tag: path: is: when: done: “phrase”</span>
+          <span className="palette-foot-ops">tag: path: title: is: when: done: “phrase”</span>
           {sem.building && sem.firstEver && (
             <span className="palette-foot-status" data-testid="omnibar-indexing">
               indexing your vault…

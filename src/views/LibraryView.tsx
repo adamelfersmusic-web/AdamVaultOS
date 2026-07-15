@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Note } from '../lib/types'
 import { createPage, fetchAllNotes, toast } from '../lib/store'
-import { rankNotes } from '../lib/search'
+import { hasConstraints, noteMatchesFilters, parseQuery, rankNotes } from '../lib/search'
 import { navigate } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
 import { isProtectedNote } from '../domain/scripts'
@@ -200,7 +200,16 @@ export function LibraryView() {
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (q) {
-      return rankNotes(q, all, noteTitle)
+      // Same operator grammar as the Omnibar (tag:/path:/title:/"phrase") —
+      // constraints filter the pool, the free text ranks it. is:/when:/done:
+      // are task-group scopes with no meaning in the Library; they fall away.
+      const parsed = parseQuery(query.trim())
+      const pool = hasConstraints(parsed)
+        ? all.filter((n) => noteMatchesFilters(n, parsed, noteTitle))
+        : all
+      const free = parsed.terms.join(' ')
+      if (!free) return [...pool].sort((a, b) => ts(b) - ts(a))
+      return rankNotes(free, pool, noteTitle)
     }
     const list = activeTag
       ? all.filter((n) => hasTagDeep(n, activeTag)) // parent tag ⊇ descendants

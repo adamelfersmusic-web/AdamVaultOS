@@ -17,9 +17,12 @@ import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion'
 import { fetchLinkTargets } from '../../lib/store'
-import { fuzzyScore } from '../../lib/fuzzy'
+import { cachedCorpus, corpusFresh, refreshCorpus } from '../../lib/corpus'
+import { fuzzyScore, tokenPrefixScore } from '../../lib/fuzzy'
 import { titleFromPath } from '../../lib/format'
+import { escapeRegExp, rankNotes } from '../../lib/search'
 import { semanticLinkCandidates } from '../../lib/embed/suggest'
+import type { Note } from '../../lib/types'
 import { IconPage, IconPlus } from '../../components/Icons'
 
 interface WikiItem {
@@ -29,6 +32,8 @@ interface WikiItem {
   asTyped?: boolean
   /** A ✨ meaning-match from the vector index, not a keyword hit. */
   semantic?: boolean
+  /** A body-text hit from the content fallback (rankNotes), not title/path. */
+  content?: boolean
 }
 
 // Suggestion state lives under this key; hoisted so onStart can re-check
@@ -60,6 +65,41 @@ export function setContentSilently(
 
 const MAX_ITEMS = 8
 
+// Content fallback (below): when title/path matching runs this thin, the
+// Omnibar's own relevance engine fills in body matches. Same 3-char floor as
+// the semantic tail — shorter queries rank the whole vault into noise.
+const CONTENT_MIN_KEYWORD_ROWS = 3
+const CONTENT_ROW_CAP = 3
+const CONTENT_MIN_QUERY_CHARS = 3
+
+/**
+ * Body-match candidates for the content fallback — the SAME relevance engine
+ * behind the Omnibar's Notes group (lib/search rankNotes over the shared
+ * lib/corpus cache; consume-or-refresh, never a second ranking fork). Only
+ * notes whose content holds every term as a WHOLE word qualify: the "in
+ * content" hint stays honest, and stem-ish hits ("harbors" for "harbor")
+ * stay the ✨ semantic tail's job, exactly as today. Never throws — no
+ * fallback rows beat a broken menu.
+ */
+async function contentMatches(q: string, exclude: Set<string>): Promise<Note[]> {
+  let corpus = corpusFresh() ? cachedCorpus() : null
+  if (!corpus) {
+    corpus = await refreshCorpus().catch(() => cachedCorpus())
+  }
+  if (!corpus) return []
+  const wordRes = q
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => new RegExp(`(^|[^a-z0-9])${escapeRegExp(t)}([^a-z0-9]|$)`))
+  const pool = corpus.filter((n) => {
+    if (exclude.has(n.path)) return false
+    const body = (n.content ?? '').toLowerCase()
+    return wordRes.every((re) => re.test(body))
+  })
+  return rankNotes(q, pool, (n) => titleFromPath(n.path)).slice(0, CONTENT_ROW_CAP)
+}
+
 // Monotonic call counter for wikiItems — the same drop-stale-results idea as
 // PR #50's onStart active-check, one layer down: semanticLinkCandidates is a
 // second await inside items(), so a slow tail from an OLD query could resolve
@@ -85,6 +125,9 @@ async function wikiItems(query: string): Promise<WikiItem[]> {
         const s = Math.max(
           fuzzyScore(q, title) ?? -Infinity,
           (fuzzyScore(q, n.path) ?? -Infinity) - 1, // title match beats path match
+          // Any-order token prefixes ("bree jo" → Bree Jonathan); title-covered
+          // matches already outscore path-assisted ones inside the scorer.
+          tokenPrefixScore(q, title, n.path) ?? -Infinity,
         )
         return { n, title, s }
       })
@@ -92,6 +135,18 @@ async function wikiItems(query: string): Promise<WikiItem[]> {
       .sort((a, b) => b.s - a.s)
       .slice(0, MAX_ITEMS)
       .map(({ n, title }) => ({ target: n.path, title, meta: n.path }))
+  }
+  // Content fallback: when title/path matching runs thin (< 3 rows), body
+  // matches fill in — quiet rows BEFORE the ✨ semantic tail. The corpus
+  // refresh is a second await, so the same seq guard applies: a stale call
+  // must never append its rows over a newer query's.
+  if (q.length >= CONTENT_MIN_QUERY_CHARS && list.length < CONTENT_MIN_KEYWORD_ROWS) {
+    const body = await contentMatches(q, new Set(list.map((it) => it.target)))
+    if (seq === wikiItemsSeq) {
+      for (const n of body) {
+        list.push({ target: n.path, title: titleFromPath(n.path), meta: n.path, content: true })
+      }
+    }
   }
   // ✨ Semantic tail: up to 3 meaning-matches AFTER the keyword rows —
   // link-time is when you can't remember the note's name. Never throws,
@@ -165,8 +220,8 @@ const WikiMenu = forwardRef<WikiMenuRef, WikiMenuProps>((props, ref) => {
     <div className="slash-menu wiki-menu" role="listbox" data-testid="wiki-menu">
       {props.items.map((it, i) => (
         <button
-          key={`${it.target}·${it.asTyped ? 'typed' : it.semantic ? 'sem' : 'note'}`}
-          className={`slash-item${it.asTyped ? ' wiki-as-typed' : ''}${it.semantic ? ' wiki-semantic' : ''}`}
+          key={`${it.target}·${it.asTyped ? 'typed' : it.semantic ? 'sem' : it.content ? 'body' : 'note'}`}
+          className={`slash-item${it.asTyped ? ' wiki-as-typed' : ''}${it.semantic ? ' wiki-semantic' : ''}${it.content ? ' wiki-content-row' : ''}`}
           role="option"
           aria-selected={i === active}
           data-active={i === active}
@@ -183,6 +238,7 @@ const WikiMenu = forwardRef<WikiMenuRef, WikiMenuProps>((props, ref) => {
             <span className="slash-sub">
               {it.meta}
               {it.semantic && <span className="wiki-related-hint"> · related</span>}
+              {it.content && <span className="wiki-content-hint"> · in content</span>}
             </span>
           </span>
         </button>

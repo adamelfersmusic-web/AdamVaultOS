@@ -1776,6 +1776,17 @@ body.is-dragging .card {
   font-size: 10.5px;
   color: var(--ink-4);
 }
+/* Whisper created-date on note-backed rows — right edge, never competing
+   with titles (smaller + dimmer than .palette-hint by design). */
+.omni-date {
+  flex: none;
+  font-size: 10px;
+  color: var(--ink-4);
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
 .omni-snippet {
   display: block;
   overflow: hidden;
