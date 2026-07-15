@@ -233,6 +233,108 @@ test('⌘K title: operator scopes matching to display titles only; the legend ad
   await expect(page.locator('.palette-foot-ops')).toContainText('title:')
 })
 
+// ——— dismissed runs wake back up ———
+// Escape used to file the run's `[[` anchor as permanently dismissed (tiptap
+// Suggestion's dismissedRange survives every edit inside the run when
+// allowSpaces is on), so the menu could never return without RETYPING the
+// trigger. The shouldResetDismissed hook clears the dismissal on any real
+// user gesture — typing/deleting or a pointer click — inside the run.
+
+test('Escape closes the [[ menu and it STAYS closed — until typing inside the same run reopens it with the live query', async ({ page }) => {
+  await seed(page, 'notes/daily-log', '# Daily Log\n\nEntries.\n')
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await openScratch(page)
+  await page.keyboard.type(' [[ dail')
+  const menu = page.getByTestId('wiki-menu')
+  await expect(menu).toBeVisible()
+
+  // Dismiss. The menu must close AND stay closed while nothing happens —
+  // Escape still means something.
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+  await page.waitForTimeout(400)
+  await expect(menu).toHaveCount(0)
+
+  // Typing INSIDE the still-standing `[[ dail` run reopens with the fresh
+  // query (" daily"), not a stale frame.
+  await page.keyboard.type('y')
+  await expect(menu).toBeVisible()
+  const first = menu.locator('.slash-item').first()
+  await expect(first).toContainText('Daily Log')
+  await expect(first).toContainText('notes/daily-log')
+
+  // And the reopened menu is fully live: Enter links the note.
+  await page.keyboard.press('Enter')
+  await expect(page.locator('.page-prose .wikilink')).toContainText('notes/daily-log')
+  await waitSaved(page)
+  const saved = await mockNote(page, 'pages/scratch')
+  expect(saved?.content).toContain('[[notes/daily-log]]')
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
+test('Escape then a pointer click back inside the run reopens the menu; deleting inside a dismissed run reopens too', async ({ page }) => {
+  await seed(page, 'notes/daily-log', '# Daily Log\n\nEntries.\n')
+
+  await openScratch(page)
+  await page.keyboard.type(' [[ daily')
+  const menu = page.getByTestId('wiki-menu')
+  await expect(menu).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+
+  // Click ON the run's own text (a precise mid-word coordinate — the caret
+  // sits at the end of the run, so the click must land elsewhere INSIDE it
+  // to be a real selection change). The caret never leaves the run, so only
+  // the pointer-gesture reset can bring the menu back.
+  const pt = await page
+    .locator('.page-prose p', { hasText: 'daily' })
+    .evaluate((el) => {
+      const node = el.firstChild as Text // "start [[ daily"
+      const i = (node.textContent ?? '').indexOf('daily') + 2
+      const r = document.createRange()
+      r.setStart(node, i)
+      r.setEnd(node, i + 1)
+      const rect = r.getBoundingClientRect()
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+    })
+  await page.mouse.click(pt.x, pt.y)
+  await expect(menu).toBeVisible()
+
+  // Dismiss again; this time BACKSPACE (an edit, not an insert) reopens.
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+  await page.keyboard.press('End')
+  await page.keyboard.press('Backspace')
+  await expect(menu).toBeVisible()
+  await expect(menu.locator('.slash-item').first()).toContainText('Daily Log')
+})
+
+test('blur then refocus: typing inside the run brings the menu with fresh items', async ({ page }) => {
+  await seed(page, 'notes/daily-log', '# Daily Log\n\nEntries.\n')
+
+  await openScratch(page)
+  await page.keyboard.type(' [[ dail')
+  const menu = page.getByTestId('wiki-menu')
+  await expect(menu).toBeVisible()
+
+  // Focus leaves the editor entirely…
+  await page.locator('.page-prose').evaluate((el) => (el as HTMLElement).blur())
+  await page.waitForTimeout(300)
+
+  // …then comes back via a click on the run and typing resumes: the menu is
+  // there with the current query's items.
+  await page.locator('.page-prose').getByText('dail').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type('y')
+  await expect(menu).toBeVisible()
+  const first = menu.locator('.slash-item').first()
+  await expect(first).toContainText('Daily Log')
+  await expect(first).toContainText('notes/daily-log')
+})
+
 test('⌘K: every note-backed row wears the whisper created-date; ✨ Related shows date + badge', async ({ page }) => {
   await seed(page, 'notes/golden', '# Golden\n\nthe exact golden phrase lives here.\n')
   await seed(page, NOTE_A_PATH, NOTE_A)
