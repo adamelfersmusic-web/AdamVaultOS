@@ -3,10 +3,12 @@
 // everywhere.
 //
 // Each query term must appear SOMEWHERE (AND search), and hits are weighted
-// by field: title/slug >> path/tags >> body. Bonuses for the exact phrase,
-// all-terms-in-title, and start-of-word matches so e.g. "canonical scoring
-// engine" surfaces the note actually named that, not a note that merely
-// mentions the words in its body. Recency breaks ties.
+// by field: title/slug >> path/tags/summary >> body. Bonuses for the exact
+// phrase, all-terms-in-title, and start-of-word matches so e.g. "canonical
+// scoring engine" surfaces the note actually named that, not a note that
+// merely mentions the words in its body. Recency breaks ties. Notes marked
+// `status: superseded`/`parked` are dampened (not excluded) so a live note
+// outranks its own retired predecessor.
 //
 // This module also carries the Omnibar's query grammar (parseQuery), snippet
 // extraction (snippetFor), and the tiny edit-distance-1 typo net — all pure
@@ -40,6 +42,8 @@ export function rankNotes(
     const path = (n.path ?? '').toLowerCase()
     const tags = (n.tags ?? []).join(' ').toLowerCase()
     const body = (n.content ?? '').toLowerCase()
+    const summaryRaw = n.metadata?.['summary']
+    const summary = typeof summaryRaw === 'string' ? summaryRaw.toLowerCase() : ''
 
     let score = 0
     let allTerms = true
@@ -49,6 +53,7 @@ export function rankNotes(
       if (slug.includes(term)) t += 8
       if (path.includes(term)) t += 6
       if (tags.includes(term)) t += 6
+      if (summary.includes(term)) t += 6
       if (body.includes(term)) t += 2
       if (new RegExp(`(^|[\\s/_-])${escapeRe(term)}`).test(title)) t += 4
       if (t === 0) allTerms = false
@@ -63,6 +68,11 @@ export function rankNotes(
     if (slug.includes(q)) score += 12
     else if (path.includes(q)) score += 8
     if (terms.length > 1 && terms.every((tm) => title.includes(tm))) score += 15
+
+    // Superseded/parked notes stay findable but rank below a live equivalent.
+    const statusRaw = n.metadata?.['status']
+    const status = typeof statusRaw === 'string' ? statusRaw : ''
+    if (status === 'superseded' || status === 'parked') score *= 0.4
 
     scored.push({ n, score })
   }

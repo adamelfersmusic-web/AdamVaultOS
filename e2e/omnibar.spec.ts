@@ -102,6 +102,30 @@ async function seedVault(page: Page) {
     state: 'done',
     done: true,
   })
+  // A note whose only mention of "spelunking" is its curated summary — the
+  // title/body/tags/path never say it.
+  await seed(
+    page,
+    'notes/buried-note',
+    '# Buried Note\n\nJust an ordinary paragraph about nothing in particular.',
+    [],
+    { summary: 'Field notes from a spelunking trip through the archive.' },
+  )
+  // Two notes that would otherwise score identically on "retired scoring
+  // plan" — one live, one explicitly superseded — to prove the dampener.
+  await seed(
+    page,
+    'notes/live-retired-scoring-plan',
+    '# Live Retired Scoring Plan\n\nThe retired scoring plan, current version.',
+    [],
+  )
+  await seed(
+    page,
+    'notes/old-retired-scoring-plan',
+    '# Old Retired Scoring Plan\n\nThe retired scoring plan, current version.',
+    [],
+    { status: 'superseded' },
+  )
 }
 
 async function openBar(page: Page) {
@@ -268,6 +292,30 @@ test('typo net: a one-edit miss still finds the note (no dead ends)', async ({ p
       hasText: 'Canonical Scoring Engine',
     }),
   ).toBeVisible()
+})
+
+test('a term that lives only in metadata.summary still finds the note', async ({ page }) => {
+  await page.goto('/#/library')
+  await expect(page.getByTestId('browser')).toBeVisible()
+  await openBar(page)
+
+  // "spelunking" appears nowhere in the title/body/tags/path — only in the
+  // curated summary. Zero hits here would mean rankNotes never reads it.
+  await page.fill('.palette-input', 'spelunking')
+  await expect(
+    page.locator('.palette-item[data-group="notes"]', { hasText: 'Buried Note' }),
+  ).toBeVisible()
+})
+
+test('a superseded note ranks below its live, equally-titled replacement', async ({ page }) => {
+  await page.goto('/#/library')
+  await expect(page.getByTestId('browser')).toBeVisible()
+  await openBar(page)
+
+  await page.fill('.palette-input', 'retired scoring plan')
+  const noteRows = page.locator('.palette-item[data-group="notes"]')
+  await expect(noteRows.first()).toContainText('Live Retired Scoring Plan')
+  await expect(noteRows.nth(1)).toContainText('Old Retired Scoring Plan')
 })
 
 test('zero state: recents persist across reload; Esc closes; ⌘K toggles', async ({ page }) => {
