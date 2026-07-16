@@ -431,12 +431,14 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
     const s = getSettings()
     try {
       const blob = new Blob(chunks, { type: 'audio/webm' })
+      const context = [titleFromPath(path), ...(note?.tags ?? [])].join(', ')
       const text = await transcribe({
         blob,
         baseUrl: s.scribeUrl,
         model: s.scribeModel,
         token: s.scribeToken || undefined,
         cleanup: s.scribeCleanup,
+        context,
       })
       editor?.chain().focus().insertContent(text).run()
     } catch (e) {

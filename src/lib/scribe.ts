@@ -17,7 +17,7 @@ export interface TranscribeInput {
   model: string
   token?: string
   cleanup?: boolean
-  /** Forward hook (not MVP): proper-noun context to improve cleanup. */
+  /** Proper-noun hints (note title + tags) to improve cleanup. */
   context?: string
 }
 
@@ -33,7 +33,6 @@ export async function transcribe(input: TranscribeInput): Promise<string> {
   form.append('file', blob, 'recording.webm')
   form.append('model', model)
   if (cleanup) form.append('cleanup', 'true')
-  // Clean seam for the future proper-nouns context part.
   if (context) form.append('context', context)
 
   let res: Response
