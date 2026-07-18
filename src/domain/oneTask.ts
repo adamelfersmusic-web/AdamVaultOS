@@ -1,7 +1,7 @@
 // ONE TASK (#/one-task) — the single-task focus surface's grammar. One task
-// at a time, TYPED FRESH — never picked from existing tasks. Two convention
-// notes, both tag `desk` (deliberately NOT `task`, so the Tracker never sees
-// them, and both excluded from the loose-task scan — no clutter):
+// at a time, TYPED FRESH — never picked from existing tasks. Three
+// convention notes, all tag `desk` (deliberately NOT `task`, so the Tracker
+// never sees them, and all excluded from the loose-task scan — no clutter):
 //
 //   desk/one-task       the SLOT. `# <task name>` over its subtask lines:
 //                         - [ ] subtask
@@ -14,12 +14,22 @@
 //                       task: ## YYYY-MM-DD — <name> ✅ (or 🕊 renounced),
 //                       subtask lines preserved byte-for-byte beneath.
 //
+//   desk/one-task-queue THE QUEUE — at most three parked NAMES (plain
+//                       `- item` lines, deliberately never checkboxes) so
+//                       the next few tasks stop costing RAM. Names only: a
+//                       task earns its breakdown when it becomes THE task.
+//                       Its own note, never inside the slot — an empty slot
+//                       carrying queued lines would read as a task.
+//
 // Everything here is a pure function over note content — no fetching, no
 // state. Law #2: the app is a lens; the notes hold the facts. The vault
 // writes live in lib/store.ts, all riding surgicalLineEdit / saveContent.
 
 export const ONE_TASK_PATH = 'desk/one-task'
 export const ONE_TASK_LOG_PATH = 'desk/one-task-log'
+export const ONE_TASK_QUEUE_PATH = 'desk/one-task-queue'
+/** The queue's hard cap — the slot holds ONE task; the queue holds three. */
+export const ONE_TASK_QUEUE_CAP = 3
 /** Tag `desk` ONLY — the slot must never wear `task` (Tracker stays blind). */
 export const ONE_TASK_TAGS = ['desk']
 
@@ -240,4 +250,66 @@ export function appendHistoryBlock(lines: string[], block: string[]): string[] {
 /** A freshly minted log note — the title, then the first stamped block. */
 export function oneTaskLogContent(block: string[]): string {
   return `# One Task — the log\n\n${block.join('\n')}\n`
+}
+
+// ---------------------------------------------------------------------------
+// THE QUEUE (desk/one-task-queue) — at most three parked names
+// ---------------------------------------------------------------------------
+
+/** A queued NAME: a plain `- item` line. The lookahead refuses checkboxes,
+ * so a queued name can never read as work to any scanner. */
+const QUEUE_LINE_RE = /^- (?!\[)(.+)$/
+
+/** Read the queue — every plain `- item` line, in note order. */
+export function parseQueue(content: string | undefined | null): string[] {
+  if (!content) return []
+  const out: string[] = []
+  for (const line of content.split('\n')) {
+    const m = QUEUE_LINE_RE.exec(line)
+    if (m && m[1]!.trim()) out.push(m[1]!.trim())
+  }
+  return out
+}
+
+/** A freshly minted queue note — the title over its first parked name. */
+export function oneTaskQueueContent(name: string): string {
+  return `# One Task — the queue\n\n- ${name.trim()}\n`
+}
+
+/** Park a name at the queue's tail. The cap is sacred and re-checked against
+ * the FRESH note: a fourth is refused with a human sentence, not clamped. */
+export function addQueueLine(lines: string[], name: string): string[] {
+  const t = name.trim()
+  if (!t) return lines
+  if (parseQueue(lines.join('\n')).length >= ONE_TASK_QUEUE_CAP) {
+    throw new Error('the queue holds three — one must become the task first')
+  }
+  const next = [...lines]
+  let last = -1
+  for (let i = 0; i < next.length; i++) {
+    if (QUEUE_LINE_RE.test(next[i]!)) last = i
+  }
+  if (last !== -1) {
+    next.splice(last + 1, 0, `- ${t}`)
+    return next
+  }
+  let end = next.length
+  while (end > 0 && next[end - 1]!.trim() === '') end--
+  next.splice(end, 0, '', `- ${t}`)
+  return next
+}
+
+/** Remove exactly one parked name (the first line carrying it). A name that
+ * vanished in the vault throws for the caller's conflict-toast path. */
+export function removeQueueLine(lines: string[], name: string): string[] {
+  const idx = lines.findIndex((l) => {
+    const m = QUEUE_LINE_RE.exec(l)
+    return Boolean(m && m[1]!.trim() === name)
+  })
+  if (idx === -1) {
+    throw new Error('that queued name changed in the vault — refresh and try again')
+  }
+  const next = [...lines]
+  next.splice(idx, 1)
+  return next
 }
