@@ -95,6 +95,7 @@ async function dragDrop(page: Page, source: Locator, target: Locator, pos: 'top'
 const VIEW = 'http://127.0.0.1:4173/#/one-task'
 const SLOT = 'desk/one-task'
 const LOG = 'desk/one-task-log'
+const QUEUE = 'desk/one-task-queue'
 
 const subRow = (page: Page, text: string) =>
   page.getByTestId('one-sub').filter({ hasText: text })
@@ -341,4 +342,101 @@ test('timer — +10 steps cap at 90, the countdown runs and pauses, completion s
   await page.clock.fastForward('01:20:01')
   await expect(timer).toHaveClass(/is-done/)
   await expect(clock).toHaveText('0:00')
+})
+
+test('queue — parks up to three names, refuses a fourth, collapsed by default, survives reload', async ({ page }) => {
+  await seed(page, SLOT, '# Mix the record\n', ['desk'])
+  await connectViaStorage(page)
+
+  await page.goto(VIEW)
+  await expect(page.getByTestId('one-hero')).toHaveText('Mix the record')
+
+  // Collapsed by default — one dim word, no panel.
+  const toggle = page.getByTestId('one-queue-toggle')
+  await expect(toggle).toHaveText('queue')
+  await expect(page.getByTestId('one-queue-panel')).toHaveCount(0)
+
+  // Park three names.
+  await toggle.click()
+  const add = page.getByTestId('one-queue-add')
+  for (const name of ['Master the EP', 'Book rehearsal', 'Email the label']) {
+    await add.fill(name)
+    await add.press('Enter')
+    await expect(page.getByTestId('one-queue-item').filter({ hasText: name })).toBeVisible()
+  }
+  await expect(toggle).toHaveText('queue · 3')
+  await expect
+    .poll(() => savedContent(page, QUEUE))
+    .toBe('# One Task — the queue\n\n- Master the EP\n- Book rehearsal\n- Email the label\n')
+  const note = await mockNote(page, QUEUE)
+  expect(note.tags).toContain('desk')
+  expect(note.tags).not.toContain('task')
+
+  // A fourth is refused with a human sentence — the note never changes.
+  await add.fill('A fourth thing')
+  await add.press('Enter')
+  await expect(page.locator('.toast').last()).toContainText('the queue holds three')
+  await expect(page.getByTestId('one-queue-item')).toHaveCount(3)
+  expect(await savedContent(page, QUEUE)).toBe(
+    '# One Task — the queue\n\n- Master the EP\n- Book rehearsal\n- Email the label\n',
+  )
+
+  // Reload: the vault kept the queue, and the fold is closed again —
+  // collapsed by default, ALWAYS.
+  await page.reload()
+  await expect(page.getByTestId('one-queue-toggle')).toHaveText('queue · 3')
+  await expect(page.getByTestId('one-queue-panel')).toHaveCount(0)
+})
+
+test('queue — the empty slot offers parked names; pulling one promotes it AND removes it from the note; typing fresh still works', async ({ page }) => {
+  await seed(page, SLOT, '# Mix the record\n\n- [x] Bounce stems\n', ['desk'])
+  await seed(page, QUEUE, '# One Task — the queue\n\n- Master the EP\n- Book rehearsal\n', ['desk'])
+  await connectViaStorage(page)
+
+  await page.goto(VIEW)
+  // While the task is active the queued names live ONLY behind the fold.
+  await expect(page.getByTestId('one-queue-offer')).toHaveCount(0)
+
+  // THE QUEUE'S MOMENT — the slot empties and the parked names surface.
+  await page.getByTestId('one-done').click()
+  await expect(page.getByTestId('one-input')).toBeVisible()
+  const offer = page.getByTestId('one-queue-offer')
+  await expect(offer.getByTestId('one-queue-pull')).toHaveCount(2)
+
+  // Pulling one promotes it through the house start flow…
+  await offer.getByTestId('one-queue-pull').filter({ hasText: 'Master the EP' }).click()
+  await expect(page.getByTestId('one-hero')).toHaveText('Master the EP')
+  await expect.poll(() => savedContent(page, SLOT)).toBe('# Master the EP\n')
+  // …and leaves the queue note (one write, the other name untouched).
+  await expect
+    .poll(() => savedContent(page, QUEUE))
+    .toBe('# One Task — the queue\n\n- Book rehearsal\n')
+
+  // Resolve again: the remaining name is offered, but typing FRESH stays
+  // primary and consumes nothing from the queue.
+  await page.getByTestId('one-letgo').click()
+  await expect(page.getByTestId('one-queue-pull')).toHaveCount(1)
+  await page.getByTestId('one-input').fill('Fresh idea instead')
+  await page.getByTestId('one-input').press('Enter')
+  await expect(page.getByTestId('one-hero')).toHaveText('Fresh idea instead')
+  expect(await savedContent(page, QUEUE)).toBe('# One Task — the queue\n\n- Book rehearsal\n')
+})
+
+test('queue — remove drops exactly one parked name; an empty queue leaves the empty slot bare', async ({ page }) => {
+  await seed(page, SLOT, '# Mix the record\n', ['desk'])
+  await seed(page, QUEUE, '# One Task — the queue\n\n- Master the EP\n', ['desk'])
+  await connectViaStorage(page)
+
+  await page.goto(VIEW)
+  await page.getByTestId('one-queue-toggle').click()
+  await page.getByTestId('one-queue-remove').click()
+  await expect(page.getByTestId('one-queue-item')).toHaveCount(0)
+  // Surgical: ONLY the item line vanished — the surrounding bytes survive.
+  await expect.poll(() => savedContent(page, QUEUE)).toBe('# One Task — the queue\n\n')
+
+  // With nothing parked, resolving lands on EXACTLY the bare question —
+  // no queue UI at all.
+  await page.getByTestId('one-letgo').click()
+  await expect(page.getByTestId('one-input')).toBeVisible()
+  await expect(page.getByTestId('one-queue-offer')).toHaveCount(0)
 })

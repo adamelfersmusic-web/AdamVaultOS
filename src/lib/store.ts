@@ -42,16 +42,20 @@ import {
   type LooseTask,
 } from '../domain/looseTasks'
 import {
+  addQueueLine,
   appendHistoryBlock,
   appendSubtaskLine,
   historyBlock,
   moveSubtaskBlock,
   ONE_TASK_LOG_PATH,
   ONE_TASK_PATH,
+  ONE_TASK_QUEUE_PATH,
   ONE_TASK_TAGS,
   oneTaskContent,
   oneTaskLogContent,
+  oneTaskQueueContent,
   parseOneTask,
+  removeQueueLine,
   setSubtaskNote,
   toggleSubtaskLine,
   type OneSubtask,
@@ -1483,6 +1487,43 @@ export async function resolveOneTask(outcome: OneTaskOutcome): Promise<Note> {
     updatedAt: fresh.updatedAt,
     content: fresh.content ?? '',
   })
+}
+
+// ——— THE QUEUE (desk/one-task-queue) — at most three parked names, each
+// verb ONE write to the queue note. Grammar in domain/oneTask.ts. ———
+
+/** The queue, fresh from the vault — null when the note doesn't exist yet. */
+export async function fetchOneTaskQueueNote(): Promise<Note | null> {
+  return fetchNote(ONE_TASK_QUEUE_PATH, { refresh: true })
+}
+
+/** Park a name at the queue's tail — a fourth is refused (the cap is
+ * re-checked against the fresh note inside addQueueLine). */
+export async function addToOneTaskQueue(name: string): Promise<Note> {
+  const t = name.trim()
+  if (!t) throw new Error('a queued task needs a name')
+  const existing = await fetchNote(ONE_TASK_QUEUE_PATH, { refresh: true })
+  if (!existing) {
+    return createNoteAt(ONE_TASK_QUEUE_PATH, oneTaskQueueContent(t), [...ONE_TASK_TAGS])
+  }
+  return surgicalLineEdit(ONE_TASK_QUEUE_PATH, (lines) => addQueueLine(lines, t))
+}
+
+/** Drop one parked name from the queue note. */
+export async function removeFromOneTaskQueue(name: string): Promise<Note> {
+  return surgicalLineEdit(ONE_TASK_QUEUE_PATH, (lines) => removeQueueLine(lines, name))
+}
+
+/**
+ * Promotion: the queued name becomes THE task (through startOneTask, so the
+ * one-at-a-time guard holds), THEN leaves the queue. If the removal fails
+ * the name stays visibly parked — a visible duplicate beats a silent loss
+ * (the promoteLooseTask law).
+ */
+export async function pullFromOneTaskQueue(name: string): Promise<Note> {
+  const note = await startOneTask(name)
+  await removeFromOneTaskQueue(name)
+  return note
 }
 
 /** Explicit human overwrite after reviewing a content conflict. */

@@ -20,11 +20,22 @@
 // in +10-minute steps (cap 90), end-timestamp-based in localStorage so it
 // survives reloads and tab switches, soft WebAudio chime only when a timer
 // the human started completes. App-local — never written to the vault.
+//
+// THE QUEUE: at most three parked NAMES (desk/one-task-queue) so the next
+// few tasks stop costing RAM. While a task is active it's one dim line at
+// the very bottom, collapsed by default, always. The moment the slot
+// empties, the parked names surface as one-click choices beside the (still
+// primary) fresh input — pulling one promotes it through startOneTask and
+// removes it from the queue note.
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import {
   addOneSubtask,
+  addToOneTaskQueue,
   fetchOneTaskNote,
+  fetchOneTaskQueueNote,
+  pullFromOneTaskQueue,
+  removeFromOneTaskQueue,
   reorderOneSubtask,
   resolveOneTask,
   setOneSubtaskNote,
@@ -35,7 +46,10 @@ import {
 } from '../lib/store'
 import {
   ONE_TASK_PATH,
+  ONE_TASK_QUEUE_CAP,
+  ONE_TASK_QUEUE_PATH,
   parseOneTask,
+  parseQueue,
   type OneSubtask,
   type OneTaskOutcome,
 } from '../domain/oneTask'
@@ -285,11 +299,16 @@ export function OneTaskView() {
   const [pendingCheck, setPendingCheck] = useState<Record<string, boolean>>({})
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [slot, setSlot] = useState<number | null>(null)
+  // THE QUEUE's fold — collapsed by DEFAULT, always (never persisted): it
+  // must never draw the eye from the hero task.
+  const [queueOpen, setQueueOpen] = useState(false)
+  const [queueText, setQueueText] = useState('')
 
-  // One fresh read on mount — after that the store's merged note is truth.
+  // One fresh read on mount (slot + queue) — after that the store's merged
+  // notes are truth.
   useEffect(() => {
     let alive = true
-    fetchOneTaskNote()
+    Promise.all([fetchOneTaskNote(), fetchOneTaskQueueNote()])
       .then(() => {
         if (alive) setStatus('ready')
       })
@@ -306,15 +325,19 @@ export function OneTaskView() {
 
   const note = notes[ONE_TASK_PATH]
   const task = useMemo(() => parseOneTask(note?.content), [note?.content])
+  const queueNote = notes[ONE_TASK_QUEUE_PATH]
+  const queue = useMemo(() => parseQueue(queueNote?.content), [queueNote?.content])
 
   // A lean list-shape can shoulder the cached content aside (external edit +
   // background listAll) — a content-less note must re-hydrate, never read as
-  // an empty slot.
+  // an empty slot (or an empty queue).
   useEffect(() => {
-    if (status === 'ready' && note && note.content === undefined) {
-      void fetchOneTaskNote().catch(() => {})
+    if (status !== 'ready') return
+    if (note && note.content === undefined) void fetchOneTaskNote().catch(() => {})
+    if (queueNote && queueNote.content === undefined) {
+      void fetchOneTaskQueueNote().catch(() => {})
     }
-  }, [status, note])
+  }, [status, note, queueNote])
 
   const setOpenFor = (key: string, on: boolean) => {
     setOpen((prev) => {
@@ -386,6 +409,20 @@ export function OneTaskView() {
     void guard('reorder', () => reorderOneSubtask(moved, before))
   }
 
+  const parkInQueue = () =>
+    guard('queue it', async () => {
+      const text = queueText.trim()
+      if (!text) return
+      await addToOneTaskQueue(text)
+      setQueueText('')
+    })
+
+  const dropFromQueue = (queued: string) =>
+    guard('drop it from the queue', () => removeFromOneTaskQueue(queued))
+
+  const pull = (queued: string) =>
+    guard('pull it from the queue', () => pullFromOneTaskQueue(queued))
+
   if (status === 'loading' || (note && note.content === undefined)) {
     return (
       <div className="one-task" data-testid="one-task-view">
@@ -402,7 +439,10 @@ export function OneTaskView() {
   }
 
   // ——— STATE 1 — the empty slot: one large calm question, nothing else.
-  // Deliberately NO list, NO suggestions, NO picker of existing tasks. ———
+  // Deliberately NO list, NO suggestions, NO picker of existing tasks. The
+  // ONE exception is the queue's moment: names ADAM parked earlier are
+  // offered as one-click choices — the fresh input stays primary, and with
+  // an empty queue this state is exactly the bare question. ———
   if (!task) {
     return (
       <div className="one-task" data-testid="one-task-view">
@@ -421,6 +461,23 @@ export function OneTaskView() {
             }}
           />
           <p className="one-quiet">Type it fresh · Enter to begin</p>
+          {queue.length > 0 && (
+            <div className="one-queue-offer" data-testid="one-queue-offer">
+              <span className="one-queue-offer-head">or pull from the queue</span>
+              {queue.map((q) => (
+                <button
+                  key={q}
+                  className="one-queue-pull"
+                  data-testid="one-queue-pull"
+                  disabled={busy}
+                  title="Make this the one task"
+                  onClick={() => void pull(q)}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     )
@@ -569,6 +626,56 @@ export function OneTaskView() {
           >
             let it go
           </button>
+        </div>
+
+        {/* THE QUEUE — parked at the very bottom, nearly invisible: one dim
+            line you hardly see unless you know it's there. Names only; the
+            fold never persists open. */}
+        <div className="one-queue" data-testid="one-queue">
+          <button
+            className="one-queue-toggle"
+            data-testid="one-queue-toggle"
+            title="The queue — up to three names waiting their turn"
+            onClick={() => setQueueOpen((o) => !o)}
+          >
+            {queue.length > 0 ? `queue · ${queue.length}` : 'queue'}
+          </button>
+          {queueOpen && (
+            <div className="one-queue-panel" data-testid="one-queue-panel">
+              {queue.map((q) => (
+                <div key={q} className="one-queue-item" data-testid="one-queue-item">
+                  <span className="one-queue-name">{q}</span>
+                  <button
+                    className="one-queue-remove"
+                    data-testid="one-queue-remove"
+                    disabled={busy}
+                    title="Drop it from the queue"
+                    aria-label={`Remove ${q} from the queue`}
+                    onClick={() => void dropFromQueue(q)}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <input
+                className="one-queue-add"
+                data-testid="one-queue-add"
+                placeholder={
+                  queue.length >= ONE_TASK_QUEUE_CAP
+                    ? 'The queue holds three'
+                    : 'Park a name — Enter queues it'
+                }
+                aria-label="Park a task name in the queue"
+                value={queueText}
+                disabled={busy}
+                onChange={(e) => setQueueText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void parkInQueue()
+                  if (e.key === 'Escape') setQueueOpen(false)
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
