@@ -5051,6 +5051,18 @@ button.task-row-due:hover {
   border-color: color-mix(in srgb, var(--gold) 55%, transparent);
 }
 
+/* ELAPSED — the wall-clock whisper under the timer. Dimmer than even the
+   queue fold: ambient awareness, never a guilt meter (no tones, no color
+   shifts — it just tells the truth). */
+.one-elapsed {
+  margin-top: 6px;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--ink-4);
+  opacity: 0.5;
+}
+
 /* Progress — a whisper: the count over a hairline bar. */
 .one-progress {
   display: flex;

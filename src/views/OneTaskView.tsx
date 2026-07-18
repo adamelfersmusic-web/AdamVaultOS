@@ -45,6 +45,7 @@ import {
   useStore,
 } from '../lib/store'
 import {
+  formatElapsed,
   ONE_TASK_PATH,
   ONE_TASK_QUEUE_CAP,
   ONE_TASK_QUEUE_PATH,
@@ -131,6 +132,24 @@ function chime(ctx: AudioContext): void {
 }
 
 const BASE_TITLE = typeof document !== 'undefined' ? document.title : ''
+
+/** ELAPSED — the wall-clock truth under the countdown ("5 hours can feel
+ * like 5 min"). Reads metadata.started_at, ticks minutely, and WHISPERS:
+ * dimmer than the queue fold, no colors, no warnings — ambient awareness,
+ * not a guilt meter. Separate from the timer entirely: top-ups never touch
+ * it. A slot without the stamp (pre-feature task) shows nothing. */
+function OneElapsed({ startedAt }: { startedAt: number }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000)
+    return () => window.clearInterval(id)
+  }, [])
+  return (
+    <div className="one-elapsed" data-testid="one-elapsed">
+      on this: {formatElapsed(now - startedAt)}
+    </div>
+  )
+}
 
 function OneTimer() {
   const [t, setT] = useState<TimerState>(loadTimer)
@@ -327,6 +346,10 @@ export function OneTaskView() {
   const task = useMemo(() => parseOneTask(note?.content), [note?.content])
   const queueNote = notes[ONE_TASK_QUEUE_PATH]
   const queue = useMemo(() => parseQueue(queueNote?.content), [queueNote?.content])
+  // The wall-clock stamp — a string ISO in metadata, else no elapsed line.
+  const startedRaw = note?.metadata['started_at']
+  const startedMs = typeof startedRaw === 'string' ? Date.parse(startedRaw) : NaN
+  const startedAt = Number.isFinite(startedMs) ? startedMs : null
 
   // A lean list-shape can shoulder the cached content aside (external edit +
   // background listAll) — a content-less note must re-hydrate, never read as
@@ -496,6 +519,8 @@ export function OneTaskView() {
         </h1>
 
         <OneTimer />
+
+        {startedAt !== null && <OneElapsed key={startedAt} startedAt={startedAt} />}
 
         {subs.length > 0 && (
           <div className="one-progress" data-testid="one-progress">

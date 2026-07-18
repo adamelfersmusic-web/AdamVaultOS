@@ -217,9 +217,26 @@ export function moveSubtaskBlock(
 }
 
 /**
+ * Elapsed wall-clock as `Xh Ym` (or `Ym` under an hour) — DATA CAPTURE, not
+ * decoration: the history headings carry it as a ` · Xh Ym` suffix and a
+ * future Daily Time Log will ingest those blocks, so this format is a
+ * CONTRACT. Parse side: / · (?:(\d+)h )?(\d+)m$/ on a heading line.
+ * Floors to whole minutes; negative or unparseable inputs are the caller's
+ * job to withhold (formatElapsed itself clamps at 0m).
+ */
+export function formatElapsed(ms: number): string {
+  const totalMin = Math.max(0, Math.floor(ms / 60_000))
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
+
+/**
  * The stamped history block for a resolved task:
  *
- *   ## 2026-07-17 — <task name> ✅        (or 🕊 renounced)
+ *   ## 2026-07-17 — <task name> ✅ · 2h 14m   (or 🕊 renounced; the elapsed
+ *                                              suffix only when the slot
+ *                                              carried started_at)
  *   - [x] subtask
  *   - [ ] subtask                          (unchecked ones preserved as-is)
  *       > its note travels along, verbatim
@@ -228,9 +245,12 @@ export function historyBlock(
   task: OneTask,
   outcome: OneTaskOutcome,
   date: string,
+  elapsedMs?: number | null,
 ): string[] {
   const stamp = outcome === 'done' ? '✅' : '🕊 renounced'
-  const out = [`## ${date} — ${task.name} ${stamp}`]
+  const elapsed =
+    elapsedMs === undefined || elapsedMs === null ? '' : ` · ${formatElapsed(elapsedMs)}`
+  const out = [`## ${date} — ${task.name} ${stamp}${elapsed}`]
   for (const s of task.subtasks) {
     out.push(s.raw, ...s.noteLines)
   }
