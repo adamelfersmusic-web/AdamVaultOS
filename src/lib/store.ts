@@ -1424,7 +1424,9 @@ export async function fetchOneTaskNote(): Promise<Note | null> {
 }
 
 /** Fill the empty slot with a freshly typed task. Guards the whole point:
- * a slot already holding an active task refuses a second one. */
+ * a slot already holding an active task refuses a second one. Also stamps
+ * metadata.started_at (ISO) — vault metadata, not localStorage, so the
+ * elapsed truth survives devices; the note is the record. */
 export async function startOneTask(name: string): Promise<Note> {
   const title = name.trim()
   if (!title) throw new Error('a task needs a name')
@@ -1432,14 +1434,19 @@ export async function startOneTask(name: string): Promise<Note> {
   if (existing && parseOneTask(existing.content)) {
     throw new Error('one task at a time — finish it or let it go first')
   }
+  const startedAt = new Date().toISOString()
   if (!existing) {
-    return createNoteAt(ONE_TASK_PATH, oneTaskContent(title), [...ONE_TASK_TAGS])
+    return createNoteAt(ONE_TASK_PATH, oneTaskContent(title), [...ONE_TASK_TAGS], {
+      started_at: startedAt,
+    })
   }
-  // The emptied note from a past resolution — refill it in place.
-  return saveContent(ONE_TASK_PATH, oneTaskContent(title), {
-    updatedAt: existing.updatedAt,
-    content: existing.content ?? '',
-  })
+  // The emptied note from a past resolution — refill it in place (ONE
+  // write: content + the fresh started_at ride the same patch).
+  return mutateNote(
+    ONE_TASK_PATH,
+    () => ({ content: oneTaskContent(title), metadata: { started_at: startedAt } }),
+    existing,
+  )
 }
 
 /** Append one `- [ ] <text>` line under the last subtask block. */
@@ -1476,17 +1483,26 @@ export async function resolveOneTask(outcome: OneTaskOutcome): Promise<Note> {
   const fresh = await fetchNote(ONE_TASK_PATH, { refresh: true })
   const task = parseOneTask(fresh?.content)
   if (!fresh || !task) throw new Error('the slot is already empty')
-  const block = historyBlock(task, outcome, todayKey())
+  // Wall-clock elapsed since started_at → the heading's ` · Xh Ym` suffix
+  // (DATA CAPTURE for the future Daily Time Log). A pre-feature task with
+  // no stamp gets NO suffix — never a guessed one.
+  const startedRaw = fresh.metadata['started_at']
+  const startedAt = typeof startedRaw === 'string' ? Date.parse(startedRaw) : NaN
+  const elapsedMs = Number.isFinite(startedAt) ? Date.now() - startedAt : null
+  const block = historyBlock(task, outcome, todayKey(), elapsedMs)
   const log = await fetchNote(ONE_TASK_LOG_PATH, { refresh: true })
   if (!log) {
     await createNoteAt(ONE_TASK_LOG_PATH, oneTaskLogContent(block), [...ONE_TASK_TAGS])
   } else {
     await surgicalLineEdit(ONE_TASK_LOG_PATH, (lines) => appendHistoryBlock(lines, block))
   }
-  return saveContent(ONE_TASK_PATH, '', {
-    updatedAt: fresh.updatedAt,
-    content: fresh.content ?? '',
-  })
+  // ONE write empties the slot AND retires started_at (null = the
+  // JSON-merge-patch deletion — the key ceases to exist, never stores null).
+  return mutateNote(
+    ONE_TASK_PATH,
+    () => ({ content: '', metadata: { started_at: null } }),
+    fresh,
+  )
 }
 
 // ——— THE QUEUE (desk/one-task-queue) — at most three parked names, each

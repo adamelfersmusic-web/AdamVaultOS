@@ -440,3 +440,55 @@ test('queue — remove drops exactly one parked name; an empty queue leaves the 
   await expect(page.getByTestId('one-input')).toBeVisible()
   await expect(page.getByTestId('one-queue-offer')).toHaveCount(0)
 })
+
+test('elapsed — start stamps started_at, the dim line ticks the wall clock, resolve stamps the · suffix and clears the metadata', async ({ page }) => {
+  await connectViaStorage(page)
+  await page.clock.install()
+
+  await page.goto(VIEW)
+  await page.getByTestId('one-input').fill('Amanda Photo Script')
+  await page.getByTestId('one-input').press('Enter')
+  await expect(page.getByTestId('one-hero')).toHaveText('Amanda Photo Script')
+
+  // started_at landed in vault METADATA as a parseable ISO stamp — the
+  // note is the record, so the truth survives devices.
+  const note = await mockNote(page, SLOT)
+  expect(typeof note.metadata.started_at).toBe('string')
+  expect(Number.isNaN(Date.parse(note.metadata.started_at))).toBe(false)
+
+  // The whisper reads 0m at birth, then tells the wall-clock truth —
+  // entirely independent of the countdown timer (which was never started).
+  await expect(page.getByTestId('one-elapsed')).toHaveText('on this: 0m')
+  await page.clock.fastForward('02:14:00')
+  await expect(page.getByTestId('one-elapsed')).toHaveText('on this: 2h 14m')
+
+  // Resolve: the heading carries the machine-parseable ` · Xh Ym` suffix
+  // (the future Daily Time Log's contract)…
+  const stampDay = ymd(new Date(Date.now() + (2 * 60 + 14) * 60_000))
+  await page.getByTestId('one-done').click()
+  await expect(page.getByTestId('one-input')).toBeVisible()
+  await expect
+    .poll(() => savedContent(page, LOG))
+    .toContain(`## ${stampDay} — Amanda Photo Script ✅ · 2h 14m`)
+
+  // …and started_at is CLEARED — the key ceases to exist, never stores null.
+  const cleared = await mockNote(page, SLOT)
+  expect('started_at' in cleared.metadata).toBe(false)
+})
+
+test('elapsed — a pre-feature task without started_at shows no line and stamps no suffix', async ({ page }) => {
+  await seed(page, SLOT, '# Mix the record\n\n- [ ] Bounce stems\n', ['desk'])
+  await connectViaStorage(page)
+
+  await page.goto(VIEW)
+  await expect(page.getByTestId('one-hero')).toHaveText('Mix the record')
+  await expect(page.getByTestId('one-elapsed')).toHaveCount(0)
+
+  // Resolving stamps the plain heading — no suffix is ever guessed.
+  await page.getByTestId('one-done').click()
+  await expect(page.getByTestId('one-input')).toBeVisible()
+  const today = ymd(new Date())
+  const log = await savedContent(page, LOG)
+  expect(log).toContain(`## ${today} — Mix the record ✅\n`)
+  expect(log).not.toContain(' · ')
+})
