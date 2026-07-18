@@ -13,6 +13,7 @@ import { LibraryView } from './views/LibraryView'
 import { CanvasView } from './views/CanvasView'
 import { ProjectsView } from './views/ProjectsView'
 import { TasksView } from './views/TasksView'
+import { OneTaskView } from './views/OneTaskView'
 import { ProjectWorld } from './views/ProjectWorld'
 import { GraphView } from './views/GraphView'
 import { NewScriptModal } from './views/NewScriptModal'
@@ -177,6 +178,7 @@ export default function App() {
           <DatabaseView def={TRACKER_DB} dataset="tracker" lensOverride={route.lens} />
         )}
         {route.kind === 'tasks' && <TasksView />}
+        {route.kind === 'one-task' && <OneTaskView />}
         {route.kind === 'note' && <NotePage path={route.path} key={route.path} />}
         {route.kind === 'library' && <LibraryView />}
         {(route.kind === 'explore' || route.kind === 'explore-tag') && (

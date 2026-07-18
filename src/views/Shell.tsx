@@ -6,6 +6,7 @@ import { openPalette, openShortcuts, toggleAskAi } from '../lib/ui'
 import { toggleTheme, useTheme } from '../lib/theme'
 import {
   IconBoard,
+  IconCheck,
   IconDisconnect,
   IconGallery,
   IconGem,
@@ -119,6 +120,13 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           >
             <IconTodo size={15} />
             Tasks
+          </a>
+          <a
+            className={`rail-link${route.kind === 'one-task' ? ' is-active' : ''}`}
+            href="#/one-task"
+          >
+            <IconCheck size={15} />
+            One Task
           </a>
           <a
             className={`rail-link${route.kind === 'tracker' ? ' is-active' : ''}`}

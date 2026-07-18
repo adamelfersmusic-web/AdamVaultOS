@@ -41,6 +41,22 @@ import {
   toggleTaskLine,
   type LooseTask,
 } from '../domain/looseTasks'
+import {
+  appendHistoryBlock,
+  appendSubtaskLine,
+  historyBlock,
+  moveSubtaskBlock,
+  ONE_TASK_LOG_PATH,
+  ONE_TASK_PATH,
+  ONE_TASK_TAGS,
+  oneTaskContent,
+  oneTaskLogContent,
+  parseOneTask,
+  setSubtaskNote,
+  toggleSubtaskLine,
+  type OneSubtask,
+  type OneTaskOutcome,
+} from '../domain/oneTask'
 
 // Storage keys are namespaced per-app. AdamVaultOS shares ONE origin with
 // AtelierVaultOS on github.io (localStorage is keyed by origin, not by the
@@ -1388,6 +1404,85 @@ export async function promoteLooseTask(
   )
   await surgicalLineEdit(t.notePath, (lines) => promoteTaskLine(lines, t, row.path))
   return row
+}
+
+// ---------------------------------------------------------------------------
+// One Task (#/one-task) — the single-task focus surface. The slot is ONE
+// convention note (desk/one-task, tag `desk` — never `task`, so the Tracker
+// stays blind); resolving stamps a block onto desk/one-task-log and empties
+// the slot. Every verb rides the house seams (createNoteAt / saveContent /
+// surgicalLineEdit) — the grammar itself lives in domain/oneTask.ts.
+// ---------------------------------------------------------------------------
+
+/** The slot, fresh from the vault — null when the note doesn't exist yet. */
+export async function fetchOneTaskNote(): Promise<Note | null> {
+  return fetchNote(ONE_TASK_PATH, { refresh: true })
+}
+
+/** Fill the empty slot with a freshly typed task. Guards the whole point:
+ * a slot already holding an active task refuses a second one. */
+export async function startOneTask(name: string): Promise<Note> {
+  const title = name.trim()
+  if (!title) throw new Error('a task needs a name')
+  const existing = await fetchNote(ONE_TASK_PATH, { refresh: true })
+  if (existing && parseOneTask(existing.content)) {
+    throw new Error('one task at a time — finish it or let it go first')
+  }
+  if (!existing) {
+    return createNoteAt(ONE_TASK_PATH, oneTaskContent(title), [...ONE_TASK_TAGS])
+  }
+  // The emptied note from a past resolution — refill it in place.
+  return saveContent(ONE_TASK_PATH, oneTaskContent(title), {
+    updatedAt: existing.updatedAt,
+    content: existing.content ?? '',
+  })
+}
+
+/** Append one `- [ ] <text>` line under the last subtask block. */
+export async function addOneSubtask(text: string): Promise<Note> {
+  return surgicalLineEdit(ONE_TASK_PATH, (lines) => appendSubtaskLine(lines, text))
+}
+
+/** Check/uncheck exactly sub's line — its `>` note lines survive untouched. */
+export async function toggleOneSubtask(sub: OneSubtask): Promise<Note> {
+  return surgicalLineEdit(ONE_TASK_PATH, (lines) => toggleSubtaskLine(lines, sub))
+}
+
+/** Set/replace/remove the tucked-away `>` note under sub's line. */
+export async function setOneSubtaskNote(sub: OneSubtask, text: string): Promise<Note> {
+  return surgicalLineEdit(ONE_TASK_PATH, (lines) => setSubtaskNote(lines, sub, text))
+}
+
+/** Drop-time reorder: move sub's whole block before `before` (null = last).
+ * ONE write; a cancelled drag never reaches this. */
+export async function reorderOneSubtask(
+  sub: OneSubtask,
+  before: OneSubtask | null,
+): Promise<Note> {
+  return surgicalLineEdit(ONE_TASK_PATH, (lines) => moveSubtaskBlock(lines, sub, before))
+}
+
+/**
+ * Resolve the slot — Done (✅) or let it go (🕊 renounced, the same
+ * conscious-drop verb as the week card's ~~cross-off~~). The stamped block
+ * lands on desk/one-task-log FIRST (created if missing), and only then does
+ * the slot empty — a failed append never loses the task.
+ */
+export async function resolveOneTask(outcome: OneTaskOutcome): Promise<Note> {
+  const fresh = await fetchNote(ONE_TASK_PATH, { refresh: true })
+  const task = parseOneTask(fresh?.content)
+  if (!fresh || !task) throw new Error('the slot is already empty')
+  const block = historyBlock(task, outcome, todayKey())
+  const log = await fetchNote(ONE_TASK_LOG_PATH, { refresh: true })
+  if (!log) {
+    await createNoteAt(ONE_TASK_LOG_PATH, oneTaskLogContent(block), [...ONE_TASK_TAGS])
+  } else {
+    await surgicalLineEdit(ONE_TASK_LOG_PATH, (lines) => appendHistoryBlock(lines, block))
+  }
+  return saveContent(ONE_TASK_PATH, '', {
+    updatedAt: fresh.updatedAt,
+    content: fresh.content ?? '',
+  })
 }
 
 /** Explicit human overwrite after reviewing a content conflict. */
