@@ -48,6 +48,7 @@ export const EXCLUDES: ReadonlyArray<(n: Note) => boolean> = [
   (n) => n.path.startsWith('desk/weekly/'), // the weekly review + its template have their own surfaces
   (n) => /^projects\/[^/]+\/weekly\//.test(n.path), // Top 3 weekly cards carry the verb widgets
   (n) => n.path.startsWith('desk/00-sweep'), // janitor proposals are suggestions, not commitments
+  (n) => n.path.startsWith('desk/one-task'), // the One Task slot owns its subtasks; its log is history, not work
   (n) => n.path.startsWith('desk/shelves'), // the shelves layout note is app plumbing
   (n) => n.metadata?.['locked'] === true, // the sacred handful stays untouched
 ]

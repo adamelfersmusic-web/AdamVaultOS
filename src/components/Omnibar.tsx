@@ -56,6 +56,7 @@ import { toProjects } from '../domain/projects'
 import { PAGE_TAG } from '../domain/pages'
 import {
   IconBoard,
+  IconCheck,
   IconDisconnect,
   IconGallery,
   IconGem,
@@ -317,6 +318,12 @@ export function Omnibar() {
         label: 'Tasks — inbox · today · week',
         icon: <IconTodo size={14} />,
         run: () => navigate({ kind: 'tasks' }),
+      },
+      {
+        key: 'one-task',
+        label: 'One Task — the focus slot',
+        icon: <IconCheck size={14} />,
+        run: () => navigate({ kind: 'one-task' }),
       },
       {
         key: 'tracker',

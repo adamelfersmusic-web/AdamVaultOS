@@ -12,6 +12,7 @@ export type Route =
   | { kind: 'scripts'; lens?: LensKind }
   | { kind: 'tracker'; lens?: LensKind }
   | { kind: 'tasks' }
+  | { kind: 'one-task' }
   | { kind: 'canvas' }
   | { kind: 'projects' }
   | { kind: 'project'; path: string }
@@ -104,6 +105,9 @@ export function parseHash(hash: string): Route {
     // the Tracker manages (the Tracker stays the ops table / archive).
     case 'tasks':
       return { kind: 'tasks' }
+    // One Task — the single-task focus surface (one thing, typed fresh).
+    case 'one-task':
+      return { kind: 'one-task' }
     default:
       // The Cockpit is the app's front door — a calm deck of project cards.
       return { kind: 'projects' }
@@ -120,6 +124,8 @@ export function hrefFor(route: Route): string {
       return route.lens ? `#/tracker/${route.lens}` : '#/tracker'
     case 'tasks':
       return '#/tasks'
+    case 'one-task':
+      return '#/one-task'
     case 'library':
       return '#/library'
     case 'canvas':
