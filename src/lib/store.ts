@@ -61,6 +61,20 @@ import {
   type OneSubtask,
   type OneTaskOutcome,
 } from '../domain/oneTask'
+import {
+  appendTimelogLine,
+  cleanField,
+  formatEntryLine,
+  parseTimelog,
+  removeTimelogLine,
+  TIMELOG_PREFIX,
+  TIMELOG_TAGS,
+  timelogClock,
+  timelogContent,
+  timelogDayKey,
+  totalsOf,
+  type TimelogEntry,
+} from '../domain/timelog'
 
 // Storage keys are namespaced per-app. AdamVaultOS shares ONE origin with
 // AtelierVaultOS on github.io (localStorage is keyed by origin, not by the
@@ -1498,11 +1512,28 @@ export async function resolveOneTask(outcome: OneTaskOutcome): Promise<Note> {
   }
   // ONE write empties the slot AND retires started_at (null = the
   // JSON-merge-patch deletion — the key ceases to exist, never stores null).
-  return mutateNote(
+  const emptied = await mutateNote(
     ONE_TASK_PATH,
     () => ({ content: '', metadata: { started_at: null } }),
     fresh,
   )
+  // THE AUTO-FEED — most Time-tab rows write themselves: a resolved task
+  // with a known elapsed becomes today's ⚡ row (min 1 minute, no project).
+  // Strictly AFTER history + slot-empty, and never blocking them — a failed
+  // feed surfaces as the house toast, not an error state.
+  if (elapsedMs !== null) {
+    try {
+      await addTimelogEntry({
+        what: task.name,
+        project: null,
+        minutes: Math.max(1, Math.floor(elapsedMs / 60_000)),
+        auto: true,
+      })
+    } catch (e) {
+      toast('error', `Resolved, but the time log write failed — ${e instanceof Error ? e.message : e}`)
+    }
+  }
+  return emptied
 }
 
 // ——— THE QUEUE (desk/one-task-queue) — at most three parked names, each
@@ -1540,6 +1571,101 @@ export async function pullFromOneTaskQueue(name: string): Promise<Note> {
   const note = await startOneTask(name)
   await removeFromOneTaskQueue(name)
   return note
+}
+
+// ---------------------------------------------------------------------------
+// THE TIME TAB (desk/timelog/YYYY-MM-DD) — the daily time log. One note per
+// America/New_York day, tags desk + timelog. The vault's `timelog` schema is
+// STRICT: date · total_minutes · entry_count are required on every write, so
+// each mutation sends content + the recomputed trio in ONE patch — the lines
+// are the truth, the metadata mirrors them. Grammar in domain/timelog.ts.
+// ---------------------------------------------------------------------------
+
+/** One day's log, fresh from the vault — null when nothing is logged yet. */
+export async function fetchTimelogNote(dateKey: string): Promise<Note | null> {
+  return fetchNote(`${TIMELOG_PREFIX}${dateKey}`, { refresh: true })
+}
+
+/**
+ * Append one entry row to TODAY's note (created with the full strict trio
+ * when missing). The HH:MM stamp is the entry's creation time on Adam's
+ * clock; fields are cleaned so the ` · ` delimiter can't be smuggled in.
+ */
+export async function addTimelogEntry(input: {
+  what: string
+  project: string | null
+  minutes: number
+  auto?: boolean
+}): Promise<Note> {
+  const minutes = Math.floor(input.minutes)
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    throw new Error('minutes must be a positive whole number')
+  }
+  const what = cleanField(input.what)
+  if (!what) throw new Error('an entry needs a what')
+  const project = input.project ? cleanField(input.project) : null
+  const dateKey = timelogDayKey()
+  const path = `${TIMELOG_PREFIX}${dateKey}`
+  const line = formatEntryLine({
+    time: timelogClock(),
+    minutes,
+    project,
+    what,
+    auto: input.auto ?? false,
+  })
+  const existing = await fetchNote(path, { refresh: true })
+  if (!existing) {
+    return createNoteAt(path, timelogContent(dateKey, line), [...TIMELOG_TAGS], {
+      date: dateKey,
+      total_minutes: minutes,
+      entry_count: 1,
+    })
+  }
+  return mutateNote(
+    path,
+    (base) => {
+      if (base.content === undefined) throw new Error(`${path} came back without content`)
+      const next = appendTimelogLine(base.content.split('\n'), line).join('\n')
+      const totals = totalsOf(parseTimelog(next))
+      return {
+        content: next,
+        metadata: {
+          date: dateKey,
+          total_minutes: totals.totalMinutes,
+          entry_count: totals.entryCount,
+        },
+      }
+    },
+    existing,
+  )
+}
+
+/** Delete one row — the correction path (no editing-in-place in v1). The
+ * trio recomputes from the surviving lines in the same patch. */
+export async function removeTimelogEntry(
+  dateKey: string,
+  entry: TimelogEntry,
+): Promise<Note> {
+  const path = `${TIMELOG_PREFIX}${dateKey}`
+  const existing = await fetchNote(path, { refresh: true })
+  if (!existing) throw new Error(`${path} is missing from the vault`)
+  return mutateNote(
+    path,
+    (base) => {
+      if (base.content === undefined) throw new Error(`${path} came back without content`)
+      const next = removeTimelogLine(base.content.split('\n'), entry).join('\n')
+      const totals = totalsOf(parseTimelog(next))
+      return {
+        content: next,
+        metadata: {
+          date: dateKey,
+          total_minutes: totals.totalMinutes,
+          entry_count: totals.entryCount,
+        },
+      }
+    },
+    existing,
+  )
 }
 
 /** Explicit human overwrite after reviewing a content conflict. */
