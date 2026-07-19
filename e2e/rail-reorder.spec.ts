@@ -138,7 +138,7 @@ test('a garbled stash never breaks the rail — every tab renders in default ord
     localStorage.setItem('adamvaultos.rail.order', '{not json[')
   })
   await page.goto('http://127.0.0.1:4173/#/tasks')
-  await expect(railLinks(page)).toHaveCount(9)
+  await expect(railLinks(page)).toHaveCount(10)
   await expect(railLinks(page).first()).toHaveText(/Projects/)
 
   // A partial stash: saved keys lead, missing tabs slot back at their
@@ -147,7 +147,7 @@ test('a garbled stash never breaks the rail — every tab renders in default ord
     localStorage.setItem('adamvaultos.rail.order', JSON.stringify(['graph', 'bogus-key']))
   })
   await page.reload()
-  await expect(railLinks(page)).toHaveCount(9)
+  await expect(railLinks(page)).toHaveCount(10)
   await expect(railLinks(page).first()).toHaveText(/Projects/)
   await expect(railLink(page, 'Graph')).toBeVisible()
 })

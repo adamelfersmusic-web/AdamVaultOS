@@ -6,6 +6,7 @@ import { openPalette, openShortcuts, toggleAskAi } from '../lib/ui'
 import { toggleTheme, useTheme } from '../lib/theme'
 import {
   IconBoard,
+  IconCalendar,
   IconCheck,
   IconDisconnect,
   IconGallery,
@@ -108,6 +109,13 @@ const RAIL_TABS: RailTab[] = [
     href: '#/one-task',
     icon: <IconCheck size={15} />,
     active: (r) => r.kind === 'one-task',
+  },
+  {
+    key: 'time',
+    label: 'Time',
+    href: '#/time',
+    icon: <IconCalendar size={15} />,
+    active: (r) => r.kind === 'time',
   },
   {
     key: 'tracker',
