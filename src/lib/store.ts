@@ -957,6 +957,41 @@ export function sortWorkTabs(children: Note[]): Note[] {
   return [...ordered, ...rest]
 }
 
+/** After a desk tab is deleted, the sibling to land on so the workspace stays
+ * open instead of dumping you to the empty pages view. Mirrors the rail order
+ * in WorkTabs — the root note first (when it's a real page), then the children
+ * in sortWorkTabs order — and prefers the tab just ABOVE the deleted one, else
+ * the one just below. Computed from the in-memory cache the rail already
+ * populated, so it's synchronous. Returns null when the deleted note isn't a
+ * desk workspace tab, or has no siblings left (the workspace is now empty) —
+ * both fall back to the plain empty-pages landing. */
+export function siblingTabFor(path: string): string | null {
+  const root = workspaceRootFor(path)
+  if (!root) return null
+  const pages = state.pages ?? []
+  // Direct children of the workspace (one segment past the root), as the rail
+  // renders them: cached notes sorted by sortWorkTabs, uncached ones appended.
+  const childPaths = pages.filter(
+    (p) =>
+      p.startsWith(`${root}/`) && !p.slice(root.length + 1).includes('/'),
+  )
+  const cached = childPaths
+    .map((p) => state.notes[p])
+    .filter((n): n is Note => Boolean(n))
+  const sorted = sortWorkTabs(cached).map((n) => n.path)
+  const rail = [
+    ...(pages.includes(root) ? [root] : []),
+    ...sorted,
+    ...childPaths.filter((p) => !sorted.includes(p)),
+  ]
+  const remaining = rail.filter((p) => p !== path)
+  if (remaining.length === 0) return null
+  const idx = rail.indexOf(path)
+  // idx <= 0 (the root, or not found) → the first remaining tab; otherwise the
+  // tab that sat directly above the deleted one.
+  return idx <= 0 ? remaining[0]! : remaining[idx - 1]!
+}
+
 export async function fetchWorkspaceTabs(
   root: string,
 ): Promise<{ root: Note | null; children: Note[] }> {

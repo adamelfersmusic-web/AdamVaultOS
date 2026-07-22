@@ -212,6 +212,40 @@ test('cancelled tab drag — indicator clears, order stays, nothing is written',
   }
 })
 
+test('deleting a tab lands on a sibling — the rail stays open, no eject to empty pages', async ({ page }) => {
+  await seedTabWorld(page)
+  // Open a middle tab and delete it.
+  await page.goto('http://127.0.0.1:4173/#/pages/' + encodeURIComponent(`${WS}/bravo`))
+  const items = page.getByTestId('worktabs').locator('.worktabs-item')
+  await expect(items).toHaveText(['Monday', 'Alpha', 'Bravo', 'Charlie'])
+
+  await page.getByRole('button', { name: 'Delete page' }).first().click()
+  await page.getByRole('button', { name: 'Delete page' }).last().click()
+
+  // Lands on the tab that sat directly above it (Alpha) — NOT the empty pages
+  // view — and the rail is still there, now without Bravo.
+  await expect(page).toHaveURL(/desk%2F2026-07-13%2Falpha/)
+  await expect(page.getByTestId('worktabs')).toBeVisible()
+  await expect(page.getByTestId('worktabs').locator('.worktabs-item')).toHaveText([
+    'Monday', 'Alpha', 'Charlie',
+  ])
+  await expect(page.getByTestId('worktabs').locator('.worktabs-item.is-active')).toContainText('Alpha')
+  expect(await mockNote(page, `${WS}/bravo`)).toBeNull()
+})
+
+test('deleting the last remaining tab falls back to the empty pages view', async ({ page }) => {
+  await seed(page, 'desk/2026-07-14/solo', '# Solo\n\nonly one', ['desk'], {})
+  await connectViaStorage(page)
+  await page.goto('http://127.0.0.1:4173/#/pages/' + encodeURIComponent('desk/2026-07-14/solo'))
+
+  await page.getByRole('button', { name: 'Delete page' }).first().click()
+  await page.getByRole('button', { name: 'Delete page' }).last().click()
+
+  // No sibling to land on → the plain empty-pages landing.
+  await expect(page.getByTestId('worktabs')).toHaveCount(0)
+  await expect(page.locator('.page-empty')).toBeVisible()
+})
+
 test('new tab appends at the end of an ordered rail with tab_order = max + 10', async ({ page }) => {
   await seed(page, WS, '# Monday\n\nMain thread.', ['desk'], {})
   await seed(page, `${WS}/bravo`, '# Bravo\n', ['desk'], { tab_order: 20 })

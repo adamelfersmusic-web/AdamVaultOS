@@ -31,6 +31,7 @@ import {
   rewriteLinksIn,
   saveContent,
   setCurrentNote,
+  siblingTabFor,
   toast,
   uploadImage,
   useStore,
@@ -618,6 +619,11 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
 
   const doDelete = async () => {
     setConfirmDelete(false)
+    // Deleting a tab shouldn't eject you from the workspace. Land on a sibling
+    // tab so the rail stays open right where you were — computed BEFORE the
+    // delete, while the rail still knows the deleted tab's neighbors. Non-desk
+    // pages (no sibling) keep the old empty-pages landing.
+    const sibling = siblingTabFor(path)
     try {
       // Don't let the leave-guard try to save a note we're deleting.
       if (saveTimer.current) {
@@ -628,7 +634,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
       await deletePage(path)
       setRouteGuard(null)
       toast('success', 'Page deleted')
-      navigate({ kind: 'pages' })
+      navigate(sibling ? { kind: 'pages', path: sibling } : { kind: 'pages' })
     } catch (e) {
       toast('error', `Couldn’t delete — ${e instanceof Error ? e.message : e}`)
     }
