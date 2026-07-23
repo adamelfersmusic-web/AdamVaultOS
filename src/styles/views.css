@@ -2417,6 +2417,51 @@ body.is-dragging .card {
   overflow-y: auto;
   padding: 14px 22px 30px;
 }
+.week-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  padding: 0 0 10px;
+  margin-bottom: 12px;
+  cursor: text;
+}
+.week-strip-head {
+  font-size: 11px;
+  font-weight: 660;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-4);
+}
+.week-strip-line {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.week-strip-empty {
+  font-size: 12px;
+  color: var(--ink-4);
+  font-style: italic;
+}
+.week-strip-edit {
+  display: block;
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
 .world-newtask { margin-bottom: 12px; }
 .world-new-row {
   display: flex;
