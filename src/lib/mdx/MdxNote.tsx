@@ -14,6 +14,8 @@ import { Checklist } from './Checklist'
 import { LayerStack } from './LayerStack'
 import { LayerQuiz } from './LayerQuiz'
 import { AskThePrimer } from './AskThePrimer'
+import { ContextWindowMeter } from './ContextWindowMeter'
+import { QuizMe } from './QuizMe'
 
 // Runtime MDX rendering. The MDX comes from a REST fetch at page load, not
 // from files in the repo, so it is compiled in the browser here — no
@@ -34,6 +36,8 @@ const COMPONENTS: MDXComponents = {
   LayerStack,
   LayerQuiz,
   AskThePrimer,
+  ContextWindowMeter,
+  QuizMe,
 }
 
 type Compiled = ComponentType<{ components?: MDXComponents }>

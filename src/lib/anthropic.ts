@@ -612,6 +612,89 @@ export async function askPrimer(input: AskVaultInput): Promise<AskPrimerResult> 
   return { answer, sources: source.map((n) => titleFromPath(n.path)) }
 }
 
+// A single multiple-choice question generated live from the course — the
+// engine behind the <QuizMe> component. Claude invents the question; the
+// component grades locally, so it's one API call per question.
+export interface QuizQuestion {
+  question: string
+  options: string[]
+  correct: number
+  explanation: string
+}
+
+async function loadPrimerSource(): Promise<Note[]> {
+  const notes = await notesByPrefixWithContent(PRIMER_PREFIX)
+  return notes
+    .filter((n) => !n.path.split('/').pop()!.startsWith('_'))
+    .sort(
+      (a, b) =>
+        Number(a.metadata.module_number ?? 99) -
+        Number(b.metadata.module_number ?? 99),
+    )
+}
+
+export async function generatePrimerQuestion(
+  apiKey: string,
+): Promise<QuizQuestion> {
+  if (!apiKey) throw new AnthropicError('No Anthropic API key set.')
+  let source: Note[]
+  try {
+    source = await loadPrimerSource()
+  } catch (e) {
+    throw new AnthropicError(
+      `Couldn't load the course notes — ${e instanceof Error ? e.message : String(e)}`,
+    )
+  }
+
+  const system =
+    'You are a quizmaster for the "AI: Zero to Hero" course. The complete ' +
+    'course is provided below. Write ONE multiple-choice question that tests ' +
+    'real understanding (not trivia) of a concept from the course. Pick a ' +
+    'DIFFERENT concept or layer than an obvious default — surprise the learner. ' +
+    'Respond with STRICT JSON and nothing else, in exactly this shape: ' +
+    '{"question": string, "options": [string, string, string, string], ' +
+    '"correct": number (0-based index into options), "explanation": string}. ' +
+    'The explanation names the module the answer comes from. No markdown, no ' +
+    `code fences, JSON only.\n\n# The course\n\n${contextBlock(source)}`
+
+  const { blocks } = await requestHop(apiKey, {
+    model: ASK_MODELS.sonnet.id,
+    max_tokens: 700,
+    system,
+    messages: [
+      { role: 'user', content: 'Generate one fresh multiple-choice question.' },
+    ],
+  })
+  const raw = textOf(blocks)
+  const start = raw.indexOf('{')
+  const end = raw.lastIndexOf('}')
+  if (start < 0 || end <= start) {
+    throw new AnthropicError('Could not read the generated question.')
+  }
+  let q: QuizQuestion
+  try {
+    q = JSON.parse(raw.slice(start, end + 1)) as QuizQuestion
+  } catch {
+    throw new AnthropicError('The generated question was malformed.')
+  }
+  if (
+    typeof q.question !== 'string' ||
+    !Array.isArray(q.options) ||
+    q.options.length < 2 ||
+    typeof q.correct !== 'number' ||
+    q.correct < 0 ||
+    q.correct >= q.options.length
+  ) {
+    throw new AnthropicError('The generated question was incomplete.')
+  }
+  return {
+    question: q.question,
+    options: q.options.map((o) => String(o)),
+    correct: q.correct,
+    explanation: typeof q.explanation === 'string' ? q.explanation : '',
+  }
+}
+
 /** One-shot ask for the /ai editor block (plain prose, non-streaming).
  * Same grounding as the panel — starter RAG + the page the block lives in —
  * on one model (Sonnet 5), with the same broad-question effort bump, and the
