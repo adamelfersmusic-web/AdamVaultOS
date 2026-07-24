@@ -4,7 +4,7 @@
 // concurrency via saveContent, the conflict bar, setRouteGuard + beforeunload —
 // but the editing surface is blocks (slash menu, drag handles, /ai, /voice).
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskList, TaskItem } from '@tiptap/extension-list'
@@ -76,6 +76,12 @@ import { TableBar } from '../components/TableBar'
 import { LockPill } from '../components/LockPill'
 import { ProgressRing } from '../components/ProgressRing'
 import { ringOf, type CheckboxRing } from '../domain/checkboxRing'
+
+// Runtime MDX renderer — lazy so the ~mdx compiler is only pulled in when an
+// .mdx note is actually opened in Pages. Mirrors NotePage's read path.
+const MdxNote = lazy(() =>
+  import('../lib/mdx/MdxNote').then((m) => ({ default: m.MdxNote })),
+)
 
 type Status = 'loading' | 'ready' | 'missing' | 'error'
 type Rec = 'idle' | 'recording' | 'transcribing'
@@ -226,6 +232,10 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
 
   const locked = note?.metadata?.['locked'] === true
   const readOnly = locked && !visitUnlocked
+  // An .mdx note is a runtime-compiled React document, not TipTap-editable
+  // markdown. Pages renders it read-only via <MdxNote> (below) and NEVER loads
+  // it into the editor — so the save pipeline can't re-serialize and corrupt it.
+  const isMdx = note?.extension === 'mdx'
 
   // The lock is a live render rule: TipTap follows it via setEditable, so the
   // toolbar/slash/format affordances (all gated on editor.isEditable) fall
@@ -343,6 +353,13 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
           setStatus('missing')
           return
         }
+        // .mdx renders read-only via <MdxNote> — skip TipTap load entirely.
+        // baseRef stays null, so flushSave/autosave both bail: no corruption.
+        if (n.extension === 'mdx') {
+          loadingRef.current = false
+          setStatus('ready')
+          return
+        }
         apply(n.content ?? '', n.updatedAt)
         checkStash(n.content ?? '')
       })
@@ -350,7 +367,10 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
         if (cancelled) return
         // A cached copy is still editable when the refresh fails.
         const cached = getState().notes[path]
-        if (cached?.content !== undefined) {
+        if (cached?.extension === 'mdx') {
+          loadingRef.current = false
+          setStatus('ready')
+        } else if (cached?.content !== undefined) {
           apply(cached.content, cached.updatedAt)
           checkStash(cached.content)
           setLoadError(e instanceof Error ? e.message : String(e))
@@ -923,16 +943,26 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
       )}
 
       <div className={`page-canvas${status === 'loading' ? ' is-loading' : ''}`}>
-        {editor && !readOnly && (
-          <DragHandle editor={editor}>
-            <div className="drag-grip" aria-hidden="true">
-              <span />
-              <span />
-            </div>
-          </DragHandle>
+        {isMdx ? (
+          <div className="page-content mdx-page">
+            <Suspense fallback={<div className="mdx-loading" aria-hidden />}>
+              <MdxNote source={note?.content ?? ''} />
+            </Suspense>
+          </div>
+        ) : (
+          <>
+            {editor && !readOnly && (
+              <DragHandle editor={editor}>
+                <div className="drag-grip" aria-hidden="true">
+                  <span />
+                  <span />
+                </div>
+              </DragHandle>
+            )}
+            <EditorContent editor={editor} className="page-content" />
+            {editor && <TableBar editor={editor} />}
+          </>
         )}
-        <EditorContent editor={editor} className="page-content" />
-        {editor && <TableBar editor={editor} />}
       </div>
 
       <input
