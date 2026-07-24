@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { VaultAuthError, type Note } from '../lib/types'
 import { clearDraft, loadDraft, stashDraft, type DraftStash } from '../lib/drafts'
 import {
@@ -13,6 +13,13 @@ import {
 import { setRouteGuard } from '../lib/router'
 import { fullTime, relativeTime, titleFromPath } from '../lib/format'
 import { renderMarkdown } from '../lib/markdown'
+
+// The MDX runtime compiler is a heavy dependency tree; load it only when an
+// `mdx` note is actually opened so the markdown path (nearly every note) pays
+// nothing for it.
+const MdxNote = lazy(() =>
+  import('../lib/mdx/MdxNote').then((m) => ({ default: m.MdxNote })),
+)
 import { useVaultImages } from '../lib/useVaultImages'
 import { Backlinks } from '../components/Backlinks'
 import {
@@ -398,12 +405,20 @@ export function NotePage({ path }: { path: string }) {
               Edit
             </button>
           )}
-          <article
-            ref={bodyRef}
-            className="prose"
-            data-testid="note-body"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(note.content ?? '') }}
-          />
+          {note.extension === 'mdx' ? (
+            <article className="prose" data-testid="note-body">
+              <Suspense fallback={<div className="mdx-loading" aria-hidden />}>
+                <MdxNote source={note.content ?? ''} />
+              </Suspense>
+            </article>
+          ) : (
+            <article
+              ref={bodyRef}
+              className="prose"
+              data-testid="note-body"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(note.content ?? '') }}
+            />
+          )}
           <Backlinks path={path} />
         </div>
       )}

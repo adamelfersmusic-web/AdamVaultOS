@@ -12,7 +12,13 @@
 // plain fetches to api.anthropic.com with the user's own key, read from
 // client-side settings at call time.
 
-import { fetchNote, mostLinkedContext, searchVaultContext, toast } from './store'
+import {
+  fetchNote,
+  mostLinkedContext,
+  notesByPrefixWithContent,
+  searchVaultContext,
+  toast,
+} from './store'
 import { cachedCorpus, corpusFresh, refreshCorpus } from './corpus'
 import {
   hasFreeText,
@@ -544,6 +550,66 @@ async function runToolLoop(
     }
     messages.push({ role: 'user', content: results })
   }
+}
+
+// ———————————————————————————————————————————————————————————————————————————
+// Course-scoped Q&A — the <AskThePrimer> MDX component. Loads the ENTIRE
+// ai-primer (a small, known corpus) as grounding, so every answer covers the
+// whole course with no retrieval misses, and cites the modules it drew from.
+// Reuses this file's requestHop/textOf plumbing.
+// ———————————————————————————————————————————————————————————————————————————
+
+const PRIMER_PREFIX = 'Atelier/Method/ai-primer/'
+
+const PRIMER_SYSTEM =
+  'You are the teaching assistant for "AI: Zero to Hero", a self-education ' +
+  'course on how AI systems work. The complete course — every module and the ' +
+  'glossary — is provided below as your ONLY source of truth. Answer the ' +
+  "learner's question using only these course notes; never pull from general " +
+  'knowledge. Name the module(s) you drew from (e.g. "Module 4 — Tools" or ' +
+  'the glossary). Lean on the course\'s core habit: when a term is involved, ' +
+  'say which of the eight layers it belongs to. If the course does not cover ' +
+  'the question, say so plainly and suggest the closest module. Write in clean ' +
+  'plain prose — no markdown, no bullets — in a warm, direct teaching voice.'
+
+export interface AskPrimerResult {
+  answer: string
+  /** Titles of the course notes used as grounding, for a citation line. */
+  sources: string[]
+}
+
+export async function askPrimer(input: AskVaultInput): Promise<AskPrimerResult> {
+  const { prompt, apiKey } = input
+  if (!apiKey) throw new AnthropicError('No Anthropic API key set.')
+
+  let notes: Note[]
+  try {
+    notes = await notesByPrefixWithContent(PRIMER_PREFIX)
+  } catch (e) {
+    throw new AnthropicError(
+      `Couldn't load the course notes — ${e instanceof Error ? e.message : String(e)}`,
+    )
+  }
+  // Exclude interactive/demo notes (underscore-prefixed) from grounding; order
+  // real modules by number.
+  const source = notes
+    .filter((n) => !n.path.split('/').pop()!.startsWith('_'))
+    .sort(
+      (a, b) =>
+        Number(a.metadata.module_number ?? 99) -
+        Number(b.metadata.module_number ?? 99),
+    )
+
+  const system = `${PRIMER_SYSTEM}\n\n# The course\n\n${contextBlock(source)}`
+  const { blocks } = await requestHop(apiKey, {
+    model: ASK_MODELS.sonnet.id,
+    max_tokens: 2000,
+    system,
+    messages: [{ role: 'user', content: prompt }],
+  })
+  const answer = textOf(blocks)
+  if (!answer) throw new AnthropicError('The model returned no text answer.')
+  return { answer, sources: source.map((n) => titleFromPath(n.path)) }
 }
 
 /** One-shot ask for the /ai editor block (plain prose, non-streaming).
