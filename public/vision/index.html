@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Escensus — Practice · Perform · Feedback</title>
+<meta name="description" content="The Escensus loop: Practice, Perform, Feedback. The three-phase system that develops sales agents and compounds every week.">
+<meta property="og:title" content="Escensus — Practice · Perform · Feedback">
+<meta property="og:description" content="The loop that turns rookies into closers.">
+</head>
+<body>
+<style>
+  :root {
+    --navy: #0c1b2a; --navy-deep: #0a1622; --panel: #13273a; --panel-2: #182f43;
+    --line: #24405a; --line-2: #33536f; --line-strong: #416484;
+    --cream: #f3eee2; --body: #c3cdd7; --ink-2: #93a2b1; --ink-3: #6d7d8d; --ink-4: #4f606f;
+    --gold: #cba14b; --gold-bright: #ddb968; --red: #c66a51; --blue: #6394b6; --hit: #6fa87f;
+    --r-sm: 8px; --r-md: 12px; --r-lg: 20px;
+    --display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+    --body-f: -apple-system, system-ui, 'Segoe UI', Roboto, Helvetica, sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--navy); color: var(--body); font-family: var(--body-f); line-height: 1.62; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 0 26px; }
+
+  header { border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--navy-deep) 92%, transparent); position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px); }
+  .headin { max-width: 780px; margin: 0 auto; padding: 16px 26px; display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .bars { display: flex; align-items: flex-end; gap: 3px; height: 22px; }
+  .bars i { width: 5px; border-radius: 1.5px; background: var(--gold); }
+  .bars i:nth-child(1){height:40%} .bars i:nth-child(2){height:66%} .bars i:nth-child(3){height:100%}
+  .brand .name { font-family: var(--display); font-size: 21px; color: var(--cream); }
+  .cta-sm { font-family: var(--mono); font-size: 12.5px; color: #23190a; background: var(--gold); border: 1px solid var(--gold); border-radius: var(--r-sm); padding: 8px 15px; text-decoration: none; font-weight: 600; }
+
+  section { padding: 62px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+  section:last-of-type { border-bottom: none; }
+  .eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); margin: 0 0 18px; }
+  h1 { font-family: var(--display); font-weight: 600; font-size: 52px; line-height: 1.04; color: var(--cream); margin: 0 0 20px; letter-spacing: -0.015em; text-wrap: balance; }
+  h2 { font-family: var(--display); font-weight: 600; font-size: 34px; line-height: 1.12; color: var(--cream); margin: 0 0 16px; text-wrap: balance; }
+  .lede { font-size: 19px; color: var(--body); max-width: 60ch; margin: 0 0 14px; }
+  p { max-width: 62ch; }
+  .dim { color: var(--ink-2); }
+  em, .it { font-style: italic; color: var(--cream); }
+  strong { color: var(--cream); font-weight: 600; }
+
+  /* hero */
+  .hero { padding-top: 74px; }
+  .pull { font-family: var(--display); font-style: italic; font-size: 22px; color: var(--gold-bright); border-left: 2px solid var(--gold); padding: 4px 0 4px 18px; margin: 26px 0 0; max-width: 46ch; }
+
+  /* loop diagram */
+  .loop { position: relative; width: 320px; height: 320px; margin: 30px auto 8px; }
+  .loop svg { width: 100%; height: 100%; }
+  .loop .ring { fill: none; stroke: var(--line-2); stroke-width: 2; }
+  .loop .flow { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 6 200; opacity: .9; animation: orbit 3.2s linear infinite; }
+  @keyframes orbit { to { stroke-dashoffset: -206; } }
+  .node { position: absolute; width: 116px; margin-left: -58px; text-align: center; }
+  .node .dot { width: 54px; height: 54px; margin: 0 auto 8px; border-radius: 50%; background: var(--panel); border: 1.5px solid var(--gold); display: grid; place-items: center; font-family: var(--display); font-size: 22px; color: var(--gold-bright); }
+  .node .nm { font-family: var(--mono); font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--cream); }
+  .node .sub { font-size: 11.5px; color: var(--ink-3); }
+  .n1 { left: 50%; top: -6px; } .n2 { left: 92%; top: 208px; } .n3 { left: 8%; top: 208px; }
+  .loop-mid { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; }
+  .loop-mid .t { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+
+  /* phases */
+  .phase { display: grid; grid-template-columns: 66px 1fr; gap: 22px; padding: 30px 0; border-top: 1px solid var(--line); }
+  .phase:first-of-type { border-top: none; }
+  .phase .num { font-family: var(--display); font-size: 46px; line-height: .9; color: var(--gold); }
+  .phase h3 { font-family: var(--display); font-weight: 600; font-size: 25px; color: var(--cream); margin: 4px 0 4px; }
+  .phase .role { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; }
+  .phase .what { font-size: 16px; margin: 0 0 12px; }
+  .phase .why { font-size: 15px; color: var(--ink-2); border-left: 2px solid var(--line-strong); padding-left: 14px; margin: 0; }
+  .phase .why b { color: var(--body); }
+
+  /* compound */
+  .cbullets { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 14px; }
+  .cbullets li { display: grid; grid-template-columns: 26px 1fr; gap: 12px; font-size: 16px; }
+  .cbullets .ic { color: var(--gold); font-family: var(--mono); }
+  .cbullets b { color: var(--cream); }
+
+  /* close */
+  .close { text-align: center; padding: 74px 0 20px; }
+  .close h2 { font-size: 38px; }
+  .cta-big { display: inline-block; margin-top: 22px; font-family: var(--mono); font-size: 15px; font-weight: 600; color: #23190a; background: var(--gold); border: 1px solid var(--gold); border-radius: var(--r-sm); padding: 15px 32px; text-decoration: none; }
+  .onboarding { margin-top: 18px; font-family: var(--mono); font-size: 12.5px; color: var(--gold); letter-spacing: .04em; }
+  footer { text-align: center; padding: 30px 0 60px; color: var(--ink-4); font-family: var(--mono); font-size: 12px; }
+
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .loop .flow { animation: none; stroke-dasharray: none; opacity: .55; } }
+  @media (max-width: 560px) { h1 { font-size: 38px; } h2 { font-size: 28px; } .phase { grid-template-columns: 48px 1fr; gap: 16px; } .phase .num { font-size: 38px; } .loop { width: 290px; height: 290px; } .n2 { left: 90% } .n3 { left: 10% } }
+</style>
+
+<header><div class="headin">
+  <div class="brand"><span class="bars"><i></i><i></i><i></i></span><span class="name">Escensus</span></div>
+  <a class="cta-sm" href="#access">Request access</a>
+</div></header>
+
+<div class="wrap">
+
+  <section class="hero">
+    <p class="eyebrow">Escensus · The operating system for agent development</p>
+    <h1>The loop that turns rookies into closers.</h1>
+    <p class="lede">Every performer who gets great runs the same three phases — <strong>practice, perform, feedback</strong> — over and over. Musicians. Athletes. Pilots. Sales is the only performance discipline that skips two of them.</p>
+    <p class="lede dim">Escensus puts them back — and makes them compound.</p>
+    <p class="pull">“It's not a training program. It's a wishing well.” Right now, that's most agencies. We change which one you're running.</p>
+  </section>
+
+  <section class="reveal">
+    <p class="eyebrow">The rookie gamble</p>
+    <h2>Your new agents are practicing on your leads.</h2>
+    <p>Every time you hand a premium batch of leads to an agent you can't see, you're running an expensive experiment — and you don't find out the result until the money's already gone. The rookie performs with no rehearsal. When the deal dies, you get a vague excuse instead of a reason. So you pay for broad, generic training when what they needed was <em>one specific fix</em>.</p>
+    <p class="dim">The problem isn't your agents. It's that two-thirds of the loop is missing.</p>
+  </section>
+
+  <section class="reveal">
+    <p class="eyebrow">The whole system</p>
+    <h2>Practice. Perform. Feedback.</h2>
+    <p>Three phases, one loop, running perpetually — each one feeding the next. The phases aren't the product. <strong>The arrows between them are.</strong></p>
+
+    <div class="loop" aria-label="The Escensus loop: Practice to Perform to Feedback, repeating">
+      <svg viewBox="0 0 320 320" aria-hidden="true">
+        <circle class="ring" cx="160" cy="160" r="132"/>
+        <circle class="flow" cx="160" cy="160" r="132"/>
+      </svg>
+      <div class="node n1"><div class="dot">1</div><div class="nm">Practice</div><div class="sub">the woodshed</div></div>
+      <div class="node n2"><div class="dot">2</div><div class="nm">Perform</div><div class="sub">the stage</div></div>
+      <div class="node n3"><div class="dot">3</div><div class="nm">Feedback</div><div class="sub">the ear</div></div>
+      <div class="loop-mid"><div class="t">compounds<br>every cycle</div></div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <div class="phase">
+      <div class="num">01</div>
+      <div>
+        <div class="role">Practice · the woodshed</div>
+        <h3>Reps before the lead.</h3>
+        <p class="what">Agents drill the exact objections and beats — timed, audio-first, in their own voice — until the moves are automatic. No script to read from. No live prospect to burn. They hear it, they say it, they get it cold.</p>
+        <p class="why"><b>Why it matters:</b> your leads stop being the practice field. Fluency is built in the woodshed, not on the phone — so agents walk into the call already sharp.</p>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="num">02</div>
+      <div>
+        <div class="role">Perform · the stage</div>
+        <h3>The call, made visible.</h3>
+        <p class="what">Every live call is mapped against your script's beats. Instead of a wall of scores, we hand you the single moment the conversation turned — the beat, the words, the thirty seconds — and we coach <em>that</em>.</p>
+        <p class="why"><b>Why it matters:</b> your scoreboard tells you an agent is struggling. It never tells you why. Now you see exactly where the sale breaks.</p>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="num">03</div>
+      <div>
+        <div class="role">Feedback · the ear</div>
+        <h3>The one move to drill next.</h3>
+        <p class="what">A senior closer's ear on the exact moment, and the specific rep to run next — hours of listening turned into a six-minute read that ends in an assignment. And that assignment flows straight back into Practice.</p>
+        <p class="why"><b>Why it matters:</b> your trainer stops guessing and coaches with a map. The feedback becomes next week's practice — and the loop closes.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <p class="eyebrow">Why it's a system, not a tool</p>
+    <h2>Every loop makes the next one better.</h2>
+    <p>Feedback tells Practice what to drill. Practice shows up in the next Performance. Performance gets scored, and the loop tightens. Run it week after week and two things compound at once:</p>
+    <ul class="cbullets">
+      <li><span class="ic">▸</span><span><b>Your agents get sharper.</b> Diagnosed reps → better calls → better numbers → a shorter ramp to the first sale.</span></li>
+      <li><span class="ic">▸</span><span><b>The system gets smarter.</b> Every scored call teaches it what your best closers actually do — building <em>your</em> standard of excellence, one that lives with you and can't walk out the door.</span></li>
+    </ul>
+    <p class="dim" style="margin-top:22px">Anyone can sell you one phase — a training library, a call-scoring dashboard, a dialer. Only a loop compounds. That's the difference between a tool you use and a system that runs your development.</p>
+  </section>
+
+  <section class="reveal">
+    <p class="eyebrow">What it means for your agency</p>
+    <h2>A faster ramp, and leads that stop getting wasted.</h2>
+    <ul class="cbullets">
+      <li><span class="ic">▸</span><span><b>Rookies ramp faster</b> — they make their first sale sooner, because they're fluent before they dial.</span></li>
+      <li><span class="ic">▸</span><span><b>You stop burning lead spend</b> on agents practicing live.</span></li>
+      <li><span class="ic">▸</span><span><b>Your trainer gets a map</b> — the exact fix per agent, every week, instead of a generic module.</span></li>
+      <li><span class="ic">▸</span><span><b>Your standard becomes an asset</b> — the data and the definition of "good" compound and stay with your agency.</span></li>
+    </ul>
+  </section>
+
+  <section class="close reveal" id="access">
+    <h2>Insurance is where we start.<br>The loop works anywhere people sell.</h2>
+    <p class="dim" style="margin:0 auto">Practice. Perform. Feedback — the oldest way anyone ever got great, finally pointed at a sales floor.</p>
+    <a class="cta-big" href="#">Request early access →</a>
+    <div class="onboarding">Now onboarding a first group of select agencies.</div>
+  </section>
+
+</div>
+<footer><span class="brand" style="justify-content:center;display:inline-flex;gap:8px;vertical-align:middle"><span class="bars"><i></i><i></i><i></i></span></span> &nbsp;Escensus · escensus.us</footer>
+
+<script>
+(function () {
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(function (n) { io.observe(n); });
+})();
+</script>
+
+</body>
+</html>
