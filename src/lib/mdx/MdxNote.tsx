@@ -17,6 +17,7 @@ import { AskThePrimer } from './AskThePrimer'
 import { ContextWindowMeter } from './ContextWindowMeter'
 import { QuizMe } from './QuizMe'
 import { ObjectionSim } from './ObjectionSim'
+import { Mermaid, mermaidText } from './Mermaid'
 
 // Runtime MDX rendering. The MDX comes from a REST fetch at page load, not
 // from files in the repo, so it is compiled in the browser here — no
@@ -27,6 +28,22 @@ import { ObjectionSim } from './ObjectionSim'
 // execute any `{expression}` embedded in the MDX. That is acceptable only
 // because the content is the user's own authenticated vault. Do not point
 // this renderer at untrusted third-party MDX.
+
+/** Fenced-code override: a ```mermaid block renders as a diagram; every other
+ * fenced block passes through to a normal <pre> untouched. This is what makes
+ * plain ```mermaid fences "just work" in a note, alongside the <Mermaid> tag. */
+function Pre(props: { children?: ReactNode }) {
+  const child = props.children
+  const className =
+    child && typeof child === 'object' && 'props' in child
+      ? (child as { props?: { className?: string } }).props?.className
+      : undefined
+  if (typeof className === 'string' && className.includes('language-mermaid')) {
+    const code = (child as { props?: { children?: ReactNode } }).props?.children
+    return <Mermaid chart={mermaidText(code)} />
+  }
+  return <pre {...props} />
+}
 
 // The component registry — the vocabulary a course note can draw on. Any
 // capitalized tag not listed here degrades to plain text via the error
@@ -40,6 +57,8 @@ const COMPONENTS: MDXComponents = {
   ContextWindowMeter,
   QuizMe,
   ObjectionSim,
+  Mermaid,
+  pre: Pre,
 }
 
 type Compiled = ComponentType<{ components?: MDXComponents }>

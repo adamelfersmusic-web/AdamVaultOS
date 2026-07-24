@@ -112,6 +112,37 @@ hub-signed JWTs):
 REAL_HUB=1 npx playwright test e2e/real-hub.spec.ts
 ```
 
+## Interactive MDX notes
+
+A note whose `extension` is `mdx` is **compiled in the browser at read time**
+(`@mdx-js/mdx`'s `evaluate`, against the React JSX runtime) instead of being
+rendered as static markdown. The source is fetched over REST like any note —
+there is no build-time MDX pipeline — so editing a note in the vault instantly
+changes what renders.
+
+This lets a note *run*: live components, read-time `{expressions}`,
+data-driven rendering (`export const` + `.map`), inline SVG charts/diagrams,
+and Mermaid — all mixed with ordinary markdown, which still works untouched.
+
+- **Renderer:** `src/lib/mdx/MdxNote.tsx` — `evaluate` + a component registry,
+  an error boundary that falls back to plain markdown, and a `pre` override
+  that turns ` ```mermaid ` fences into diagrams (other code blocks pass
+  through). Lazy-loaded, so notes that aren't MDX pay nothing.
+- **Registry (the vocabulary a note can draw on):** `Term` (live glossary
+  lookup), `Checklist` (persists to localStorage), `LayerStack`, `LayerQuiz`,
+  `ContextWindowMeter`, `QuizMe`, `AskThePrimer` (grounded Q&A), `ObjectionSim`
+  (branching call simulator), and `Mermaid` (`<Mermaid chart="…"/>` or a
+  fenced block). Any unknown capitalized tag degrades to text.
+- **Both read surfaces render it:** the Library note route (`NotePage`) and the
+  Pages route (`PageEditor`) both compile MDX. In Pages it renders read-only —
+  an `.mdx` note is never loaded into the TipTap editor, so it can't be
+  re-serialized and corrupted.
+- **`Mermaid`** dynamically imports the `mermaid` package on first use, so its
+  ~0.5 MB stays in its own chunk, out of the main bundle.
+- **Full-page React documents** (their own imports / top-level components) are
+  too big for the note renderer; those are bundled with esbuild and hosted
+  under `public/` instead (e.g. `public/break-this-loop/`).
+
 ## Architecture
 
 ```
