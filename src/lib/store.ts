@@ -1148,6 +1148,19 @@ export async function recentNotes(): Promise<Note[]> {
   }
 }
 
+/** All notes under a path prefix, WITH bodies — grounding context for the
+ * course-scoped <AskThePrimer> MDX component. Warms the note cache too. */
+export async function notesByPrefixWithContent(prefix: string): Promise<Note[]> {
+  try {
+    const results = await requireApi().listByPrefix(prefix, 100, true)
+    mergeNotes(results)
+    return results
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
 /** Every note WITH content — the Library browser loads this once for its tag
  * rail and instant client-side full-text search (title + path + tags + body). */
 export async function fetchAllNotes(): Promise<Note[]> {
