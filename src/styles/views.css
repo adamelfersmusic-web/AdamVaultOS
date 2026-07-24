@@ -6328,3 +6328,50 @@ button.task-row-due:hover {
   display: block;
   margin-top: 0.8em;
 }
+
+/* --- ObjectionSim: branching call simulator + close-probability dashboard --- */
+.mdx-sim { margin: 1.3em 0; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--surface); overflow: hidden; }
+.mdx-sim-odds { padding: 14px 18px 0; }
+.mdx-sim-odds-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.mdx-sim-odds-lbl { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.mdx-sim-odds-val { font-family: var(--font-mono); font-size: 15px; font-weight: 600; }
+.mdx-sim-odds-d { font-size: 12px; margin-left: 4px; }
+.mdx-sim-odds-bar { height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+.mdx-sim-odds-fill { display: block; height: 100%; border-radius: 4px; transition: width .5s cubic-bezier(.3,1,.4,1), background .5s; }
+.mdx-sim-screen { padding: 18px; }
+.mdx-sim-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); margin: 0 0 12px; }
+.mdx-sim-h1 { font-family: var(--font-display); font-weight: 560; font-size: 24px; line-height: 1.12; color: var(--ink); margin: 0 0 10px; }
+.mdx-sim-lede { font-size: 15px; color: var(--ink-2); margin: 0 0 16px; }
+.mdx-sim-gold { font-family: var(--font-mono); font-size: 14px; font-weight: 600; padding: 12px 22px; border: none; border-radius: var(--r-sm); background: var(--gold); color: #14100a; cursor: pointer; }
+.mdx-sim-ghost { font-family: var(--font-mono); font-size: 13px; padding: 10px 18px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: none; color: var(--gold-bright); cursor: pointer; }
+.mdx-sim-beat { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px; }
+.mdx-sim-bubble { display: flex; gap: 11px; align-items: flex-start; margin-bottom: 8px; }
+.mdx-sim-who { flex: 0 0 38px; height: 38px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font-size: 17px; }
+.mdx-sim-say { background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px 14px 14px 14px; padding: 11px 14px; font-family: var(--font-display); font-size: 16px; font-style: italic; color: var(--ink); line-height: 1.4; }
+.mdx-sim-choices { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.mdx-sim-choice { text-align: left; padding: 12px 14px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--surface-2); color: var(--ink); cursor: pointer; font: inherit; font-size: 14px; line-height: 1.4; transition: border-color .12s; }
+.mdx-sim-choice:hover:not(:disabled) { border-color: var(--gold); }
+.mdx-sim-choice:disabled { cursor: default; }
+.mdx-sim-mv { display: block; font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-top: 6px; }
+.mdx-sim-react { margin: 14px 0 4px; padding-left: 49px; font-size: 14px; color: var(--ink-2); font-style: italic; }
+.mdx-sim-react b { color: var(--ink); font-style: normal; }
+.mdx-sim-cont { margin-top: 16px; display: flex; justify-content: flex-end; }
+.mdx-sim-card { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); padding: 18px; margin: 14px 0; }
+.mdx-sim-verdict { text-align: center; }
+.mdx-sim-ring { width: 120px; height: 120px; margin: 2px auto 10px; position: relative; }
+.mdx-sim-rbg { stroke: var(--surface-3); }
+.mdx-sim-rnum { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-mono); font-size: 29px; font-weight: 600; color: var(--ink); }
+.mdx-sim-otag { font-family: var(--font-mono); font-size: 13px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; }
+.mdx-sim-oline { font-size: 14.5px; color: var(--ink-2); margin-top: 8px; max-width: 34ch; margin-left: auto; margin-right: auto; }
+.mdx-sim-viz-lbl { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; }
+.mdx-sim-traj { width: 100%; height: 96px; }
+.mdx-sim-grid { stroke: var(--line); stroke-width: 1; }
+.mdx-sim-traj-x { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 10px; color: var(--ink-4); margin-top: 4px; }
+.mdx-sim-beats { display: flex; flex-direction: column; gap: 9px; }
+.mdx-sim-brow { display: grid; grid-template-columns: 116px 1fr 46px; align-items: center; gap: 10px; }
+.mdx-sim-bn { font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); }
+.mdx-sim-track { height: 7px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+.mdx-sim-bfill { display: block; height: 100%; border-radius: 4px; }
+.mdx-sim-bv { font-family: var(--font-mono); font-size: 11px; text-align: right; }
+.mdx-sim-callout { border-left: 3px solid var(--gold); background: color-mix(in srgb, var(--gold) 8%, var(--surface)); border-radius: var(--r-sm); padding: 12px 14px; margin-top: 14px; font-size: 14px; color: var(--ink-2); }
+.mdx-sim-callout b { color: var(--ink); }
