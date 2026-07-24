@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escensus — Objection Drill</title>
+<style>
+  :root {
+    --navy: #0c1b2a; --navy-deep: #0a1622; --panel: #13273a; --panel-2: #1a3346; --panel-3: #23415a;
+    --line: #24405a; --line-2: #32536f; --line-strong: #416484;
+    --cream: #f3eee2; --body: #c7d2dc; --ink-2: #93a2b1; --ink-3: #6d7d8d; --ink-4: #4f606f;
+    --gold: #cba14b; --gold-bright: #ddb968; --red: #c66a51; --blue: #6394b6; --hit: #6fa87f;
+    --r-sm: 8px; --r-md: 12px; --r-lg: 18px;
+    --display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+    --body-f: -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: var(--navy); color: var(--body); font-family: var(--body-f); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 16px 22px; border-bottom: 1px solid var(--line); background: var(--navy-deep); position: sticky; top: 0; z-index: 5; }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .bars { display: flex; align-items: flex-end; gap: 3px; height: 22px; }
+  .bars i { width: 5px; border-radius: 1.5px; background: var(--gold); }
+  .bars i:nth-child(1){height:40%} .bars i:nth-child(2){height:66%} .bars i:nth-child(3){height:100%}
+  .brand .name { font-family: var(--display); font-size: 20px; color: var(--cream); }
+  .ghost { font-family: var(--mono); font-size: 12px; color: var(--gold); border: 1px solid var(--gold); border-radius: var(--r-sm); padding: 7px 13px; background: color-mix(in srgb, var(--gold) 10%, transparent); }
+  .screen { padding: 30px 22px 60px; animation: fade .35s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin: 0 0 14px; }
+  h1 { font-family: var(--display); font-weight: 600; font-size: 33px; line-height: 1.1; color: var(--cream); margin: 0 0 14px; }
+  .lede { font-size: 16px; margin: 0 0 8px; } .muted { color: var(--ink-2); }
+  .gold-btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 14px; font-weight: 600; padding: 14px 26px; border: none; border-radius: var(--r-sm); background: var(--gold); color: #23190a; cursor: pointer; transition: transform .08s; }
+  .gold-btn:active { transform: scale(.97); } .gold-btn:disabled { opacity: .45; }
+  .ghost-btn { font-family: var(--mono); font-size: 13px; padding: 10px 18px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: none; color: var(--gold-bright); cursor: pointer; }
+  .center { text-align: center; } .stack-cta { margin-top: 26px; }
+  .start-note { margin-top: 16px; font-size: 13px; color: var(--ink-3); max-width: 42ch; }
+  .warn { margin-top: 16px; font-size: 13.5px; color: var(--red); }
+  .live { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--red); font-weight: 600; }
+  .live .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .round-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .repcount { font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  .ringwrap { position: relative; width: 128px; height: 128px; margin: 6px auto 20px; }
+  .ringwrap svg { transform: rotate(-90deg); }
+  .ring-bg { stroke: var(--panel-2); } .ring-fg { stroke: var(--gold); stroke-linecap: round; transition: stroke-dashoffset .2s linear, stroke .3s; }
+  .ring-num { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--mono); font-size: 38px; font-weight: 600; color: var(--cream); }
+  .prospect { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
+  .prospect .who { flex: 0 0 42px; height: 42px; border-radius: 50%; background: var(--panel-2); display: grid; place-items: center; font-size: 19px; }
+  .prospect .bub { background: var(--panel); border: 1px solid var(--line); border-radius: 4px 15px 15px 15px; padding: 12px 16px; font-family: var(--display); font-size: 17px; font-style: italic; color: var(--cream); line-height: 1.4; }
+  .meter { display: flex; align-items: center; justify-content: center; gap: 3px; height: 48px; margin: 4px 0; }
+  .meter i { width: 3px; border-radius: 2px; background: var(--gold); height: 6px; transition: height .08s ease; }
+  .rec-cue { text-align: center; font-size: 14px; color: var(--gold-bright); font-weight: 600; }
+  .live-tx { min-height: 2.4em; margin: 12px 4px 0; font-size: 14px; color: var(--ink-2); text-align: center; font-style: italic; }
+  .lockbar { display: flex; justify-content: center; margin-top: 20px; }
+  .checkwrap { width: 78px; height: 78px; border-radius: 50%; background: color-mix(in srgb, var(--hit) 18%, transparent); border: 1px solid color-mix(in srgb, var(--hit) 50%, transparent); display: grid; place-items: center; font-size: 34px; color: var(--hit); margin: 10px auto 22px; }
+  .sent-rows { margin: 24px 0; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+  .sent-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
+  .sent-row:last-child { border-bottom: none; } .sent-row .tick { color: var(--hit); } .sent-row .nm { color: var(--body); }
+  .card { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--panel); padding: 20px; margin: 18px 0; }
+  .rp-file { display: flex; gap: 13px; align-items: flex-start; }
+  .rp-mic { flex: 0 0 46px; height: 46px; border-radius: 11px; border: 1px solid var(--line-2); background: color-mix(in srgb, var(--gold) 8%, var(--panel-2)); display: grid; place-items: center; font-size: 20px; }
+  .rp-fname { font-family: var(--mono); font-size: 14px; color: var(--cream); word-break: break-all; }
+  .rp-sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .flag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12.5px; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent); border-radius: 100px; padding: 7px 14px; margin: 15px 0; }
+  .player { display: flex; align-items: center; gap: 14px; margin: 6px 0; }
+  .play { flex: 0 0 52px; height: 52px; border-radius: 50%; background: var(--gold); border: none; color: #23190a; font-size: 18px; cursor: pointer; }
+  .miniwave { flex: 1; display: flex; align-items: center; gap: 2px; height: 42px; }
+  .miniwave i { flex: 1; border-radius: 1px; background: var(--ink-3); }
+  .tx { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel-2); padding: 15px 17px; margin: 16px 0; }
+  .tx-lbl { font-family: var(--mono); font-size: 12px; color: var(--ink-3); margin-bottom: 8px; }
+  .tx-body { font-size: 15px; color: var(--body); line-height: 1.5; }
+  .divider { border: none; border-top: 1px dashed var(--line-2); margin: 18px 0; }
+  .ear { display: flex; gap: 12px; align-items: flex-start; }
+  .ear .ic { flex: 0 0 44px; height: 44px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--blue) 55%, transparent); display: grid; place-items: center; font-size: 18px; color: var(--blue); }
+  .ear .lbl { font-size: 14px; color: var(--ink-2); margin-bottom: 8px; } .ear .lbl b { color: var(--body); }
+  .ear .quote { font-family: var(--display); font-size: 16px; font-style: italic; color: var(--cream); line-height: 1.5; }
+  .beats { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 16px; }
+  .bchip { font-family: var(--mono); font-size: 11.5px; padding: 6px 12px; border-radius: 100px; border: 1px solid var(--line-2); color: var(--ink-2); }
+  .bchip.hit { color: var(--hit); border-color: color-mix(in srgb, var(--hit) 45%, transparent); }
+  .bchip.miss { color: var(--red); border-color: color-mix(in srgb, var(--red) 45%, transparent); }
+  .assign { border-left: 3px solid var(--gold); background: color-mix(in srgb, var(--gold) 8%, var(--panel)); border-radius: var(--r-sm); padding: 14px 16px; margin-top: 18px; }
+  .assign .h { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+  .assign .t { font-size: 14.5px; color: var(--body); }
+  .foot { padding: 22px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-3); line-height: 1.6; }
+  .foot b { color: var(--ink-2); }
+  @media (prefers-reduced-motion: reduce) { .live .dot, .ring-fg { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><span class="bars"><i></i><i></i><i></i></span><span class="name">Escensus</span></div>
+    <span class="ghost">Practice</span>
+  </header>
+  <div id="root"></div>
+  <div class="foot">
+    <b>Prototype.</b> Objection prompts are generic final-expense placeholders (your real ElevenLabs / senior-agent takes drop in next). Your voice is <b>really recorded on your device</b>, transcribed where your browser supports it, and scored against the acknowledge → reframe → re-close framework. In the full build this is your agency's objections, and reps feed the same report your call scoring already produces.
+  </div>
+</div>
+<script>
+(function () {
+  function el(t, c, h) { var e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; }
+  var root = document.getElementById('root');
+  var TIME = 15, TARGET = 3;
+
+  var OBJ = [
+    { id: 'too-expensive', p: "Honestly? It's just too expensive right now.",
+      ideal: "I totally understand — money's tight for everybody. If something happened tomorrow, who'd be stuck with the bill? That's exactly why we start with the most affordable option that still protects them. Would thirty a month be doable, or should we look lower?" },
+    { id: 'spouse', p: "I really need to talk to my spouse before I decide anything.",
+      ideal: "That's the right instinct — and honestly your spouse is probably the whole reason you're doing this. Let's lock your rate in today while you qualify at this health level; you've got thirty days to review it together, cancel anytime. Fair enough?" },
+    { id: 'coverage-work', p: "I already have coverage through my job.",
+      ideal: "Smart — a lot of people do. One thing worth knowing: work coverage usually disappears the day you leave the job, and it's often not enough for a full funeral. This one is yours and follows you. Want me to show you what it'd cost to have something that's actually yours?" },
+    { id: 'think-about-it', p: "Let me think about it and I'll call you back.",
+      ideal: "I hear you — nobody likes being rushed. Can I ask, is it the coverage amount or the monthly price you want to think on? Usually it's one specific thing — let's figure out what that is right now. What's the piece you're unsure about?" },
+    { id: 'bank-info', p: "I'm not comfortable giving my bank info over the phone.",
+      ideal: "Completely fair — you should be careful. This drafts the same way your electric bill does, straight to the carrier, never to me personally, and you get confirmation from the insurance company directly. Want to go ahead and get you protected today?" }
+  ];
+
+  // ——— speech + audio support ———
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var TTS = 'speechSynthesis' in window, voices = [];
+  function loadV(){ try { voices = (speechSynthesis.getVoices()||[]).filter(function(v){return /^en/i.test(v.lang);}); } catch(e){} }
+  if (TTS){ loadV(); speechSynthesis.onvoiceschanged = loadV; }
+  function speak(t){ if(!TTS) return; try { var u=new SpeechSynthesisUtterance(t); if(voices.length) u.voice=voices[Math.floor(Math.random()*voices.length)]; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch(e){} }
+
+  function scoreTx(text){
+    var t=' '+(text||'').toLowerCase()+' ';
+    return {
+      ack: /(understand|hear you|makes sense|totally|get that|appreciate|fair|i know|right instinct|smart|good question|no problem)/.test(t),
+      reframe: /(family|protect|afford not|peace of mind|loved ones|funeral|the bill|final|lock in|rate|health|today|goes up|cheaper|follows you|actually yours|temporary|leave the job|one specific|amount or)/.test(t),
+      reclose: /(\?|let'?s|go ahead|get you|would you|which|sound (good|fair)|fair enough|show you|protected today|right now)/.test(t)
+    };
+  }
+
+  // ——— state ———
+  var stream=null, audioCtx=null, analyser=null, order=[], oi=0, reps=0, done=[];
+  function shuffle(n){ var a=[]; for(var i=0;i<n;i++)a.push(i); for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;} return a; }
+  function nextObj(){ if(oi>=order.length){order=shuffle(OBJ.length);oi=0;} return OBJ[order[oi++]]; }
+  function show(node){ root.innerHTML=''; root.appendChild(node); window.scrollTo(0,0); }
+
+  function startScreen(){
+    var s=el('div','screen');
+    s.appendChild(el('p','eyebrow','Escensus · Practice · Objection Drill'));
+    s.appendChild(el('h1',null,"Drill the objections<br>that kill new agents."));
+    s.appendChild(el('p','lede',"A prospect throws an objection you didn't see coming. Fifteen seconds to answer out loud — recorded, no do-over. Then hear yourself back, scored."));
+    var cta=el('div','stack-cta');
+    var b=el('button','gold-btn',"Start this week's reps →");
+    b.onclick=begin; cta.appendChild(b); s.appendChild(cta);
+    s.appendChild(el('p','start-note','Your browser will ask for microphone access — that’s how your reps get recorded. Turn your sound on for the prospect. 🎧'));
+    show(s);
+  }
+
+  function micError(msg){
+    var s=el('div','screen');
+    s.appendChild(el('p','eyebrow','Microphone needed'));
+    s.appendChild(el('h1',null,"Can't hear you yet."));
+    s.appendChild(el('p','lede muted', msg));
+    var cta=el('div','stack-cta'); var b=el('button','gold-btn','Try again'); b.onclick=begin; cta.appendChild(b); s.appendChild(cta);
+    show(s);
+  }
+
+  function begin(){
+    var loading=el('div','screen center'); loading.appendChild(el('p','lede muted','Requesting microphone…')); show(loading);
+    navigator.mediaDevices.getUserMedia({ audio:true }).then(function(st){
+      stream=st;
+      try { audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume();
+        var src=audioCtx.createMediaStreamSource(stream); analyser=audioCtx.createAnalyser(); analyser.fftSize=64; src.connect(analyser); } catch(e){ analyser=null; }
+      order=shuffle(OBJ.length); oi=0; reps=0; done=[]; round();
+    }).catch(function(err){
+      micError(err && err.name==='NotAllowedError'
+        ? "Microphone access was blocked. Enable it for this page in your browser settings, then try again."
+        : "Couldn't reach your microphone on this device/browser. Try Chrome or Safari, and make sure nothing else is using the mic.");
+    });
+  }
+
+  function pickMime(){ var opts=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/aac']; for(var i=0;i<opts.length;i++){ try{ if(window.MediaRecorder && MediaRecorder.isTypeSupported(opts[i])) return opts[i]; }catch(e){} } return ''; }
+
+  function round(){
+    var o=nextObj(); reps++;
+    var s=el('div','screen');
+    var top=el('div','round-top');
+    top.appendChild(el('span','live','<span class="dot"></span> Recording · answer out loud'));
+    top.appendChild(el('span','repcount','Rep '+reps+' / '+TARGET));
+    s.appendChild(top);
+    var R=57,C=2*Math.PI*R;
+    var rw=el('div','ringwrap');
+    rw.innerHTML='<svg width="128" height="128" viewBox="0 0 128 128"><circle class="ring-bg" cx="64" cy="64" r="'+R+'" fill="none" stroke-width="7"/><circle class="ring-fg" cx="64" cy="64" r="'+R+'" fill="none" stroke-width="7" stroke-dasharray="'+C+'" stroke-dashoffset="0"/></svg><div class="ring-num">'+TIME+'</div>';
+    s.appendChild(rw);
+    var fg=rw.querySelector('.ring-fg'), num=rw.querySelector('.ring-num');
+    var pr=el('div','prospect'); pr.innerHTML='<span class="who">👤</span><span class="bub">'+o.p+'</span>'; s.appendChild(pr);
+    var meter=el('div','meter'); var mbars=[]; for(var i=0;i<24;i++){ var bb=el('i'); meter.appendChild(bb); mbars.push(bb); } s.appendChild(meter);
+    s.appendChild(el('div','rec-cue','Your move — say it now.'));
+    var txLine=el('div','live-tx', SR ? '' : '(live transcript isn’t supported on this browser — your audio is still recorded)'); s.appendChild(txLine);
+    var lb=el('div','lockbar'); var skip=el('button','ghost-btn','Lock it in'); lb.appendChild(skip); s.appendChild(lb);
+    show(s);
+
+    // voice the prospect
+    speak(o.p);
+
+    // recorder
+    var chunks=[], rec=null, mime=pickMime();
+    try { rec = mime ? new MediaRecorder(stream,{mimeType:mime}) : new MediaRecorder(stream); }
+    catch(e){ try { rec=new MediaRecorder(stream);}catch(e2){ rec=null; } }
+    var blobUrl=null, blobType=(mime||'audio/webm');
+    if(rec){ rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); };
+      rec.onstop=function(){ try{ var blob=new Blob(chunks,{type:blobType}); blobUrl=URL.createObjectURL(blob);}catch(e){} finishStore(); };
+      try{ rec.start(); }catch(e){} }
+
+    // transcript
+    var transcript='', recog=null;
+    if(SR){ try{ recog=new SR(); recog.lang='en-US'; recog.interimResults=true; recog.continuous=true;
+      recog.onresult=function(ev){ var full=''; for(var k=0;k<ev.results.length;k++){ full+=ev.results[k][0].transcript; } transcript=full; txLine.textContent='“'+full+'”'; };
+      recog.onerror=function(){}; recog.start(); }catch(e){ recog=null; } }
+
+    // live meter from analyser
+    var freq = analyser ? new Uint8Array(analyser.frequencyBinCount) : null;
+    var rafOn=true;
+    function draw(){ if(!rafOn) return; if(analyser){ analyser.getByteFrequencyData(freq); for(var i=0;i<mbars.length;i++){ var v=freq[i%freq.length]/255; mbars[i].style.height=(6+v*40).toFixed(0)+'px'; } } requestAnimationFrame(draw); }
+    draw();
+
+    var start=Date.now(), fin=false;
+    var iv=setInterval(function(){ var rem=Math.max(0,TIME-(Date.now()-start)/1000),frac=rem/TIME;
+      fg.style.strokeDashoffset=(C*(1-frac)).toFixed(1); fg.style.stroke=frac>.5?'var(--gold)':frac>.2?'#d08a3e':'var(--red)';
+      num.textContent=Math.ceil(rem); if(rem<=0) finish(); },100);
+    function finish(){ if(fin)return; fin=true; clearInterval(iv); rafOn=false; try{speechSynthesis.cancel();}catch(e){}
+      try{ if(recog) recog.stop(); }catch(e){}
+      if(rec && rec.state!=='inactive'){ try{ rec.stop(); }catch(e){ finishStore(); } } else { finishStore(); } }
+    var stored=false;
+    function finishStore(){ if(stored)return; stored=true;
+      done.push({ obj:o, url:blobUrl, transcript:(transcript||'').trim(), beats:scoreTx(transcript) });
+      if(reps>=TARGET) submitted(); else lockScreen(); }
+    skip.onclick=finish;
+  }
+
+  function lockScreen(){
+    var s=el('div','screen center');
+    s.appendChild(el('div','checkwrap','✓'));
+    s.appendChild(el('h1',null,'Locked.'));
+    s.appendChild(el('p','lede muted','That’s a rep — recorded, no do-over. On to the next one.'));
+    var cta=el('div','stack-cta'); var b=el('button','gold-btn','Next objection →'); b.onclick=round; cta.appendChild(b); s.appendChild(cta);
+    show(s);
+  }
+
+  function submitted(){
+    var s=el('div','screen center');
+    s.appendChild(el('div','checkwrap','✓'));
+    s.appendChild(el('h1',null,'Sent to your team.'));
+    s.appendChild(el('p','lede muted',TARGET+' reps submitted to your trainer. Here’s your report — with the one move to drill next.'));
+    var rows=el('div','sent-rows');
+    done.forEach(function(d,i){ var r=el('div','sent-row'); r.innerHTML='<span class="tick">✓</span><span class="nm">rep_0'+(i+1)+'_'+d.obj.id+'.webm</span><span style="margin-left:auto">submitted</span>'; rows.appendChild(r); });
+    s.appendChild(rows);
+    var cta=el('div','stack-cta'); var b=el('button','gold-btn','See your report →'); b.onclick=report; cta.appendChild(b); s.appendChild(cta);
+    show(s);
+  }
+
+  function beatsCount(b){ return (b.ack?1:0)+(b.reframe?1:0)+(b.reclose?1:0); }
+
+  function report(){
+    var s=el('div','screen');
+    s.appendChild(el('p','eyebrow','Your report · reviewed against your framework'));
+    s.appendChild(el('h1',null,'Hear yourself back,<br>scored.'));
+
+    done.forEach(function(d,i){
+      var b=d.beats, hit=beatsCount(b);
+      var c=el('div','card');
+      var f=el('div','rp-file');
+      f.innerHTML='<div class="rp-mic">🎙️</div><div><div class="rp-fname">rep_0'+(i+1)+'_'+d.obj.id+'.webm</div><div class="rp-sub">Objection rep · reviewed against your framework</div></div>';
+      c.appendChild(f);
+      c.appendChild(el('div','flag', hit>=3 ? '✓ All three beats' : '⚑ '+(3-hit)+' beat'+((3-hit)>1?'s':'')+' to tighten'));
+
+      // real playback of their recording
+      if(d.url){
+        var pl=el('div','player');
+        var audio=new Audio(d.url);
+        var play=el('button','play','▶');
+        var playing=false;
+        play.onclick=function(){ if(playing){ audio.pause(); audio.currentTime=0; playing=false; play.innerHTML='▶'; } else { try{audio.play();}catch(e){} playing=true; play.innerHTML='◼'; } };
+        audio.onended=function(){ playing=false; play.innerHTML='▶'; };
+        var mw=el('div','miniwave'); for(var k=0;k<40;k++){ var bar=el('i'); bar.style.height=(18+Math.round(24*Math.abs(Math.sin(k*1.7+i))))+'%'; mw.appendChild(bar); }
+        pl.appendChild(play); pl.appendChild(mw); c.appendChild(pl);
+        c.appendChild(el('div','rp-sub','Your recording — tap play.'));
+      }
+
+      // transcript
+      var tx=el('div','tx');
+      var body = d.transcript ? '“'+d.transcript+'”' : '<span class="muted">Audio captured. Live transcript isn’t available on this browser — the full build transcribes every rep server-side.</span>';
+      tx.innerHTML='<div class="tx-lbl">YOU · answering “'+d.obj.p+'”</div><div class="tx-body">'+body+'</div>';
+      c.appendChild(tx);
+
+      // beats
+      var beats=el('div','beats');
+      [['Acknowledge',b.ack],['Reframe',b.reframe],['Re-close',b.reclose]].forEach(function(x){ beats.appendChild(el('span','bchip '+(x[1]?'hit':'miss'),(x[1]?'✓ ':'· ')+x[0])); });
+      c.appendChild(beats);
+
+      c.appendChild(el('hr','divider'));
+      var ear=el('div','ear');
+      ear.innerHTML='<div class="ic">🎧</div><div><div class="lbl">How a <b>senior closer</b> handles it:</div><div class="quote">“'+d.obj.ideal+'”</div></div>';
+      c.appendChild(ear);
+
+      if(hit<3){
+        var miss = !b.reclose ? 'the re-close — you’re not asking for the business at the end' : !b.reframe ? 'the reframe — name what’s really at stake before you move on' : 'the acknowledge — meet the objection before you answer it';
+        var as=el('div','assign'); as.innerHTML='<div class="h">Drill next</div><div class="t">Reps on <b>'+miss+'</b>. Shadow the senior version above until it’s automatic, then run the set again.</div>'; c.appendChild(as);
+      }
+      s.appendChild(c);
+    });
+
+    var cta=el('div','stack-cta center'); var b=el('button','ghost-btn','Run another set'); b.onclick=startScreen; cta.appendChild(b); s.appendChild(cta);
+    show(s);
+  }
+
+  startScreen();
+})();
+</script>
+</body>
+</html>
