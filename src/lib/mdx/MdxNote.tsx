@@ -16,6 +16,7 @@ import { LayerQuiz } from './LayerQuiz'
 import { AskThePrimer } from './AskThePrimer'
 import { ContextWindowMeter } from './ContextWindowMeter'
 import { QuizMe } from './QuizMe'
+import { ObjectionSim } from './ObjectionSim'
 
 // Runtime MDX rendering. The MDX comes from a REST fetch at page load, not
 // from files in the repo, so it is compiled in the browser here — no
@@ -38,6 +39,7 @@ const COMPONENTS: MDXComponents = {
   AskThePrimer,
   ContextWindowMeter,
   QuizMe,
+  ObjectionSim,
 }
 
 type Compiled = ComponentType<{ components?: MDXComponents }>
