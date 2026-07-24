@@ -6109,3 +6109,222 @@ button.task-row-due:hover {
   gap: 8px;
   margin-top: 4px;
 }
+
+/* --- ContextWindowMeter: feel a context window fill and overflow --- */
+.mdx-cwm {
+  margin: 1.2em 0;
+  padding: 1em 1.1em;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.mdx-cwm-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.7em;
+}
+.mdx-cwm-count {
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.mdx-cwm-count[data-state='over'] {
+  color: var(--red);
+}
+.mdx-cwm-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.mdx-cwm-fill {
+  display: block;
+  height: 100%;
+  transition: width 0.18s ease, background 0.3s ease;
+}
+.mdx-cwm-fill.is-ok {
+  background: var(--blue);
+}
+.mdx-cwm-fill.is-high {
+  background: var(--gold);
+}
+.mdx-cwm-fill.is-over {
+  background: var(--red);
+}
+.mdx-cwm-note {
+  font-size: 12px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.mdx-cwm-stream {
+  font-size: 14.5px;
+  line-height: 1.65;
+  padding: 0.7em 0.85em;
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  max-height: 190px;
+  overflow-y: auto;
+}
+.mdx-cwm-tok {
+  border-radius: 3px;
+  transition: opacity 0.2s ease, background 0.2s ease;
+  background: color-mix(in srgb, var(--gold) 15%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 22%, transparent);
+}
+.mdx-cwm-tok.is-dropped {
+  opacity: 0.32;
+  text-decoration: line-through;
+  background: none;
+  box-shadow: none;
+}
+.mdx-cwm-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.6em;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.mdx-cwm-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--gold) 30%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 30%, transparent);
+  margin-left: 6px;
+}
+.mdx-cwm-swatch.is-dropped {
+  opacity: 0.32;
+  background: var(--ink-3);
+  box-shadow: none;
+  margin-left: 0;
+}
+.mdx-cwm-input {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  margin-top: 0.7em;
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+.mdx-cwm-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+/* --- QuizMe: Claude-generated practice questions --- */
+.mdx-quizme {
+  margin: 1.3em 0;
+  padding: 1.05em 1.15em;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--gold) 8%, var(--surface)),
+    var(--surface)
+  );
+}
+.mdx-quizme-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 0.7em;
+}
+.mdx-quizme-head > span:first-child {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--gold-bright);
+}
+.mdx-quizme-sub {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.mdx-quizme-start {
+  display: flex;
+  gap: 8px;
+}
+.mdx-quizme-go,
+.mdx-quizme-next {
+  padding: 7px 15px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--gold);
+  background: var(--gold);
+  color: #10201e;
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+.mdx-quizme-loading {
+  font-size: 14px;
+  color: var(--ink-2);
+  font-style: italic;
+}
+.mdx-quizme-q {
+  font-size: 15.5px;
+  line-height: 1.5;
+  margin-bottom: 0.8em;
+}
+.mdx-quizme-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mdx-quizme-opt {
+  text-align: left;
+  padding: 9px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  transition: all 0.12s ease;
+}
+.mdx-quizme-opt:hover:not(:disabled) {
+  border-color: var(--gold);
+}
+.mdx-quizme-opt.is-correct {
+  border-color: var(--green);
+  background: color-mix(in srgb, var(--green) 20%, var(--surface));
+}
+.mdx-quizme-opt.is-wrong {
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 18%, var(--surface));
+}
+.mdx-quizme-opt.is-dim {
+  opacity: 0.45;
+}
+.mdx-quizme-opt:disabled {
+  cursor: default;
+}
+.mdx-quizme-verdict {
+  margin-top: 0.85em;
+  padding-top: 0.75em;
+  border-top: 1px solid var(--line-2);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.mdx-quizme-verdict strong {
+  color: var(--red);
+}
+.mdx-quizme-verdict.is-win strong {
+  color: var(--green);
+}
+.mdx-quizme-next {
+  display: block;
+  margin-top: 0.8em;
+}
