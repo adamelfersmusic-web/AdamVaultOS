@@ -46,6 +46,7 @@
   .live { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--red); font-weight: 600; }
   .live .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); animation: pulse 1s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .live.listen { color: var(--gold-bright); }
   .round-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
   .repcount { font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
   .ringwrap { position: relative; width: 128px; height: 128px; margin: 6px auto 20px; }
@@ -142,7 +143,7 @@
 (function () {
   function el(t, c, h) { var e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; }
   var root = document.getElementById('root');
-  var TIME = 15, TARGET = 3;
+  var TIME = 30, TARGET = 3;
 
   // The prospect lines are voiced from audio/<id>.mp3 (real AI voices). If a
   // clip is missing, we fall back to the browser voice so the page always works.
@@ -174,6 +175,29 @@
       return a;
     } catch(e){ fb(); return null; }
   }
+  // Speak, then call cb when the voice finishes (with a hard safety cap).
+  function speakThen(t, cb){
+    if(!TTS){ setTimeout(cb, 2600); return; }
+    try { var u=new SpeechSynthesisUtterance(t); if(voices.length) u.voice=voices[Math.floor(Math.random()*voices.length)];
+      u.onend=cb; speechSynthesis.cancel(); speechSynthesis.speak(u); setTimeout(cb, 12000); }
+    catch(e){ setTimeout(cb, 2600); }
+  }
+  // Play the prospect clip; fire cb ONCE, when the voice finishes. This is what
+  // lets recording start only after the prospect stops talking (no bleed, full
+  // answer window). Falls back to the browser voice, then to a timer.
+  function playPromptThen(o, cb){
+    var fired=false; function go(){ if(fired)return; fired=true; cb(); }
+    try {
+      var a=new Audio('audio/'+encodeURIComponent(o.id)+'.mp3');
+      a.onended=go;
+      a.onerror=function(){ speakThen(o.p, go); };
+      a.onloadedmetadata=function(){ setTimeout(go, (a.duration||8)*1000 + 400); };
+      var pr=a.play();
+      if(pr&&pr.catch) pr.catch(function(){ speakThen(o.p, go); });
+      setTimeout(go, 14000);   // absolute safety
+      return a;
+    } catch(e){ speakThen(o.p, go); return null; }
+  }
 
   // transcription: AssemblyAI via the Netlify function, browser-SR fallback
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -200,7 +224,7 @@
     var s=el('div','screen');
     s.appendChild(el('p','eyebrow','Escensus · Practice · Objection Drill'));
     s.appendChild(el('h1',null,"Drill the objections<br>that kill new agents."));
-    s.appendChild(el('p','lede',"A prospect throws an objection you didn't see coming. Fifteen seconds to answer out loud, recorded, no do-over. Then hear yourself back."));
+    s.appendChild(el('p','lede',"A prospect throws an objection you didn't see coming. Listen, then answer out loud. Tap Done the moment you finish. Then hear yourself back."));
     var cta=el('div','stack-cta');
     var b=el('button','gold-btn',"Start this week's reps →");
     b.onclick=begin; cta.appendChild(b); s.appendChild(cta);
@@ -238,7 +262,8 @@
     var o=nextObj(); reps++;
     var s=el('div','screen');
     var top=el('div','round-top');
-    top.appendChild(el('span','live','<span class="dot"></span> Recording · answer out loud'));
+    var liveEl=el('span','live listen','🔊 Listen to the prospect');
+    top.appendChild(liveEl);
     top.appendChild(el('span','repcount','Rep '+reps+' / '+TARGET));
     s.appendChild(top);
     var R=57,C=2*Math.PI*R;
@@ -248,47 +273,52 @@
     var fg=rw.querySelector('.ring-fg'), num=rw.querySelector('.ring-num');
     var pr=el('div','prospect'); pr.innerHTML='<span class="who">👤</span><span class="bub">'+o.p+'</span>'; s.appendChild(pr);
     var meter=el('div','meter'); var mbars=[]; for(var i=0;i<24;i++){ var bb=el('i'); meter.appendChild(bb); mbars.push(bb); } s.appendChild(meter);
-    s.appendChild(el('div','rec-cue','Your move. Say it now.'));
-    var txLine=el('div','live-tx', SR ? '' : ''); s.appendChild(txLine);
-    var lb=el('div','lockbar'); var skip=el('button','ghost-btn','Lock it in'); lb.appendChild(skip); s.appendChild(lb);
+    var cue=el('div','rec-cue','Listen…'); s.appendChild(cue);
+    var txLine=el('div','live-tx',''); s.appendChild(txLine);
+    var lb=el('div','lockbar'); var doneBtn=el('button','gold-btn','I’m done →'); doneBtn.disabled=true; lb.appendChild(doneBtn); s.appendChild(lb);
     show(s);
 
-    // voice the prospect (real mp3, browser fallback)
-    playPrompt(o);
-
-    // recorder
+    // The recorder + transcript are prepared now but only START once the
+    // prospect finishes talking, so no AI-voice bleed and the full window is
+    // the agent's.
     var chunks=[], rec=null, mime=pickMime();
     try { rec = mime ? new MediaRecorder(stream,{mimeType:mime}) : new MediaRecorder(stream); }
     catch(e){ try { rec=new MediaRecorder(stream);}catch(e2){ rec=null; } }
     var theBlob=null, blobUrl=null, blobType=(mime||'audio/webm');
     if(rec){ rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); };
-      rec.onstop=function(){ try{ theBlob=new Blob(chunks,{type:blobType}); blobUrl=URL.createObjectURL(theBlob);}catch(e){} finishStore(); };
-      try{ rec.start(); }catch(e){} }
+      rec.onstop=function(){ try{ theBlob=new Blob(chunks,{type:blobType}); blobUrl=URL.createObjectURL(theBlob);}catch(e){} finishStore(); }; }
 
-    // live browser transcript (Chrome): a nice-to-have + a fallback source
     var srText='', recog=null;
-    if(SR){ try{ recog=new SR(); recog.lang='en-US'; recog.interimResults=true; recog.continuous=true;
-      recog.onresult=function(ev){ var full=''; for(var k=0;k<ev.results.length;k++){ full+=ev.results[k][0].transcript; } srText=full; txLine.textContent='“'+full+'”'; };
-      recog.onerror=function(){}; recog.start(); }catch(e){ recog=null; } }
-
-    // live meter
-    var freq = analyser ? new Uint8Array(analyser.frequencyBinCount) : null;
-    var rafOn=true;
+    var freq = analyser ? new Uint8Array(analyser.frequencyBinCount) : null, rafOn=false;
     function draw(){ if(!rafOn) return; if(analyser){ analyser.getByteFrequencyData(freq); for(var i=0;i<mbars.length;i++){ var v=freq[i%freq.length]/255; mbars[i].style.height=(6+v*40).toFixed(0)+'px'; } } requestAnimationFrame(draw); }
-    draw();
 
-    var start=Date.now(), fin=false;
-    var iv=setInterval(function(){ if(tok!==runToken){ clearInterval(iv); rafOn=false; return; } var rem=Math.max(0,TIME-(Date.now()-start)/1000),frac=rem/TIME;
-      fg.style.strokeDashoffset=(C*(1-frac)).toFixed(1); fg.style.stroke=frac>.5?'var(--gold)':frac>.2?'#d08a3e':'var(--red)';
-      num.textContent=Math.ceil(rem); if(rem<=0) finish(); },100);
-    function finish(){ if(fin)return; fin=true; clearInterval(iv); rafOn=false; try{speechSynthesis.cancel();}catch(e){}
+    var startT=0, fin=false, iv=null, stored=false, answering=false;
+
+    function startAnswer(){
+      if(answering || tok!==runToken) return; answering=true;
+      liveEl.className='live'; liveEl.innerHTML='<span class="dot"></span> Recording · your turn';
+      cue.textContent='Your move. Say it now.';
+      doneBtn.disabled=false;
+      if(rec){ try{ rec.start(); }catch(e){} }
+      if(SR){ try{ recog=new SR(); recog.lang='en-US'; recog.interimResults=true; recog.continuous=true;
+        recog.onresult=function(ev){ var full=''; for(var k=0;k<ev.results.length;k++){ full+=ev.results[k][0].transcript; } srText=full; txLine.textContent='“'+full+'”'; };
+        recog.onerror=function(){}; recog.start(); }catch(e){ recog=null; } }
+      rafOn=true; draw();
+      startT=Date.now();
+      iv=setInterval(function(){ if(tok!==runToken){ clearInterval(iv); rafOn=false; return; } var rem=Math.max(0,TIME-(Date.now()-startT)/1000),frac=rem/TIME;
+        fg.style.strokeDashoffset=(C*(1-frac)).toFixed(1); fg.style.stroke=frac>.5?'var(--gold)':frac>.2?'#d08a3e':'var(--red)';
+        num.textContent=Math.ceil(rem); if(rem<=0) finish(); },100);
+    }
+    function finish(){ if(fin||!answering)return; fin=true; if(iv) clearInterval(iv); rafOn=false; try{speechSynthesis.cancel();}catch(e){}
       try{ if(recog) recog.stop(); }catch(e){}
       if(rec && rec.state!=='inactive'){ try{ rec.stop(); }catch(e){ finishStore(); } } else { finishStore(); } }
-    var stored=false;
     function finishStore(){ if(stored)return; if(tok!==runToken)return; stored=true;
       done.push({ obj:o, url:blobUrl, blob:theBlob, sr:(srText||'').trim() });
       if(reps>=TARGET) submitted(); else lockScreen(); }
-    skip.onclick=finish;
+    doneBtn.onclick=finish;
+
+    // play the prospect; when the voice finishes, hand the turn to the agent
+    playPromptThen(o, function(){ if(tok===runToken) startAnswer(); });
   }
 
   function lockScreen(){
