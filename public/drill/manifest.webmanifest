@@ -1,0 +1,16 @@
+{
+  "name": "Escensus — Objection Drill",
+  "short_name": "Escensus",
+  "description": "Drill sales objections anywhere: identify them, answer out loud, hear yourself back.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c1b2a",
+  "theme_color": "#0c1b2a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
