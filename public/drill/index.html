@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Escensus — Objection Drill</title>
+<title>Escensus · Objection Drill</title>
 <style>
   :root {
     --navy: #0c1b2a; --navy-deep: #0a1622; --panel: #13273a; --panel-2: #1a3346; --panel-3: #23415a;
@@ -92,7 +92,7 @@
   </header>
   <div id="root"></div>
   <div class="foot">
-    <b>Prototype.</b> The prospect is a real AI voice; your answer is <b>really recorded on your device</b> and transcribed. Scoring is intentionally turned off here — in the full Escensus, every rep is scored by the engine against your agency's script and feeds the same report your call scoring already produces.
+    <b>Prototype.</b> The prospect is a real AI voice; your answer is <b>really recorded on your device</b> and transcribed. Scoring is intentionally turned off here. In the full Escensus, every rep is scored by the engine against your agency's script and feeds the same report your call scoring already produces.
   </div>
 </div>
 <script>
@@ -105,18 +105,18 @@
   // clip is missing, we fall back to the browser voice so the page always works.
   var OBJ = [
     { id: 'too-expensive', p: "Yeah, honestly… it's just too expensive for me right now. Money's tight.",
-      ideal: "I totally understand — money's tight for everybody. If something happened tomorrow, who'd be stuck with the bill? That's exactly why we start with the most affordable option that still protects them. Would thirty a month be doable, or should we look lower?" },
+      ideal: "I totally understand. Money's tight for everybody. If something happened tomorrow, who'd be stuck with the bill? That's exactly why we start with the most affordable option that still protects them. Would thirty a month be doable, or should we look lower?" },
     { id: 'spouse', p: "I don't know… I really need to talk to my spouse before I decide anything.",
-      ideal: "That's the right instinct — and honestly your spouse is probably the whole reason you're doing this. Let's lock your rate in today while you qualify at this health level; you've got thirty days to review it together, cancel anytime. Fair enough?" },
+      ideal: "That's the right instinct, and honestly your spouse is probably the whole reason you're doing this. Let's lock your rate in today while you qualify at this health level; you've got thirty days to review it together, cancel anytime. Fair enough?" },
     { id: 'coverage-work', p: "I mean, I already have coverage through my job, so… I think I'm good.",
-      ideal: "Smart — a lot of people do. One thing worth knowing: work coverage usually disappears the day you leave the job, and it's often not enough for a full funeral. This one is yours and follows you. Want me to show you what it'd cost to have something that's actually yours?" },
-    { id: 'think-about-it', p: "You know what — let me just think about it, and I'll call you back.",
-      ideal: "I hear you — nobody likes being rushed. Can I ask, is it the coverage amount or the monthly price you want to think on? Usually it's one specific thing — let's figure out what that is right now. What's the piece you're unsure about?" },
+      ideal: "Smart, a lot of people do. One thing worth knowing: work coverage usually disappears the day you leave the job, and it's often not enough for a full funeral. This one is yours and follows you. Want me to show you what it'd cost to have something that's actually yours?" },
+    { id: 'think-about-it', p: "You know what, let me just think about it, and I'll call you back.",
+      ideal: "I hear you, nobody likes being rushed. Can I ask, is it the coverage amount or the monthly price you want to think on? Usually it's one specific thing. Let's figure out what that is right now. What's the piece you're unsure about?" },
     { id: 'bank-info', p: "Yeah, I'm not really comfortable giving my bank info out over the phone.",
-      ideal: "Completely fair — you should be careful. This drafts the same way your electric bill does, straight to the carrier, never to me personally, and you get confirmation from the insurance company directly. Want to go ahead and get you protected today?" }
+      ideal: "Completely fair, you should be careful. This drafts the same way your electric bill does, straight to the carrier, never to me personally, and you get confirmation from the insurance company directly. Want to go ahead and get you protected today?" }
   ];
 
-  // ——— prospect voice: real mp3, browser-voice fallback ———
+  // prospect voice: real mp3, browser-voice fallback
   var TTS = 'speechSynthesis' in window, voices = [];
   function loadV(){ try { voices = (speechSynthesis.getVoices()||[]).filter(function(v){return /^en/i.test(v.lang);}); } catch(e){} }
   if (TTS){ loadV(); speechSynthesis.onvoiceschanged = loadV; }
@@ -132,12 +132,12 @@
     } catch(e){ fb(); return null; }
   }
 
-  // ——— transcription: AssemblyAI via the Netlify function, browser-SR fallback ———
+  // transcription: AssemblyAI via the Netlify function, browser-SR fallback
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   function apiTranscribe(blob, cb){
     if(!blob){ cb(null); return; }
     var done=false; function once(v){ if(done)return; done=true; cb(v); }
-    // If the function takes too long, don't hang the UI — fall back.
+    // If the function takes too long, don't hang the UI; fall back.
     var timer=setTimeout(function(){ once(null); }, 20000);
     try {
       fetch('/.netlify/functions/transcribe', { method:'POST', headers:{'Content-Type': blob.type||'audio/webm'}, body: blob })
@@ -147,7 +147,7 @@
     } catch(e){ clearTimeout(timer); once(null); }
   }
 
-  // ——— state ———
+  // state
   var stream=null, audioCtx=null, analyser=null, order=[], oi=0, reps=0, done=[];
   function shuffle(n){ var a=[]; for(var i=0;i<n;i++)a.push(i); for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;} return a; }
   function nextObj(){ if(oi>=order.length){order=shuffle(OBJ.length);oi=0;} return OBJ[order[oi++]]; }
@@ -157,11 +157,11 @@
     var s=el('div','screen');
     s.appendChild(el('p','eyebrow','Escensus · Practice · Objection Drill'));
     s.appendChild(el('h1',null,"Drill the objections<br>that kill new agents."));
-    s.appendChild(el('p','lede',"A prospect throws an objection you didn't see coming. Fifteen seconds to answer out loud — recorded, no do-over. Then hear yourself back."));
+    s.appendChild(el('p','lede',"A prospect throws an objection you didn't see coming. Fifteen seconds to answer out loud, recorded, no do-over. Then hear yourself back."));
     var cta=el('div','stack-cta');
     var b=el('button','gold-btn',"Start this week's reps →");
     b.onclick=begin; cta.appendChild(b); s.appendChild(cta);
-    s.appendChild(el('p','start-note','Your browser will ask for microphone access — that’s how your reps get recorded. Turn your sound on for the prospect. 🎧'));
+    s.appendChild(el('p','start-note','Your browser will ask for microphone access. That’s how your reps get recorded. Turn your sound on for the prospect. 🎧'));
     show(s);
   }
 
@@ -204,7 +204,7 @@
     var fg=rw.querySelector('.ring-fg'), num=rw.querySelector('.ring-num');
     var pr=el('div','prospect'); pr.innerHTML='<span class="who">👤</span><span class="bub">'+o.p+'</span>'; s.appendChild(pr);
     var meter=el('div','meter'); var mbars=[]; for(var i=0;i<24;i++){ var bb=el('i'); meter.appendChild(bb); mbars.push(bb); } s.appendChild(meter);
-    s.appendChild(el('div','rec-cue','Your move — say it now.'));
+    s.appendChild(el('div','rec-cue','Your move. Say it now.'));
     var txLine=el('div','live-tx', SR ? '' : ''); s.appendChild(txLine);
     var lb=el('div','lockbar'); var skip=el('button','ghost-btn','Lock it in'); lb.appendChild(skip); s.appendChild(lb);
     show(s);
@@ -221,7 +221,7 @@
       rec.onstop=function(){ try{ theBlob=new Blob(chunks,{type:blobType}); blobUrl=URL.createObjectURL(theBlob);}catch(e){} finishStore(); };
       try{ rec.start(); }catch(e){} }
 
-    // live browser transcript (Chrome) — a nice-to-have + a fallback source
+    // live browser transcript (Chrome): a nice-to-have + a fallback source
     var srText='', recog=null;
     if(SR){ try{ recog=new SR(); recog.lang='en-US'; recog.interimResults=true; recog.continuous=true;
       recog.onresult=function(ev){ var full=''; for(var k=0;k<ev.results.length;k++){ full+=ev.results[k][0].transcript; } srText=full; txLine.textContent='“'+full+'”'; };
@@ -251,7 +251,7 @@
     var s=el('div','screen center');
     s.appendChild(el('div','checkwrap','✓'));
     s.appendChild(el('h1',null,'Locked.'));
-    s.appendChild(el('p','lede muted','That’s a rep — recorded, no do-over. On to the next one.'));
+    s.appendChild(el('p','lede muted','That’s a rep, recorded, no do-over. On to the next one.'));
     var cta=el('div','stack-cta'); var b=el('button','gold-btn','Next objection →'); b.onclick=round; cta.appendChild(b); s.appendChild(cta);
     show(s);
   }
@@ -289,7 +289,7 @@
         audio.onended=function(){ playing=false; play.innerHTML='▶'; };
         var mw=el('div','miniwave'); for(var k=0;k<40;k++){ var bar=el('i'); bar.style.height=(18+Math.round(24*Math.abs(Math.sin(k*1.7+i))))+'%'; mw.appendChild(bar); }
         pl.appendChild(play); pl.appendChild(mw); c.appendChild(pl);
-        c.appendChild(el('div','rp-sub','Your recording — tap play.'));
+        c.appendChild(el('div','rp-sub','Your recording. Tap play.'));
       }
 
       // transcript: try the API, fall back to the browser transcript, then to a note
@@ -310,7 +310,7 @@
       c.appendChild(ear);
 
       var en=el('div','enginenote');
-      en.innerHTML='<div class="h">In the full Escensus</div><div class="t">The engine <b>scores this rep against your agency\'s script</b> — acknowledge → reframe → re-close — and hands back the one move to drill next. Turned off in this prototype on purpose.</div>';
+      en.innerHTML='<div class="h">In the full Escensus</div><div class="t">The engine <b>scores this rep against your agency\'s script</b> (acknowledge → reframe → re-close) and hands back the one move to drill next. Turned off in this prototype on purpose.</div>';
       c.appendChild(en);
 
       s.appendChild(c);
