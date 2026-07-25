@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Escensus · Objection Drill</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0c1b2a">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Escensus">
 <style>
   :root {
     --navy: #0c1b2a; --navy-deep: #0a1622; --panel: #13273a; --panel-2: #1a3346; --panel-3: #23415a;
@@ -82,6 +89,38 @@
   .foot { padding: 22px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-3); line-height: 1.6; }
   .foot b { color: var(--ink-2); }
   @media (prefers-reduced-motion: reduce) { .live .dot, .ring-fg { animation: none !important; } }
+
+  /* mode tabs */
+  .tabs { display: flex; gap: 6px; max-width: 480px; margin: 0 auto; padding: 12px 22px 0; }
+  .tab { flex: 1; font-family: var(--mono); font-size: 12.5px; letter-spacing: .04em; padding: 11px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--navy-deep); color: var(--ink-2); cursor: pointer; transition: .15s; }
+  .tab.is-on { color: #23190a; background: var(--gold); border-color: var(--gold); font-weight: 600; }
+  .tab .sub { display: block; font-size: 10px; letter-spacing: .02em; opacity: .7; margin-top: 2px; text-transform: none; }
+  .tab.is-on .sub { opacity: .8; }
+  /* identify mode */
+  .id-q { text-align: center; }
+  .id-hear { width: 96px; height: 96px; border-radius: 50%; background: var(--gold); border: none; color: #23190a; font-size: 34px; cursor: pointer; margin: 8px auto 6px; display: grid; place-items: center; transition: transform .08s; }
+  .id-hear:active { transform: scale(.96); }
+  .id-hear.small { width: 52px; height: 52px; font-size: 18px; margin: 14px auto 0; }
+  .id-cue { font-size: 14px; color: var(--ink-2); margin: 4px 0 20px; }
+  .id-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .id-opt { font-family: var(--body-f); font-size: 15px; font-weight: 600; padding: 16px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--panel); color: var(--cream); cursor: pointer; transition: .12s; }
+  .id-opt:active { transform: scale(.98); }
+  .id-opt:disabled { cursor: default; }
+  .id-opt.right { background: color-mix(in srgb, var(--hit) 22%, var(--panel)); border-color: var(--hit); color: var(--hit); }
+  .id-opt.wrong { background: color-mix(in srgb, var(--red) 20%, var(--panel)); border-color: var(--red); color: var(--red); }
+  .id-opt.dim { opacity: .4; }
+  .id-verdict { text-align: center; margin-top: 18px; min-height: 3em; }
+  .id-verdict .v { font-family: var(--display); font-size: 22px; font-weight: 600; }
+  .id-verdict .v.ok { color: var(--hit); } .id-verdict .v.no { color: var(--red); }
+  .id-verdict .said { font-family: var(--display); font-style: italic; color: var(--cream); font-size: 15px; margin-top: 6px; }
+  .id-next { margin-top: 14px; }
+  .id-progress { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  .id-bar { flex: 1; height: 5px; border-radius: 3px; background: var(--panel-2); margin: 0 12px; overflow: hidden; }
+  .id-bar > i { display: block; height: 100%; background: var(--gold); border-radius: 3px; transition: width .3s; }
+  .id-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+  .id-chip { font-family: var(--mono); font-size: 12.5px; padding: 9px 14px; border-radius: 100px; border: 1px solid var(--line-strong); background: none; color: var(--ink-2); cursor: pointer; }
+  .id-chip.on { background: color-mix(in srgb, var(--gold) 16%, transparent); border-color: var(--gold); color: var(--gold-bright); }
+  .id-scoreline { font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
 </style>
 </head>
 <body>
@@ -90,6 +129,10 @@
     <div class="brand"><span class="bars"><i></i><i></i><i></i></span><span class="name">Escensus</span></div>
     <span class="ghost">Practice</span>
   </header>
+  <div class="tabs">
+    <button class="tab is-on" data-mode="respond">Respond<span class="sub">answer out loud</span></button>
+    <button class="tab" data-mode="identify">Identify<span class="sub">name the objection</span></button>
+  </div>
   <div id="root"></div>
   <div class="foot">
     <b>Prototype.</b> The prospect is a real AI voice; your answer is <b>really recorded on your device</b> and transcribed. Scoring is intentionally turned off here. In the full Escensus, every rep is scored by the engine against your agency's script and feeds the same report your call scoring already produces.
@@ -104,15 +147,15 @@
   // The prospect lines are voiced from audio/<id>.mp3 (real AI voices). If a
   // clip is missing, we fall back to the browser voice so the page always works.
   var OBJ = [
-    { id: 'too-expensive', p: "Yeah, honestly… it's just too expensive for me right now. Money's tight.",
+    { id: 'too-expensive', name: "Cost", p: "Yeah, honestly… it's just too expensive for me right now. Money's tight.",
       ideal: "I totally understand. Money's tight for everybody. If something happened tomorrow, who'd be stuck with the bill? That's exactly why we start with the most affordable option that still protects them. Would thirty a month be doable, or should we look lower?" },
-    { id: 'spouse', p: "I don't know… I really need to talk to my spouse before I decide anything.",
+    { id: 'spouse', name: "Spouse", p: "I don't know… I really need to talk to my spouse before I decide anything.",
       ideal: "That's the right instinct, and honestly your spouse is probably the whole reason you're doing this. Let's lock your rate in today while you qualify at this health level; you've got thirty days to review it together, cancel anytime. Fair enough?" },
-    { id: 'coverage-work', p: "I mean, I already have coverage through my job, so… I think I'm good.",
+    { id: 'coverage-work', name: "Already Covered", p: "I mean, I already have coverage through my job, so… I think I'm good.",
       ideal: "Smart, a lot of people do. One thing worth knowing: work coverage usually disappears the day you leave the job, and it's often not enough for a full funeral. This one is yours and follows you. Want me to show you what it'd cost to have something that's actually yours?" },
-    { id: 'think-about-it', p: "You know what, let me just think about it, and I'll call you back.",
+    { id: 'think-about-it', name: "Stall", p: "You know what, let me just think about it, and I'll call you back.",
       ideal: "I hear you, nobody likes being rushed. Can I ask, is it the coverage amount or the monthly price you want to think on? Usually it's one specific thing. Let's figure out what that is right now. What's the piece you're unsure about?" },
-    { id: 'bank-info', p: "Yeah, I'm not really comfortable giving my bank info out over the phone.",
+    { id: 'bank-info', name: "Bank Info", p: "Yeah, I'm not really comfortable giving my bank info out over the phone.",
       ideal: "Completely fair, you should be careful. This drafts the same way your electric bill does, straight to the carrier, never to me personally, and you get confirmation from the insurance company directly. Want to go ahead and get you protected today?" }
   ];
 
@@ -148,7 +191,7 @@
   }
 
   // state
-  var stream=null, audioCtx=null, analyser=null, order=[], oi=0, reps=0, done=[];
+  var stream=null, audioCtx=null, analyser=null, order=[], oi=0, reps=0, done=[], runToken=0;
   function shuffle(n){ var a=[]; for(var i=0;i<n;i++)a.push(i); for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;} return a; }
   function nextObj(){ if(oi>=order.length){order=shuffle(OBJ.length);oi=0;} return OBJ[order[oi++]]; }
   function show(node){ root.innerHTML=''; root.appendChild(node); window.scrollTo(0,0); }
@@ -191,6 +234,7 @@
   function pickMime(){ var opts=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/aac']; for(var i=0;i<opts.length;i++){ try{ if(window.MediaRecorder && MediaRecorder.isTypeSupported(opts[i])) return opts[i]; }catch(e){} } return ''; }
 
   function round(){
+    var tok=++runToken;
     var o=nextObj(); reps++;
     var s=el('div','screen');
     var top=el('div','round-top');
@@ -234,14 +278,14 @@
     draw();
 
     var start=Date.now(), fin=false;
-    var iv=setInterval(function(){ var rem=Math.max(0,TIME-(Date.now()-start)/1000),frac=rem/TIME;
+    var iv=setInterval(function(){ if(tok!==runToken){ clearInterval(iv); rafOn=false; return; } var rem=Math.max(0,TIME-(Date.now()-start)/1000),frac=rem/TIME;
       fg.style.strokeDashoffset=(C*(1-frac)).toFixed(1); fg.style.stroke=frac>.5?'var(--gold)':frac>.2?'#d08a3e':'var(--red)';
       num.textContent=Math.ceil(rem); if(rem<=0) finish(); },100);
     function finish(){ if(fin)return; fin=true; clearInterval(iv); rafOn=false; try{speechSynthesis.cancel();}catch(e){}
       try{ if(recog) recog.stop(); }catch(e){}
       if(rec && rec.state!=='inactive'){ try{ rec.stop(); }catch(e){ finishStore(); } } else { finishStore(); } }
     var stored=false;
-    function finishStore(){ if(stored)return; stored=true;
+    function finishStore(){ if(stored)return; if(tok!==runToken)return; stored=true;
       done.push({ obj:o, url:blobUrl, blob:theBlob, sr:(srText||'').trim() });
       if(reps>=TARGET) submitted(); else lockScreen(); }
     skip.onclick=finish;
@@ -320,7 +364,115 @@
     show(s);
   }
 
-  startScreen();
+  // IDENTIFY MODE (name the objection, Tenuto-style)
+  var idSel = OBJ.map(function(_,i){ return i; });   // which objections are in play
+  var idTotal = 8, idQ = 0, idScore = 0, idQObj = null;
+
+  function identifyStart(){
+    var s=el('div','screen');
+    s.appendChild(el('p','eyebrow','Escensus · Practice · Identify'));
+    s.appendChild(el('h1',null,"Name the objection<br>before you answer it."));
+    s.appendChild(el('p','lede',"Hear a real prospect and tap which objection it is. The first skill is recognizing what you're actually up against."));
+    s.appendChild(el('p','muted','Drill only what you want. Toggle off the ones you already have down.'));
+    var chips=el('div','id-chips');
+    OBJ.forEach(function(o,i){
+      var on = idSel.indexOf(i)>=0;
+      var c=el('button','id-chip'+(on?' on':''), o.name);
+      c.onclick=function(){
+        var k=idSel.indexOf(i);
+        if(k>=0){ if(idSel.length>2) idSel.splice(k,1); }   // keep at least two in play
+        else idSel.push(i);
+        identifyStart();
+      };
+      chips.appendChild(c);
+    });
+    s.appendChild(chips);
+    var cta=el('div','stack-cta');
+    var b=el('button','gold-btn',"Start identifying →");
+    b.onclick=function(){ idQ=0; idScore=0; identifyRound(); };
+    cta.appendChild(b); s.appendChild(cta);
+    s.appendChild(el('p','start-note','Turn your sound on. '+idSel.length+' objections in play, '+idTotal+' questions. 🎧'));
+    show(s);
+  }
+
+  function identifyRound(){
+    idQ++;
+    idQObj = OBJ[ idSel[Math.floor(Math.random()*idSel.length)] ];
+    var s=el('div','screen');
+    var prog=el('div','id-progress');
+    prog.appendChild(el('span',null,'Q '+idQ+' / '+idTotal));
+    var bar=el('span','id-bar'); bar.innerHTML='<i style="width:'+Math.round((idQ-1)/idTotal*100)+'%"></i>'; prog.appendChild(bar);
+    prog.appendChild(el('span','id-scoreline', idScore+' correct'));
+    s.appendChild(prog);
+    var q=el('div','id-q');
+    var hear=el('button','id-hear','▶'); q.appendChild(hear);
+    q.appendChild(el('div','id-cue','Listen, then tap which objection it is.'));
+    s.appendChild(q);
+    var grid=el('div','id-grid');
+    var optIdx=idSel.slice(); for(var i=optIdx.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)),t=optIdx[i];optIdx[i]=optIdx[j];optIdx[j]=t; }
+    optIdx.forEach(function(oi){
+      var o=OBJ[oi];
+      var btn=el('button','id-opt', o.name);
+      btn.onclick=function(){ idAnswer(o, btn, grid, verdict); };
+      grid.appendChild(btn);
+    });
+    s.appendChild(grid);
+    var verdict=el('div','id-verdict'); s.appendChild(verdict);
+    show(s);
+    var au=playPrompt(idQObj);
+    hear.onclick=function(){ try{ if(au){ au.currentTime=0; au.play(); } else au=playPrompt(idQObj); }catch(e){ au=playPrompt(idQObj); } };
+  }
+
+  function idAnswer(chosen, btn, grid, verdict){
+    var correct = chosen.id===idQObj.id;
+    if(correct) idScore++;
+    Array.prototype.forEach.call(grid.querySelectorAll('.id-opt'), function(b2){
+      b2.disabled=true;
+      if(b2.textContent===idQObj.name) b2.className='id-opt right';
+      else if(b2===btn) b2.className='id-opt wrong';
+      else b2.className='id-opt dim';
+    });
+    verdict.innerHTML = (correct
+      ? '<div class="v ok">Correct. That is the '+idQObj.name+'.</div>'
+      : '<div class="v no">Not quite. That was the '+idQObj.name+'.</div>')
+      + '<div class="said">"'+idQObj.p+'"</div>';
+    var nx=el('div','id-next center');
+    var nb=el('button','gold-btn', idQ>=idTotal ? 'See your score →' : 'Next →');
+    nb.onclick=function(){ if(idQ>=idTotal) identifyResult(); else identifyRound(); };
+    nx.appendChild(nb); verdict.appendChild(nx);
+  }
+
+  function identifyResult(){
+    var pct=Math.round(idScore/idTotal*100);
+    var s=el('div','screen center');
+    s.appendChild(el('div','checkwrap', pct>=80?'✓':(pct>=50?'◐':'↻')));
+    s.appendChild(el('h1',null, idScore+' / '+idTotal+' right.'));
+    s.appendChild(el('p','lede muted', pct>=80 ? "Sharp ear. You know what you're up against." : pct>=50 ? "Getting there. Run it again and tighten the ones you missed." : "This is the skill to build first. Keep repping."));
+    var cta=el('div','stack-cta');
+    var b=el('button','gold-btn','Run it again →'); b.onclick=identifyStart; cta.appendChild(b); s.appendChild(cta);
+    var b2=el('button','ghost-btn','Switch to Respond'); b2.style.marginTop='12px'; b2.onclick=function(){ setMode('respond'); };
+    var wrap=el('div','center'); wrap.appendChild(b2); s.appendChild(wrap);
+    show(s);
+  }
+
+  // mode tabs + boot
+  function setMode(m){
+    runToken++;                                        // invalidate any in-flight respond round
+    if(stream){ try{ stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} stream=null; }
+    try{ speechSynthesis.cancel(); }catch(e){}
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function(t){ t.classList.toggle('is-on', t.getAttribute('data-mode')===m); });
+    if(m==='identify') identifyStart(); else startScreen();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function(t){
+    t.onclick=function(){ setMode(t.getAttribute('data-mode')); };
+  });
+
+  startScreen();   // default: Respond
+
+  // PWA: installable + offline
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
 })();
 </script>
 </body>
