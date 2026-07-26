@@ -47,7 +47,28 @@
   .placeholder-note{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);border:1px dashed var(--line-2);border-radius:var(--r-sm);padding:10px 12px;margin:16px 0 0}
 
   /* ---- Loop view ---- */
-  .sections{margin-top:22px;display:flex;flex-direction:column;gap:12px}
+  #view-loop{padding-bottom:40px}
+  .sections{margin-top:20px;display:flex;flex-direction:column;gap:12px}
+  /* Bottom loop player: pick a range of sections, loop it, set the speed. */
+  .player{position:sticky;bottom:0;margin:20px -22px 0;padding:12px 18px calc(14px + env(safe-area-inset-bottom));background:var(--navy-deep);border-top:1px solid var(--line-strong);box-shadow:0 -10px 26px rgba(8,16,26,.5);z-index:20}
+  .ptimeline{display:flex;gap:3px;margin-bottom:12px;touch-action:none}
+  .chip{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 2px 6px;text-align:center;cursor:pointer;user-select:none;-webkit-user-select:none;transition:background .12s,border-color .12s}
+  .chip b{display:block;font-family:var(--mono);font-size:9.5px;font-weight:400;color:var(--ink-3)}
+  .chip span{display:block;font-family:var(--display);font-size:12px;color:var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip.insel{background:color-mix(in srgb,var(--gold) 22%,var(--panel));border-color:var(--gold)}
+  .chip.insel b{color:var(--gold-bright)} .chip.insel span{color:var(--cream)}
+  .chip.playing{background:var(--gold);border-color:var(--gold-bright)}
+  .chip.playing b,.chip.playing span{color:#23190a}
+  .prow{display:flex;align-items:center;gap:13px}
+  .playbtn{flex:0 0 auto;width:52px;height:52px;border-radius:50%;border:none;background:var(--gold);color:#23190a;font-size:19px;cursor:pointer;box-shadow:0 4px 14px rgba(203,161,75,.3)}
+  .playbtn.on{background:var(--red);color:#fff;box-shadow:0 4px 14px rgba(198,106,81,.3)}
+  .playbtn:active{transform:scale(.94)}
+  .pinfo{flex:1;min-width:0}
+  .psel{font-family:var(--display);font-size:17px;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+  .preps{font-family:var(--mono);font-size:10.5px;color:var(--ink-2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seg{display:flex;flex:0 0 auto;background:var(--navy);border:1px solid var(--line);border-radius:9px;padding:3px}
+  .seg button{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:none;border:none;padding:7px 8px;border-radius:6px;cursor:pointer}
+  .seg button.on{background:var(--gold);color:#23190a;font-weight:600}
   .sec{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);overflow:hidden}
   .sec-head{display:flex;align-items:center;gap:13px;padding:16px 18px;cursor:pointer}
   .sec-n{flex:0 0 30px;height:30px;border-radius:8px;background:var(--panel-2);border:1px solid var(--line-2);display:grid;place-items:center;font-family:var(--display);font-size:15px;color:var(--gold-bright)}
@@ -73,7 +94,10 @@
   .beats{list-style:none;padding:0;margin:0}
   .beat{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-top:1px solid var(--line)}
   .beat:first-child{border-top:none}
-  .beat .play{flex:0 0 34px;height:34px;border-radius:50%;border:1px solid var(--line-strong);background:none;color:var(--gold-bright);font-size:12px;cursor:pointer}
+  .beat .play{flex:0 0 34px;height:34px;border-radius:50%;border:1px solid var(--line-strong);background:none;color:var(--gold-bright);font-size:12px;cursor:pointer;transition:background .15s}
+  .beat .play.on{background:var(--red);color:#fff;border-color:var(--red)}
+  .beat.playing{background:color-mix(in srgb,var(--gold) 9%,transparent);border-radius:8px}
+  .sec.playing{border-color:var(--gold-bright);box-shadow:0 0 0 1px color-mix(in srgb,var(--gold-bright) 55%,transparent)}
   .beat .bt{flex:1;font-size:14.5px;color:var(--body)}
   .beat .bf{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--red);border:1px solid color-mix(in srgb,var(--red) 45%,transparent);border-radius:100px;padding:2px 6px;margin-left:6px}
   .beat .bf.star{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
@@ -140,6 +164,14 @@
     <p class="lede">The call is the piece of music. Each section is a movement. Tap a section, put it on <b>loop</b>, and rep it in the car until it's automatic. Then thread them together.</p>
     <div class="placeholder-note">Prototype. Sections come from your agency's real call structure. The audio here is a <b>placeholder voice reading the coaching</b>, not the script itself. Your agency's exact wording and pro voices drop in on the private build.</div>
     <div class="sections" id="sections"></div>
+    <div class="player" id="player">
+      <div class="ptimeline" id="ptimeline"></div>
+      <div class="prow">
+        <button class="playbtn" id="playBtn" aria-label="Play or pause">▶</button>
+        <div class="pinfo"><div class="psel" id="pSel">Whole call</div><div class="preps" id="pReps">Tap a section, or drag across a few, to set your loop</div></div>
+        <div class="seg pspeed" id="speedSel"><button data-s="0.75">.75&times;</button><button data-s="1" class="on">1&times;</button><button data-s="1.5">1.5&times;</button><button data-s="2">2&times;</button></div>
+      </div>
+    </div>
   </div>
 
   <!-- LADDER VIEW -->
@@ -204,39 +236,10 @@
       link:{href:'../../drill/',label:'Drill these live in the Objection Drill →'}}
   ];
 
-  var speaking=null; // {id, looping, audio}
-  function stopAll(){
-    try{speechSynthesis.cancel();}catch(e){}
-    if(speaking&&speaking.audio){ try{speaking.audio.pause();}catch(e){} }
-    if(speaking){ var prev=document.querySelector('.sec.looping'); if(prev){ prev.classList.remove('looping'); var lb=prev.querySelector('.loopbtn'); if(lb){lb.classList.remove('on'); lb.firstChild.nodeValue='Loop ';} } }
-    speaking=null;
-  }
-  function speakOnce(text){ if(!TTS)return; try{ var u=new SpeechSynthesisUtterance(text); if(voices.length)u.voice=voices[0]; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
-  function ttsLoop(guard, text){
-    function go(){ if(guard!==speaking||!speaking.looping)return; try{ var u=new SpeechSynthesisUtterance(text); if(voices.length)u.voice=voices[0]; u.onend=function(){ setTimeout(go,600); }; speechSynthesis.speak(u);}catch(e){} }
-    go();
-  }
-  // Loop a section: prefer a real recorded voice at audio/<id>.mp3, fall back to
-  // the placeholder browser voice when no clip is present (so the demo still runs).
-  function loopSection(sec, id, text){
-    var wasLoopingThis = speaking && speaking.id===sec._id && speaking.looping;
-    stopAll();
-    if(wasLoopingThis) return; // toggled off
-    speaking={id:sec._id, looping:true, audio:null};
-    var guard=speaking;
-    sec.classList.add('looping');
-    var lb=sec.querySelector('.loopbtn'); lb.classList.add('on'); lb.firstChild.nodeValue='Stop ';
-    var au=new Audio('audio/'+id+'.mp3'); var started=false;
-    au.onended=function(){ if(guard!==speaking||!speaking.looping)return; setTimeout(function(){ if(guard===speaking&&speaking.looping){ try{au.currentTime=0; au.play();}catch(e){} } },600); };
-    au.onerror=function(){ if(!started&&guard===speaking&&speaking.looping) ttsLoop(guard, text); };
-    speaking.audio=au;
-    var pr=au.play();
-    if(pr&&typeof pr.then==='function'){ pr.then(function(){ started=true; }).catch(function(){ if(guard===speaking&&speaking.looping) ttsLoop(guard, text); }); }
-  }
-
+  // The sections list is pure reading. All looping lives in the bottom player.
   var host=document.getElementById('sections');
   SECTIONS.forEach(function(sc,i){
-    var sec=el('div','sec'); sec._id=sc.id;
+    var sec=el('div','sec');
     var head=el('div','sec-head');
     head.appendChild(el('div','sec-n', String(i+1)));
     var t=el('div','sec-t'); t.innerHTML='<div class="nm">'+sc.name+'</div><div class="role">'+sc.role+'</div>'; head.appendChild(t);
@@ -244,26 +247,100 @@
     head.appendChild(el('span','sec-caret','›'));
     sec.appendChild(head);
     var body=el('div','sec-body');
-    var lbar=el('div','loopbar');
-    var lbtn=el('button','loopbtn','Loop '); var dots=el('span','loopdots','<i></i><i></i><i></i>'); lbtn.appendChild(dots); lbar.appendChild(lbtn);
-    lbar.appendChild(el('span','loop-meta','<b>Loop this section.</b> Put it on repeat and rep it hands free.'));
-    body.appendChild(lbar);
     var ul=el('ul','beats');
     sc.beats.forEach(function(b){
       var li=el('li','beat');
-      var pb=el('button','play','▶'); li.appendChild(pb);
       var bt=el('div','bt', b[0] + (b[1]==='star'?' <span class="bf star">load-bearing</span>':b[1]==='comp'?' <span class="bf">compliance</span>':b[1]==='pii'?' <span class="bf">PII</span>':'')); li.appendChild(bt);
-      pb.onclick=function(){ stopAll(); speakOnce(b[0]); };
       ul.appendChild(li);
     });
     body.appendChild(ul);
     if(sc.link){ var a=el('a','seclink',sc.link.label); a.href=sc.link.href; body.appendChild(a); }
     sec.appendChild(body);
     head.onclick=function(){ sec.classList.toggle('open'); };
-    lbtn.onclick=function(e){ e.stopPropagation(); loopSection(sec, sc.id, sc.loop); };
     host.appendChild(sec);
   });
   if(host.firstChild) host.firstChild.classList.add('open');
+
+  // ---- Bottom loop player ----
+  // Pick a range of sections (tap one, or drag across a few), then loop it.
+  // Each section plays its clip at audio/<id>.mp3, or the placeholder voice if
+  // the clip is not there yet. A rep is one full pass of the selected range.
+  var SHORT={open:'Open',scope:'Scope',discovery:'Why',frame:'How',medical:'Med',present:'#s',close:'Close',conclude:'Tie',eapp:'eApp',objections:'Obj'};
+  var tl=document.getElementById('ptimeline'), playBtn=document.getElementById('playBtn'), pSel=document.getElementById('pSel'), pReps=document.getElementById('pReps');
+  var chips=[];
+  SECTIONS.forEach(function(sc,i){
+    var c=el('div','chip','<b>'+(i+1)+'</b><span>'+(SHORT[sc.id]||sc.name)+'</span>'); c._i=i;
+    tl.appendChild(c); chips.push(c);
+  });
+
+  var sel={a:0,b:SECTIONS.length-1}, speed=1, playing=false, cur=null;
+
+  function renderSel(){
+    for(var i=0;i<chips.length;i++) chips[i].classList.toggle('insel', i>=sel.a && i<=sel.b);
+    var n=sel.b-sel.a+1;
+    pSel.textContent = n===SECTIONS.length ? 'Whole call' : n===1 ? SECTIONS[sel.a].name : (SECTIONS[sel.a].name+' → '+SECTIONS[sel.b].name);
+  }
+  function renderReps(){
+    if(playing && cur){ pReps.textContent = cur.reps+' rep'+(cur.reps===1?'':'s')+' · '+speed+'×'; return; }
+    var n=sel.b-sel.a+1; pReps.textContent = n+' section'+(n===1?'':'s')+' selected';
+  }
+  function clearChipPlay(){ for(var i=0;i<chips.length;i++) chips[i].classList.remove('playing'); }
+  function stop(){
+    try{speechSynthesis.cancel();}catch(e){}
+    if(cur){ if(cur.audio){try{cur.audio.pause();}catch(e){}} if(cur._t) clearTimeout(cur._t); }
+    cur=null; playing=false; clearChipPlay();
+    playBtn.textContent='▶'; playBtn.classList.remove('on'); renderReps();
+  }
+  function ttsRep(text, done){
+    if(!TTS){ cur._t=setTimeout(done, 1100); return; }
+    try{ var u=new SpeechSynthesisUtterance(text); if(voices.length)u.voice=voices[0]; u.rate=speed; u.onend=done; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){ cur._t=setTimeout(done,1100); }
+  }
+  function step(){
+    if(!cur) return;
+    var c=cur, i=sel.a+c.idx, sc=SECTIONS[i];
+    clearChipPlay(); if(chips[i]) chips[i].classList.add('playing');
+    function next(){
+      if(cur!==c) return;
+      c.idx++;
+      if(sel.a+c.idx > sel.b){ c.idx=0; c.reps++; renderReps(); }
+      c._t=setTimeout(function(){ if(cur===c) step(); }, 480/speed);
+    }
+    var au=new Audio('audio/'+sc.id+'.mp3'); au.playbackRate=speed; c.audio=au;
+    au.onended=next;
+    au.onerror=function(){ c.audio=null; ttsRep(sc.loop, next); };
+    var pr=au.play();
+    if(pr&&typeof pr.then==='function'){ pr.catch(function(){ c.audio=null; ttsRep(sc.loop, next); }); }
+  }
+  function play(){
+    stop();
+    cur={ idx:0, reps:0, audio:null, _t:null };
+    playing=true; playBtn.textContent='❚❚'; playBtn.classList.add('on');
+    renderReps(); step();
+  }
+  playBtn.onclick=function(){ playing ? stop() : play(); };
+
+  // Selection by tap (single) or drag (range).
+  function setSel(a,b){ sel.a=Math.min(a,b); sel.b=Math.max(a,b); renderSel(); if(playing) play(); else renderReps(); }
+  var dragging=false, anchor=0;
+  function chipUnder(x,y){ var e=document.elementFromPoint(x,y); while(e && !e.classList.contains('chip')) e=e.parentElement; return e; }
+  for(var ci=0; ci<chips.length; ci++){
+    (function(c){
+      c.addEventListener('pointerdown', function(ev){ dragging=true; anchor=c._i; setSel(anchor, anchor); ev.preventDefault(); });
+    })(chips[ci]);
+  }
+  tl.addEventListener('pointermove', function(ev){ if(!dragging) return; var c=chipUnder(ev.clientX, ev.clientY); if(c) setSel(anchor, c._i); });
+  window.addEventListener('pointerup', function(){ dragging=false; });
+
+  var speedSel=document.getElementById('speedSel');
+  speedSel.addEventListener('click', function(ev){
+    var btn=ev.target.closest('button'); if(!btn) return;
+    speed=parseFloat(btn.getAttribute('data-s'))||1;
+    var bs=speedSel.querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i]===btn);
+    if(cur&&cur.audio){ try{cur.audio.playbackRate=speed;}catch(e){} }
+    renderReps();
+  });
+
+  renderSel(); renderReps();
 
   /* ============================ LADDER VIEW ============================ */
   var LEVELS = [
@@ -496,7 +573,7 @@
   var vLoop=document.getElementById('view-loop'), vLadder=document.getElementById('view-ladder');
   var tLoop=document.getElementById('tab-loop'), tLadder=document.getElementById('tab-ladder');
   function setTab(which){
-    stopAll();
+    stop();
     var ladder = which==='ladder';
     tabwrap.classList.toggle('t1', ladder);
     tLoop.classList.toggle('on', !ladder); tLadder.classList.toggle('on', ladder);
