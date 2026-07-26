@@ -1,8 +1,8 @@
-// Escensus drill — offline service worker.
+// Escensus drill offline service worker.
 // Caches the app shell + all voice clips so the drill runs with no internet
 // (practice anywhere; the AssemblyAI transcript, when wired, still needs signal).
 
-const CACHE = 'escensus-drill-v1'
+const CACHE = 'escensus-drill-v2'
 const ASSETS = [
   './',
   './index.html',
@@ -29,25 +29,42 @@ self.addEventListener('activate', (e) => {
   )
 })
 
+function cachePut(req, resp, origin) {
+  if (resp && resp.status === 200 && origin === location.origin) {
+    const copy = resp.clone()
+    caches.open(CACHE).then((c) => c.put(req, copy))
+  }
+  return resp
+}
+
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url)
-  // Never intercept the transcription API — it must hit the network.
+  // Never intercept the transcription API (it must hit the network).
   if (url.pathname.includes('/.netlify/functions/')) return
   if (e.request.method !== 'GET') return
 
-  // Cache-first: instant offline for the shell + audio; network fills gaps.
+  const isPage =
+    e.request.mode === 'navigate' ||
+    url.pathname.endsWith('/') ||
+    url.pathname.endsWith('.html')
+
+  if (isPage) {
+    // Network-first for pages: freshest build when online, cache when offline.
+    e.respondWith(
+      fetch(e.request)
+        .then((resp) => cachePut(e.request, resp, url.origin))
+        .catch(() => caches.match(e.request).then((hit) => hit || caches.match('./index.html'))),
+    )
+    return
+  }
+
+  // Cache-first for the shell + audio: instant offline; network fills gaps.
   e.respondWith(
     caches.match(e.request).then((hit) => {
       if (hit) return hit
       return fetch(e.request)
-        .then((resp) => {
-          if (resp && resp.status === 200 && url.origin === location.origin) {
-            const copy = resp.clone()
-            caches.open(CACHE).then((c) => c.put(e.request, copy))
-          }
-          return resp
-        })
-        .catch(() => caches.match('./index.html'))
+        .then((resp) => cachePut(e.request, resp, url.origin))
+        .catch(() => undefined)
     }),
   )
 })
