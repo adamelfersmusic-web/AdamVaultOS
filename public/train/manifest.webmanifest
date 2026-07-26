@@ -1,0 +1,16 @@
+{
+  "name": "Escensus Training",
+  "short_name": "Escensus",
+  "description": "Rehearse your agency's call: learn the structure, drill objections, hear yourself back.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c1b2a",
+  "theme_color": "#0c1b2a",
+  "icons": [
+    { "src": "../drill/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "../drill/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "../drill/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escensus · Training</title>
+<meta name="theme-color" content="#0c1b2a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../drill/icon-180.png">
+<style>
+  :root{
+    --navy:#0c1b2a;--navy-deep:#0a1622;--panel:#13273a;--panel-2:#1a3346;
+    --line:#24405a;--line-2:#32536f;--line-strong:#416484;
+    --cream:#f3eee2;--body:#c7d2dc;--ink-2:#93a2b1;--ink-3:#6d7d8d;--ink-4:#4f606f;
+    --gold:#cba14b;--gold-bright:#ddb968;--red:#c66a51;--blue:#6394b6;--hit:#6fa87f;
+    --r-sm:8px;--r-md:12px;--r-lg:18px;
+    --display:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    --body-f:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--navy);color:var(--body);font-family:var(--body-f);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line);background:var(--navy-deep)}
+  .brand{display:flex;align-items:center;gap:11px}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:22px}
+  .bars i{width:5px;border-radius:1.5px;background:var(--gold)}
+  .bars i:nth-child(1){height:40%}.bars i:nth-child(2){height:66%}.bars i:nth-child(3){height:100%}
+  .brand .name{font-family:var(--display);font-size:20px;color:var(--cream)}
+  .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+  .screen{padding:30px 22px 40px;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:0 0 12px}
+  h1{font-family:var(--display);font-weight:600;font-size:33px;line-height:1.08;color:var(--cream);margin:0 0 14px}
+  .lede{font-size:15.5px;margin:0 0 6px;color:var(--body)}
+  .flow{display:flex;align-items:center;gap:9px;margin:20px 0 4px;font-family:var(--mono);font-size:12px;letter-spacing:.04em}
+  .flow .n{color:var(--cream)}.flow .n.dim{color:var(--ink-3)}
+  .flow .ar{color:var(--gold)}
+  .cards{margin-top:26px;display:flex;flex-direction:column;gap:14px}
+  .card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);padding:20px;position:relative;overflow:hidden;transition:border-color .18s,transform .08s}
+  .card:active{transform:scale(.992)}
+  .card.live{border-color:var(--line-strong)}
+  .card.soon{opacity:.62}
+  .card-top{display:flex;align-items:center;gap:13px;margin-bottom:11px}
+  .ic{flex:0 0 44px;height:44px;border-radius:12px;background:var(--panel-2);border:1px solid var(--line-2);display:grid;place-items:center}
+  .ic svg{width:22px;height:22px}
+  .card-t{flex:1}
+  .card-t .nm{font-family:var(--display);font-size:20px;color:var(--cream);line-height:1.1}
+  .card-t .st{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+  .st.on{color:var(--hit)}.st.off{color:var(--ink-3)}
+  .card p{margin:0;font-size:14px;color:var(--ink-2)}
+  .go{position:absolute;right:18px;bottom:18px;color:var(--gold-bright);font-size:20px}
+  .card.soon .go{color:var(--ink-4)}
+  .foot{margin-top:auto;padding:22px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3);line-height:1.6}
+  .foot b{color:var(--ink-2)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><span class="bars"><i></i><i></i><i></i></span><span class="name">Escensus</span></div>
+    <span class="tag">Training</span>
+  </header>
+  <div class="screen">
+    <p class="eyebrow">Practice · Perform · Feedback</p>
+    <h1>Get reps before the call, not on it.</h1>
+    <p class="lede">Escensus turns your agency's own call into something you can rehearse. Learn the structure, drill the hard moments, hear yourself back.</p>
+    <div class="flow"><span class="n">Practice</span><span class="ar">→</span><span class="n dim">Perform</span><span class="ar">→</span><span class="n dim">Feedback</span></div>
+
+    <div class="cards">
+      <a class="card live" href="script/">
+        <div class="card-top">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#ddb968" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 10h16"/><path d="M4 15h10"/><path d="M4 20h7"/></svg></span>
+          <div class="card-t"><div class="nm">Script Trainer</div><div class="st on">● Live</div></div>
+        </div>
+        <p>The whole call, broken into loopable sections. Put each one on repeat and rep it hands free until it's automatic.</p>
+        <span class="go">›</span>
+      </a>
+
+      <a class="card live" href="../drill/">
+        <div class="card-top">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#ddb968" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></span>
+          <div class="card-t"><div class="nm">Objection Drill</div><div class="st on">● Live</div></div>
+        </div>
+        <p>Hear a real objection, answer out loud, hear yourself back. Two modes: name the objection, then respond to it.</p>
+        <span class="go">›</span>
+      </a>
+
+      <div class="card soon">
+        <div class="card-top">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#6d7d8d" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
+          <div class="card-t"><div class="nm">Role-play Call</div><div class="st off">Coming soon</div></div>
+        </div>
+        <p>A full simulated call. It rings, a prospect picks up, and you run the whole thing start to finish. Different prospect every time.</p>
+        <span class="go">›</span>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><b>This is the Practice layer.</b> Rehearsal built on your agency's real call. The reps you get here are the ones you don't have to get on a live prospect.</div>
+</div>
+<script>
+  if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js'); }catch(e){} }
+</script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escensus · Script Trainer</title>
+<meta name="theme-color" content="#0c1b2a">
+<style>
+  :root{
+    --navy:#0c1b2a;--navy-deep:#0a1622;--panel:#13273a;--panel-2:#1a3346;
+    --line:#24405a;--line-2:#32536f;--line-strong:#416484;
+    --cream:#f3eee2;--body:#c7d2dc;--ink-2:#93a2b1;--ink-3:#6d7d8d;--ink-4:#4f606f;
+    --gold:#cba14b;--gold-bright:#ddb968;--red:#c66a51;--blue:#6394b6;--hit:#6fa87f;
+    --r-sm:8px;--r-md:12px;--r-lg:18px;
+    --display:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    --body-f:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--navy);color:var(--body);font-family:var(--body-f);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .app{max-width:520px;margin:0 auto;min-height:100vh}
+  header{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line);background:var(--navy-deep);position:sticky;top:0;z-index:5}
+  .brand{display:flex;align-items:center;gap:11px}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:22px}
+  .bars i{width:5px;border-radius:1.5px;background:var(--gold)}
+  .bars i:nth-child(1){height:40%}.bars i:nth-child(2){height:66%}.bars i:nth-child(3){height:100%}
+  .brand .name{font-family:var(--display);font-size:20px;color:var(--cream)}
+  .back{font-family:var(--mono);font-size:12px;color:var(--gold);text-decoration:none;border:1px solid var(--gold);border-radius:var(--r-sm);padding:7px 13px;background:color-mix(in srgb,var(--gold) 10%,transparent)}
+  .screen{padding:26px 22px 70px;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:0 0 12px}
+  h1{font-family:var(--display);font-weight:600;font-size:31px;line-height:1.1;color:var(--cream);margin:0 0 12px}
+  .lede{font-size:15.5px;margin:0 0 8px;color:var(--body)}
+  .muted{color:var(--ink-2)}
+  .placeholder-note{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);border:1px dashed var(--line-2);border-radius:var(--r-sm);padding:10px 12px;margin:16px 0 0}
+  .sections{margin-top:22px;display:flex;flex-direction:column;gap:12px}
+  .sec{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);overflow:hidden}
+  .sec-head{display:flex;align-items:center;gap:13px;padding:16px 18px;cursor:pointer}
+  .sec-n{flex:0 0 30px;height:30px;border-radius:8px;background:var(--panel-2);border:1px solid var(--line-2);display:grid;place-items:center;font-family:var(--display);font-size:15px;color:var(--gold-bright)}
+  .sec-t{flex:1}
+  .sec-t .nm{font-family:var(--display);font-size:18px;color:var(--cream)}
+  .sec-t .role{font-size:13px;color:var(--ink-2);margin-top:1px}
+  .sec-flag{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 50%,transparent);border-radius:100px;padding:3px 8px;white-space:nowrap}
+  .sec-caret{color:var(--ink-3);font-size:18px;transition:transform .2s}
+  .sec.open .sec-caret{transform:rotate(90deg)}
+  .sec-body{display:none;padding:0 18px 18px}
+  .sec.open .sec-body{display:block}
+  .loopbar{display:flex;align-items:center;gap:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;margin:4px 0 16px}
+  .loopbtn{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;font-weight:600;padding:10px 16px;border:none;border-radius:var(--r-sm);background:var(--gold);color:#23190a;cursor:pointer}
+  .loopbtn.on{background:var(--red);color:#fff}
+  .loop-meta{font-size:12.5px;color:var(--ink-2)}
+  .loop-meta b{color:var(--body)}
+  .loopdots{display:inline-flex;gap:3px;margin-left:2px;vertical-align:middle}
+  .loopdots i{width:5px;height:5px;border-radius:50%;background:var(--gold-bright);opacity:.25}
+  .sec.looping .loopdots i{animation:blink 1.1s infinite}
+  .sec.looping .loopdots i:nth-child(2){animation-delay:.18s}
+  .sec.looping .loopdots i:nth-child(3){animation-delay:.36s}
+  @keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+  .beats{list-style:none;padding:0;margin:0}
+  .beat{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-top:1px solid var(--line)}
+  .beat:first-child{border-top:none}
+  .beat .play{flex:0 0 34px;height:34px;border-radius:50%;border:1px solid var(--line-strong);background:none;color:var(--gold-bright);font-size:12px;cursor:pointer}
+  .beat .bt{flex:1;font-size:14.5px;color:var(--body)}
+  .beat .bf{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--red);border:1px solid color-mix(in srgb,var(--red) 45%,transparent);border-radius:100px;padding:2px 6px;margin-left:6px}
+  .beat .bf.star{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
+  .seclink{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-family:var(--mono);font-size:12.5px;color:var(--gold-bright);text-decoration:none;border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:9px 14px}
+  .foot{padding:22px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3);line-height:1.6}
+  .foot b{color:var(--ink-2)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><span class="bars"><i></i><i></i><i></i></span><span class="name">Escensus</span></div>
+    <a class="back" href="../">‹ Training</a>
+  </header>
+  <div class="screen">
+    <p class="eyebrow">Escensus · Practice · Script Trainer</p>
+    <h1>Learn the call, one section at a time.</h1>
+    <p class="lede">The call is the piece of music. Each section is a movement. Tap a section, put it on <b>loop</b>, and rep it in the car until it's automatic. Then thread them together.</p>
+    <div class="placeholder-note">Prototype. Sections come from your agency's real call structure. The audio here is a <b>placeholder voice reading the coaching</b>, not the script itself. Your agency's exact wording and pro voices drop in on the private build.</div>
+    <div class="sections" id="sections"></div>
+  </div>
+  <div class="foot"><b>How it works.</b> Looping is how musicians learn a piece: get each section fluent on its own, then stitch them together, then isolate the hard transitions. Same for a call. Audio first, so you can learn it anywhere, hands free.</div>
+</div>
+<script>
+(function(){
+  function el(t,c,h){var e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;}
+  var TTS='speechSynthesis'in window, voices=[];
+  function loadV(){try{voices=(speechSynthesis.getVoices()||[]).filter(function(v){return /^en/i.test(v.lang);});}catch(e){}}
+  if(TTS){loadV();speechSynthesis.onvoiceschanged=loadV;}
+
+  // Sections = the real Peak beat/move structure (functional map, not verbatim).
+  var SECTIONS=[
+    {id:'open',name:'Open & Verify',role:'Earn the right to keep them on the phone.',
+      loop:'Open and verify. Self identify, anchor to the information they requested, confirm the address on file, surface who the beneficiary is and the burden frame, and establish credibility with your name and license number.',
+      beats:[['Self ID, anchor to the info THEY requested'],['Confirm the address on file'],['Surface the beneficiary and the burden frame','star'],['Just you, or spouse too? Pen and paper, your name plus license number']]},
+    {id:'discovery',name:'Discovery',role:'Find the emotional why. It makes the close land.',
+      loop:'Discovery. Ask what made them look into this, check any prior or existing coverage, and go deep on what matters most to them. Then present the three reasons, funeral, debts, and tax free legacy, and ask which they are covering today.',
+      beats:[['What made you look into this?'],['Any prior or existing coverage?'],['What is most important to you? Go deep.','star'],['The three reasons: funeral, debts, tax free legacy. Which today?','star']]},
+    {id:'frame',name:'Frame / How It Works',role:'Set the process so nothing surprises them.',
+      loop:'Frame the process. You are a licensed broker in their state. A few medical questions, then you match them to carriers likely to approve, and you apply today while the carrier decides. Micro commit: sound good?',
+      beats:[['Licensed broker in your state'],['A few medical Qs, match to carriers likely to approve, apply today'],['Micro commit: sound good?']]},
+    {id:'medical',name:'Preliminary Medical',role:'The knockout. It gates which price you can even present.',flag:'call-deciding',
+      loop:'Preliminary medical. This is the knockout that decides which carrier and price you can present. Get date of birth to age, height and weight, smoker status, current meds and hard knockout conditions, then work status, income source and amount, and affordability. Bridge out: I have what I need, finding your best rate.',
+      beats:[['DOB to age, height and weight, smoker status'],['Meds plus hard knockout conditions','star'],['Work or retired, income source and amount, affordability','star'],['Bridge: I have what I need, finding the rate that approves you today']]},
+    {id:'present',name:'Present Options',role:'Bronze, Silver, Gold. Write these down.',flag:'call-deciding',
+      loop:'Present three tiers, bronze, silver, and gold, with coverage and monthly, and have them write these down. Deliver the benefit claims cleanly, and remember these route to compliance, so execute them, never oversell them.',
+      beats:[['Three tiers: coverage plus monthly, write these down','star'],['The benefit claims (route to compliance, never oversell)','comp']]},
+    {id:'close',name:'The Close',role:'Assumptive. Choose the amount.',flag:'call-deciding',
+      loop:'The close. Go assumptive. Choose the amount with an either or: one, two, or three? Then begin the application and have them spell their name.',
+      beats:[['Assumptive apply'],['Choose the amount: 1, 2, or 3?','star'],['Begin the app, spell the name']]},
+    {id:'conclude',name:'Conclude & Tie-Down',role:'Lock persistency. Prevent replacement.',
+      loop:'Conclude and tie down. Recap that they are protected and locked in affordable. Get a soft agree, then the two promises: call me first if money is ever tight, and before you ever switch. Cover logistics, the security code, and capture emergency contacts.',
+      beats:[['Recap: protected and affordable, locked'],['Two promises: call me first if money is tight / before you switch','star'],['Logistics, security code, emergency contacts']]},
+    {id:'objections',name:'Objection Lanes',role:'Where FE calls are won and lost. Run the lane, never fold.',
+      loop:'Objection lanes. These fire on a trigger, usually early. The job is always the same: run the lane, do not fold. Do not remember filling this out, I already have insurance, not interested, thought it was free, is this a scam, too busy. Each one has a path.',
+      beats:[['Do not remember filling this out'],['I already have insurance'],['Not interested anymore'],['Thought it was free'],['Is this a scam?'],['Too busy']],
+      link:{href:'../../drill/',label:'Drill these live in the Objection Drill →'}}
+  ];
+
+  var speaking=null; // {id, looping}
+  function stopAll(){ try{speechSynthesis.cancel();}catch(e){} if(speaking){ var prev=document.querySelector('.sec.looping'); if(prev){ prev.classList.remove('looping'); var lb=prev.querySelector('.loopbtn'); if(lb){lb.classList.remove('on'); lb.firstChild.nodeValue='Loop ';} } } speaking=null; }
+  function speakOnce(text){ if(!TTS)return; try{ var u=new SpeechSynthesisUtterance(text); if(voices.length)u.voice=voices[0]; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
+  function loopSection(sec, text){
+    var wasLoopingThis = speaking && speaking.id===sec._id && speaking.looping;
+    stopAll();
+    if(wasLoopingThis) return; // toggled off
+    speaking={id:sec._id, looping:true};
+    sec.classList.add('looping');
+    var lb=sec.querySelector('.loopbtn'); lb.classList.add('on'); lb.firstChild.nodeValue='Stop ';
+    function go(){ if(!speaking||speaking.id!==sec._id||!speaking.looping)return; try{ var u=new SpeechSynthesisUtterance(text); if(voices.length)u.voice=voices[0]; u.onend=function(){ setTimeout(go,600); }; speechSynthesis.speak(u);}catch(e){} }
+    go();
+  }
+
+  var host=document.getElementById('sections');
+  SECTIONS.forEach(function(sc,i){
+    var sec=el('div','sec'); sec._id=sc.id;
+    var head=el('div','sec-head');
+    head.appendChild(el('div','sec-n', String(i+1)));
+    var t=el('div','sec-t'); t.innerHTML='<div class="nm">'+sc.name+'</div><div class="role">'+sc.role+'</div>'; head.appendChild(t);
+    if(sc.flag) head.appendChild(el('span','sec-flag','⚠ '+sc.flag));
+    head.appendChild(el('span','sec-caret','›'));
+    sec.appendChild(head);
+    var body=el('div','sec-body');
+    var lbar=el('div','loopbar');
+    var lbtn=el('button','loopbtn','Loop '); var dots=el('span','loopdots','<i></i><i></i><i></i>'); lbtn.appendChild(dots); lbar.appendChild(lbtn);
+    lbar.appendChild(el('span','loop-meta','<b>Loop this section.</b> Put it on repeat and rep it hands free.'));
+    body.appendChild(lbar);
+    var ul=el('ul','beats');
+    sc.beats.forEach(function(b){
+      var li=el('li','beat');
+      var pb=el('button','play','▶'); li.appendChild(pb);
+      var bt=el('div','bt', b[0] + (b[1]==='star'?' <span class="bf star">load-bearing</span>':b[1]==='comp'?' <span class="bf">compliance</span>':'')); li.appendChild(bt);
+      pb.onclick=function(){ stopAll(); speakOnce(b[0]); };
+      ul.appendChild(li);
+    });
+    body.appendChild(ul);
+    if(sc.link){ var a=el('a','seclink',sc.link.label); a.href=sc.link.href; body.appendChild(a); }
+    sec.appendChild(body);
+    head.onclick=function(){ sec.classList.toggle('open'); };
+    lbtn.onclick=function(e){ e.stopPropagation(); loopSection(sec, sc.loop); };
+    host.appendChild(sec);
+  });
+  // open the first section by default
+  if(host.firstChild) host.firstChild.classList.add('open');
+})();
+</script>
+</body>
+</html>
