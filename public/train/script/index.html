@@ -264,7 +264,19 @@
   // Karaoke highlight (prototype: Open section). Per-beat start times, in seconds,
   // within that section's clip. The highlight is a pure function of the audio's
   // currentTime, so it follows play, pause, and A/B drag-loop with no extra sync.
-  var BEATTIMES={ open:[0, 8.78, 13.17, 16.35, 20.94, 23.81] };
+  // Per-beat start times (seconds) within each section's clip, derived from the
+  // clip's natural pauses. One array per voiced section; lengths match that
+  // section's beat count. (Medical + eApp are text-only, so no karaoke there.)
+  // AssemblyAI word-timestamp auto-align will make these frame-exact later.
+  var BEATTIMES={
+    open:      [0, 8.78, 13.17, 16.35, 20.94, 23.81],
+    scope:     [0, 5.16, 9.89, 19.36],
+    discovery: [0, 7.24, 9.90, 15.88, 24.27],
+    frame:     [0, 8.34, 12.21, 17.58],
+    present:   [0, 7.14, 18.04],
+    close:     [0, 3.79, 9.81],
+    conclude:  [0, 6.21, 7.48, 29.50, 36.17, 42.59, 48.06]
+  };
   var beatEls={}, secEls={};
 
   // The sections list is pure reading. All looping lives in the bottom player.
