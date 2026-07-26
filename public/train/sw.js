@@ -2,13 +2,15 @@
 // Caches the launcher shell + the Script Trainer so the hub opens with no internet.
 // The Objection Drill has its own service worker under /drill/.
 
-const CACHE = 'escensus-train-v1'
+const CACHE = 'escensus-train-v2'
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './script/',
   './script/index.html',
+  './roleplay/',
+  './roleplay/index.html',
   '../drill/icon-192.png',
   '../drill/icon-512.png',
 ]
