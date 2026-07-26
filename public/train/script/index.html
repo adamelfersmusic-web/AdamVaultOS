@@ -74,7 +74,8 @@
   .wave.hidden{display:none}
   .wave-box{position:relative;height:60px;background:var(--navy);border:1px solid var(--line);border-radius:10px;overflow:hidden;touch-action:none}
   .wave-box canvas{display:block;width:100%;height:100%}
-  .wave-region{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--gold) 15%,transparent);border-left:2px solid var(--gold);border-right:2px solid var(--gold);pointer-events:none}
+  .wave-region{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--gold) 15%,transparent);border-left:2px solid var(--gold);border-right:2px solid var(--gold);cursor:grab;touch-action:none}
+  .wave-region.grabbing{cursor:grabbing;background:color-mix(in srgb,var(--gold) 22%,transparent)}
   .wave-h{position:absolute;top:0;bottom:0;width:26px;margin-left:-13px;display:flex;align-items:center;justify-content:center;cursor:ew-resize;touch-action:none;z-index:2}
   .wave-h::after{content:'';width:4px;height:64%;border-radius:2px;background:var(--gold-bright);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 22%,transparent)}
   .wave-ph{position:absolute;top:0;bottom:0;width:2px;background:var(--cream);opacity:.85;pointer-events:none;left:0}
@@ -184,7 +185,7 @@
           <div class="wave-h" id="waveA"></div>
           <div class="wave-h" id="waveB"></div>
         </div>
-        <div class="wave-hint">Drag the <b>gold handles</b> to loop just those lines</div>
+        <div class="wave-hint">Drag the <b>gold handles</b> to size it, or the middle to slide it</div>
       </div>
       <div class="ptimeline" id="ptimeline"></div>
       <div class="prow">
@@ -466,6 +467,21 @@
     });
   }
   waveDrag(waveA,'a'); waveDrag(waveB,'b');
+  // Drag the whole selection: slide A and B together, keeping the width.
+  waveRegion.addEventListener('pointerdown', function(ev){
+    ev.preventDefault(); ev.stopPropagation();
+    waveRegion.classList.add('grabbing');
+    var r=waveBox.getBoundingClientRect(), startF=(ev.clientX-r.left)/r.width;
+    var a0=wave.a, b0=wave.b, wdt=b0-a0;
+    function mv(e){
+      var d=((e.clientX-r.left)/r.width)-startF, na=a0+d, nb=b0+d;
+      if(na<0){ na=0; nb=wdt; } if(nb>1){ nb=1; na=1-wdt; }
+      wave.a=na; wave.b=nb; layoutHandles();
+      if(wave.audio){ var dur=wave.dur||0; if(wave.audio.currentTime<wave.a*dur || wave.audio.currentTime>wave.b*dur){ try{wave.audio.currentTime=wave.a*dur;}catch(e){} } }
+    }
+    function up(){ waveRegion.classList.remove('grabbing'); document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); }
+    document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up);
+  });
   window.addEventListener('resize', function(){ if(wave.active){ resizeCanvas(); waveDraw(); layoutHandles(); } });
 
   renderSel(); renderReps();
