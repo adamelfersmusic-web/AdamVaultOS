@@ -110,6 +110,17 @@
   .tbtn{flex:1;background:var(--gold);color:#23190a;border:none;border-radius:var(--r-md);padding:15px;font-family:var(--display);font-size:15.5px;font-weight:600;cursor:pointer}
   .tbtn:active{transform:scale(.99)}
   .tbtn.ghost{background:none;border:1px solid var(--line-2);color:var(--gold-bright);font-weight:500}
+  .tbtn.rec{background:var(--red);color:#fff}
+  .recdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#fff;margin-right:8px;vertical-align:middle;animation:recpulse 1s ease-in-out infinite}
+  @keyframes recpulse{0%,100%{opacity:1}50%{opacity:.25}}
+  #levels{margin-top:8px}
+  .tnote{font-family:var(--mono);font-size:11px;color:var(--warn);text-align:center;margin-top:2px}
+  .tplay{border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--panel);padding:12px 14px}
+  .tplay .rl2{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+  .prow2{display:flex;align-items:center;gap:11px;padding:7px 0;border-top:1px solid var(--line)}
+  .prow2:first-of-type{border-top:none}
+  .pmini{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong);background:none;color:var(--gold-bright);font-size:12px;cursor:pointer}
+  .pln{flex:1;font-size:14px;color:var(--body)}
 
   /* Review */
   .outcome{text-align:center;padding:6px 0 4px}
@@ -154,6 +165,10 @@
     <div class="modes" id="modes">
       <button class="mode on" data-m="choose">Choose<small>tap the move</small></button>
       <button class="mode" data-m="talk">Talk<small>say it out loud</small></button>
+    </div>
+    <div class="modes" id="levels" style="display:none">
+      <button class="mode on" data-l="rehearse">Rehearse<small>just talk</small></button>
+      <button class="mode" data-l="record">Record<small>+ play it back</small></button>
     </div>
     <div class="dialer">
       <div class="lead">
@@ -205,7 +220,7 @@
     <button class="again" id="rv-again">Run it again ↺</button>
   </div>
 
-  <div class="foot"><b>Tier 1: scripted branching.</b> The prospect's reactions are pre-written and weighted-random. Next up (Tier 2): you speak your answers out loud and it detects when you're done. The moves and objections here come from the same call structure the scoring engine grades, so practice and feedback stay one system.</div>
+  <div class="foot"><b>Choose</b> is scripted branching: tap a move, the prospect reacts (weighted-random), and you get graded move by move. <b>Talk</b> lets you say the call out loud instead — rehearse it, or record and play your reps back. Next: it scores your spoken lines. Every mode runs on the same call structure the scoring engine grades, so practice and feedback stay one system.</div>
 </div>
 
 <script>
@@ -489,19 +504,58 @@
       '<circle cx="'+x(n-1).toFixed(1)+'" cy="'+y(pts[n-1]).toFixed(1)+'" r="3.5" fill="#f3eee2"/></svg>';
   }
 
-  // ---- Talk mode · Level 1 (Rehearse) -------------------------------------
-  // Fully isolated from Choose mode: its own state (T) and functions, wrapped
-  // so a failure here can never take down the tap-to-choose call. You SAY your
-  // line out loud; the cue reminds you of the beat's job (Prompt) or gives you
-  // nothing (Cold) — same language as the Script Trainer ladder. Tap to advance
-  // down the model call. No scoring here; this is reps, not a graded run.
-  var MODE='choose', CUE='prompt', T=null;
+  // ---- Talk mode · say the call out loud ----------------------------------
+  // Two levels, toggled on the dialer: Rehearse (just talk) and Record (also
+  // captures your mic so you can play your reps back). Fully isolated from
+  // Choose mode — its own state (T) and functions, wrapped so any failure,
+  // including mic trouble, can only drop back to the dialer or to Rehearse.
+  // The cue (Prompt = the beat's job, Cold = nothing) mirrors the Script
+  // Trainer ladder. This is reps, not a graded run.
+  var MODE='choose', LEVEL='rehearse', CUE='prompt', T=null;
 
   function setMode(m){
     MODE=m;
     var bs=$('modes').querySelectorAll('.mode');
     for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-m')===m);
+    $('levels').style.display = (m==='talk') ? 'flex' : 'none';
     $('callhint').textContent = (m==='talk') ? 'Tap to call · you talk' : 'Tap to call';
+  }
+  function setLevel(l){
+    LEVEL=l;
+    var bs=$('levels').querySelectorAll('.mode');
+    for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-l')===l);
+  }
+
+  // --- mic (Record level only), every step guarded so it can't break the flow ---
+  function acquireMic(){
+    T.mic=null; T.micDenied=false;
+    try{
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){ T.micDenied=true; return; }
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ T.mic=s; }).catch(function(){ T.micDenied=true; });
+    }catch(e){ T.micDenied=true; }
+  }
+  function micReady(){ return LEVEL==='record' && T && T.mic && window.MediaRecorder; }
+  function startRec(){
+    if(!micReady()) return;
+    try{
+      T.chunks=[]; T.rec=new MediaRecorder(T.mic);
+      T.rec.ondataavailable=function(e){ if(e.data && e.data.size) T.chunks.push(e.data); };
+      T.rec.start(); T.recording=true;
+    }catch(e){ T.recording=false; T.rec=null; }
+  }
+  function stopRec(beat, cb){
+    if(!T.recording || !T.rec){ cb(); return; }
+    try{
+      T.rec.onstop=function(){
+        try{ var blob=new Blob(T.chunks,{type:(T.chunks[0]&&T.chunks[0].type)||'audio/webm'}); T.recs.push({lab:beat.lab, url:URL.createObjectURL(blob)}); }catch(_){}
+        cb();
+      };
+      T.recording=false; T.rec.stop();
+    }catch(e){ T.recording=false; cb(); }
+  }
+  function cleanupMic(){
+    try{ if(T && T.mic) T.mic.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+    try{ if(T && T.recs) T.recs.forEach(function(r){ URL.revokeObjectURL(r.url); }); }catch(e){}
   }
 
   function talkMeter(beat){
@@ -511,13 +565,16 @@
     $('m-fill').style.width=Math.round((T.i/BEATS.length)*100)+'%';
   }
 
-  function talkCard(beat){
+  // Render the your-turn card. isNew=true means we just arrived on this beat
+  // (so arm recording); a cue re-render passes false so recording is untouched.
+  function talkCard(beat, isNew){
+    if(isNew && LEVEL==='record') startRec();
     clearOpts();
     var host=$('opts');
     var seg=el('div','tseg');
     seg.innerHTML='<button data-c="prompt"'+(CUE==='prompt'?' class="on"':'')+'>Prompt</button>'+
                   '<button data-c="cold"'+(CUE==='cold'?' class="on"':'')+'>Cold</button>';
-    seg.addEventListener('click',function(ev){ var b=ev.target.closest('button'); if(!b)return; CUE=b.getAttribute('data-c'); talkCard(beat); });
+    seg.addEventListener('click',function(ev){ var b=ev.target.closest('button'); if(!b)return; CUE=b.getAttribute('data-c'); talkCard(beat,false); });
     host.appendChild(seg);
 
     var card=el('div','tcue');
@@ -535,8 +592,12 @@
       var rr=el('div','trow'); rr.appendChild(rev); host.appendChild(rr);
     }
 
-    var nb=el('button','tbtn','I said it — next ›'); nb.onclick=function(){ talkNext(beat); };
+    var recording=(LEVEL==='record' && T.recording);
+    var nb=el('button','tbtn'+(recording?' rec':''), recording ? '<span class="recdot"></span>Recording — tap when done' : 'I said it — next ›');
+    nb.onclick=function(){ nb.disabled=true; stopRec(beat, function(){ talkNext(beat); }); };
     var nr=el('div','trow'); nr.appendChild(nb); host.appendChild(nr);
+
+    if(LEVEL==='record' && T.micDenied){ host.appendChild(el('div','tnote','Mic unavailable — rehearsing without recording.')); }
   }
 
   function talkNext(beat){
@@ -546,7 +607,7 @@
       T.i++;
       if(T.i>=BEATS.length){ talkFinish(); return; }
       var nb=BEATS[T.i]; talkMeter(nb);
-      addTurn('them', nb.them, function(){ talkCard(nb); }, 'p-'+nb.id);
+      addTurn('them', nb.them, function(){ talkCard(nb, true); }, 'p-'+nb.id);
     }, 'p-'+beat.id+'-a');
   }
 
@@ -556,24 +617,42 @@
     var host=$('opts');
     var c=el('div','tcue'); c.innerHTML='<div class="lab">Nice reps</div><div class="job">You ran all '+BEATS.length+' beats out loud, start to finish. That is the practice.</div>';
     host.appendChild(c);
-    var again=el('button','tbtn','Run it again ↺'); again.onclick=startTalk;
+
+    if(LEVEL==='record' && T.recs && T.recs.length){
+      var list=el('div','tplay');
+      list.appendChild(el('div','rl2','Your takes — play them back'));
+      T.recs.forEach(function(r){
+        var row=el('div','prow2');
+        var pb=el('button','pmini','▶');
+        var au=new Audio(r.url);
+        pb.onclick=function(){ try{ if(au.paused){ au.currentTime=0; au.play(); pb.textContent='❚❚'; au.onended=function(){ pb.textContent='▶'; }; } else { au.pause(); pb.textContent='▶'; } }catch(e){} };
+        row.appendChild(pb); row.appendChild(el('div','pln', r.lab));
+        list.appendChild(row);
+      });
+      host.appendChild(list);
+    }
+
+    var again=el('button','tbtn','Run it again ↺'); again.onclick=function(){ cleanupMic(); startTalk(); };
     var ar=el('div','trow'); ar.appendChild(again); host.appendChild(ar);
-    var back=el('button','tbtn ghost','Back to start'); back.onclick=function(){ try{speechSynthesis.cancel();}catch(e){} stopProspect(); show('s-dialer'); window.scrollTo({top:0}); };
+    var back=el('button','tbtn ghost','Back to start'); back.onclick=function(){ try{speechSynthesis.cancel();}catch(e){} stopProspect(); cleanupMic(); show('s-dialer'); window.scrollTo({top:0}); };
     var br=el('div','trow'); br.appendChild(back); host.appendChild(br);
   }
 
   function startTalk(){
     try{
+      cleanupMic();
       reset(); setLead(); show('s-ring'); $('r-st').textContent='Calling…';
+      T={i:0, recs:[], rec:null, recording:false, chunks:[], mic:null, micDenied:false};
+      if(LEVEL==='record') acquireMic();
       setTimeout(function(){ $('r-st').textContent='Ringing…'; },700);
       setTimeout(function(){
-        show('s-call'); $('convo').innerHTML=''; T={i:0};
+        show('s-call'); $('convo').innerHTML='';
         var b=BEATS[0]; talkMeter(b);
-        addTurn('them', b.them, function(){ talkCard(b); }, 'p-'+b.id);
+        addTurn('them', b.them, function(){ talkCard(b, true); }, 'p-'+b.id);
       }, 1900);
     }catch(e){
       // Talk must never take the app down; fall back to the dialer + Choose mode.
-      try{ stopProspect(); }catch(_){}
+      try{ stopProspect(); cleanupMic(); }catch(_){}
       show('s-dialer'); setMode('choose');
       try{ $('callhint').textContent='Talk mode hit a snag — Choose still works.'; }catch(_){}
     }
@@ -582,8 +661,19 @@
   // wire
   reset(); setLead();
   $('modes').addEventListener('click', function(ev){ var b=ev.target.closest('.mode'); if(b) setMode(b.getAttribute('data-m')); });
+  $('levels').addEventListener('click', function(ev){ var b=ev.target.closest('.mode'); if(b) setLevel(b.getAttribute('data-l')); });
   $('callbtn').onclick=function(){ (MODE==='talk') ? startTalk() : startCall(); };
   $('rv-again').onclick=function(){ try{speechSynthesis.cancel();}catch(e){} show('s-dialer'); reset(); setLead(); window.scrollTo({top:0}); };
+
+  // Spacebar advances Talk mode (stop the take / next), the way a desktop user
+  // reaches for it on any recorder. Scoped to Talk + the call screen, and it
+  // preventDefaults so the page never scrolls. Choose mode is untouched.
+  document.addEventListener('keydown', function(ev){
+    if(ev.code!=='Space' && ev.key!==' ') return;
+    if(MODE!=='talk' || $('s-call').classList.contains('hidden')) return;
+    var btn=$('opts').querySelector('.tbtn:not(.ghost)');
+    if(btn && !btn.disabled){ ev.preventDefault(); btn.click(); }
+  });
 })();
 </script>
 </body>
