@@ -45,20 +45,28 @@
     }
   };
 
+  // A skin comes from an explicit ?brand=<id> (the demo switcher / a URL), or a
+  // real client deploy (its own hostname / a /<brand>/ path). An explicit choice
+  // is remembered in sessionStorage — TAB-SCOPED, so it survives clicking around
+  // the demo but clears the moment the tab closes. It is NEVER written to
+  // localStorage, so a fresh tab / the official site is ALWAYS Escensus and can
+  // never get permanently reskinned.
+  var realDeploy = false;
   function pickId() {
-    // The official site is ALWAYS Escensus (navy + gold). A brand skin appears
-    // ONLY via an explicit ?brand=<id> (that page view only — never persisted) or
-    // a real client deploy on its own hostname / a /<brand>/ path. Nothing sticks,
-    // so the default demo can never get accidentally reskinned.
     try {
       var q = new URLSearchParams(location.search).get('brand');
-      if (q && BRANDS[q]) return q;
+      if (q !== null) {
+        if (BRANDS[q]) { sessionStorage.setItem('esc_brand', q); return q; }
+        sessionStorage.removeItem('esc_brand'); // ?brand= (empty/unknown) resets to Escensus
+      }
+      var s = sessionStorage.getItem('esc_brand');
+      if (s && BRANDS[s]) return s;
     } catch (e) {}
     var h = (location.hostname || '').toLowerCase();
     var p = (location.pathname || '').toLowerCase();
     for (var id in BRANDS) {
       if (id === 'escensus') continue;
-      if (h.indexOf(id) !== -1 || p.indexOf('/' + id) !== -1) return id;
+      if (h.indexOf(id) !== -1 || p.indexOf('/' + id) !== -1) { realDeploy = true; return id; }
     }
     return 'escensus';
   }
@@ -107,6 +115,21 @@
           'font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#4f606f;' +
           'padding:16px 0 calc(20px + env(safe-area-inset-bottom))';
         document.body.appendChild(pb);
+      }
+      // Demo brand switcher — flip Escensus ⇄ Peak live. Only on the demo (never
+      // on a real client deploy, and never persisted to localStorage).
+      if (!realDeploy && !document.getElementById('brandSwitch')) {
+        var other = (B.name === 'Escensus') ? 'peak' : 'escensus';
+        var otherName = other === 'peak' ? 'Peak' : 'Escensus';
+        var sw = document.createElement('button');
+        sw.id = 'brandSwitch';
+        sw.innerHTML = '◑ ' + B.name + ' · tap for ' + otherName;
+        sw.style.cssText = 'position:fixed;top:64px;right:10px;z-index:9999;' +
+          'font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;letter-spacing:.03em;' +
+          'color:#f3eee2;background:rgba(10,18,28,.92);border:1px solid #416484;border-radius:100px;' +
+          'padding:6px 12px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35)';
+        sw.onclick = function () { try { var u = new URL(location.href); u.searchParams.set('brand', other); location.href = u.toString(); } catch (e) {} };
+        document.body.appendChild(sw);
       }
     } catch (e) {}
   }
