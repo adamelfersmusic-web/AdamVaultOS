@@ -119,18 +119,34 @@
       link:{href:'../../drill/',label:'Drill these live in the Objection Drill →'}}
   ];
 
-  var speaking=null; // {id, looping}
-  function stopAll(){ try{speechSynthesis.cancel();}catch(e){} if(speaking){ var prev=document.querySelector('.sec.looping'); if(prev){ prev.classList.remove('looping'); var lb=prev.querySelector('.loopbtn'); if(lb){lb.classList.remove('on'); lb.firstChild.nodeValue='Loop ';} } } speaking=null; }
+  var speaking=null; // {id, looping, audio}
+  function stopAll(){
+    try{speechSynthesis.cancel();}catch(e){}
+    if(speaking&&speaking.audio){ try{speaking.audio.pause();}catch(e){} }
+    if(speaking){ var prev=document.querySelector('.sec.looping'); if(prev){ prev.classList.remove('looping'); var lb=prev.querySelector('.loopbtn'); if(lb){lb.classList.remove('on'); lb.firstChild.nodeValue='Loop ';} } }
+    speaking=null;
+  }
   function speakOnce(text){ if(!TTS)return; try{ var u=new SpeechSynthesisUtterance(text); if(voices.length)u.voice=voices[0]; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
-  function loopSection(sec, text){
+  function ttsLoop(guard, text){
+    function go(){ if(guard!==speaking||!speaking.looping)return; try{ var u=new SpeechSynthesisUtterance(text); if(voices.length)u.voice=voices[0]; u.onend=function(){ setTimeout(go,600); }; speechSynthesis.speak(u);}catch(e){} }
+    go();
+  }
+  // Loop a section: prefer a real recorded voice at audio/<id>.mp3, fall back to
+  // the placeholder browser voice when no clip is present (so the demo still runs).
+  function loopSection(sec, id, text){
     var wasLoopingThis = speaking && speaking.id===sec._id && speaking.looping;
     stopAll();
     if(wasLoopingThis) return; // toggled off
-    speaking={id:sec._id, looping:true};
+    speaking={id:sec._id, looping:true, audio:null};
+    var guard=speaking;
     sec.classList.add('looping');
     var lb=sec.querySelector('.loopbtn'); lb.classList.add('on'); lb.firstChild.nodeValue='Stop ';
-    function go(){ if(!speaking||speaking.id!==sec._id||!speaking.looping)return; try{ var u=new SpeechSynthesisUtterance(text); if(voices.length)u.voice=voices[0]; u.onend=function(){ setTimeout(go,600); }; speechSynthesis.speak(u);}catch(e){} }
-    go();
+    var au=new Audio('audio/'+id+'.mp3'); var started=false;
+    au.onended=function(){ if(guard!==speaking||!speaking.looping)return; setTimeout(function(){ if(guard===speaking&&speaking.looping){ try{au.currentTime=0; au.play();}catch(e){} } },600); };
+    au.onerror=function(){ if(!started&&guard===speaking&&speaking.looping) ttsLoop(guard, text); };
+    speaking.audio=au;
+    var pr=au.play();
+    if(pr&&typeof pr.then==='function'){ pr.then(function(){ started=true; }).catch(function(){ if(guard===speaking&&speaking.looping) ttsLoop(guard, text); }); }
   }
 
   var host=document.getElementById('sections');
@@ -159,7 +175,7 @@
     if(sc.link){ var a=el('a','seclink',sc.link.label); a.href=sc.link.href; body.appendChild(a); }
     sec.appendChild(body);
     head.onclick=function(){ sec.classList.toggle('open'); };
-    lbtn.onclick=function(e){ e.stopPropagation(); loopSection(sec, sc.loop); };
+    lbtn.onclick=function(e){ e.stopPropagation(); loopSection(sec, sc.id, sc.loop); };
     host.appendChild(sec);
   });
   // open the first section by default
