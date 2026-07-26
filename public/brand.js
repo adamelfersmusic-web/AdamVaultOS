@@ -46,11 +46,13 @@
   };
 
   function pickId() {
+    // The official site is ALWAYS Escensus (navy + gold). A brand skin appears
+    // ONLY via an explicit ?brand=<id> (that page view only — never persisted) or
+    // a real client deploy on its own hostname / a /<brand>/ path. Nothing sticks,
+    // so the default demo can never get accidentally reskinned.
     try {
       var q = new URLSearchParams(location.search).get('brand');
-      if (q && BRANDS[q]) { localStorage.setItem('brand', q); return q; }
-      var s = localStorage.getItem('brand');
-      if (s && BRANDS[s]) return s;
+      if (q && BRANDS[q]) return q;
     } catch (e) {}
     var h = (location.hostname || '').toLowerCase();
     var p = (location.pathname || '').toLowerCase();
@@ -84,6 +86,19 @@
       if (nm) nm.textContent = B.name;
       var tc = document.querySelector('meta[name="theme-color"]');
       if (tc) tc.setAttribute('content', B.themeColor);
+      // Re-label visible "Escensus" brand text (eyebrows, body copy) to the active
+      // brand. Runs BEFORE the poweredBy line is added, so provenance keeps the
+      // Escensus name. No-op for the Escensus brand itself.
+      if (B.name !== 'Escensus' && document.body) {
+        var walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+        var hits = [], t;
+        while ((t = walk.nextNode())) {
+          var pn = t.parentNode ? t.parentNode.nodeName : '';
+          if (pn === 'SCRIPT' || pn === 'STYLE') continue;
+          if (t.nodeValue.indexOf('Escensus') !== -1) hits.push(t);
+        }
+        hits.forEach(function (n) { n.nodeValue = n.nodeValue.replace(/Escensus/g, B.name); });
+      }
       if (B.poweredBy && !document.getElementById('poweredBy')) {
         var pb = document.createElement('div');
         pb.id = 'poweredBy';
