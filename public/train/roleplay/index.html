@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Escensus · Role-play Call</title>
 <meta name="theme-color" content="#0c1b2a">
+<script src="../../brand.js"></script>
 <style>
   :root{
     --navy:#0c1b2a;--navy-deep:#0a1622;--panel:#13273a;--panel-2:#1a3346;
@@ -496,11 +497,12 @@
     var d=''; pts.forEach(function(v,i){ d+=(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' '; });
     var area=d+'L'+x(n-1).toFixed(1)+' '+(h-pad)+' L'+x(0).toFixed(1)+' '+(h-pad)+' Z';
     var mid=y(45).toFixed(1);
+    var acc=(window.BRAND&&window.BRAND.accent)||'#cba14b', accB=(window.BRAND&&window.BRAND.accentBright)||'#ddb968';
     return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none">'+
-      '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cba14b" stop-opacity=".28"/><stop offset="1" stop-color="#cba14b" stop-opacity="0"/></linearGradient></defs>'+
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+acc+'" stop-opacity=".28"/><stop offset="1" stop-color="'+acc+'" stop-opacity="0"/></linearGradient></defs>'+
       '<line x1="'+pad+'" y1="'+mid+'" x2="'+(w-pad)+'" y2="'+mid+'" stroke="#32536f" stroke-width="1" stroke-dasharray="3 3"/>'+
       '<path d="'+area+'" fill="url(#g)"/>'+
-      '<path d="'+d+'" fill="none" stroke="#ddb968" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '<path d="'+d+'" fill="none" stroke="'+accB+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'+
       '<circle cx="'+x(n-1).toFixed(1)+'" cy="'+y(pts[n-1]).toFixed(1)+'" r="3.5" fill="#f3eee2"/></svg>';
   }
 
