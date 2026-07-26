@@ -303,7 +303,13 @@
        {t:"Good question. I'll ask a few quick health questions, then match you to the carrier most likely to approve you and give you today's best rate. Sound fair?",q:'good',d:8,reply:"That's fine. I take blood pressure and cholesterol pills, nothing major."},
        {t:"Don't worry about the health stuff, everybody gets approved, let's just move on.",q:'poor',d:-11,reply:"Well, I do have COPD, I'd want to make sure that's okay..."},
        {t:"Okay. What medications are you currently taking?",q:'ok',d:2,reply:"Just the blood pressure and cholesterol ones."}
-     ]},
+     ],
+     follow:{them:"...and I do have COPD too, if that matters. Does that disqualify me?",
+       opts:[
+         {t:"Not necessarily — there are carriers that write COPD every day. That's exactly why I ask, so I steer you to the right one instead of a decline. Let me get the rest and match you.",q:'good',d:7,reply:"Oh. Okay, that's a relief. What else do you need?"},
+         {t:"COPD's a tough one, but let's just see what happens.",q:'poor',d:-7,reply:"That doesn't sound very reassuring, honestly."},
+         {t:"Good to know. Are you on oxygen, or just the inhalers?",q:'ok',d:2,reply:"Just the inhalers. No oxygen."}
+       ]}},
     {id:'present',lab:'Present options',them:"Alright. So what would something like this run me?",
      prompt:'Present the tiers. Anchor it to what they told you.',
      opts:[
@@ -317,7 +323,13 @@
        {t:"Most folks in your shoes go with the Silver, it's the sweet spot. Do you want to start there, or step up to the Gold? Either way I'll get the application going now.",q:'good',d:10,reply:"Let's... do the Silver, I think. Okay."},
        {t:"No pressure at all, take your time and call me back whenever you've thought it over.",q:'poor',d:-12,reply:"Yeah, let me think about it and I'll let you know."},
        {t:"Which one feels right to you?",q:'ok',d:1,reply:"I really can't decide, that's the thing."}
-     ]},
+     ],
+     follow:{them:"I don't know... it's a lot to decide right now.",
+       opts:[
+         {t:"I hear you — and that's exactly why we lock today's rate in now, before anything changes. You're protected, not overpaying. Want me to start you on the Silver?",q:'good',d:8,reply:"Okay... yeah. Let's do the Silver."},
+         {t:"No rush at all, sleep on it and call me back whenever.",q:'poor',d:-11,reply:"Yeah. Let me think about it."},
+         {t:"What's the part you're unsure about?",q:'ok',d:2,reply:"Just whether I can afford it every month, I guess."}
+       ]}},
     {id:'tie',lab:'Tie-down',them:"Okay. I hope I'm doing the right thing here.",
      prompt:'Lock it in. Reassure, get the soft agree, protect the sale.',
      opts:[
@@ -446,13 +458,19 @@
     clearOpts();
     state.prob+=o.d;
     state.log.push({beat:node.name?('Objection · '+node.name):node.lab, q:o.q, d:o.d});
-    var prefix = node.__isObj ? ('p-obj-'+node.id) : ('p-'+node.id);
+    var prefix = node.__isObj ? ('p-obj-'+node.id) : node.__isFollow ? ('p-'+node.id+'-f') : ('p-'+node.id);
     var key = ['a','b','c'][node.opts.indexOf(o)] || 'a';
     addTurn('you', agentText(o.t), function(){
       setMeter();
       addTurn('them', o.reply, function(){
-        // after handling an objection, resume the main line; else advance
-        if(node.__isObj){ nextBeat(); }
+        // objection or a follow sub-exchange: advance (no new objection right after).
+        if(node.__isObj || node.__isFollow){ nextBeat(); }
+        // a primary beat with a second exchange: play it before advancing.
+        else if(node.follow){
+          var fn=node.follow; fn.__isFollow=true; fn.id=node.id; fn.lab=node.lab+' (cont.)';
+          setMeter(fn.lab);
+          addTurn('them', fn.them, function(){ renderOpts(fn); }, 'p-'+node.id+'-f');
+        }
         else { maybeObjectionThen(nextBeat); }
       }, prefix+'-'+key);
     });
