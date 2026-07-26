@@ -264,6 +264,13 @@
        {t:"Hi, do you have a minute? I want to tell you about some great life insurance options we have going right now.",q:'poor',d:-9,reply:"Life insurance? I don't know, I'm kind of busy..."},
        {t:"Hi Margaret, sorry to bother you, I know you're probably busy. Is this a bad time?",q:'ok',d:-1,reply:"Well... what's this regarding?"}
      ]},
+    {id:'scope',lab:'Scope & Credibility',them:"Okay. So who are you with again?",
+     prompt:'Prove you are real and set the room. License, then get them on pen and paper.',
+     opts:[
+       {t:"Good question. I'm a licensed agent, my number's on file and you're welcome to verify it with the state. Do me a favor and grab a pen and paper so you can jot a few things down as we go, sound good?",q:'good',d:8,reply:"Alright, hold on a second... okay, I've got a pen."},
+       {t:"I'm with the benefits department, we handle these state-approved plans. Anyway, let's keep going.",q:'poor',d:-7,reply:"The benefits department? I don't even know what company that is."},
+       {t:"I'm a licensed agent in your state. Before we dig in, is it just you making this decision today, or is there a spouse who'd want to be part of it?",q:'ok',d:3,reply:"Just me. My husband passed, so it's my decision."}
+     ]},
     {id:'frame',lab:'Beneficiary / burden',them:"It was about that burial coverage, I think.",
      prompt:'Set up why this matters. Surface the beneficiary.',
      opts:[
@@ -278,7 +285,14 @@
        {t:"Got it. So do you have any coverage right now, or would this be your first policy?",q:'ok',d:2,reply:"I had a little something through work but that ended when I retired."},
        {t:"Sure. So let's just find you the cheapest plan and get you covered.",q:'poor',d:-7,reply:"I mean, I don't want junk either. I want it to actually pay."}
      ]},
-    {id:'medical',lab:'Preliminary medical',them:"So how does this all work? I've had a few health things.",
+    {id:'process',lab:'How it works',them:"So how does this whole thing even work?",
+     prompt:'Frame the process so nothing surprises them. A few questions, then you match them.',
+     opts:[
+       {t:"Simple. I'll ask you a few quick health questions, then I match you with the company most likely to approve you at the best rate. They make the final call, I do the shopping for you. Fair enough?",q:'good',d:8,reply:"Okay, that sounds reasonable. Go ahead."},
+       {t:"You just answer a few questions and then you're covered, easy as that.",q:'poor',d:-7,reply:"That sounds too easy. What's the catch?"},
+       {t:"I'll run through some questions and we'll find you a plan that fits. Ready?",q:'ok',d:2,reply:"I suppose so, yes."}
+     ]},
+    {id:'medical',lab:'Preliminary medical',them:"Alright. I've had a few health things though, is that going to be a problem?",
      prompt:'The knockout. It decides what you can even present. Handle it carefully.',
      opts:[
        {t:"Good question. I'll ask a few quick health questions, then match you to the carrier most likely to approve you and give you today's best rate. Sound fair?",q:'good',d:8,reply:"That's fine. I take blood pressure and cholesterol pills, nothing major."},
@@ -305,6 +319,13 @@
        {t:"You are, Margaret. You're protected now and this is locked in at this rate. Do me one favor: if money's ever tight, you call me first before you cancel anything. Deal?",q:'good',d:8,reply:"Okay. Thank you, that's a relief. Deal."},
        {t:"Great, you're all set, I'll send everything over. Bye now.",q:'ok',d:0,reply:"Oh, okay. Bye."},
        {t:"Perfect. Now I just need your social security and bank account number to finish.",q:'poor',d:-6,reply:"Whoa, wait, over the phone? I don't know about that..."}
+     ]},
+    {id:'eapp',lab:'eApp: info',them:"Okay. So what do you need from me to get it going?",
+     prompt:'Collect the sensitive info without spooking them. Frame WHY before you ask.',
+     opts:[
+       {t:"Just a couple things to submit it. The company verifies your identity and checks your prescription history, so they'll need your Social — nobody comes to your house, it's all done electronically. Whenever you're ready.",q:'good',d:7,reply:"Okay... that makes sense. Let me grab it for you."},
+       {t:"I need your social security number and your bank account number now.",q:'poor',d:-10,reply:"My social AND my bank account? Over the phone? I don't think so."},
+       {t:"There's a little more information the company needs to process everything. Is that alright?",q:'ok',d:1,reply:"I suppose, as long as it's legitimate."}
      ]}
   ];
 
@@ -420,7 +441,7 @@
 
   function maybeObjectionThen(cb){
     // ~45% chance to inject one objection per call, only once, not on the last beats
-    if(!state.firedObj && state.i>=2 && state.i<=4 && rnd()<0.55){
+    if(!state.firedObj && state.i>=2 && state.i<=6 && rnd()<0.55){
       state.firedObj=true;
       var obj=pick(OBJECTIONS); obj.__isObj=true;
       $('m-beat').textContent='Objection';
