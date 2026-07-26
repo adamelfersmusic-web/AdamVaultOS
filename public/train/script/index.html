@@ -69,6 +69,17 @@
   .seg{display:flex;flex:0 0 auto;background:var(--navy);border:1px solid var(--line);border-radius:9px;padding:3px}
   .seg button{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:none;border:none;padding:7px 8px;border-radius:6px;cursor:pointer}
   .seg button.on{background:var(--gold);color:#23190a;font-weight:600}
+  /* Fine loop: waveform + draggable A/B handles over one section's clip. */
+  .wave{margin-bottom:12px}
+  .wave.hidden{display:none}
+  .wave-box{position:relative;height:60px;background:var(--navy);border:1px solid var(--line);border-radius:10px;overflow:hidden;touch-action:none}
+  .wave-box canvas{display:block;width:100%;height:100%}
+  .wave-region{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--gold) 15%,transparent);border-left:2px solid var(--gold);border-right:2px solid var(--gold);pointer-events:none}
+  .wave-h{position:absolute;top:0;bottom:0;width:26px;margin-left:-13px;display:flex;align-items:center;justify-content:center;cursor:ew-resize;touch-action:none;z-index:2}
+  .wave-h::after{content:'';width:4px;height:64%;border-radius:2px;background:var(--gold-bright);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 22%,transparent)}
+  .wave-ph{position:absolute;top:0;bottom:0;width:2px;background:var(--cream);opacity:.85;pointer-events:none;left:0}
+  .wave-hint{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);text-align:center;margin-top:8px}
+  .wave-hint b{color:var(--gold-bright)}
   .sec{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);overflow:hidden}
   .sec-head{display:flex;align-items:center;gap:13px;padding:16px 18px;cursor:pointer}
   .sec-n{flex:0 0 30px;height:30px;border-radius:8px;background:var(--panel-2);border:1px solid var(--line-2);display:grid;place-items:center;font-family:var(--display);font-size:15px;color:var(--gold-bright)}
@@ -165,6 +176,16 @@
     <div class="placeholder-note">Prototype. Sections come from your agency's real call structure. The audio here is a <b>placeholder voice reading the coaching</b>, not the script itself. Your agency's exact wording and pro voices drop in on the private build.</div>
     <div class="sections" id="sections"></div>
     <div class="player" id="player">
+      <div class="wave hidden" id="wavePanel">
+        <div class="wave-box" id="waveBox">
+          <canvas id="waveCanvas"></canvas>
+          <div class="wave-region" id="waveRegion"></div>
+          <div class="wave-ph" id="wavePh"></div>
+          <div class="wave-h" id="waveA"></div>
+          <div class="wave-h" id="waveB"></div>
+        </div>
+        <div class="wave-hint">Drag the <b>gold handles</b> to loop just those lines</div>
+      </div>
       <div class="ptimeline" id="ptimeline"></div>
       <div class="prow">
         <button class="playbtn" id="playBtn" aria-label="Play or pause">▶</button>
@@ -274,6 +295,7 @@
   });
 
   var sel={a:0,b:SECTIONS.length-1}, speed=1, playing=false, cur=null;
+  var wave={active:false,url:null,dur:0,a:0,b:1,audio:null,raf:0,peaks:null,secId:null};
 
   function renderSel(){
     for(var i=0;i<chips.length;i++) chips[i].classList.toggle('insel', i>=sel.a && i<=sel.b);
@@ -287,6 +309,7 @@
   function clearChipPlay(){ for(var i=0;i<chips.length;i++) chips[i].classList.remove('playing'); }
   function stop(){
     try{speechSynthesis.cancel();}catch(e){}
+    waveStop();
     if(cur){ if(cur.audio){try{cur.audio.pause();}catch(e){}} if(cur._t) clearTimeout(cur._t); }
     cur=null; playing=false; clearChipPlay();
     playBtn.textContent='▶'; playBtn.classList.remove('on'); renderReps();
@@ -313,14 +336,20 @@
   }
   function play(){
     stop();
+    if(wave.active){ wavePlay(); return; } // fine loop: A/B over the section clip
     cur={ idx:0, reps:0, audio:null, _t:null };
     playing=true; playBtn.textContent='❚❚'; playBtn.classList.add('on');
     renderReps(); step();
   }
   playBtn.onclick=function(){ playing ? stop() : play(); };
 
-  // Selection by tap (single) or drag (range).
-  function setSel(a,b){ sel.a=Math.min(a,b); sel.b=Math.max(a,b); renderSel(); if(playing) play(); else renderReps(); }
+  // Selection by tap (single) or drag (range). A single section with a real
+  // clip reveals the waveform (fine A/B loop); a range uses the section loop.
+  function setSel(a,b){
+    stop();
+    sel.a=Math.min(a,b); sel.b=Math.max(a,b); renderSel(); renderReps();
+    if(sel.a===sel.b) maybeWave(sel.a); else waveHide();
+  }
   var dragging=false, anchor=0;
   function chipUnder(x,y){ var e=document.elementFromPoint(x,y); while(e && !e.classList.contains('chip')) e=e.parentElement; return e; }
   for(var ci=0; ci<chips.length; ci++){
@@ -337,8 +366,107 @@
     speed=parseFloat(btn.getAttribute('data-s'))||1;
     var bs=speedSel.querySelectorAll('button'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i]===btn);
     if(cur&&cur.audio){ try{cur.audio.playbackRate=speed;}catch(e){} }
+    if(wave.audio){ try{wave.audio.playbackRate=speed;}catch(e){} }
     renderReps();
   });
+
+  // ---- Fine loop: waveform + draggable A/B handles over one section's clip ----
+  var wavePanel=document.getElementById('wavePanel'), waveBox=document.getElementById('waveBox'),
+      waveCanvas=document.getElementById('waveCanvas'), waveRegion=document.getElementById('waveRegion'),
+      waveA=document.getElementById('waveA'), waveB=document.getElementById('waveB'), wavePh=document.getElementById('wavePh');
+  var wctx = waveCanvas && waveCanvas.getContext ? waveCanvas.getContext('2d') : null;
+
+  function computePeaks(ab,n){
+    var ch=ab.getChannelData(0), block=Math.floor(ch.length/n)||1, out=[];
+    for(var i=0;i<n;i++){ var s=i*block, e=Math.min(ch.length,s+block), m=0; for(var j=s;j<e;j++){ var v=ch[j]<0?-ch[j]:ch[j]; if(v>m)m=v; } out.push(m); }
+    return out;
+  }
+  function resizeCanvas(){
+    if(!wctx) return;
+    var r=waveBox.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+    waveCanvas.width=Math.max(1,Math.round(r.width*dpr)); waveCanvas.height=Math.max(1,Math.round(r.height*dpr));
+  }
+  function waveDraw(){
+    if(!wctx) return;
+    var W=waveCanvas.width, H=waveCanvas.height; wctx.clearRect(0,0,W,H);
+    wctx.fillStyle='#3a5a78';
+    if(wave.peaks && wave.peaks.length){
+      var n=wave.peaks.length, bw=W/n;
+      for(var i=0;i<n;i++){ var h=Math.max(2, wave.peaks[i]*H*0.92); wctx.fillRect(i*bw+bw*0.2, (H-h)/2, Math.max(1,bw*0.6), h); }
+    } else {
+      wctx.fillRect(0,H/2-1,W,2);
+    }
+  }
+  function layoutHandles(){
+    var w=waveBox.clientWidth;
+    waveA.style.left=(wave.a*w)+'px'; waveB.style.left=(wave.b*w)+'px';
+    waveRegion.style.left=(wave.a*w)+'px'; waveRegion.style.width=((wave.b-wave.a)*w)+'px';
+  }
+  function waveHide(){ wave.active=false; wavePanel.classList.add('hidden'); }
+  function waveStop(){
+    if(wave.audio){ try{wave.audio.pause();}catch(e){} wave.audio=null; }
+    if(wave.raf){ cancelAnimationFrame(wave.raf); wave.raf=0; }
+    if(wavePh) wavePh.style.left='0px';
+  }
+  // Probe the section clip; show the waveform only if it actually loads.
+  function maybeWave(i){
+    waveStop(); wave.active=false;
+    var sc=SECTIONS[i], url='audio/'+sc.id+'.mp3';
+    var probe=new Audio(); probe.preload='metadata';
+    probe.onloadedmetadata=function(){
+      wave.active=true; wave.url=url; wave.secId=sc.id; wave.a=0; wave.b=1; wave.dur=probe.duration||0; wave.peaks=null;
+      wavePanel.classList.remove('hidden'); resizeCanvas(); waveDraw(); layoutHandles();
+      loadPeaks(url);
+    };
+    probe.onerror=function(){ waveHide(); };
+    probe.src=url;
+  }
+  function loadPeaks(url){
+    var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    fetch(url).then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(function(buf){ return new AC().decodeAudioData(buf.slice(0)); })
+      .then(function(ab){ if(wave.url===url && wave.active){ wave.dur=ab.duration; wave.peaks=computePeaks(ab,300); waveDraw(); } })
+      .catch(function(){});
+  }
+  function wavePlay(){
+    waveStop();
+    var au=new Audio(wave.url); au.playbackRate=speed; wave.audio=au;
+    var d0=wave.dur||0; try{ au.currentTime=wave.a*d0; }catch(e){}
+    au.play().catch(function(){});
+    cur={reps:0}; playing=true; playBtn.textContent='❚❚'; playBtn.classList.add('on'); renderReps();
+    function frame(){
+      if(!wave.audio) return;
+      var d=wave.dur||wave.audio.duration||0;
+      if(d){
+        var at=wave.a*d, bt=wave.b*d;
+        if(wave.audio.currentTime>=bt-0.03 || wave.audio.ended){
+          try{wave.audio.currentTime=at;}catch(e){}
+          if(wave.audio.paused){ wave.audio.play().catch(function(){}); }
+          if(cur){ cur.reps++; renderReps(); }
+        }
+        var w=waveBox.clientWidth; if(wavePh) wavePh.style.left=((wave.audio.currentTime/d)*w)+'px';
+      }
+      wave.raf=requestAnimationFrame(frame);
+    }
+    wave.raf=requestAnimationFrame(frame);
+  }
+  function waveDrag(handleEl, which){
+    handleEl.addEventListener('pointerdown', function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      function mv(e){
+        var r=waveBox.getBoundingClientRect(), f=(e.clientX-r.left)/r.width; if(f<0)f=0; if(f>1)f=1;
+        var gap=0.03;
+        if(which==='a') wave.a=Math.min(f, wave.b-gap); else wave.b=Math.max(f, wave.a+gap);
+        if(wave.a<0)wave.a=0; if(wave.b>1)wave.b=1;
+        layoutHandles();
+        if(wave.audio){ var d=wave.dur||0; if(wave.audio.currentTime<wave.a*d || wave.audio.currentTime>wave.b*d){ try{wave.audio.currentTime=wave.a*d;}catch(e){} } }
+      }
+      function up(){ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); }
+      document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up);
+    });
+  }
+  waveDrag(waveA,'a'); waveDrag(waveB,'b');
+  window.addEventListener('resize', function(){ if(wave.active){ resizeCanvas(); waveDraw(); layoutHandles(); } });
 
   renderSel(); renderReps();
 
