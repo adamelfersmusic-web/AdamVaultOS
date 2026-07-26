@@ -196,11 +196,13 @@
   function rnd(){ seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; }
   function pick(arr){ return arr[Math.floor(rnd()*arr.length)]; }
 
+  // One prospect voice persona (the replies reference a husband and daughter),
+  // so the leads are all women to match the recorded voice.
   var LEADS=[
     {n:'Margaret Ellis',i:'M',num:'+1 (512) 555 0148',meta:'FE inquiry · 68 · TX · called in for info'},
-    {n:'Raymond Cole',i:'R',num:'+1 (704) 555 0193',meta:'FE inquiry · 71 · NC · mailer reply'},
     {n:'Doris Vaughn',i:'D',num:'+1 (813) 555 0126',meta:'FE inquiry · 66 · FL · online request'},
-    {n:'Earl Jennings',i:'E',num:'+1 (601) 555 0177',meta:'FE inquiry · 73 · MS · called in for info'}
+    {n:'Carol Simmons',i:'C',num:'+1 (704) 555 0193',meta:'FE inquiry · 71 · NC · mailer reply'},
+    {n:'Nadine Foster',i:'N',num:'+1 (601) 555 0177',meta:'FE inquiry · 73 · MS · called in for info'}
   ];
 
   // A move: text = what you say, q = good|ok|poor, d = close-prob delta, reply = their response.
@@ -297,7 +299,7 @@
     if(beatLab) $('m-beat').textContent=beatLab;
   }
 
-  function addTurn(who,text,cb){
+  function addTurn(who,text,cb,aid){
     var wrap=el('div','turn '+(who==='them'?'them':'you'));
     var col=el('div'); col.style.maxWidth='84%';
     col.appendChild(el('div','spk',who==='them'?state.lead.n:'You'));
@@ -305,11 +307,25 @@
       var t=el('div','bub','<span class="dots"><i></i><i></i><i></i></span>');
       col.appendChild(t); wrap.appendChild(col); $('convo').appendChild(wrap);
       scroll();
-      setTimeout(function(){ t.textContent=text; say(text); scroll(); if(cb)setTimeout(cb,140); }, 620);
+      setTimeout(function(){ t.textContent=text; speakProspect(aid, text); scroll(); if(cb)setTimeout(cb,140); }, 620);
     } else {
       col.appendChild(el('div','bub',text)); wrap.appendChild(col); $('convo').appendChild(wrap); scroll(); if(cb)cb();
     }
   }
+  // Prospect voice: play the recorded clip at audio/<aid>.mp3, or the browser
+  // voice if the clip is not there yet. All prospect lines are generic FE
+  // dialogue in our own words, so these clips are safe for the public repo.
+  function speakProspect(aid, text){
+    if(!aid){ say(text); return; }
+    try{
+      var au=new Audio('audio/'+aid+'.mp3');
+      au.onerror=function(){ say(text); };
+      var pr=au.play();
+      if(pr&&typeof pr.then==='function'){ pr.catch(function(){ say(text); }); }
+    }catch(e){ say(text); }
+  }
+  // Swap the placeholder name in agent lines for the actual lead's first name.
+  function agentText(t){ var fn=(state&&state.lead)?state.lead.n.split(' ')[0]:'there'; return t.replace(/Margaret/g, fn); }
   function scroll(){ window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); }
 
   function clearOpts(){ $('opts').innerHTML=''; }
@@ -321,7 +337,7 @@
     for(var k=order.length-1;k>0;k--){ var j=Math.floor(rnd()*(k+1)); var tmp=order[k];order[k]=order[j];order[j]=tmp; }
     order.forEach(function(ix){
       var o=node.opts[ix];
-      var b=el('button','opt', o.t.replace(/</g,'&lt;'));
+      var b=el('button','opt', agentText(o.t).replace(/</g,'&lt;'));
       b.onclick=function(){ choose(node,o); };
       $('opts').appendChild(b);
     });
@@ -331,13 +347,15 @@
     clearOpts();
     state.prob+=o.d;
     state.log.push({beat:node.name?('Objection · '+node.name):node.lab, q:o.q, d:o.d});
-    addTurn('you', o.t, function(){
+    var prefix = node.__isObj ? ('p-obj-'+node.id) : ('p-'+node.id);
+    var key = ['a','b','c'][node.opts.indexOf(o)] || 'a';
+    addTurn('you', agentText(o.t), function(){
       setMeter();
       addTurn('them', o.reply, function(){
         // after handling an objection, resume the main line; else advance
         if(node.__isObj){ nextBeat(); }
         else { maybeObjectionThen(nextBeat); }
-      });
+      }, prefix+'-'+key);
     });
   }
 
@@ -347,7 +365,7 @@
       state.firedObj=true;
       var obj=pick(OBJECTIONS); obj.__isObj=true;
       $('m-beat').textContent='Objection';
-      addTurn('them', obj.them, function(){ renderOpts(obj); });
+      addTurn('them', obj.them, function(){ renderOpts(obj); }, 'p-obj-'+obj.id);
       return;
     }
     cb();
@@ -359,7 +377,7 @@
     setMeter(b.lab);
     // first beat's "them" (Hello?) already shown at call start for open; show for others
     if(b.id==='open'){ renderOpts(b); return; }
-    addTurn('them', b.them, function(){ renderOpts(b); });
+    addTurn('them', b.them, function(){ renderOpts(b); }, 'p-'+b.id);
   }
 
   function startCall(){
@@ -368,7 +386,7 @@
     setTimeout(function(){
       show('s-call'); $('convo').innerHTML=''; setMeter('Open');
       var b=BEATS[0]; state.i=1;
-      addTurn('them', b.them, function(){ renderOpts(b); });
+      addTurn('them', b.them, function(){ renderOpts(b); }, 'p-'+b.id);
     }, 1900);
   }
 
