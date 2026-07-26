@@ -95,24 +95,30 @@
     {id:'open',name:'Open & Verify',role:'Earn the right to keep them on the phone. Surface the beneficiary, attach the burden.',
       loop:'Open and verify. Self identify and anchor to the information they requested on state approved final expense. Set the not wasting your time frame, then confirm the address on file. Surface who the beneficiary is, attach the burden frame to that name, and check whether the decision maker needs to be part of this today.',
       beats:[['Self ID, anchor to the info THEY requested'],['Permission micro-frame: not wasting your time','star'],['Confirm the address on file'],['Surface the beneficiary: who would it be?'],['Burden frame: not left with the financial burden','star'],['Decision-maker: do they need to be part of this today?']]},
+    {id:'scope',name:'Scope & Credibility',role:'Set the room and prove you are real.',
+      loop:'Scope and credibility. Find out if the coverage is just for them or a spouse or partner too. Get them onto pen and paper, give your name and state license number so they can verify you, and send your digital business card if you have one.',
+      beats:[['Just them, or include a spouse or partner?'],['Get them onto pen and paper','star'],['Give your name and state license number (they can verify)','comp'],['Send your digital business card']]},
     {id:'discovery',name:'Discovery',role:'Find the emotional why. It makes the close land.',
-      loop:'Discovery. Ask what made them look into this, check any prior or existing coverage, and go deep on what matters most to them. Then present the three reasons, funeral, debts, and tax free legacy, and ask which they are covering today.',
-      beats:[['What made you look into this?'],['Any prior or existing coverage?'],['What is most important to you? Go deep.','star'],['The three reasons: funeral, debts, tax free legacy. Which today?','star']]},
-    {id:'frame',name:'Frame / How It Works',role:'Set the process so nothing surprises them.',
-      loop:'Frame the process. You are a licensed broker in their state. A few medical questions, then you match them to carriers likely to approve, and you apply today while the carrier decides. Micro commit: sound good?',
-      beats:[['Licensed broker in your state'],['A few medical Qs, match to carriers likely to approve, apply today'],['Micro commit: sound good?']]},
+      loop:'Discovery. Ask what made them think about this now and whether they have or ever had coverage. Draw out what matters most to them, the emotional reason. Then frame the three reasons people get final expense, funeral costs, leftover debts, or a tax free legacy, and ask which they are covering today.',
+      beats:[['What made you think about this now?'],['Any coverage now, or in the past?'],['What matters most to you about getting this in place?','star'],['The three reasons: funeral, debts, tax-free legacy','star'],['Which are you covering TODAY?','star']]},
+    {id:'frame',name:'How It Works',role:'Set the process so nothing surprises them.',
+      loop:'How it works. Position yourself as a licensed broker in their state. Preview the process: a few medical questions, then you match them to the carriers most likely to approve them today, and you apply together while the carrier makes the final call. Then micro commit, sound good?',
+      beats:[['Licensed broker in your state'],['A few medical Qs, then match to carriers likely to approve'],['Apply today; the carrier makes the final decision'],['Micro commit: sound good?','star']]},
     {id:'medical',name:'Preliminary Medical',role:'The knockout. It gates which price you can even present.',flag:'call-deciding',
-      loop:'Preliminary medical. This is the knockout that decides which carrier and price you can present. Get date of birth to age, height and weight, smoker status, current meds and hard knockout conditions, then work status, income source and amount, and affordability. Bridge out: I have what I need, finding your best rate.',
-      beats:[['DOB to age, height and weight, smoker status'],['Meds plus hard knockout conditions','star'],['Work or retired, income source and amount, affordability','star'],['Bridge: I have what I need, finding the rate that approves you today']]},
+      loop:'Preliminary medical. This is the knockout that decides which carrier and price you can present. Get date of birth to age, height and weight, and smoker status. Cover current meds and the hard knockout conditions, recent surgeries, and secondary conditions. Then work status and income source, rent or mortgage, and any past trouble getting approved. Bridge out: I have what I need, finding your best rate.',
+      beats:[['DOB to age, height and weight, smoker status','pii'],['Current medications'],['Hard knockouts: CHF, cancer, cognitive, HIV, oxygen, transplant','star'],['Recent surgeries; secondary conditions (diabetes, COPD, psych, cardiac)'],['Substance treatment, felonies, DUIs'],['Work or retired; income source and amount; rent or mortgage','pii'],['Ever been declined or struggled to afford before?','star'],['Bridge: I have what I need, finding the rate that approves you today']]},
     {id:'present',name:'Present Options',role:'Bronze, Silver, Gold. Write these down.',flag:'call-deciding',
-      loop:'Present three tiers, bronze, silver, and gold, with coverage and monthly, and have them write these down. Deliver the benefit claims cleanly, and remember these route to compliance, so execute them, never oversell them.',
-      beats:[['Three tiers: coverage plus monthly, write these down','star'],['The benefit claims (route to compliance, never oversell)','comp']]},
+      loop:'Present three tiers, bronze, silver, and gold, with coverage and monthly, and have them write these down. Deliver the benefit claims cleanly, never cancels, price never rises, tax free payout, builds cash value, and ongoing agent support, and remember these route to compliance, so execute them, never oversell them.',
+      beats:[['Three tiers: Bronze, Silver, Gold; coverage + monthly','star'],['Have them write the numbers down'],['The 5 claims: never cancels, price locked, tax-free, cash value, agent support','comp']]},
     {id:'close',name:'The Close',role:'Assumptive. Choose the amount.',flag:'call-deciding',
-      loop:'The close. Go assumptive. Choose the amount with an either or: one, two, or three? Then begin the application and have them spell their name.',
-      beats:[['Assumptive apply'],['Choose the amount: 1, 2, or 3?','star'],['Begin the app, spell the name']]},
-    {id:'conclude',name:'Conclude & Tie-Down',role:'Lock persistency. Prevent replacement.',
-      loop:'Conclude and tie down. Recap that they are protected and locked in affordable. Get a soft agree, then the two promises: call me first if money is ever tight, and before you ever switch. Cover logistics, the security code, and capture emergency contacts.',
-      beats:[['Recap: protected and affordable, locked'],['Two promises: call me first if money is tight / before you switch','star'],['Logistics, security code, emergency contacts']]},
+      loop:'The close. Go assumptive, apply to see if we can get them approved. Let them choose the amount with an either or: option one, two, or three? Then begin the application and have them spell their first name.',
+      beats:[['Assumptive: let us apply and see if we can get you approved','star'],['Choose the amount: Option 1, 2, or 3?','star'],['Begin the app; spell the first name']]},
+    {id:'conclude',name:'Conclude & Tie-Down',role:'Lock persistency. Prevent replacement. Wrap the logistics.',
+      loop:'Conclude and tie down. Recap that you found a plan that protects the family, affordable and locked in, and get a soft agree. Get the two promises: call me first if money gets tight, and talk to me first before switching. Then the logistics: processing timeline, delivery reminder, save your contact, the security code, and capture three emergency contacts.',
+      beats:[['Recap: protects the family, affordable, locked in'],['Get the soft agree'],['Two promises: call me first if money is tight / before you switch','star'],['Processing timeline and delivery reminder'],['Have them save your contact in their phone'],['Give the security code (anti-scam / anti-AI-impersonation)'],['Capture 3 emergency contacts: names, numbers, relationship','comp']]},
+    {id:'eapp',name:'eApp: Sensitive Collection',role:'Post-close. Where SSN and banking live. Handle with care.',flag:'sensitive',
+      loop:'The e-app, after the close. This is the sensitive collection. Confirm birth state and a good phone number, then ask for the social security number, with the reason ready if they push back. Move to banking: checking or savings, who they bank with, then routing and account, with the reason ready. Reassure that nothing drafts until they are approved.',
+      beats:[['Birth state and best phone number','pii'],['Ask for the Social Security number','pii'],['SSN rebuttal: simplified issue, MIB / prescription check','comp'],['Checking or savings, and who they bank with','pii'],['Routing and account number','pii'],['Banking rebuttal: carrier needs it to activate; nothing drafts until approved','comp']]},
     {id:'objections',name:'Objection Lanes',role:'Where FE calls are won and lost. Run the lane, never fold.',
       loop:'Objection lanes. These fire on a trigger, usually early. The job is always the same: run the lane, do not fold. Do not remember filling this out, I already have insurance, not interested, thought it was free, is this a scam, too busy. Each one has a path.',
       beats:[['Do not remember filling this out'],['I already have insurance'],['Not interested anymore'],['Thought it was free'],['Is this a scam?'],['Too busy']],
@@ -167,7 +173,7 @@
     sc.beats.forEach(function(b){
       var li=el('li','beat');
       var pb=el('button','play','▶'); li.appendChild(pb);
-      var bt=el('div','bt', b[0] + (b[1]==='star'?' <span class="bf star">load-bearing</span>':b[1]==='comp'?' <span class="bf">compliance</span>':'')); li.appendChild(bt);
+      var bt=el('div','bt', b[0] + (b[1]==='star'?' <span class="bf star">load-bearing</span>':b[1]==='comp'?' <span class="bf">compliance</span>':b[1]==='pii'?' <span class="bf">PII</span>':'')); li.appendChild(bt);
       pb.onclick=function(){ stopAll(); speakOnce(b[0]); };
       ul.appendChild(li);
     });
