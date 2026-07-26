@@ -2,7 +2,7 @@
 // Caches the launcher shell + the Script Trainer so the hub opens with no internet.
 // The Objection Drill has its own service worker under /drill/.
 
-const CACHE = 'escensus-train-v2'
+const CACHE = 'escensus-train-v3'
 const ASSETS = [
   './',
   './index.html',
@@ -27,23 +27,41 @@ self.addEventListener('activate', (e) => {
   )
 })
 
+function cachePut(req, resp, origin) {
+  if (resp && resp.status === 200 && origin === location.origin) {
+    const copy = resp.clone()
+    caches.open(CACHE).then((c) => c.put(req, copy))
+  }
+  return resp
+}
+
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url)
   if (e.request.method !== 'GET') return
 
-  // Cache-first: instant offline for the shell; network fills gaps.
+  const isPage =
+    e.request.mode === 'navigate' ||
+    url.pathname.endsWith('/') ||
+    url.pathname.endsWith('.html')
+
+  if (isPage) {
+    // Network-first for pages: always show the freshest build when online,
+    // fall back to cache only when offline. Stops stale HTML from sticking.
+    e.respondWith(
+      fetch(e.request)
+        .then((resp) => cachePut(e.request, resp, url.origin))
+        .catch(() => caches.match(e.request).then((hit) => hit || caches.match('./index.html'))),
+    )
+    return
+  }
+
+  // Cache-first for static assets (audio, icons, manifest): fast + offline.
   e.respondWith(
     caches.match(e.request).then((hit) => {
       if (hit) return hit
       return fetch(e.request)
-        .then((resp) => {
-          if (resp && resp.status === 200 && url.origin === location.origin) {
-            const copy = resp.clone()
-            caches.open(CACHE).then((c) => c.put(e.request, copy))
-          }
-          return resp
-        })
-        .catch(() => caches.match('./index.html'))
+        .then((resp) => cachePut(e.request, resp, url.origin))
+        .catch(() => undefined)
     }),
   )
 })
