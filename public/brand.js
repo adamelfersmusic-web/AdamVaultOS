@@ -10,9 +10,22 @@
 // is a thin, swappable layer over a reusable core.
 //
 // Select a brand by (in order): ?brand=<id> in the URL (sticks via
-// localStorage, handy for demos), then the hostname/path (e.g. a /peak/ deploy
-// or a peak.* subdomain), then Escensus.
+// sessionStorage — tab-scoped, handy for demos, never permanent), then the
+// hostname/path (e.g. a /peak/ deploy or a peak.* subdomain), then Escensus.
 (function () {
+  // Header marks. Escensus keeps its CSS "bars" mark (no override). A brand can
+  // supply `mark` = inline SVG (stroke/fill = currentColor, colored gold at the
+  // container) that replaces the bars. Peak gets a layered art-deco mountain +
+  // apex star, echoing their wordmark without needing their raster logo file.
+  var PEAK_MARK =
+    '<svg viewBox="0 0 28 24" width="26" height="22" fill="none" stroke="currentColor" ' +
+    'stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true" ' +
+    'style="color:var(--gold-bright);overflow:visible">' +
+    '<path d="M2.5 20.5 L14 4.5 L25.5 20.5"/>' +
+    '<path d="M8 20.5 L14 11.5 L20 20.5"/>' +
+    '<path d="M14 1.2 l.9 1.85 2.04.3 -1.47 1.44.35 2.03L14 5.9l-1.82.95.35-2.03L11.06 3.35l2.04-.3z" ' +
+    'fill="currentColor" stroke="none"/></svg>';
+
   var BRANDS = {
     escensus: {
       name: 'Escensus',            // header wordmark
@@ -32,6 +45,7 @@
       accentBright: '#dcc084',
       themeColor: '#000000',
       bg: '#0a0a0a', bgDeep: '#000000', panel: '#161616', panel2: '#1f1f1f',
+      mark: PEAK_MARK,             // art-deco mountain mark in place of the bars
       poweredBy: true              // licensed skin — provenance stays visible
     },
     // A second generic instance, to demonstrate the engine renders N brands.
@@ -92,6 +106,13 @@
       if (document.title) document.title = document.title.replace(/Escensus/g, B.name);
       var nm = document.querySelector('.brand .name');
       if (nm) nm.textContent = B.name;
+      // Swap the header mark for a brand's own (Peak = mountain). Escensus has no
+      // `mark`, so its CSS bars are left untouched. Reuse the .bars box so the
+      // sizing/alignment (22px, flex-end) carries over with no page-level CSS.
+      if (B.mark) {
+        var bars = document.querySelector('.brand .bars');
+        if (bars) bars.innerHTML = B.mark;
+      }
       var tc = document.querySelector('meta[name="theme-color"]');
       if (tc) tc.setAttribute('content', B.themeColor);
       // Re-label visible "Escensus" brand text (eyebrows, body copy) to the active
