@@ -19,20 +19,34 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   body{margin:0;background:var(--navy);color:var(--body);font-family:var(--body-f);line-height:1.55;-webkit-font-smoothing:antialiased}
   .app{max-width:520px;margin:0 auto;min-height:100vh}
-  header{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line);background:var(--navy-deep);position:sticky;top:0;z-index:5}
+  header{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line);background:var(--navy-deep);position:sticky;top:0;z-index:6}
   .brand{display:flex;align-items:center;gap:11px}
   .bars{display:flex;align-items:flex-end;gap:3px;height:22px}
   .bars i{width:5px;border-radius:1.5px;background:var(--gold)}
   .bars i:nth-child(1){height:40%}.bars i:nth-child(2){height:66%}.bars i:nth-child(3){height:100%}
   .brand .name{font-family:var(--display);font-size:20px;color:var(--cream)}
   .back{font-family:var(--mono);font-size:12px;color:var(--gold);text-decoration:none;border:1px solid var(--gold);border-radius:var(--r-sm);padding:7px 13px;background:color-mix(in srgb,var(--gold) 10%,transparent)}
-  .screen{padding:26px 22px 70px;animation:fade .35s ease}
+  .hidden{display:none!important}
+
+  /* Tabs */
+  .tabs{padding:16px 22px 0}
+  .tabwrap{display:flex;width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:13px;padding:4px;position:relative}
+  .tab{flex:1;text-align:center;font-family:var(--display);font-size:15.5px;padding:10px;border-radius:9px;color:var(--ink-2);cursor:pointer;z-index:1;transition:color .2s;position:relative}
+  .tab.on{color:var(--cream)}
+  .tab small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-top:2px}
+  .tab.on small{color:var(--gold)}
+  .tab-ind{position:absolute;top:4px;bottom:4px;width:calc(50% - 4px);border-radius:9px;background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line-strong);transition:transform .25s cubic-bezier(.4,0,.2,1);left:4px}
+  .tabwrap.t1 .tab-ind{transform:translateX(100%)}
+
+  .screen{padding:22px 22px 70px;animation:fade .35s ease}
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:0 0 12px}
-  h1{font-family:var(--display);font-weight:600;font-size:31px;line-height:1.1;color:var(--cream);margin:0 0 12px}
-  .lede{font-size:15.5px;margin:0 0 8px;color:var(--body)}
+  h1{font-family:var(--display);font-weight:600;font-size:29px;line-height:1.1;color:var(--cream);margin:0 0 12px}
+  .lede{font-size:15px;margin:0 0 8px;color:var(--body)}
   .muted{color:var(--ink-2)}
   .placeholder-note{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);border:1px dashed var(--line-2);border-radius:var(--r-sm);padding:10px 12px;margin:16px 0 0}
+
+  /* ---- Loop view ---- */
   .sections{margin-top:22px;display:flex;flex-direction:column;gap:12px}
   .sec{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);overflow:hidden}
   .sec-head{display:flex;align-items:center;gap:13px;padding:16px 18px;cursor:pointer}
@@ -64,6 +78,42 @@
   .beat .bf{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--red);border:1px solid color-mix(in srgb,var(--red) 45%,transparent);border-radius:100px;padding:2px 6px;margin-left:6px}
   .beat .bf.star{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
   .seclink{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-family:var(--mono);font-size:12.5px;color:var(--gold-bright);text-decoration:none;border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:9px 14px}
+
+  /* ---- Ladder view ---- */
+  .cuedial{margin:2px 0 0;border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:15px;position:sticky;top:63px;z-index:5}
+  .cue-track{display:flex;position:relative;background:var(--navy-deep);border:1px solid var(--line);border-radius:10px;padding:4px}
+  .cue-seg{flex:1;text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;padding:9px 2px;color:var(--ink-2);cursor:pointer;z-index:1;position:relative;transition:color .2s}
+  .cue-seg.on{color:#23190a;font-weight:700}
+  .cue-ind{position:absolute;top:4px;bottom:4px;width:calc(20% - 3.2px);border-radius:7px;background:var(--gold);transition:transform .25s cubic-bezier(.4,0,.2,1);left:4px}
+  .cue-help{font-size:13px;color:var(--ink-2);margin-top:12px;line-height:1.45;min-height:38px}
+  .cue-help b{color:var(--cream)}
+  .ltools{display:flex;align-items:center;justify-content:space-between;margin:16px 0 6px}
+  .ltip{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+  .revealbtn{font-family:var(--mono);font-size:11.5px;color:var(--gold-bright);background:none;border:1px solid var(--line-strong);border-radius:100px;padding:7px 13px;cursor:pointer}
+  .revealbtn.on{background:var(--gold);color:#23190a;border-color:var(--gold)}
+  .lsecs{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+  .lsec{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+  .lsec-head{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;background:color-mix(in srgb,var(--c) 20%,var(--panel));border-left:4px solid var(--c)}
+  .lsec-dot{width:9px;height:9px;border-radius:50%;background:var(--c);flex:0 0 auto;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent)}
+  .lsec-nm{font-family:var(--display);font-size:17.5px;color:var(--cream)}
+  .lsec-ct{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-left:auto}
+  .lsec-caret{color:var(--ink-3);font-size:16px;transition:transform .2s}
+  .lsec.open .lsec-caret{transform:rotate(90deg)}
+  .lsec-body{display:none;padding:2px 15px 10px}
+  .lsec.open .lsec-body{display:block}
+  .lrow{padding:12px 2px;border-top:1px solid var(--line);cursor:pointer;border-radius:6px;transition:background .2s}
+  .lrow:first-child{border-top:none}
+  .lrow .bl{font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;color:var(--ink-2);margin-bottom:6px;display:flex;align-items:center;gap:7px}
+  .lrow .bl::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--ink-3);flex:0 0 auto}
+  .lrow .bt{font-size:15.5px;line-height:1.55;color:var(--cream)}
+  .lrow .bt.cue{color:var(--body)}
+  .lrow .bt.cold{color:var(--ink-4);letter-spacing:.32em;font-size:14px}
+  .lrow .bt em{font-style:normal;color:var(--gold-bright)}
+  .lrow .bt .blank{color:var(--ink-4);letter-spacing:.04em}
+  .lrow.revealed{background:color-mix(in srgb,var(--gold) 7%,transparent)}
+  @keyframes revflash{from{background:color-mix(in srgb,var(--gold) 20%,transparent)}to{background:color-mix(in srgb,var(--gold) 7%,transparent)}}
+  .lrow.flash{animation:revflash .55s ease}
+
   .foot{padding:22px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3);line-height:1.6}
   .foot b{color:var(--ink-2)}
 </style>
@@ -74,15 +124,43 @@
     <div class="brand"><span class="bars"><i></i><i></i><i></i></span><span class="name">Escensus</span></div>
     <a class="back" href="../">‹ Training</a>
   </header>
-  <div class="screen">
+
+  <div class="tabs">
+    <div class="tabwrap" id="tabwrap">
+      <span class="tab-ind"></span>
+      <div class="tab on" id="tab-loop">Loop<small>audio reps</small></div>
+      <div class="tab" id="tab-ladder">Ladder<small>memorize</small></div>
+    </div>
+  </div>
+
+  <!-- LOOP VIEW -->
+  <div class="screen" id="view-loop">
     <p class="eyebrow">Escensus · Practice · Script Trainer</p>
     <h1>Learn the call, one section at a time.</h1>
     <p class="lede">The call is the piece of music. Each section is a movement. Tap a section, put it on <b>loop</b>, and rep it in the car until it's automatic. Then thread them together.</p>
     <div class="placeholder-note">Prototype. Sections come from your agency's real call structure. The audio here is a <b>placeholder voice reading the coaching</b>, not the script itself. Your agency's exact wording and pro voices drop in on the private build.</div>
     <div class="sections" id="sections"></div>
   </div>
-  <div class="foot"><b>How it works.</b> Looping is how musicians learn a piece: get each section fluent on its own, then stitch them together, then isolate the hard transitions. Same for a call. Audio first, so you can learn it anywhere, hands free.</div>
+
+  <!-- LADDER VIEW -->
+  <div class="screen hidden" id="view-ladder">
+    <p class="eyebrow">Escensus · Practice · Memorization Ladder</p>
+    <h1>Fade the words until you own the call.</h1>
+    <p class="lede">Reading a script is not practice. <b>Producing</b> it from a cue is. Set how much help you get, say the line out loud from memory, then tap it to check yourself. Climb down the ladder section by section as each one locks in.</p>
+    <div class="cuedial">
+      <div class="cue-track" id="cueTrack"><span class="cue-ind" id="cueInd"></span></div>
+      <div class="cue-help" id="cueHelp"></div>
+    </div>
+    <div class="ltools">
+      <span class="ltip">Tap any line to reveal it</span>
+      <button class="revealbtn" id="revealAll">Reveal all</button>
+    </div>
+    <div class="lsecs" id="lsections"></div>
+  </div>
+
+  <div class="foot"><b>Two ways to learn it.</b> Loop reps the section by ear, hands free. The Ladder fades the words a rung at a time so you produce the call from memory, the way an actor learns a monologue. Same call, two exploratory builds.</div>
 </div>
+
 <script>
 (function(){
   function el(t,c,h){var e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;}
@@ -90,7 +168,8 @@
   function loadV(){try{voices=(speechSynthesis.getVoices()||[]).filter(function(v){return /^en/i.test(v.lang);});}catch(e){}}
   if(TTS){loadV();speechSynthesis.onvoiceschanged=loadV;}
 
-  // Sections = the real Peak beat/move structure (functional map, not verbatim).
+  /* ============================ LOOP VIEW ============================ */
+  // Sections = the real call structure (functional map, not verbatim).
   var SECTIONS=[
     {id:'open',name:'Open & Verify',role:'Earn the right to keep them on the phone. Surface the beneficiary, attach the burden.',
       loop:'Open and verify. Self identify and anchor to the information they requested on state approved final expense. Set the not wasting your time frame, then confirm the address on file. Surface who the beneficiary is, attach the burden frame to that name, and check whether the decision maker needs to be part of this today.',
@@ -184,8 +263,248 @@
     lbtn.onclick=function(e){ e.stopPropagation(); loopSection(sec, sc.id, sc.loop); };
     host.appendChild(sec);
   });
-  // open the first section by default
   if(host.firstChild) host.firstChild.classList.add('open');
+
+  /* ============================ LADDER VIEW ============================ */
+  var LEVELS = [
+    { key:'full',    name:'Full',    help:"<b>The answer key.</b> Every word, exactly as written. Read it, hear it, get the shape in your ear." },
+    { key:'letters', name:'Letters', help:"<b>First letters only.</b> The actor's trick: enough to unlock the line, not enough to read it." },
+    { key:'anchors', name:'Anchors', help:"<b>Load-bearing phrases only.</b> The anchors stay, the connective language is yours to generate." },
+    { key:'beats',   name:'Beats',   help:"<b>Beat Mode.</b> The job of each line, and how long it runs. Every word is yours." },
+    { key:'cold',    name:'Cold',    help:"<b>Nothing.</b> No beat, no words, just how many lines. Run the section from memory." }
+  ];
+
+  function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  // Split "words *that are keyed* like this" into {text, key} segments.
+  function segs(s){
+    var out=[], re=/\*([^*]+)\*/g, last=0, m;
+    while((m=re.exec(s))){
+      if(m.index>last) out.push({ text:s.slice(last,m.index), key:false });
+      out.push({ text:m[1], key:true });
+      last = re.lastIndex;
+    }
+    if(last<s.length) out.push({ text:s.slice(last), key:false });
+    return out;
+  }
+  function plain(s){ return s.replace(/\*/g,''); }
+  // A [Bracketed Placeholder] is a variable, not something to memorize, so it
+  // stays legible at every rung. Everything else is a word we can fade.
+  function tokens(t){ return t.match(/\[[^\]]*\][^\s]*|\S+/g) || []; }
+  function parts(w){
+    var lead=(w.match(/^[^A-Za-z0-9]*/)||[''])[0];
+    var trail=(w.match(/[^A-Za-z0-9]*$/)||[''])[0];
+    var core=w.slice(lead.length, w.length-trail.length);
+    if(!core) return { lead:'', core:w, trail:'' };
+    return { lead:lead, core:core, trail:trail };
+  }
+  function isVar(w){ return w.charAt(0)==='['; }
+  // A token with no letters or digits is pure punctuation. It carries the
+  // rhythm of the line, not its content, so it survives every rung intact.
+  function isPunct(w){ return !/[A-Za-z0-9]/.test(w); }
+  // Segment joins leave a space in front of trailing punctuation ("time ,").
+  function tidy(s){ return s.replace(/\s+([,.;:!?])/g, '$1'); }
+
+  function renderFull(s){
+    return segs(s).map(function(g){
+      var t=esc(g.text);
+      return g.key ? '<em>'+t+'</em>' : t;
+    }).join('');
+  }
+  function renderLetters(s){
+    return tidy(segs(s).map(function(g){
+      var out = tokens(g.text).map(function(w){
+        if(isVar(w) || isPunct(w)) return esc(w);
+        var p=parts(w);
+        return esc(p.lead + p.core.charAt(0) + p.trail);
+      }).join(' ');
+      return g.key ? '<em>'+out+'</em>' : out;
+    }).join(' '));
+  }
+  function blankWord(w){
+    if(isVar(w) || isPunct(w)) return esc(w);
+    var p=parts(w);
+    var n=Math.max(2, Math.min(p.core.length, 7));
+    return esc(p.lead) + '<span class="blank">' + new Array(n+1).join('_') + '</span>' + esc(p.trail);
+  }
+  function renderAnchors(s){
+    return tidy(segs(s).map(function(g){
+      if(g.key) return '<em>'+esc(g.text.trim())+'</em>';
+      return tokens(g.text).map(blankWord).join(' ');
+    }).join(' '));
+  }
+  // Beat Mode: the beat label already tells you the job, so the body's only
+  // remaining job is shape. Blanks for every word, anchors included.
+  function renderBlanks(s){
+    return tidy(tokens(plain(s)).map(blankWord).join(' '));
+  }
+
+  // The data: 9 sections, 60 lines. Every line is Escensus's own phrasing
+  // (none of the agency's sentences), so this is safe for the public repo.
+  var LSECTIONS = [
+    { id:'intro', name:'Intro', color:'#2d6a5f', beats:[
+      { beat:'Self-ID and reason for the call', script:"Hi [Name], [Your Name] here. I'm following up on the *request you sent in* about *state-approved final expense* coverage." },
+      { beat:'Frame it so it is not a pitch', script:"So I don't *take up your whole afternoon*, let me check a couple of details first." },
+      { beat:'Confirm the address on file', script:"I've got you over at [ADDRESS]. Is that *still current*?" },
+      { beat:'Surface the beneficiary', script:"If anything ever happened to you, who would this *money go to*?" },
+      { beat:'The burden frame', script:"And the whole point is that [BENEFICIARY] never has to *cover that out of their own pocket*. That's the idea, right?" },
+      { beat:'Decision-maker check', script:"Is [BENEFICIARY] someone who'd want to be *on the call with us today*?" },
+      { beat:'Scope: just them, or spouse too', script:"Are we looking at this *for you alone*, or should I price out your *husband, wife, or partner* too?" },
+      { beat:'Pen and paper, then credentials', script:"Before we go any further, grab something to *write with*. My name is [Your Name], and my *state license number* is [Your License Number]." },
+      { beat:'Legitimacy: they can verify you', script:"You can *look me up* on your state's insurance department site any time you want." }
+    ]},
+    { id:'why', name:"Why We're Here", color:'#7d3b4a', beats:[
+      { beat:'Open the motivation', script:"So tell me, [Name], *what got you thinking about* this in the first place?" },
+      { beat:'Existing coverage check', script:"Do you have *anything in place right now*, or have you carried a policy before?" },
+      { beat:'Normalize, then go for values depth', script:"Most people reach out after they've *buried somebody*, or had a *scare of their own*. What would it *mean to you* to know this part was handled?" },
+      { beat:'The three reasons', script:"Nearly everybody looking at this is solving one of three things. *Paying for the service itself*. *Clearing whatever bills get left behind*. Or *leaving something behind, tax free*, for the people you love." },
+      { beat:'Make them pick: this sizes the intent', script:"Out of those three, which one are we *taking care of right now*?" }
+    ]},
+    { id:'how', name:'How It Works', color:'#3d5f80', beats:[
+      { beat:'Broker frame', script:"Let me tell you how this goes. I'm not tied to one company. I'm a *broker, licensed here in [State]*." },
+      { beat:'Process preview', script:"I'll run some *quick health questions*, get a feel for your situation, then shop you against the carriers *most likely to say yes*." },
+      { beat:'Apply today, carrier decides', script:"Once we find the one that fits, we *get the application in today*, and the carrier gives the *final yes or no*." },
+      { beat:'Micro-commit', script:"*Make sense so far?*" }
+    ]},
+    { id:'fi', name:'FI / Qualify', color:'#3f6b45', beats:[
+      { beat:'Age from DOB', script:"I show your date of birth as [DOB]. Is that right, and what does that put you at *for age*?" },
+      { beat:'Height and weight', script:"About *how tall are you, and what do you weigh*?" },
+      { beat:'Smoker status', script:"Do you *use any tobacco or nicotine*?" },
+      { beat:'Current medications', script:"What *prescriptions* are you on at the moment?" },
+      { beat:'Hard knockouts', script:"Now the big ones. Have you ever been treated for *congestive heart failure*, *any kind of cancer*, *memory loss or dementia*, *HIV*, do you use *oxygen*, or have you had an *organ transplant*?" },
+      { beat:'Recent surgeries', script:"Any *operations in the last couple of years*?" },
+      { beat:'Secondary conditions', script:"How about *diabetes*, *COPD*, *bipolar or schizophrenia*, or any *heart attack or stroke*?" },
+      { beat:'Substance, felony, DUI', script:"And have you ever been through *treatment for drugs or alcohol*, or had a *felony or a DUI*?" },
+      { beat:'Income source and amount', script:"Are you *still working, or retired*? And does your check land in a *bank account, or on a Direct Express card*? Roughly *how much is that*?" },
+      { beat:'Affordability anchor', script:"What are you *paying for housing* every month?" },
+      { beat:'Prior-decline history', script:"Has a company ever *turned you down*, or quoted you something you *just couldn't afford*?" },
+      { beat:'Bridge, with urgency', script:"Great, [Name], that's everything I need. Give me a minute to find the carrier with the *strongest rate* for you, and one that can *get you covered today*." }
+    ]},
+    { id:'numbers', name:'Showing #s', color:'#5b4a7d', beats:[
+      { beat:'Anchor back to what they told you', script:"Alright [Name], going off everything you just told me, I've got *three that fit you*." },
+      { beat:'Make them write it down', script:"Grab that pen, because you'll want these *written down*." },
+      { beat:'The three tiers', script:"First one is our *Bronze*, [Coverage Amount] at [Monthly Price] a month. Second is *Silver*, [Coverage Amount] at [Monthly Price]. Third is *Gold*, [Coverage Amount] at [Monthly Price]." },
+      { beat:'The five claims', script:"Here's why people go with these. The benefit *can't be cancelled on you*. Your *rate is locked for life*. It pays out *free of income tax*. It *builds a little cash value* along the way. And you get *me, for as long as you hold it*." }
+    ]},
+    { id:'application', name:'Application', color:'#8a5a2b', beats:[
+      { beat:'Assumptive apply', script:"Let's *get the application in* and see what they'll approve you for." },
+      { beat:'Choose the amount', script:"Which of those *sits best with you* to leave behind. The *first, the second, or the third*?" },
+      { beat:'Begin the app', script:"Perfect, here we go. *Spell your first name* for me?" }
+    ]},
+    { id:'social', name:'Social Ask', color:'#7a3f5c', beats:[
+      { beat:'Easy warm-ups first', script:"What *state were you born in*? And what's the *best number* for the carrier to keep on file?" },
+      { beat:'The ask, stated flat', script:"Alright, and go ahead and *read me your Social*." },
+      { beat:'Light rebuttal', script:"There's a *whole lot of people with your name* out there, right?" },
+      { beat:'The real rebuttal: MIB', script:"These are *simplified issue* policies. Nobody is coming to your house to *take blood or a urine sample*. All the carrier does is pull your *MIB*, which is really just a *record of your prescriptions*, and they need the Social to be sure that record is *actually yours*. Go ahead whenever you're ready." }
+    ]},
+    { id:'banking', name:'Banking Ask', color:'#2f6470', beats:[
+      { beat:'Account type', script:"Now, is this coming out of a *checking or a savings*?" },
+      { beat:'Who they bank with', script:"And *who do you bank with*?" },
+      { beat:'Set up the numbers', script:"Good. I'll need the *routing and the account number*. Tell me when you've got it in front of you, and we'll *start with the routing*." },
+      { beat:'Rebuttal: why do you need it', script:"Well, *how else would we pay for it*? You told me [Monthly Price] a month *worked for you*, right?" },
+      { beat:'Rebuttal: the carrier requires it', script:"The carrier has to have either a *voided check*, or the *routing and account number*, before the coverage switches on. *Which is easier for you*?" },
+      { beat:'Rebuttal: not paying today', script:"I hear you, [Name]. And *nothing comes out today*. They don't draft that *first payment until you're approved*, and that's the same day your *coverage actually starts*." }
+    ]},
+    { id:'tiedown', name:'Tie-Down', color:'#6b5a2b', beats:[
+      { beat:'Recap the two wins', script:"Okay [Name], quick recap. Your family is *taken care of*, and the price is *locked in and something you can live with*." },
+      { beat:'Soft agree', script:"*Sound fair?*" },
+      { beat:'The two promises', script:"Now I want *two things from you*. If money ever gets tight, *call me before you cancel* and we'll adjust it. And if somebody else pitches you a policy, *let me look at it first*. *Deal?*" },
+      { beat:'Processing timeline', script:"The carrier takes roughly *two to five business days* to process this, and that's when your *first payment comes out*. Then figure *another week to ten days* for the paperwork to reach your mailbox." },
+      { beat:'Delivery reminder', script:"When that envelope shows up, *actually read it*. Anything in there you don't follow, *call me*. It'll all be *spelled out in writing*." },
+      { beat:'Save my contact', script:"Pull out your phone and *put my number in*. Save me as [Agent Name], and the number is [Agent Phone]. *Got it in there*?" },
+      { beat:'Why it matters: you are their agent', script:"That matters, because if you ever need to *change your coverage*, or your family has to *file a claim*, you're calling *me*, not an 800 number. I'll *walk them through it*." },
+      { beat:'The security code', script:"Still got that paper handy? Write this down. Your *security code* is *T as in Tom, 1234*. Keep it *with the policy* once it arrives." },
+      { beat:'Why the code matters', script:"If somebody calls you about this policy and they *can't give you that code*, they *don't work with me*. *Hang up and call me*. That's your protection against *scammers*, and against these *AI voice calls*." },
+      { beat:'Emergency contacts', script:"Last piece. The carrier wants an *emergency contact* on file, so I need *three names with phone numbers*. Who's the *first person* you'd put down? Good, *who else*? And a *third*? And *how is each one related to you*?" },
+      { beat:'Frame the outreach', script:"As your agent I'll *give each of them a quick call*, introduce myself, and make sure they have my number, so if anything ever happens they *know exactly who to reach*." },
+      { beat:'Only if they push back', script:"Every year *close to a billion dollars* in life insurance *never gets claimed*, because the family *didn't know the policy existed*, or couldn't put their hands on it. This is how we make sure the money *actually lands where you intended*." },
+      { beat:'Close out', script:"And that's it, you're *all set*. *Anything else* you want to ask me? Alright, you've got my number if something comes up. *You have a good one*." }
+    ]}
+  ];
+
+  var level=0, revealAll=false, lineNodes=[];
+
+  function paintLine(ln){
+    var open = level===0 || revealAll || ln.revealed;
+    if(open){ ln.bt.className='bt'; ln.bt.innerHTML=renderFull(ln.script); }
+    else if(level===1){ ln.bt.className='bt cue'; ln.bt.innerHTML=renderLetters(ln.script); }
+    else if(level===2){ ln.bt.className='bt cue'; ln.bt.innerHTML=renderAnchors(ln.script); }
+    else if(level===3){ ln.bt.className='bt cue'; ln.bt.innerHTML=renderBlanks(ln.script); }
+    else { ln.bt.className='bt cold'; ln.bt.textContent='· · · · ·'; }
+    // Cold means cold: the beat label goes too, so all you have is the
+    // section and how many lines are in it. Reveal brings it back.
+    ln.bl.style.display = (level===4 && !open) ? 'none' : '';
+  }
+  function paintAll(){ lineNodes.forEach(paintLine); }
+
+  var cueTrack=document.getElementById('cueTrack'), cueInd=document.getElementById('cueInd'), cueHelp=document.getElementById('cueHelp');
+  LEVELS.forEach(function(lv,i){
+    var seg=el('div','cue-seg'+(i===0?' on':''), lv.name);
+    seg.onclick=function(){ setLevel(i); };
+    cueTrack.appendChild(seg);
+  });
+  function setLevel(i){
+    level=i;
+    cueInd.style.transform='translateX('+(i*100)+'%)';
+    var segsn=cueTrack.querySelectorAll('.cue-seg');
+    for(var k=0;k<segsn.length;k++) segsn[k].classList.toggle('on', k===i);
+    cueHelp.innerHTML=LEVELS[i].help;
+    paintAll();
+  }
+
+  var revealBtn=document.getElementById('revealAll');
+  revealBtn.onclick=function(){
+    revealAll=!revealAll;
+    revealBtn.classList.toggle('on', revealAll);
+    revealBtn.textContent=revealAll?'Hide all':'Reveal all';
+    paintAll();
+  };
+
+  var lhost=document.getElementById('lsections');
+  LSECTIONS.forEach(function(sc,si){
+    var sec=el('div','lsec'); sec.style.setProperty('--c', sc.color);
+    var head=el('div','lsec-head');
+    head.appendChild(el('span','lsec-dot'));
+    head.appendChild(el('span','lsec-nm', sc.name));
+    head.appendChild(el('span','lsec-ct', sc.beats.length+' lines'));
+    head.appendChild(el('span','lsec-caret','›'));
+    sec.appendChild(head);
+    var body=el('div','lsec-body');
+    sc.beats.forEach(function(b){
+      var row=el('div','lrow');
+      var bl=el('div','bl', b.beat);
+      var bt=el('div','bt');
+      row.appendChild(bl); row.appendChild(bt);
+      var ln={ bt:bt, bl:bl, script:b.script, revealed:false };
+      lineNodes.push(ln);
+      row.onclick=function(){
+        ln.revealed=!ln.revealed;
+        row.classList.toggle('revealed', ln.revealed);
+        if(ln.revealed){ row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); }
+        paintLine(ln);
+      };
+      body.appendChild(row);
+    });
+    sec.appendChild(body);
+    head.onclick=function(){ sec.classList.toggle('open'); };
+    lhost.appendChild(sec);
+  });
+  if(lhost.firstChild) lhost.firstChild.classList.add('open');
+  setLevel(0);
+
+  /* ============================ TABS ============================ */
+  var tabwrap=document.getElementById('tabwrap');
+  var vLoop=document.getElementById('view-loop'), vLadder=document.getElementById('view-ladder');
+  var tLoop=document.getElementById('tab-loop'), tLadder=document.getElementById('tab-ladder');
+  function setTab(which){
+    stopAll();
+    var ladder = which==='ladder';
+    tabwrap.classList.toggle('t1', ladder);
+    tLoop.classList.toggle('on', !ladder); tLadder.classList.toggle('on', ladder);
+    vLoop.classList.toggle('hidden', ladder); vLadder.classList.toggle('hidden', !ladder);
+    window.scrollTo({top:0});
+  }
+  tLoop.onclick=function(){ setTab('loop'); };
+  tLadder.onclick=function(){ setTab('ladder'); };
 })();
 </script>
 </body>
