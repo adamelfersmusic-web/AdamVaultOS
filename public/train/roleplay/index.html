@@ -189,7 +189,14 @@
   var TTS='speechSynthesis'in window, voices=[];
   function loadV(){try{voices=(speechSynthesis.getVoices()||[]).filter(function(v){return /^en/i.test(v.lang);});}catch(e){}}
   if(TTS){loadV();speechSynthesis.onvoiceschanged=loadV;}
-  function say(text){ if(!TTS)return; try{ var u=new SpeechSynthesisUtterance(text); if(voices.length)u.voice=voices[0]; u.rate=1; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
+  function say(text, done){
+    // Browser-voice fallback. Calls done() when it finishes so the turn flow can
+    // wait for it, exactly like a real clip. If TTS is off, estimate from length.
+    if(!TTS){ if(done) setTimeout(done, Math.min(2800, 700+(text?text.length:0)*45)); return; }
+    try{ var u=new SpeechSynthesisUtterance(text); if(voices.length)u.voice=voices[0]; u.rate=1;
+      u.onend=function(){ if(done)done(); }; u.onerror=function(){ if(done)done(); };
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    }catch(e){ if(done) setTimeout(done, 1200); } }
 
   // Deterministic-ish variety without Math.random dependence pitfalls: a seeded RNG.
   var seed=(new Date().getSeconds()*97+new Date().getMilliseconds())>>>0 || 12345;
@@ -307,7 +314,7 @@
       var t=el('div','bub','<span class="dots"><i></i><i></i><i></i></span>');
       col.appendChild(t); wrap.appendChild(col); $('convo').appendChild(wrap);
       scroll();
-      setTimeout(function(){ t.textContent=text; speakProspect(aid, text); scroll(); if(cb)setTimeout(cb,140); }, 620);
+      setTimeout(function(){ t.textContent=text; scroll(); speakProspect(aid, text, function(){ if(cb) setTimeout(cb, 180); }); }, 620);
     } else {
       col.appendChild(el('div','bub',text)); wrap.appendChild(col); $('convo').appendChild(wrap); scroll(); if(cb)cb();
     }
@@ -315,14 +322,23 @@
   // Prospect voice: play the recorded clip at audio/<aid>.mp3, or the browser
   // voice if the clip is not there yet. All prospect lines are generic FE
   // dialogue in our own words, so these clips are safe for the public repo.
-  function speakProspect(aid, text){
-    if(!aid){ say(text); return; }
+  // Only one prospect can talk at a time. Stop whatever is playing, start the new
+  // clip, and call done() when it actually ends — so the next turn never begins
+  // until Carol has finished the current line. No two clips ever overlap.
+  var curPro=null;
+  function stopProspect(){ if(curPro){ try{curPro.pause();}catch(e){} curPro=null; } try{speechSynthesis.cancel();}catch(e){} }
+  function speakProspect(aid, text, done){
+    stopProspect();
+    if(!aid){ say(text, done); return; }
     try{
-      var au=new Audio('audio/'+aid+'.mp3');
-      au.onerror=function(){ say(text); };
+      var au=new Audio('audio/'+aid+'.mp3'); curPro=au;
+      var fired=false;
+      function fin(fallback){ if(fired)return; fired=true; if(curPro===au)curPro=null; if(fallback){ say(text, done); } else if(done){ done(); } }
+      au.onended=function(){ fin(false); };
+      au.onerror=function(){ fin(true); };
       var pr=au.play();
-      if(pr&&typeof pr.then==='function'){ pr.catch(function(){ say(text); }); }
-    }catch(e){ say(text); }
+      if(pr&&typeof pr.then==='function'){ pr.catch(function(){ fin(true); }); }
+    }catch(e){ say(text, done); }
   }
   // Swap the placeholder name in agent lines for the actual lead's first name.
   function agentText(t){ var fn=(state&&state.lead)?state.lead.n.split(' ')[0]:'there'; return t.replace(/Margaret/g, fn); }
