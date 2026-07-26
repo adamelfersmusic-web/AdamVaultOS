@@ -85,6 +85,11 @@
   /* Options */
   .opts{margin-top:14px;display:flex;flex-direction:column;gap:10px}
   .opt-hint{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-3);text-align:center;margin-bottom:2px}
+  .guide-row{display:flex;justify-content:flex-end;margin-bottom:4px}
+  .guide-btn{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);background:none;border:1px solid var(--line);border-radius:100px;padding:5px 12px;cursor:pointer}
+  .guide-btn.on{color:#23190a;background:var(--gold);border-color:var(--gold-bright);font-weight:600}
+  .guide-card{border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);background:color-mix(in srgb,var(--gold) 8%,transparent);border-radius:var(--r-md);padding:12px 14px;margin-bottom:10px;font-size:14.5px;color:var(--cream);line-height:1.4}
+  .guide-card .gl{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:5px}
   .opt{text-align:left;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--panel);color:var(--body);padding:13px 15px;font-size:14.5px;font-family:inherit;line-height:1.4;cursor:pointer;transition:border-color .15s,background .15s}
   .opt:active{transform:scale(.995)}
   .opt:hover{border-color:var(--line-strong)}
@@ -409,9 +414,23 @@
   function scroll(){ window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); }
 
   function clearOpts(){ $('opts').innerHTML=''; }
+  // Guide = training wheels. OFF by default: the real skill is running the call
+  // blind, so you graduate out of it. When on, it shows THIS beat's goal (the
+  // same job Talk mode's Prompt cue uses) — a goal card, never a "you are here" map.
+  var GUIDE=false;
   function renderOpts(node){
     clearOpts();
-    $('opts').appendChild(el('div','opt-hint','What do you say?'));
+    state.curNode=node;
+    var host=$('opts');
+    var grow=el('div','guide-row');
+    var gb=el('button','guide-btn'+(GUIDE?' on':''), GUIDE?'Guide: on':'Guide');
+    gb.onclick=function(){ GUIDE=!GUIDE; renderOpts(node); };
+    grow.appendChild(gb); host.appendChild(grow);
+    if(GUIDE){
+      var goal=node.prompt || 'Handle the curveball — acknowledge, reframe, keep them on the phone.';
+      host.appendChild(el('div','guide-card','<span class="gl">Your goal here</span>'+goal));
+    }
+    host.appendChild(el('div','opt-hint','What do you say?'));
     // shuffle option order so position never signals quality
     var order=node.opts.map(function(o,ix){return ix;});
     for(var k=order.length-1;k>0;k--){ var j=Math.floor(rnd()*(k+1)); var tmp=order[k];order[k]=order[j];order[j]=tmp; }
