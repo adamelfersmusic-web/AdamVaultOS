@@ -175,6 +175,7 @@
     <div class="modes" id="levels" style="display:none">
       <button class="mode on" data-l="rehearse">Rehearse<small>just talk</small></button>
       <button class="mode" data-l="record">Record<small>+ play it back</small></button>
+      <button class="mode" data-l="score">Score<small>AI grades it</small></button>
     </div>
     <div class="dialer">
       <div class="lead">
@@ -594,7 +595,7 @@
       navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ T.mic=s; }).catch(function(){ T.micDenied=true; });
     }catch(e){ T.micDenied=true; }
   }
-  function micReady(){ return LEVEL==='record' && T && T.mic && window.MediaRecorder; }
+  function micReady(){ return LEVEL!=='rehearse' && T && T.mic && window.MediaRecorder; }
   function startRec(){
     if(!micReady()) return;
     try{
@@ -607,7 +608,7 @@
     if(!T.recording || !T.rec){ cb(); return; }
     try{
       T.rec.onstop=function(){
-        try{ var blob=new Blob(T.chunks,{type:(T.chunks[0]&&T.chunks[0].type)||'audio/webm'}); T.recs.push({lab:beat.lab, url:URL.createObjectURL(blob)}); }catch(_){}
+        try{ var blob=new Blob(T.chunks,{type:(T.chunks[0]&&T.chunks[0].type)||'audio/webm'}); T.recs.push({lab:beat.lab, id:beat.id, model:(beat.opts&&beat.opts[0]?beat.opts[0].t:''), blob:blob, url:URL.createObjectURL(blob)}); }catch(_){}
         cb();
       };
       T.recording=false; T.rec.stop();
@@ -628,7 +629,7 @@
   // Render the your-turn card. isNew=true means we just arrived on this beat
   // (so arm recording); a cue re-render passes false so recording is untouched.
   function talkCard(beat, isNew){
-    if(isNew && LEVEL==='record') startRec();
+    if(isNew && LEVEL!=='rehearse') startRec();
     clearOpts();
     var host=$('opts');
     var seg=el('div','tseg');
@@ -652,12 +653,12 @@
       var rr=el('div','trow'); rr.appendChild(rev); host.appendChild(rr);
     }
 
-    var recording=(LEVEL==='record' && T.recording);
+    var recording=(LEVEL!=='rehearse' && T.recording);
     var nb=el('button','tbtn'+(recording?' rec':''), recording ? '<span class="recdot"></span>Recording — tap when done' : 'I said it — next ›');
     nb.onclick=function(){ nb.disabled=true; stopRec(beat, function(){ talkNext(beat); }); };
     var nr=el('div','trow'); nr.appendChild(nb); host.appendChild(nr);
 
-    if(LEVEL==='record' && T.micDenied){ host.appendChild(el('div','tnote','Mic unavailable — rehearsing without recording.')); }
+    if(LEVEL!=='rehearse' && T.micDenied){ host.appendChild(el('div','tnote','Mic unavailable — rehearsing without recording.')); }
   }
 
   function talkNext(beat){
@@ -671,31 +672,71 @@
     }, 'p-'+beat.id+'-a');
   }
 
+  function escT(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+  function renderPlayback(host){
+    var list=el('div','tplay');
+    list.appendChild(el('div','rl2','Your takes — play them back'));
+    T.recs.forEach(function(r){
+      var row=el('div','prow2');
+      var pb=el('button','pmini','▶');
+      var au=new Audio(r.url);
+      pb.onclick=function(){ try{ if(au.paused){ au.currentTime=0; au.play(); pb.textContent='❚❚'; au.onended=function(){ pb.textContent='▶'; }; } else { au.pause(); pb.textContent='▶'; } }catch(e){} };
+      row.appendChild(pb); row.appendChild(el('div','pln', r.lab));
+      list.appendChild(row);
+    });
+    host.appendChild(list);
+  }
+  function talkAgainBack(host){
+    var again=el('button','tbtn','Run it again ↺'); again.onclick=function(){ cleanupMic(); startTalk(); };
+    var ar=el('div','trow'); ar.appendChild(again); host.appendChild(ar);
+    var back=el('button','tbtn ghost','Back to start'); back.onclick=function(){ try{speechSynthesis.cancel();}catch(e){} stopProspect(); cleanupMic(); show('s-dialer'); window.scrollTo({top:0}); };
+    var br=el('div','trow'); br.appendChild(back); host.appendChild(br);
+  }
+
+  // Endpoint for the AI scoring function (AssemblyAI transcribe -> Claude grade).
+  // Empty on the static build (no server), so Score gracefully shows your takes +
+  // a 'ready for keys' note. Set this to the deployed function URL
+  // (e.g. '/.netlify/functions/score'), put the two API keys in the function's env,
+  // and every spoken line gets graded for real. See netlify/functions/score.js.
+  var SCORE_ENDPOINT='';
+  function blobToDataURL(blob, cb){ try{ var fr=new FileReader(); fr.onload=function(){ cb(fr.result); }; fr.onerror=function(){ cb(null); }; fr.readAsDataURL(blob); }catch(e){ cb(null); } }
+  function buildScorePayload(cb){
+    var items=[], n=T.recs.length, done=0;
+    if(!n){ cb({turns:[]}); return; }
+    T.recs.forEach(function(r,i){ blobToDataURL(r.blob, function(d){ items[i]={beat:r.lab, model:r.model, audio:d}; if(++done===n) cb({turns:items}); }); });
+  }
+  function renderScores(host, data){
+    var turns=(data&&data.turns)||[];
+    if(data && data.overall!=null){ var o=el('div','tcue'); o.innerHTML='<div class="lab">Your score</div><div class="job">'+escT(String(data.overall))+' / 100'+(data.summary?' — '+escT(data.summary):'')+'</div>'; host.appendChild(o); }
+    var list=el('div','tplay'); list.appendChild(el('div','rl2','Line by line'));
+    turns.forEach(function(t){ var row=el('div','prow2'); row.appendChild(el('div','pln','<b>'+escT(t.beat||'')+'</b>'+(t.grade?' · '+escT(t.grade):'')+(t.note?' — '+escT(t.note):''))); list.appendChild(row); });
+    host.appendChild(list);
+  }
+  function scoreCall(host){
+    var status=el('div','tcue');
+    if(!SCORE_ENDPOINT){
+      status.innerHTML='<div class="lab">AI scoring — ready for keys</div><div class="job">Your '+T.recs.length+' spoken lines are captured. Live scoring — transcribe each line and grade it against the move — switches on the moment the AssemblyAI + Anthropic keys are wired to the scoring function. Here are your takes for now.</div>';
+      host.appendChild(status); if(T.recs.length) renderPlayback(host); talkAgainBack(host); return;
+    }
+    status.innerHTML='<div class="lab">Scoring your call…</div><div class="job">Transcribing what you said and grading each line. One moment.</div>';
+    host.appendChild(status);
+    buildScorePayload(function(payload){
+      fetch(SCORE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+        .then(function(res){ if(!res.ok) throw 0; return res.json(); })
+        .then(function(data){ if(status.parentNode) status.parentNode.removeChild(status); renderScores(host, data); talkAgainBack(host); })
+        .catch(function(){ status.innerHTML='<div class="lab">Scoring unavailable</div><div class="job">Could not reach the scoring service — here are your takes.</div>'; if(T.recs.length) renderPlayback(host); talkAgainBack(host); });
+    });
+  }
+
   function talkFinish(){
     $('m-lab').textContent='Done'; $('m-val').textContent='Complete'; $('m-beat').textContent='Call complete'; $('m-fill').style.width='100%';
     clearOpts();
     var host=$('opts');
     var c=el('div','tcue'); c.innerHTML='<div class="lab">Nice reps</div><div class="job">You ran all '+BEATS.length+' beats out loud, start to finish. That is the practice.</div>';
     host.appendChild(c);
-
-    if(LEVEL==='record' && T.recs && T.recs.length){
-      var list=el('div','tplay');
-      list.appendChild(el('div','rl2','Your takes — play them back'));
-      T.recs.forEach(function(r){
-        var row=el('div','prow2');
-        var pb=el('button','pmini','▶');
-        var au=new Audio(r.url);
-        pb.onclick=function(){ try{ if(au.paused){ au.currentTime=0; au.play(); pb.textContent='❚❚'; au.onended=function(){ pb.textContent='▶'; }; } else { au.pause(); pb.textContent='▶'; } }catch(e){} };
-        row.appendChild(pb); row.appendChild(el('div','pln', r.lab));
-        list.appendChild(row);
-      });
-      host.appendChild(list);
-    }
-
-    var again=el('button','tbtn','Run it again ↺'); again.onclick=function(){ cleanupMic(); startTalk(); };
-    var ar=el('div','trow'); ar.appendChild(again); host.appendChild(ar);
-    var back=el('button','tbtn ghost','Back to start'); back.onclick=function(){ try{speechSynthesis.cancel();}catch(e){} stopProspect(); cleanupMic(); show('s-dialer'); window.scrollTo({top:0}); };
-    var br=el('div','trow'); br.appendChild(back); host.appendChild(br);
+    if(LEVEL==='score'){ scoreCall(host); return; }
+    if(LEVEL==='record' && T.recs && T.recs.length){ renderPlayback(host); }
+    talkAgainBack(host);
   }
 
   function startTalk(){
@@ -703,7 +744,7 @@
       cleanupMic();
       reset(); setLead(); show('s-ring'); $('r-st').textContent='Calling…';
       T={i:0, recs:[], rec:null, recording:false, chunks:[], mic:null, micDenied:false};
-      if(LEVEL==='record') acquireMic();
+      if(LEVEL!=='rehearse') acquireMic();
       setTimeout(function(){ $('r-st').textContent='Ringing…'; },700);
       setTimeout(function(){
         show('s-call'); $('convo').innerHTML='';
