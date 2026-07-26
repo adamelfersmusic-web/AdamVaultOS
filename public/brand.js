@@ -22,13 +22,16 @@
       themeColor: '#0c1b2a',
       poweredBy: false             // Escensus is the source; no attribution line
     },
-    // ---- PLACEHOLDER colors — swap for Peak's real brand kit (hex + logo) ----
+    // Peak Financial — black + gold (matches their agent dashboard + site).
+    // Gold hex is eyeballed from their wordmark; swap for exact brand hex + the
+    // mountain/art-deco logo when provided.
     peak: {
       name: 'Peak',
       appName: 'Peak Training',
-      accent: '#c8342f',
-      accentBright: '#e0574a',
-      themeColor: '#0c1b2a',
+      accent: '#c6a15b',
+      accentBright: '#dcc084',
+      themeColor: '#000000',
+      bg: '#0a0a0a', bgDeep: '#000000', panel: '#161616', panel2: '#1f1f1f',
       poweredBy: true              // licensed skin — provenance stays visible
     },
     // A second generic instance, to demonstrate the engine renders N brands.
@@ -68,6 +71,11 @@
   var rs = document.documentElement.style;
   rs.setProperty('--gold', B.accent);
   rs.setProperty('--gold-bright', B.accentBright);
+  // Optional background palette (a brand can go darker/lighter than Escensus navy).
+  if (B.bg) rs.setProperty('--navy', B.bg);
+  if (B.bgDeep) rs.setProperty('--navy-deep', B.bgDeep);
+  if (B.panel) rs.setProperty('--panel', B.panel);
+  if (B.panel2) rs.setProperty('--panel-2', B.panel2);
 
   function apply() {
     try {
