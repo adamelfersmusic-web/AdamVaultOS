@@ -396,7 +396,7 @@
 
   // IDENTIFY MODE (name the objection, Tenuto-style)
   var idSel = OBJ.map(function(_,i){ return i; });   // which objections are in play
-  var idTotal = 8, idQ = 0, idScore = 0, idQObj = null;
+  var idTotal = 8, idQ = 0, idScore = 0, idQObj = null, idPrev = -1;
 
   function identifyStart(){
     var s=el('div','screen');
@@ -419,7 +419,7 @@
     s.appendChild(chips);
     var cta=el('div','stack-cta');
     var b=el('button','gold-btn',"Start identifying →");
-    b.onclick=function(){ idQ=0; idScore=0; identifyRound(); };
+    b.onclick=function(){ idQ=0; idScore=0; idPrev=-1; identifyRound(); };
     cta.appendChild(b); s.appendChild(cta);
     s.appendChild(el('p','start-note','Turn your sound on. '+idSel.length+' objections in play, '+idTotal+' questions. 🎧'));
     show(s);
@@ -427,7 +427,11 @@
 
   function identifyRound(){
     idQ++;
-    idQObj = OBJ[ idSel[Math.floor(Math.random()*idSel.length)] ];
+    // Never repeat the same objection back to back (re-roll when more than one is in play).
+    var pick;
+    do { pick = idSel[Math.floor(Math.random()*idSel.length)]; } while(idSel.length>1 && pick===idPrev);
+    idPrev = pick;
+    idQObj = OBJ[pick];
     var s=el('div','screen');
     var prog=el('div','id-progress');
     prog.appendChild(el('span',null,'Q '+idQ+' / '+idTotal));
