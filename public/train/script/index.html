@@ -113,6 +113,9 @@
   .beat .bt{flex:1;font-size:14.5px;color:var(--body)}
   .beat .bf{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--red);border:1px solid color-mix(in srgb,var(--red) 45%,transparent);border-radius:100px;padding:2px 6px;margin-left:6px}
   .beat .bf.star{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
+  .beat{transition:background .18s ease,box-shadow .18s ease}
+  .beat.speaking{background:color-mix(in srgb,var(--gold) 13%,transparent);box-shadow:inset 3px 0 0 var(--gold-bright);border-radius:8px}
+  .beat.speaking .bt{color:var(--cream)}
   .seclink{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-family:var(--mono);font-size:12.5px;color:var(--gold-bright);text-decoration:none;border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:9px 14px}
 
   /* ---- Ladder view ---- */
@@ -258,10 +261,16 @@
       link:{href:'../../drill/',label:'Drill these live in the Objection Drill →'}}
   ];
 
+  // Karaoke highlight (prototype: Open section). Per-beat start times, in seconds,
+  // within that section's clip. The highlight is a pure function of the audio's
+  // currentTime, so it follows play, pause, and A/B drag-loop with no extra sync.
+  var BEATTIMES={ open:[0, 8.78, 13.17, 16.35, 20.94, 23.81] };
+  var beatEls={}, secEls={};
+
   // The sections list is pure reading. All looping lives in the bottom player.
   var host=document.getElementById('sections');
   SECTIONS.forEach(function(sc,i){
-    var sec=el('div','sec');
+    var sec=el('div','sec'); secEls[sc.id]=sec;
     var head=el('div','sec-head');
     head.appendChild(el('div','sec-n', String(i+1)));
     var t=el('div','sec-t'); t.innerHTML='<div class="nm">'+sc.name+'</div><div class="role">'+sc.role+'</div>'; head.appendChild(t);
@@ -270,10 +279,11 @@
     sec.appendChild(head);
     var body=el('div','sec-body');
     var ul=el('ul','beats');
+    beatEls[sc.id]=[];
     sc.beats.forEach(function(b){
       var li=el('li','beat');
       var bt=el('div','bt', b[0] + (b[1]==='star'?' <span class="bf star">load-bearing</span>':b[1]==='comp'?' <span class="bf">compliance</span>':b[1]==='pii'?' <span class="bf">PII</span>':'')); li.appendChild(bt);
-      ul.appendChild(li);
+      ul.appendChild(li); beatEls[sc.id].push(li);
     });
     body.appendChild(ul);
     if(sc.link){ var a=el('a','seclink',sc.link.label); a.href=sc.link.href; body.appendChild(a); }
@@ -408,6 +418,14 @@
     if(wave.audio){ try{wave.audio.pause();}catch(e){} wave.audio=null; }
     if(wave.raf){ cancelAnimationFrame(wave.raf); wave.raf=0; }
     if(wavePh) wavePh.style.left='0px';
+    clearSpeak();
+  }
+  // Karaoke highlight: light the beat the voice is currently on.
+  function clearSpeak(){ for(var k in beatEls){ var a=beatEls[k]; for(var i=0;i<a.length;i++) a[i].classList.remove('speaking'); } }
+  function speakAt(secId, t){
+    var times=BEATTIMES[secId], els=beatEls[secId]; if(!times||!els) return;
+    var idx=-1; for(var i=0;i<times.length;i++){ if(t+0.001>=times[i]) idx=i; }
+    for(var j=0;j<els.length;j++) els[j].classList.toggle('speaking', j===idx);
   }
   // Probe the section clip; show the waveform only if it actually loads.
   function maybeWave(i){
@@ -435,6 +453,8 @@
     var d0=wave.dur||0; try{ au.currentTime=wave.a*d0; }catch(e){}
     au.play().catch(function(){});
     cur={reps:0}; playing=true; playBtn.textContent='❚❚'; playBtn.classList.add('on'); renderReps();
+    // If this section is timed, bring its beats into view above the sticky player.
+    if(BEATTIMES[wave.secId] && secEls[wave.secId]){ secEls[wave.secId].classList.add('open'); try{secEls[wave.secId].scrollIntoView({behavior:'smooth',block:'start'});}catch(e){} }
     function frame(){
       if(!wave.audio) return;
       var d=wave.dur||wave.audio.duration||0;
@@ -446,6 +466,7 @@
           if(cur){ cur.reps++; renderReps(); }
         }
         var w=waveBox.clientWidth; if(wavePh) wavePh.style.left=((wave.audio.currentTime/d)*w)+'px';
+        speakAt(wave.secId, wave.audio.currentTime);
       }
       wave.raf=requestAnimationFrame(frame);
     }
