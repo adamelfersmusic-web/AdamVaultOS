@@ -130,15 +130,22 @@
       }
       // SignalCraft credit + copyright — provenance stamp on every surface. Each
       // surface names its immediate parent: Escensus (the source) shows "Powered
-      // by SignalCraft"; a client skin shows "Powered by Escensus". The copyright
-      // line always names the owner, SignalCraft LLC. Added AFTER the re-label pass
-      // so the word "Escensus" survives here.
+      // by SignalCraft"; a client skin shows "Powered by Escensus". Added AFTER
+      // the re-label pass so the word "Escensus" survives here.
+      //
+      // The copyright is deliberately scoped to "Software" — it claims the
+      // application (the engine, the training surfaces, the code), NOT the call
+      // content rendered inside it. Final Expense call structure is industry-
+      // general and some script material is framework-level reference from an
+      // agency, so the app asserts ownership of what SignalCraft actually built
+      // and stays silent on the script text. Keeps the provenance trail intact
+      // without over-claiming.
       if (!document.getElementById('scStamp')) {
         var credit = B.poweredBy ? 'Powered by Escensus' : 'Powered by SignalCraft';
         var st = document.createElement('div');
         st.id = 'scStamp';
         st.innerHTML = '<div>' + credit + '</div>' +
-          '<div style="opacity:.72;margin-top:3px">© 2026 SignalCraft LLC</div>';
+          '<div style="opacity:.72;margin-top:3px">Software © 2026 SignalCraft LLC</div>';
         st.style.cssText = 'text-align:center;font-family:ui-monospace,Menlo,Consolas,monospace;' +
           'font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#4f606f;' +
           'line-height:1.5;padding:18px 0 calc(20px + env(safe-area-inset-bottom))';
