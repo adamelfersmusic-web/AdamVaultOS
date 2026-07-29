@@ -32,8 +32,7 @@
       appName: 'Escensus',         // used in the browser title
       accent: '#cba14b',
       accentBright: '#ddb968',
-      themeColor: '#0c1b2a',
-      poweredBy: false             // Escensus is the source; no attribution line
+      themeColor: '#0c1b2a'
     },
     // Peak Financial — black + gold (matches their agent dashboard + site).
     // Gold hex is eyeballed from their wordmark; swap for exact brand hex + the
@@ -45,8 +44,7 @@
       accentBright: '#dcc084',
       themeColor: '#000000',
       bg: '#0a0a0a', bgDeep: '#000000', panel: '#161616', panel2: '#1f1f1f',
-      mark: PEAK_MARK,             // art-deco mountain mark in place of the bars
-      poweredBy: true              // licensed skin — provenance stays visible
+      mark: PEAK_MARK              // art-deco mountain mark in place of the bars
     },
     // A second generic instance, to demonstrate the engine renders N brands.
     meridian: {
@@ -54,8 +52,7 @@
       appName: 'Meridian Training',
       accent: '#1f9e8c',
       accentBright: '#35c0aa',
-      themeColor: '#0c1b2a',
-      poweredBy: true
+      themeColor: '#0c1b2a'
     }
   };
 
@@ -116,8 +113,8 @@
       var tc = document.querySelector('meta[name="theme-color"]');
       if (tc) tc.setAttribute('content', B.themeColor);
       // Re-label visible "Escensus" brand text (eyebrows, body copy) to the active
-      // brand. Runs BEFORE the poweredBy line is added, so provenance keeps the
-      // Escensus name. No-op for the Escensus brand itself.
+      // brand. No-op for the Escensus brand itself. The provenance stamp below is
+      // built from a literal, so this pass can never rewrite "SignalCraft".
       if (B.name !== 'Escensus' && document.body) {
         var walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
         var hits = [], t;
@@ -128,10 +125,13 @@
         }
         hits.forEach(function (n) { n.nodeValue = n.nodeValue.replace(/Escensus/g, B.name); });
       }
-      // SignalCraft credit + copyright — provenance stamp on every surface. Each
-      // surface names its immediate parent: Escensus (the source) shows "Powered
-      // by SignalCraft"; a client skin shows "Powered by Escensus". Added AFTER
-      // the re-label pass so the word "Escensus" survives here.
+      // SignalCraft credit + copyright — the provenance stamp, identical on every
+      // surface and in every skin. It always names SignalCraft, never the active
+      // brand: Escensus is a product name, not a legal entity, so a stamp that
+      // said "Powered by Escensus" on a client skin would credit something that
+      // cannot own anything. SignalCraft LLC is the entity that owns the platform,
+      // so it is the one named, everywhere, no exceptions. Uniform across the
+      // training app and the Agent Ramp Report.
       //
       // The copyright is deliberately scoped to "Software" — it claims the
       // application (the engine, the training surfaces, the code), NOT the call
@@ -141,10 +141,9 @@
       // and stays silent on the script text. Keeps the provenance trail intact
       // without over-claiming.
       if (!document.getElementById('scStamp')) {
-        var credit = B.poweredBy ? 'Powered by Escensus' : 'Powered by SignalCraft';
         var st = document.createElement('div');
         st.id = 'scStamp';
-        st.innerHTML = '<div>' + credit + '</div>' +
+        st.innerHTML = '<div>Powered by SignalCraft</div>' +
           '<div style="opacity:.72;margin-top:3px">Software © 2026 SignalCraft LLC</div>';
         st.style.cssText = 'text-align:center;font-family:ui-monospace,Menlo,Consolas,monospace;' +
           'font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#4f606f;' +
