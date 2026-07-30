@@ -1,0 +1,150 @@
+{
+  "format": 1,
+  "title": "Full Moon in Leo",
+  "subtitle": "Let it burn what it must",
+  "note": "Transcribed from a real handout. Read the phrases in order — the session is one sentence.",
+  "refHz": 440,
+  "kit": { "type": "standard7" },
+  "sections": [
+    {
+      "id": "root",
+      "name": "Root Chakra",
+      "phrase": "The rock",
+      "kind": "pitched",
+      "chakra": 1,
+      "mode": "mixolydian",
+      "minutes": 8,
+      "fadeIn": 40,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.72 },
+        "bed":   { "on": true,  "level": 0.82, "chords": false },
+        "voice": { "on": true,  "level": 0.38 },
+        "air":   { "on": true,  "level": 0.42, "elements": ["crickets"] }
+      },
+      "liveChords": ["C", "F", "Bb"],
+      "leaderNote": "Acoustic"
+    },
+    {
+      "id": "ocean",
+      "name": "Ocean",
+      "phrase": "What grows",
+      "kind": "texture",
+      "minutes": 6,
+      "fadeIn": 45,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.55 },
+        "bed":   { "on": false },
+        "voice": { "on": false },
+        "air":   { "on": true,  "level": 0.78, "elements": ["waves", "wind"] }
+      },
+      "liveChords": ["D", "G"],
+      "leaderNote": "Acoustic. D major — reaching for light. B minor."
+    },
+    {
+      "id": "sacral",
+      "name": "Sacral",
+      "phrase": "Will live",
+      "kind": "pitched",
+      "chakra": 2,
+      "mode": "major",
+      "minutes": 8,
+      "fadeIn": 35,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.7 },
+        "bed":   { "on": true,  "level": 0.8, "chords": false },
+        "voice": { "on": true,  "level": 0.42 },
+        "air":   { "on": true,  "level": 0.35, "elements": ["crickets"] }
+      },
+      "leaderNote": "+ Electric / E-bow"
+    },
+    {
+      "id": "rain",
+      "name": "Rain",
+      "phrase": "And shed",
+      "kind": "texture",
+      "minutes": 5,
+      "fadeIn": 40,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.5 },
+        "bed":   { "on": false },
+        "voice": { "on": false },
+        "air":   { "on": true,  "level": 0.8, "elements": ["rain"] }
+      }
+    },
+    {
+      "id": "gong",
+      "name": "Gong",
+      "phrase": "What's shed",
+      "kind": "texture",
+      "minutes": 4,
+      "fadeIn": 30,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.85 },
+        "bed":   { "on": false },
+        "voice": { "on": false },
+        "air":   { "on": true,  "level": 0.3, "elements": ["wind"] }
+      },
+      "leaderNote": "Gong is played live — app holds the floor only"
+    },
+    {
+      "id": "burn",
+      "name": "Flute & Shakers",
+      "phrase": "Will burn",
+      "kind": "texture",
+      "minutes": 5,
+      "fadeIn": 25,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.6 },
+        "bed":   { "on": false },
+        "voice": { "on": false },
+        "air":   { "on": true,  "level": 0.5, "elements": ["wind", "crickets"] }
+      },
+      "leaderNote": "Live flute + shakers. Live players mode."
+    },
+    {
+      "id": "space",
+      "name": "Space",
+      "phrase": "",
+      "kind": "space",
+      "minutes": 3,
+      "fadeIn": 50,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.35 },
+        "bed":   { "on": false },
+        "voice": { "on": false },
+        "air":   { "on": false }
+      }
+    },
+    {
+      "id": "heart",
+      "name": "Heart Chakra",
+      "phrase": "What's left",
+      "kind": "pitched",
+      "chakra": 4,
+      "mode": "major",
+      "minutes": 9,
+      "fadeIn": 55,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.7 },
+        "bed":   { "on": true,  "level": 0.85, "chords": false },
+        "voice": { "on": true,  "level": 0.45 },
+        "air":   { "on": true,  "level": 0.4, "elements": ["crickets"] }
+      }
+    },
+    {
+      "id": "chimes",
+      "name": "Chimes",
+      "phrase": "Is Home",
+      "kind": "texture",
+      "minutes": 4,
+      "fadeIn": 40,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.4 },
+        "bed":   { "on": false },
+        "voice": { "on": true,  "level": 0.5 },
+        "air":   { "on": true,  "level": 0.45, "elements": ["crickets"] }
+      },
+      "leaderNote": "Live chimes, roaming"
+    }
+  ]
+}
