@@ -10,33 +10,41 @@ cannot be derived from first principles.
 
 ## 1. Scope of v1
 
-Build **the sound engine and perform mode**, with sessions loaded from JSON
-fixtures. Nothing else.
+**This is an exploratory build, not a shipping v1.** The goal is to see and feel
+the whole shape of the app. The person commissioning it expects to rebuild from
+scratch afterwards and is explicitly fine with that. So build **wide** — cover
+the whole surface rather than perfecting one screen.
 
 ### In
 
 - The four-band generative engine (Deep / Bed / Voice / Air)
 - Global key migration with common-tone voice leading
-- Session playback from a fixture file — sections in order, with cue control
-- **Leader view**: current section, intention, time, what's next, GO / HOLD / JUMP
-- **Follower view**: the bowl sheet for the current section, one section at a time
-- Ensemble setup: bowl kit, reference pitch, who's playing what
+- **Perform mode — the priority.** Leader view (current section and its phrase,
+  time remaining, what's next, one enormous GO, plus **HOLD** and **JUMP**) and
+  follower view (the bowl sheet, one section at a time)
+- **Design mode** — the marker ruler over four fixed lanes (§6.35)
+- Ensemble setup: bowl kit, reference pitch, roster
 - Live players mode (one switch)
+- The structure wizard — 4–5 questions producing a runnable session
+- Load and save the session format in §6.4
 
 ### Explicitly out — do not build these
 
-| Not in v1 | Why |
+| Not in scope | Why |
 |---|---|
-| Design mode / timeline editor | Sessions come from fixtures. Editing is Phase 3. |
-| Multi-device sync | Follower view renders on the same device for now. Phase 2. |
-| Lights / LED pads | Phase 5. But see §6 — emit the events anyway. |
-| Marketplace, packs, accounts | Phase 4+. |
-| Structure wizard | Phase 3. |
+| Multi-device sync | Render the follower view on the same device. The sync layer is real but it isn't what this build is for. |
+| Lights / LED pads | Later — but see §6.1 and emit the events anyway. |
+| Marketplace, packs, accounts, payments | Later. |
 | Audio input / live instrument routing | Later. |
 | Any use of the word "AI" | Never. See VISION.md. |
+| A fifth lane, track adding, automation lanes, effect racks | That's a DAW — the wall this exists to remove. |
 
-A shallow version of all six phases is worth nothing. A real version of this
-scope is demoable in a room this week.
+### Build as a self-contained web app
+
+Browser, no backend, no accounts, state in localStorage. Native is the right
+answer eventually — iOS Safari suspends audio on backgrounding, and a session
+going silent at minute thirty of a ticketed event is catastrophic — but that
+decision waits until the shape is known.
 
 ### The reference implementation
 
@@ -322,6 +330,52 @@ An **editable Hz field**, not a 432/440 toggle. Then 432, 528, the whole
 solfeggio set and every future request fall out of one control and you never
 ship another tuning feature.
 
+### 6.35 Design mode — a marker ruler over four fixed lanes
+
+**Across the top: a marker ruler.** Section markers placed by time, the way
+arrangement markers work in a DAW. Each marker's *function* comes from the
+canonical language — Welcome, Ground, Journey, Release, Return — and is freely
+**relabelled** for the session ("The rock", "What grows"). The function sets the
+chakra, mode and band defaults; the label is the poem.
+
+**Below it: four named lanes** — Deep, Bed, Voice, Air. Named for what they
+*are*, never numbered, so nobody has to remember what track 3 was.
+
+**Blocks stretch** to the length you need, and they live on the lanes — *not*
+inside the sections.
+
+That separation is the whole point. **Layers must be able to span section
+boundaries.** If every band changes at the seam, every transition is a hard cut;
+the crickets should start before the key changes and still be there after. So
+markers are the spine, and lanes carry what is actually sounding with their own
+starts and ends.
+
+```
+GROUND · "The rock"        JOURNEY · "What grows"   RELEASE · "What's left"
+15 min · C                 8 min · D                12 min · F
+├──────────────────────────┼────────────────────────┼─────────────────────────┤
+Deep   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+Bed    ▓▓▓▓ C drone ▓▓▓▓▓▓▓│▓▓▓ D drone ▓▓▓▓▓▓▓▓▓▓▓│▓▓▓ F drone ▓▓▓▓▓▓▓▓▓▓▓▓
+Voice                      │        ▓▓▓▓▓▓ Rhodes motif ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+Air    ▓▓ waves ▓▓▓▓▓      │▓▓▓▓ crickets ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│▓▓▓ rain ▓▓▓▓▓▓▓▓
+                                          ^ deliberately crosses the boundary
+```
+
+**What keeps this from becoming a DAW:** the lanes are fixed at four and never
+grow. That is the entire difference between this and Ableton's arrangement view
+— unbounded tracks is where complexity explodes. Four lanes, fixed roles, one
+thing at a time, blocks that stretch. Closer to a lighting console than a DAW,
+and that limitation is what makes it usable by someone who cannot compose.
+
+**Interaction:** tap a block to set its length as the primary gesture, drag
+edges as secondary. Dragging precisely with a finger is what would make this
+feel fussy. Snap to whole minutes.
+
+**Templates generate lanes from markers automatically**, so the simple path
+never requires touching a lane. Someone builds
+`Welcome → Ground → Release → Return` and has a real session before making a
+single musical decision.
+
 ### 6.4 The session format is the pack format
 
 Get this right now. **Templates are packs** — same file type. A session is
@@ -329,51 +383,63 @@ Get this right now. **Templates are packs** — same file type. A session is
 and purchased material migrates with the room because it isn't a recording.
 Rendered audio would break key migration on first purchase.
 
+**Format 2 — markers and lanes.** Sections are the spine; lanes carry what is
+actually sounding, on their own timeline, so a texture can cross a boundary.
+All times are minutes from session start.
+
 ```jsonc
 {
-  "format": 1,
+  "format": 2,
   "title": "Full Moon in Leo",
   "subtitle": "Let it burn what it must",
-  "refHz": 440,
+  "refHz": 440,                          // a number, never a 432/440 toggle
   "kit": { "type": "standard7" },        // or { "type":"custom", "pitches":[...] }
+
+  // ---- the marker ruler: the arc, the poem, and the harmony ----
   "sections": [
     {
       "id": "root",
-      "name": "Root Chakra",
+      "function": "ground",              // canonical language — drives defaults
+      "name": "Root Chakra",             // freely relabelled by the user
       "phrase": "The rock",              // the poem — first class, not metadata
       "kind": "pitched",                 // "pitched" | "texture" | "space"
-      "chakra": 1,                       // derives key C
+      "chakra": 1,                       // derives key C. NEVER ask for a key.
       "mode": "mixolydian",
-      "minutes": 8,
-      "fadeIn": 30,                      // seconds — ergonomic, see §5
-      "bands": {
-        "deep":  { "on": true,  "level": 0.7 },
-        "bed":   { "on": true,  "level": 0.8, "chords": false },
-        "voice": { "on": true,  "level": 0.4 },
-        "air":   { "on": true,  "level": 0.5, "elements": ["crickets"] }
-      },
-      "liveChords": ["C", "F", "Bb"]     // leader view only — never shown to followers
+      "fromMin": 0,
+      "toMin": 8,
+      "liveChords": ["C", "F", "Bb"],    // leader view only — never shown to followers
+      "leaderNote": "Acoustic"
     },
     {
       "id": "ocean",
+      "function": "journey",
       "name": "Ocean",
       "phrase": "What grows",
-      "kind": "texture",
-      "minutes": 5,
-      "fadeIn": 40,
-      "bands": {
-        "deep":  { "on": true,  "level": 0.5 },
-        "bed":   { "on": false },
-        "voice": { "on": false },
-        "air":   { "on": true,  "level": 0.75, "elements": ["waves", "wind"] }
-      }
+      "kind": "texture",                 // no chakra, no mode, no bowls
+      "fromMin": 8,
+      "toMin": 13
     }
-  ]
+  ],
+
+  // ---- four fixed lanes. Never a fifth. Blocks may cross section seams. ----
+  "lanes": {
+    "deep":  [ { "fromMin": 0,  "toMin": 13, "level": 0.7, "fadeIn": 40, "fadeOut": 30 } ],
+    "bed":   [ { "fromMin": 0,  "toMin": 8,  "level": 0.8, "chords": false, "fadeIn": 40 } ],
+    "voice": [ { "fromMin": 2,  "toMin": 8,  "level": 0.4, "fadeIn": 30 } ],
+    "air":   [ { "fromMin": 0,  "toMin": 6,  "level": 0.45, "elements": ["crickets"] },
+               { "fromMin": 5,  "toMin": 13, "level": 0.75, "elements": ["waves","wind"] } ]
+               // ^ overlaps 5–6 min on purpose: the texture carries across
+  }
 }
 ```
 
-Bowl assignments are **computed at load** from `chakra` + `mode` + `kit` using
-§2.3 — never stored. That way one session file works with any kit.
+Two rules that follow from this shape:
+
+- **Bowl assignments are computed at load** from `chakra` + `mode` + `kit` using
+  §2.3 — never stored. One session file then works with any kit.
+- **The pitch at any moment comes from the section covering that minute.** Lanes
+  say *what* is sounding; sections say *what key it is in.* A Bed block spanning
+  two sections migrates when it crosses the boundary.
 
 ---
 
