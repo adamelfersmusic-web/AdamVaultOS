@@ -346,6 +346,12 @@ Ocean waves carry real low content — filter them or they fight the Bed.
    to fight or follow blindly.
 4. **No competing melody.** A motif layer and a live improviser in the same
    register is two soloists.
+5. **Never bright by default.** Brightness is the single variable that decides
+   whether a pad is magic or unbearable, and it is asymmetric: slightly too dark
+   is pleasant, slightly too bright is fatiguing within minutes and actively
+   ruins a room. Every default errs dark. A tone control exists to let a
+   practitioner *add* air for a full, absorbent room — never to rescue a default
+   that was too bright to begin with.
 
 > **The best compliment the bed can get from an improviser is that they forgot
 > it was there.** Every instinct in music software pushes toward impressive.
@@ -634,6 +640,13 @@ exactly how hard that is and that they can't currently do it.
 4. **Design mode scope.** Real risk of the timeline quietly becoming a DAW.
    Guardrail: four bands, fixed roles, no track adding, no automation lanes.
 5. **Ambient screen mode vs. dark room discipline.** Must be reconciled.
+6. **Per-band tone vs. master tone.** A tilt EQ now exists on the master bus
+   (dark ↔ bright, ±6 dB, pivoting at 900 Hz, deliberately excluding the sub).
+   The open question is whether the more useful control is **Bed-only** — since
+   the Bed is what actually decides whether the room feels magic — possibly as a
+   single button rather than a continuous slider. Deferred until the master
+   version has been used in a real room; the answer depends on whether people
+   reach for it to fix the pad or to fix the room.
 
 ---
 
