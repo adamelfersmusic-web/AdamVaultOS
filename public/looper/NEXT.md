@@ -68,19 +68,50 @@ This directly addresses the real risk: not that nobody wants it, but that
 nobody finds it. Every shared link is a demo that arrives already configured by
 someone the recipient trusts.
 
-### 3. Count-in and section markers for loop mode
+### 3. Capture — record the session, not the loop
+
+**One button that records everything** — drone, kit, and mic — straight to a
+file while you play. Multiple takes, saved simply, no naming, no organising.
+
+This is the flow-state feature. The value isn't fidelity, it's *"what was that
+thing I just played?"* — and it has **no latency requirement at all**, because
+nothing is layered back in real time. That makes it roughly a tenth of the work
+of true looping with none of its problems.
+
+**True overdub looping is a separate, later, harder feature.** It collides with
+the one thing that makes this work on a phone: drones tolerate Bluetooth
+latency, loops do not. If you record over a playing drone, what you hear arrived
+150–200 ms late, so your take lands that far behind — and every overdub
+compounds it. That's fixable only with a real calibration step (play an impulse,
+capture it back, subtract the measured round trip), and it needs to exist before
+the feature is usable on anything but wired headphones.
+
+Two more phone-specific traps for whenever that gets built:
+
+- **Browsers default `getUserMedia` to speech processing.** Echo cancellation
+  actively ducks your instrument whenever the drone plays, noise suppression
+  eats sustained tones, and AGC pumps. All three must be explicitly disabled,
+  and some phones apply processing you cannot turn off.
+- **Internal mic plus speaker is a feedback loop**, and a sustaining drone is
+  the worst possible case for it.
+
+So looping ships as a mode you *enter*, with a stated setup (headphones or an
+interface) and a calibration tap — never as something that changes the front
+door. The front door stays "open it, press play."
+
+### 4. Count-in and section markers for loop mode
 
 For practicing long forms, knowing where you are matters more than the chord
 name. A 32-bar form needs a visible A/B/bridge structure, not 32 identical
 blocks.
 
-### 4. A fourth pad, and a darker one
+### 5. A fourth pad, and a darker one
 
 Felt is the workhorse. Glass and Vox are both fairly bright. Something with
 more low-mid weight — closer to a bowed string pad — would cover the case where
 someone is practicing over it for an hour and wants less air.
 
-### 5. Progression import
+### 6. Progression import
 
 Not a chart library — that fight is unwinnable, iReal Pro's moat is thousands
 of user-entered tunes. But **paste a chord line** ("Dm7 G7 Cmaj7 | Am7 D7 Gmaj7")
@@ -100,6 +131,25 @@ pretending to compete on catalog.
 ---
 
 ## Positioning notes
+
+### The value prop, in one sentence
+
+> **Opening a DAW puts you in producer mode. This keeps you in improviser mode.**
+
+That's the whole thing. Drones are how musicians practice, *and* drones are how
+you get into a flow state — and the enemy of flow is the twenty minutes of
+setup, routing and decision-making that a DAW demands before a single note
+happens. Producer mode and jam mode are different mental states, and the cost of
+switching between them is the actual problem this solves.
+
+Which means **speed of setup is the product**, not a feature of it. Every design
+decision gets measured against: does this get someone playing faster, or slower?
+
+Corollary: keep the grooves few and basic. Better grooves, not more grooves —
+adding one means cutting one. A groove menu is a decision, and decisions are
+producer mode.
+
+### Why the drone, not the progressions
 
 The drone side is the wedge, not the progression side. Almost everyone building
 this makes a chord player and bolts a drone on as a degenerate case — one chord,

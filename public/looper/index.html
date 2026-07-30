@@ -280,6 +280,7 @@
   <section class="mix">
     <label><span class="cap">Pad</span><input type="range" id="mixPad" min="0" max="100" value="80"></label>
     <label><span class="cap">Kit</span><input type="range" id="mixKit" min="0" max="100" value="70"></label>
+    <label><span class="cap">Tone</span><input type="range" id="mixTone" min="-100" max="100" value="0" title="Dark ← → Bright · double-click to reset"></label>
   </section>
 </div>
 
@@ -484,6 +485,7 @@ const state = {
   kit: { kick: true, shake: true, rim: true },
   bpm: 96,
   mix: { pad: 0.8, kit: 0.7 },
+  tone: 0,                       // -1 dark .. 0 flat .. +1 bright
   prog: [
     { root: 2, q: 'min7', beats: 4 },
     { root: 7, q: 'dom7', beats: 4 },
@@ -494,8 +496,8 @@ const state = {
 const STORE_KEY = 'pedal.v1';
 function saveState() {
   try {
-    const { mode, root, voicing, pad, groove, kit, bpm, mix, prog } = state;
-    localStorage.setItem(STORE_KEY, JSON.stringify({ mode, root, voicing, pad, groove, kit, bpm, mix, prog }));
+    const { mode, root, voicing, pad, groove, kit, bpm, mix, tone, prog } = state;
+    localStorage.setItem(STORE_KEY, JSON.stringify({ mode, root, voicing, pad, groove, kit, bpm, mix, tone, prog }));
   } catch (e) {}
 }
 function loadState() {
@@ -510,6 +512,7 @@ function loadState() {
     if (GROOVES[s.groove]) state.groove = s.groove;
     if (s.kit) state.kit = { kick: !!s.kit.kick, shake: !!s.kit.shake, rim: !!s.kit.rim };
     if (Number.isFinite(s.bpm)) state.bpm = Math.min(220, Math.max(40, Math.round(s.bpm)));
+    if (Number.isFinite(s.tone)) state.tone = Math.min(1, Math.max(-1, s.tone));
     if (s.mix) state.mix = {
       pad: Math.min(1, Math.max(0, +s.mix.pad || 0)),
       kit: Math.min(1, Math.max(0, +s.mix.kit || 0)),
@@ -563,8 +566,18 @@ function initAudio() {
   brick.threshold.value = -3; brick.knee.value = 0; brick.ratio.value = 16;
   brick.attack.value = 0.002; brick.release.value = 0.12;
   const out = ctx.createGain(); out.gain.value = 0.9;
-  glue.connect(brick); brick.connect(out); out.connect(ctx.destination);
+
+  // Tone: a tilt EQ. One control, two opposing shelves pivoting at 900 Hz, so
+  // dark means more body rather than merely less treble. Rooms and headphones
+  // differ far more than any default can cover.
+  A.tiltLo = ctx.createBiquadFilter();
+  A.tiltLo.type = 'lowshelf'; A.tiltLo.frequency.value = 900; A.tiltLo.gain.value = 0;
+  A.tiltHi = ctx.createBiquadFilter();
+  A.tiltHi.type = 'highshelf'; A.tiltHi.frequency.value = 900; A.tiltHi.gain.value = 0;
+  glue.connect(brick); brick.connect(A.tiltLo); A.tiltLo.connect(A.tiltHi);
+  A.tiltHi.connect(out); out.connect(ctx.destination);
   A.master = glue;
+  setTone(state.tone);
 
   // Shared reverb: synthesized stereo impulse, darkening tail.
   A.verb = ctx.createConvolver();
@@ -616,6 +629,16 @@ function makeImpulse(ctx, seconds, predelay) {
 
 const now = () => A.ctx.currentTime;
 const clampF = (f) => Math.min(Math.max(f, 24), 16000);
+
+/* Tilt EQ. ±6 dB is the whole useful range — wider just lets you wreck it. */
+const TONE_DB = 6;
+function setTone(v) {
+  state.tone = Math.max(-1, Math.min(1, v));
+  if (!A.tiltLo) return;
+  const t = now();
+  A.tiltHi.gain.setTargetAtTime(state.tone * TONE_DB, t, 0.08);
+  A.tiltLo.gain.setTargetAtTime(-state.tone * TONE_DB, t, 0.08);
+}
 
 /* ---------------- Pads ----------------
    A PadInstance is one sounding chord: bass + sub + upper voices.
@@ -1370,6 +1393,9 @@ function wire() {
     if (A.kitTrim) A.kitTrim.gain.setTargetAtTime(state.mix.kit, now(), 0.03);
     saveState();
   };
+  $('mixTone').value = state.tone * 100;
+  $('mixTone').oninput = e => { setTone(e.target.value / 100); saveState(); };
+  $('mixTone').ondblclick = e => { e.target.value = 0; setTone(0); saveState(); };
 
   $('playBtn').onclick = togglePlay;
 
