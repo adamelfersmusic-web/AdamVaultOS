@@ -1,0 +1,294 @@
+# Pedal — full spec
+
+A drone-first practice tool for improvising musicians.
+
+**Live:** https://adamelfersmusic-web.github.io/AdamVaultOS/looper/
+**Source:** `public/looper/index.html` — one self-contained file. No
+dependencies, no build step, no network, works offline.
+**Status:** shipped. Unverified on real speakers.
+
+> **A separate product from the sound bath app** (`/sound-bath-app/`).
+> Different user, different room, different problem. They share a synthesis
+> approach and nothing else, and should stay that way.
+
+---
+
+## 1. Why
+
+### The value proposition, in one sentence
+
+> **Opening a DAW puts you in producer mode. This keeps you in improviser mode.**
+
+Drones are how musicians practice, *and* drones are how you get into a flow
+state. The enemy of flow is the twenty minutes of setup, routing and
+decision-making a DAW demands before a single note happens. Producer mode and
+jam mode are different mental states and the switching cost between them is the
+real problem being solved.
+
+**Speed of setup is the product, not a feature of it.** Every design decision
+gets measured against one question: does this get someone playing sooner, or
+later?
+
+### The pain
+
+Every play-along tool for practicing improvisation sounds like a 2004 keyboard
+demo. iReal Pro is functionally excellent and sonically embarrassing. The tone
+*is* the product — if the pads aren't good enough that someone would leave them
+running for an hour, nothing else matters.
+
+And most practice happens **without bars.** An improviser working on ear
+training wants one chord droning forever while they feel out where the tones
+sit. Almost everyone building this makes a chord player and bolts a drone on as
+a degenerate case — one chord, infinite length. Inverting that is the whole
+idea, because tonic-relative hearing is the actual skill and a drone is the only
+way to isolate it.
+
+### Who it's for
+
+A working improviser who has already made ghetto versions of this — exporting
+30-second drones out of Logic and looping them on their phone for a decade. They
+don't need to be taught theory. They need something that makes sound in two taps
+and gets out of the way.
+
+Concretely: anyone working intonation against a reference (horn players,
+singers, strings, bass), the very large population of guitarists who want
+something to noodle over, and teachers who would send a link.
+
+### Why a phone genuinely wins
+
+**Drones have no latency requirement.** Bluetooth's 150–200 ms lag makes a
+metronome unusable and a drone completely unaffected. So "pull it up, Bluetooth
+to whatever speaker is in the room, hit play" isn't a compromise — for this one
+use case it is strictly better than a hardware rig.
+
+Existing options fail in specific ways:
+- **iReal Pro** — clumsy at holding one thing forever; its moat is a library of
+  thousands of user-entered tunes, not its software.
+- **Tanpura apps** — timbrally committed to Indian classical. Perfect inside
+  that tradition, useless if you want a neutral pad.
+- **Hardware workarounds** — hold a pad and hit sustain on a looper, or carry a
+  freeze pedal. All worse than a phone in your pocket.
+
+---
+
+## 2. Design
+
+**Aesthetic:** matte hardware. Warm graphite panels, hairline borders, near-
+square corners, letterspaced micro-caps. A single amber that behaves like an LED
+— it *only* ever means "this is sounding." Active states are an amber underline,
+never a filled chip.
+
+**Anti-references, explicitly avoided:** the iReal Pro / Band-in-a-Box look
+(skeuomorphic, busy, cheerful, dated); generic "AI dark mode" (near-black plus
+one acid accent, rounded cards, gradient headings); anything reading as a
+music-theory teaching tool (no staff notation, no piano diagrams, no explainers).
+
+**Motion is functional only** — showing position in a loop, showing what's
+active. Never decorative.
+
+**Layout:** single column, sticky transport at the bottom carrying the play
+button and a plain-language readout of what's playing ("A · root + fifth /
+Felt · 96 bpm · Bossa · full kit"). The wordmark carries a real LED that flashes
+the pulse, brighter on downbeats.
+
+---
+
+## 3. What is built
+
+### Modes
+
+**Drone** (default) — 12 chromatic roots, three voicings, **no bar counter or
+measure grid anywhere in this mode.** Changing root while running glides via
+portamento on every oscillator rather than restarting. Voicings: Root (just the
+tone), Fifth (root + fifth), Wide (octave weight).
+
+**Loop** — chord progressions drawn as blocks with width proportional to
+duration, a live playhead, and a bar counter. Tap a block to edit: root, six
+qualities (maj, min, 7, maj7, m7, ø7), lengths from ½ to 8 bars, plus
+move/duplicate/delete. "Add" stays open and pre-advances the root a fourth for
+fast entry. Ships seeded with Dm7–G7–CΔ.
+
+Chords connect by **nearest-voice voice leading** — bass on the root, three
+upper voices placed to minimise motion — so long forms move smoothly.
+
+### Sound
+
+**Three pads,** deliberately different, all designed for hours of sustain:
+- **Felt** — soft-detuned saws under a slowly breathing dark lowpass. Juno
+  blanket territory.
+- **Glass** — low-index two-op FM plus sine partials at the octave and twelfth,
+  each blooming on its own slow cycle. Nothing above a sine, so harshness is
+  structurally impossible.
+- **Vox** — detuned triangles through fixed vocal formants with a drifting
+  second formant, so the vowel slowly turns.
+
+Detune never exceeds 3.5 cents and no LFO runs faster than 0.1 Hz — so there is
+no wobble over an hour.
+
+**Kit:**
+- **Kick** — clean sine drop with a 3 ms soft attack. Neutral and digital: not
+  acoustic, not an 808, not a clicky EDM kick.
+- **Shaker** — banded noise whose filter centre wanders per hit, so a long run
+  never sounds stamped. Tempo-independent envelopes.
+- **Rim** — three tuned resonators struck by a 4 ms noise chirp.
+
+**Six grooves,** curated not exhaustive:
+
+| Groove | What it is |
+|---|---|
+| Click | straight per-beat metronome, accented downbeats |
+| Floor | four-on-the-floor, rim answering 2 and 4 |
+| Back | backbeat, kick on 1 and 3 with an and-of-4 pickup |
+| Dust | lo-fi, swung sixteenths, humanised timing and velocity |
+| Bossa | **true bossa clave** (1, 2&, 4 \| 2, 3&) over the surdo foot pattern |
+| Songo | **son clave 2-3** (2, 3 \| 1, 2&, 4) with tumbao kick anchors |
+
+**Any kit voice mutes out of any groove** — strip to just shaker, shaker and
+rim, whatever. That is the only customisation that matters.
+
+### Controls
+
+- **Tone** — a tilt EQ. Two opposing shelves pivoting at 900 Hz, ±6 dB, so dark
+  means *more body* rather than merely less treble. Double-click resets.
+  Verified monotonic: 181 / 242 / 366 Hz spectral centroid at dark / flat /
+  bright.
+- Pad and Kit level faders.
+- **BPM** — steppers, vertical drag, and tap tempo. 40–220.
+- Space toggles play; arrow keys walk the root chromatically in drone mode.
+- Screen wake lock while playing.
+- Full state persisted to localStorage.
+
+---
+
+## 4. What is NOT built, deliberately
+
+| Not building | Why |
+|---|---|
+| **A tune library** | Unwinnable — iReal Pro's moat is thousands of user-entered charts. And it isn't the wedge; the drone side is. |
+| **Notation, piano diagrams, theory explainers** | The user already knows. This is an instrument, not a teacher. |
+| **Accounts, sync, cloud** | A URL plus localStorage covers the entire need. |
+| **More grooves** | Six curated beats twenty. A groove menu is a decision, and decisions are producer mode. Adding one means cutting one. |
+| **A mixer, effect racks, automation** | That is a DAW, which is the thing being escaped. |
+
+---
+
+## 5. The one open question
+
+**Nobody has heard it on real speakers.**
+
+It was built and metered, never listened to. The whole differentiator is "this
+sounds good enough that you'd leave it running for an hour," and that is
+currently unverified. The failure mode is **fatigue**, which does not appear in
+a thirty-second audition — it appears at minute twenty.
+
+Everything in §6 is speculative until that listen happens.
+
+---
+
+## 6. What to build next, in order
+
+### 1. Whatever the listen turns up
+
+Priority zero. Every item below is worth less than a good-sounding pad.
+
+Known from the sound bath engine and likely present here too:
+- **Level-dependent brightness.** The reverb send is post-fader into a
+  high-passed reverb, so raising a bus adds proportionally more mid-and-top
+  content and the timbre shifts as you move the fader. Fixed in `bed.html` by
+  tapping the send pre-fader and backing off the glue compressor; measured drift
+  went from audible to 0%. The same fix applies here.
+- **Sub-range limiter distortion.** The master brick-wall has a 3 ms attack;
+  one cycle at 45 Hz is 22 ms, so it tracks *inside* the waveform and adds grit
+  to low content. Fixed in `bed.html` by giving low material its own limiter
+  with an attack longer than one cycle.
+
+### 2. Shareable state in the URL
+
+The highest-leverage feature for distribution, and small.
+
+A teacher sends `…/looper/#A/fifth/felt/bossa/96` and the student lands on
+exactly that setup. Same for a progression. No account, no save, no backend —
+**the URL is the save file.**
+
+This targets the real risk directly. The problem was never that nobody wants it;
+it's that nobody finds it, and "sounds better" survives neither a screenshot nor
+a feature list. Every shared link is a demo arriving pre-configured from someone
+the recipient already trusts.
+
+### 3. Capture — record the session, not the loop
+
+**One button that records everything** — drone, kit and mic — to a file while
+you play. Multiple takes, saved simply, no naming, no organising.
+
+This is the flow-state feature. The value isn't fidelity, it's *"what was that
+thing I just played?"* And it has **no latency requirement at all**, because
+nothing is layered back in real time — roughly a tenth of the work of true
+looping with none of its problems.
+
+**True overdub looping is a separate, later, harder feature.** It collides with
+the one thing that makes this work on a phone: drones tolerate Bluetooth
+latency, loops do not. Record over a playing drone and what you heard arrived
+150–200 ms late, so the take lands that far behind, and every overdub compounds
+it. Fixable only with real calibration — play an impulse, capture it back,
+subtract the measured round trip — which must exist before the feature is usable
+on anything but wired headphones.
+
+Two more phone-specific traps for whenever that gets built:
+- **Browsers default `getUserMedia` to speech processing.** Echo cancellation
+  actively ducks your instrument whenever the drone plays, noise suppression
+  eats sustained tones, AGC pumps. All three must be explicitly disabled, and
+  some phones apply processing you cannot turn off.
+- **Internal mic plus speaker is a feedback loop**, and a sustaining drone is
+  the worst possible case.
+
+So looping ships as a mode you *enter*, with a stated setup (headphones or an
+interface) and a calibration tap — never as something that changes the front
+door. The front door stays "open it, press play."
+
+### 4. Wavetable pads
+
+Web Audio's `createPeriodicWave()` takes harmonic amplitudes and builds a
+band-limited oscillator playable at any pitch. That means **sampled character
+with synthesised pitch**: design a pad in a DAW, render a sustained note,
+extract its harmonic spectrum, and that becomes the oscillator.
+
+A wavetable is a few hundred bytes. Unlimited timbre, no file size, no loop
+points, full pitch freedom.
+
+### 5. Count-in and section markers for loop mode
+
+For long forms, knowing where you are matters more than the chord name. A 32-bar
+form needs visible A / B / bridge structure, not 32 identical blocks.
+
+### 6. A fourth pad, darker
+
+Felt is the workhorse; Glass and Vox are both fairly bright. Something with more
+low-mid weight — closer to a bowed string pad — covers the hour-long practice
+case where someone wants less air.
+
+### 7. Progression import
+
+Not a chart library. But **paste a chord line** — `Dm7 G7 Cmaj7 | Am7 D7 Gmaj7`
+— and parse it. Turns a two-minute entry job into five seconds without
+pretending to compete on catalogue.
+
+---
+
+## 7. Naming
+
+Working name is **Pedal**. Candidates raised: DroneFlow, FlowSound.io,
+DroneLoop.io.
+
+One caution worth knowing before committing: **"drone" means UAV to the general
+internet.** Search results and ad keywords are dominated by quadcopters, which
+is a real discoverability tax on a product whose main risk is already discovery.
+It's a tradeoff rather than a dealbreaker — the target audience knows the
+musical meaning — but it should be a decision, not an accident.
+
+Of the three, **DroneFlow** is strongest, because "flow" encodes the actual
+value proposition rather than the mechanism. `DroneLoop` describes the least
+important half of the product, and `FlowSound` is generic enough to be invisible.
+
+The naming territory worth mining is the positioning itself: staying in
+improviser mode, never entering producer mode, an instrument rather than a
+studio.

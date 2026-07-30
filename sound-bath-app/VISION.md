@@ -1,9 +1,17 @@
 # Sound Bath App — Master Vision
 
-**Status:** v0.1 canonical vision. Working document.
-**Name:** undecided. *Atmos is unusable — Dolby owns it in audio.* Naming
-territory to explore: the practitioner's own phrase, **"holding space."** The
-app holds the space; the humans move the energy through it.
+**Status:** v0.2. Vision plus two working prototypes. See §0.5 for what exists.
+**Name:** undecided. Candidates: **Bed**, **Bath**, bathsound.io.
+*Atmos is unusable — Dolby owns it in audio.* Other territory: the
+practitioner's own phrase, **"holding space"** — the app holds the space, the
+humans move the energy through it.
+
+Note the naming constraint here is the **opposite** of Pedal's. Pedal's main
+risk is discovery, so a searchable name matters. This app sells hand-to-hand
+inside a community, so memorability and meaning matter far more than search
+volume — which makes a generic English word much cheaper here than it would be
+for a consumer product. **Bed** carries the most meaning: the musical bed, the
+thing you lie on, and the sense of being held, all at once.
 
 ---
 
@@ -14,6 +22,45 @@ room.**
 
 Everything below is downstream of that sentence. If a feature doesn't serve it,
 cut it.
+
+---
+
+## 0.5 Current state — what actually exists
+
+Two working prototypes. Both are single self-contained HTML files, no
+dependencies, and both are **listening/working instruments rather than designed
+apps** — the interface is throwaway, the behaviour is the deliverable.
+
+### `prototype/bed.html` — the four-band sound engine
+
+Verified working:
+
+| | Status |
+|---|---|
+| **Deep** (sub) | 38–74 Hz, pure sine. 2nd harmonic **−92 dB** relative to fundamental. Own limiter with a 50 ms attack (longer than one cycle) so it is never distorted by the master brick-wall. Modulation **7.6%** — the 6/min breath and nothing else. Large key moves duck out and back in rather than sweeping. Optional missing-fundamental reinforcement for small speakers. |
+| **Bed** (drone) | Root / fifth / octave / ninth — never a third. Detuned saws plus triangle under a slowly breathing dark lowpass, plus a pure sine body and a barely-there shimmer. Voices keep their role permanently. |
+| **Voice** | Sparse two-op FM Rhodes, one tone every 9–26 s, pitches drawn from the drone's own set so it cannot state a third either. |
+| **Air** | Fully synthesised crickets (resonant noise, falling chirp, five individuals at different distances), waves, wind, rain. No samples anywhere. |
+| **Key migration** | Verified across a five-key walk: no voice ever moves more than 5 semitones, levels identical after every migration, C→B is a semitone down rather than eleven up. |
+| **Tone** | Tilt EQ, ±6 dB pivoting at 900 Hz. Verified monotonic (436 / 548 / 866 Hz) and verified **not** to touch the sub (0.10 dB spread). |
+| Reference pitch | Editable Hz field, not a 432/440 toggle. |
+
+**Assessed by a practitioner as:** *"already world class for a lot of people I
+know"* — sub confirmed working and unavailable anywhere else in the space; the
+carving confirmed by singing a C bowl pitch over it and having it sit correctly.
+
+### `prototype/sheets.html` — the handout generator
+
+Builds the printed bowl sheet from chakra + mode + duration. Computes the
+notation live, prints black-on-white, self-checks the algorithm against all
+three real sections on every load, warns when a section leaves the group fewer
+than two usable bowls, handles arbitrary kits, and exports the same JSON session
+format the app consumes. Both real handouts ship as loadable examples.
+
+### Still unbuilt
+
+Everything in §B beyond the engine: perform mode, the cue list, follower sync,
+design mode, the wizard, lights, marketplace.
 
 ---
 
@@ -705,16 +752,32 @@ listeners and becomes the eleventh app in category one.
 
 ---
 
+## What we are NOT building
+
+| Not building | Why |
+|---|---|
+| **A DAW** | Infinite choice is the wall this exists to remove. Four fixed bands, fixed roles, no track adding, no automation lanes, no effect racks. |
+| **A listening app** | The category is packed — The Sound Bath App, PAUSE, Insight Timer, Sound Bath Journeys. This is for the person *leading*, not receiving. |
+| **Anything called AI** | In this market the word signals inauthentic and extractive. The wizard is a decision tree — instant, offline, free, and it can never say anything strange. |
+| **Health claims** | The app labels, it never explains. `HEART · F` and nothing more. No copy asserting what a frequency does to a body. |
+| **Audio in packs** | Rendered audio cannot migrate key with the room, so the first purchase would break the signature gesture. Packs are parameters. |
+| **Manufactured speakers** | Heavy freight plus damage economics eats small companies. Recommend → affiliate → rent. If hardware ever carries the brand, it's the LED pads. |
+| **Audio sync across devices** | Brutal (clock drift, jitter) and unnecessary. One device makes sound, the rest are displays. |
+| **Venue lighting rigs** | Every bulb ecosystem is a separate integration and support burden. LED bowl pads are already in the room and are the right v1. |
+| **A pulse, anywhere** | Law 1. Ecstatic dance wants one; that's a different product. |
+| **Birds, flute** | Both go uncanny when synthesised, and one fake voice cheapens the whole palette. Real sessions use human flute players; leave it there. |
+
+---
+
 ## Sequencing
 
-**Phase 0 — Validate the sound.** Four bands, key migration, crude UI, no
-timeline, no sync, no lights. Run it loud through a real speaker in a real room
-in front of the strongest practitioner available. *Everything else is downstream
-of this answer.*
+**Phase 0 — Validate the sound.** ✅ **Done.** Engine built, measured, and
+assessed by a practitioner as working. Sub confirmed as a genuine
+differentiator. Remaining sound work is timbre refinement, which is tunable
+forever and no longer blocks anything.
 
-**Phase 1 — The sheet generator.** Enter sections and keys, print the handouts.
-No audio engine required. A weekend. Immediately useful, and the fastest test of
-whether this reads as *made by someone who's been in the room.*
+**Phase 1 — The sheet generator.** ✅ **Built.** Not yet handed to real bowl
+players — that test is outstanding and costs nothing.
 
 **Phase 2 — Templates + perform mode.** Cue list, HOLD/NEXT/JUMP, follower sync.
 Performable without a designer existing.
@@ -724,6 +787,41 @@ Performable without a designer existing.
 **Phase 4 — Pack format hardening + in-house curator packs.**
 
 **Phase 5 —** Lights (LED pads), live inputs, marketplace, hardware bundle.
+
+---
+
+## Sound work still owed (tunable, not blocking)
+
+Ranked by what a practitioner actually flagged:
+
+1. **Foley must become world class.** The split is **procedural weather,
+   sampled biology.** Rain, wind and waves are filtered-noise processes where
+   synthesis genuinely *wins* — a sampled loop reveals itself over forty
+   minutes and synthesis never repeats. Crickets, birds and frogs are
+   behavioural and spectrally messy; synthesis loses. Sampling those breaks
+   nothing, because **Air is unpitched and migration only binds pitched
+   material.**
+2. **Wavetables for the Bed.** `createPeriodicWave()` takes harmonic amplitudes
+   and plays them at any pitch — sampled character, synthesised pitch, full
+   migration. Design a pad in a DAW, render a sustained note, extract its
+   spectrum. **A wavetable is a few hundred bytes**, so custom timbres stay
+   inside the preset-not-audio architecture: a curator's signature *sound*
+   ships as JSON. This is what lets packs have real sonic identity.
+3. **Sub translation across speakers.** The sub sits anywhere from 41 Hz (E) to
+   73 Hz (D) depending on key. On a proper sub that's fine; on a Bluetooth
+   speaker rolling off at 80 Hz, 73 Hz is faintly present and 41 Hz is
+   *completely absent* — so a migrating session would have the floor appear and
+   vanish. The harmonic reinforcement must scale with how low the fundamental
+   sits rather than being a flat toggle. **Do not ask the user whether they have
+   a sub** — most don't know, and it's an intimidating first-run question.
+   Always reinforce at a level masked when the real fundamental is present.
+4. **Evolving layers, scoped correctly.** With live players the bed stays
+   static — they provide the variance and anything moving underneath is
+   something to fight. Solo, the app provides it. Implementation must be **layer
+   entries timed to the section**, not free-running swells: a layer *entering*
+   on schedule is arrangement, a layer swelling unpredictably is automation and
+   breaks law 3.
+5. **More pad characters**, which is really the same answer as (2).
 
 ---
 
