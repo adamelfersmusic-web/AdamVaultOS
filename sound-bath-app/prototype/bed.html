@@ -276,6 +276,17 @@ function initAudio() {
   glue.connect(brick); brick.connect(out); out.connect(ctx.destination);
   A.master = glue;
 
+  // The sub bypasses the master compressors entirely. A 3 ms attack against a
+  // 40 Hz waveform (25 ms per cycle) tracks INSIDE the cycle and turns a clean
+  // sine into grit — and a compressor that can see the sub also pumps the whole
+  // mix at the sub's rate. Deep gets its own limiter with an attack longer than
+  // one cycle, which is the only way to limit bass without distorting it.
+  const subGuard = ctx.createDynamicsCompressor();
+  subGuard.threshold.value = -6; subGuard.knee.value = 6; subGuard.ratio.value = 8;
+  subGuard.attack.value = 0.05; subGuard.release.value = 0.4;
+  subGuard.connect(out);
+  A.subOut = subGuard;
+
   // A big, dark room. 7.5s tail — a sound bath space, not a studio plate.
   A.verb = ctx.createConvolver();
   A.verb.buffer = makeImpulse(ctx, 7.5, 0.03);
@@ -297,7 +308,8 @@ function initAudio() {
     const input = ctx.createGain();
     const trim = ctx.createGain();
     trim.gain.value = state.on[b] ? state.levels[b] : 0;
-    input.connect(trim); trim.connect(A.master);
+    input.connect(trim);
+    trim.connect(b === 'deep' ? A.subOut : A.master);
     A.bus[b] = input;          // everything connects here
     A.trim[b] = trim;          // the fader
     if (sends[b] > 0) {
@@ -388,12 +400,22 @@ function bedPitches(pc, prevRoot = null) {
     { midi: root + 26, lvl: 0.11, role: 'ninth' },
   ];
 }
-function deepPitch(pc) {
-  // Land the sub between ~33 and ~65 Hz whatever the root is.
-  let m = 24 + pc;
-  while (mhz(m) > 66) m -= 12;
-  while (mhz(m) < 32) m += 12;
-  return m;
+function deepPitch(pc, prevMidi = null) {
+  // Land the sub between ~38 and ~74 Hz. Below about 35 Hz the ear stops
+  // hearing pitch and starts hearing individual waveform cycles as flutter,
+  // which reads as rumble rather than as a floor. 40-70 is also where chest
+  // and gut resonance actually live, so it is felt as well as heard.
+  const inRange = [];
+  for (let m = 12 + pc; m <= 60 + pc; m += 12) {
+    const hz = mhz(m);
+    if (hz >= 38 && hz <= 74) inRange.push(m);
+  }
+  if (!inRange.length) return 24 + pc;
+  // Pick the octave nearest the sub's current pitch, so a key change never
+  // makes the floor leap. Without this, D to E dropped nearly an octave.
+  if (prevMidi == null) return inRange[0];
+  return inRange.reduce((a, m) =>
+    Math.abs(m - prevMidi) < Math.abs(a - prevMidi) ? m : a, inRange[0]);
 }
 /* ==========================================================================
    BAND 1 — DEEP.  20-80 Hz. Nothing else is allowed down here.
@@ -416,18 +438,17 @@ class Deep {
     // Fundamental.
     this.osc = ctx.createOscillator();
     this.osc.type = 'sine'; this.osc.frequency.setValueAtTime(clampF(f), t);
-    const og = ctx.createGain(); og.gain.value = 0.6;
+    const og = ctx.createGain(); og.gain.value = 0.82;
     this.osc.connect(og); og.connect(this.out);
     this.osc.start(t); this.nodes.push(this.osc);
 
-    // A second sine a hair off, for slow beating — gives the sub life without
-    // any LFO. ~0.15 Hz of beating at these frequencies reads as breath.
-    this.osc2 = ctx.createOscillator();
-    this.osc2.type = 'sine'; this.osc2.frequency.setValueAtTime(clampF(f), t);
-    this.osc2.detune.value = 4;
-    const o2g = ctx.createGain(); o2g.gain.value = 0.24;
-    this.osc2.connect(o2g); o2g.connect(this.out);
-    this.osc2.start(t); this.nodes.push(this.osc2);
+    // There is deliberately no second oscillator here. A detuned partner beats
+    // against the fundamental, and at sub frequencies that beat is enormous:
+    // measured 54% amplitude swing, because the two sines go from fully
+    // constructive to fully destructive. At 4 cents that cycle ran every ~10
+    // seconds and read as anxious pulsing; at 1 cent it ran every ~40 seconds
+    // and was still a huge swell. A sub is the one place where purity beats
+    // movement — one sine, one gentle breath, nothing else.
 
     // Missing-fundamental reinforcement for speakers that can't go low.
     // 2f/3f/4f let the ear reconstruct a fundamental that isn't there.
@@ -448,16 +469,36 @@ class Deep {
     // Shallow on purpose: this is a timbral property, not an arrangement move.
     this.breath = ctx.createGain(); this.breath.gain.value = 1;
     this.out.disconnect(); this.out.connect(this.breath); this.breath.connect(A.bus.deep);
-    this.lfo = slowLFO(0.1, state.deepBreath ? 0.16 : 0, this.breath.gain, t, false);
+    // Six cycles a minute — the coherent-breathing rate. Depth kept shallow:
+    // a 16% swing on a sub is a dynamic event, not a texture, and it registers
+    // as something happening to you rather than as the room breathing.
+    this.lfo = slowLFO(0.1, state.deepBreath ? 0.07 : 0, this.breath.gain, t, false);
     this.nodes.push(this.lfo);
   }
-  setBreath(on, t) { this.lfo.depth.gain.setTargetAtTime(on ? 0.16 : 0, t, 1.5); }
+  setBreath(on, t) { this.lfo.depth.gain.setTargetAtTime(on ? 0.07 : 0, t, 1.5); }
   setSmall(on, t) { this.harm.gain.setTargetAtTime(on ? 1 : 0.0001, t, 0.8); }
+  /* The usable sub window (38-74 Hz) is under one octave wide, so for some
+     pitch classes there is only ONE octave that fits — which means a key change
+     can force the floor to move nine or ten semitones. Sweeping a sub that far
+     is a sound effect, not a modulation. Small moves glide; large ones duck out
+     and back in, so the floor changes without ever being heard to travel. */
   retune(pc, t, glide) {
-    const midi = deepPitch(pc); this.midi = midi;
+    const midi = deepPitch(pc, this.midi);
+    const leap = Math.abs(midi - this.midi);
+    this.midi = midi;
     const f = mhz(midi);
+
+    if (leap > 5) {
+      const dip = this.out.gain;
+      dip.cancelScheduledValues(t);
+      dip.setTargetAtTime(0.0001, t, 1.1);                    // sink away
+      const back = t + 4.5;
+      this.osc.frequency.setValueAtTime(clampF(f), back);      // re-pitch silent
+      for (const h of this.harmOscs) h.o.frequency.setValueAtTime(clampF(f * h.mult), back);
+      dip.setTargetAtTime(1, back, 2.2);                       // rise again
+      return;
+    }
     this.osc.frequency.setTargetAtTime(clampF(f), t, glide / 3);
-    this.osc2.frequency.setTargetAtTime(clampF(f), t, glide / 3);
     for (const h of this.harmOscs) h.o.frequency.setTargetAtTime(clampF(f * h.mult), t, glide / 3);
   }
   stop(t) {
