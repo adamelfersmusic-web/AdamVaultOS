@@ -240,8 +240,9 @@ const state = {
 
 const A = {
   ctx: null, master: null, verb: null,
-  bus: {},                   // per-band gain
-  send: {},                  // per-band reverb send
+  bus: {},                   // per-band input (things connect here)
+  trim: {},                  // per-band fader
+  send: {},                  // per-band reverb send, tapped pre-fader
   noise: null,
   migrating: false,
 };
@@ -261,9 +262,13 @@ function initAudio() {
 
   // Master: gentle glue, then a true safety limiter. Nothing here should ever
   // be working hard — if the limiter is moving, a band is too loud.
+  // Barely-there glue. A drone's energy is overwhelmingly low, so a working
+  // compressor ducks the fundamental harder than the top and the whole bed
+  // appears to brighten as you turn it up. Keep it out of the way and let the
+  // brick wall below handle safety.
   const glue = ctx.createDynamicsCompressor();
-  glue.threshold.value = -20; glue.knee.value = 30; glue.ratio.value = 2;
-  glue.attack.value = 0.2; glue.release.value = 0.6;
+  glue.threshold.value = -9; glue.knee.value = 30; glue.ratio.value = 1.4;
+  glue.attack.value = 0.25; glue.release.value = 0.8;
   const brick = ctx.createDynamicsCompressor();
   brick.threshold.value = -2.5; brick.knee.value = 0; brick.ratio.value = 20;
   brick.attack.value = 0.003; brick.release.value = 0.25;
@@ -282,16 +287,23 @@ function initAudio() {
   const verbLvl = ctx.createGain(); verbLvl.gain.value = 0.9;
   A.verb.connect(verbHP); verbHP.connect(verbTone); verbTone.connect(verbLvl); verbLvl.connect(A.master);
 
-  // Per-band bus + independent reverb send.
+  // Per-band input bus -> fader -> master, with the reverb send tapped
+  // PRE-fader. Post-fader, the send scales with the band level, and since the
+  // reverb is high-passed the extra content is all mid and top — so turning a
+  // band up made it brighter as well as louder. Pre-fader keeps the timbre
+  // identical at every level.
   const sends = { deep: 0.0, bed: 0.42, voice: 0.55, air: 0.22 };
   for (const b of ['deep', 'bed', 'voice', 'air']) {
-    const g = ctx.createGain();
-    g.gain.value = state.on[b] ? state.levels[b] : 0;
-    g.connect(A.master);
-    A.bus[b] = g;
+    const input = ctx.createGain();
+    const trim = ctx.createGain();
+    trim.gain.value = state.on[b] ? state.levels[b] : 0;
+    input.connect(trim); trim.connect(A.master);
+    A.bus[b] = input;          // everything connects here
+    A.trim[b] = trim;          // the fader
     if (sends[b] > 0) {
-      const s = ctx.createGain(); s.gain.value = sends[b];
-      g.connect(s); s.connect(A.verb);
+      const s = ctx.createGain(); s.gain.value = sends[b] * (state.on[b] ? 1 : 0);
+      s.__base = sends[b];
+      input.connect(s); s.connect(A.verb);
       A.send[b] = s;
     }
   }
@@ -353,14 +365,27 @@ function slowLFO(rate, depth, target, t, phaseOffset = true) {
 
 /* The Bed's pitch set: root, fifth, octave, ninth. Never a third — the drone
    must not decide major or minor on behalf of whoever is playing over it. */
-function bedPitches(pc) {
-  const root = 36 + pc;                    // C2..B2
+function bedPitches(pc, prevRoot = null) {
+  // Choose the octave of the new root nearest the old one, so a key change is
+  // always the shortest move available — C to B is a semitone down, not eleven
+  // semitones up. Every voice then travels the same small interval and nothing
+  // ever leaps registers.
+  let root = 36 + pc;
+  if (prevRoot != null) {
+    let best = root, bestD = Infinity;
+    for (let cand = 24 + pc; cand <= 48 + pc; cand += 12) {
+      if (cand < 31 || cand > 45) continue;          // keep the bass in the bass
+      const d = Math.abs(cand - prevRoot);
+      if (d < bestD) { bestD = d; best = cand; }
+    }
+    root = best;
+  }
   return [
     { midi: root,      lvl: 0.62, role: 'root'  },
     { midi: root + 7,  lvl: 0.46, role: 'fifth' },
-    { midi: root + 12, lvl: 0.5,  role: 'oct'   },
-    { midi: root + 19, lvl: 0.28, role: 'fifth2'},
-    { midi: root + 26, lvl: 0.13, role: 'ninth' },
+    { midi: root + 12, lvl: 0.40, role: 'oct'   },
+    { midi: root + 19, lvl: 0.24, role: 'fifth2'},
+    { midi: root + 26, lvl: 0.11, role: 'ninth' },
   ];
 }
 function deepPitch(pc) {
@@ -497,18 +522,24 @@ class BedVoice {
     // is the only thing in the Bed above ~3 kHz and it is barely there.
     const sh = ctx.createOscillator();
     sh.type = 'sine'; sh.frequency.setValueAtTime(clampF(f * 4), t);
-    const shg = ctx.createGain(); shg.gain.value = 0.012;
-    this.nodes.push(slowLFO(rand(0.02, 0.04), 0.01, shg.gain, t));
+    const shg = ctx.createGain(); shg.gain.value = 0.007;
+    this.nodes.push(slowLFO(rand(0.02, 0.04), 0.005, shg.gain, t));
     sh.connect(shg); shg.connect(this.out);
     sh.start(t); this.nodes.push(sh); this.oscs.push({ o: sh, ratio: 4 });
   }
-  /* Retune this voice to a new pitch over `glide` seconds. */
-  retune(midi, t, glide) {
+  /* Retune to a new pitch over `glide` seconds, and adopt that slot's level.
+     The level must travel with the pitch — a voice that lands on the top of
+     the voicing has to arrive at the top voice's volume, or it screams. */
+  retune(midi, level, t, glide) {
     this.midi = midi;
     const f = mhz(midi);
     for (const s of this.oscs) s.o.frequency.setTargetAtTime(clampF(f * s.ratio), t, glide / 3);
     this.baseCut = Math.min(f * 5.5, 1450);
     this.lp.frequency.setTargetAtTime(this.baseCut, t, glide / 3);
+    if (level != null) {
+      this.spec.lvl = level;
+      this.out.gain.setTargetAtTime(level, t, glide / 3);
+    }
   }
   stop(t) {
     this.out.gain.setTargetAtTime(0, t, 1.6);
@@ -518,43 +549,40 @@ class BedVoice {
 
 class Bed {
   constructor(pc, t) {
-    this.voices = bedPitches(pc).map((s, i) => new BedVoice(s, t, i));
+    const specs = bedPitches(pc);
+    this.rootMidi = specs[0].midi;
+    this.voices = specs.map((s, i) => new BedVoice(s, t, i));
   }
   /* Key migration. Common tones do not move at all; everything else is
      staggered one voice at a time so the ear never hears a modulation, only
      notices afterwards that the room is somewhere else. */
-  migrate(pc, t, total = 25) {
-    const targets = bedPitches(pc).map(s => s.midi);
-    const free = this.voices.slice();
-    const held = [], moving = [];
+  /* Key migration.
 
-    // Pass 1 — true common tones. Any voice already sounding a pitch class the
-    // new key also needs simply does not move. F and C share both C and G, so
-    // two of five voices sit perfectly still through that migration; that is
-    // what makes the change land as "the room is elsewhere now" rather than as
-    // a modulation anyone can hear happening.
-    for (const want of targets.slice()) {
-      const i = free.findIndex(v => v.midi % 12 === want % 12);
-      if (i >= 0) {
-        held.push(free[i]);
-        free.splice(i, 1);
-        targets.splice(targets.indexOf(want), 1);
-      }
-    }
-    // Pass 2 — everything left moves the shortest distance available.
-    for (const want of targets) {
-      let best = 0, bestD = Infinity;
-      free.forEach((v, i) => {
-        const d = Math.abs(v.midi - want);
-        if (d < bestD) { bestD = d; best = i; }
-      });
-      moving.push({ v: free[best], want });
-      free.splice(best, 1);
-    }
+     Voices keep their ROLE. Voice 0 is always the root, voice 4 is always the
+     top — they never trade places. An earlier version matched voices to target
+     pitches by nearest distance, which let the bass voice get assigned the top
+     pitch and sweep two octaves upward at root volume. That is a siren, not a
+     migration.
+
+     Because bedPitches() picks the root octave nearest the previous root, every
+     voice travels the same small interval — C to D is five voices moving two
+     semitones, not one voice moving twenty-eight. A voice whose pitch is
+     already correct simply doesn't move at all. */
+  migrate(pc, t, total = 25) {
+    const targets = bedPitches(pc, this.rootMidi);
+    this.rootMidi = targets[0].midi;
+
+    const moving = [];
+    let held = 0;
+    this.voices.forEach((v, i) => {
+      const tgt = targets[i];
+      if (v.midi === tgt.midi) { held++; v.retune(tgt.midi, tgt.lvl, t, 3); }
+      else moving.push({ v, tgt });
+    });
 
     const step = moving.length ? (total * 0.7) / moving.length : 0;
-    moving.forEach((m, i) => m.v.retune(m.want, t + i * step, Math.max(step, 6)));
-    return { held: held.length, moving: moving.length, total };
+    moving.forEach((m, i) => m.v.retune(m.tgt.midi, m.tgt.lvl, t + i * step, Math.max(step, 6)));
+    return { held, moving: moving.length, total };
   }
   stop(t) { for (const v of this.voices) v.stop(t); }
 }
@@ -633,45 +661,63 @@ class Voice {
 class Crickets {
   constructor(t) {
     this.alive = true; this.timers = [];
-    // Three individuals at slightly different pitches and rates. A field, not
-    // a loop — no two chirps in a session are identical.
-    for (let i = 0; i < 3; i++) {
-      this.individual(rand(4200, 5200), rand(1.4, 3.6), rand(-0.6, 0.6), rand(0, 2));
+    // Five individuals at different pitches, rates and DISTANCES. A real field
+    // is mostly far-away crickets with one or two close ones; making them all
+    // equally present is a large part of what makes synthetic ones sound fake.
+    const dists = [0.05, 0.35, 0.6, 0.8, 0.92];
+    for (let i = 0; i < 5; i++) {
+      this.individual(rand(3900, 5100), rand(1.6, 4.2), rand(-0.75, 0.75), rand(0, 3), dists[i]);
     }
   }
-  individual(freq, gap, pan, delay) {
+  individual(freq, gap, pan, delay, dist) {
     const go = () => {
       if (!this.alive) return;
-      this.chirp(freq * rand(0.98, 1.02), pan);
-      const tm = setTimeout(go, rand(gap * 0.6, gap * 1.7) * 1000);
-      this.timers.push(tm);
+      this.chirp(freq * rand(0.985, 1.015), pan, dist);
+      this.timers.push(setTimeout(go, rand(gap * 0.55, gap * 1.9) * 1000));
     };
     this.timers.push(setTimeout(go, delay * 1000));
   }
-  chirp(freq, pan) {
+  chirp(freq, pan, dist) {
     const ctx = A.ctx, t = now() + 0.02;
     const out = ctx.createGain(); out.gain.value = 0;
     const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
     if (p) { p.pan.value = pan; out.connect(p); p.connect(A.bus.air); } else out.connect(A.bus.air);
 
-    // A cricket is a nearly-pure tone pulsed rapidly, not a noise burst.
-    const o = ctx.createOscillator(); o.type = 'sine';
-    o.frequency.setValueAtTime(freq, t);
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass';
-    bp.frequency.value = freq; bp.Q.value = 3;
-    o.connect(bp); bp.connect(out);
+    // Stridulation is a scrape, not a tone. Noise through a very high-Q
+    // resonator rings at a pitch while keeping the noisy edge a sine can
+    // never produce — that edge is the whole difference.
+    const src = noiseSource(1.1);
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.Q.value = rand(24, 34);
+    bp.frequency.setValueAtTime(freq, t);
+    bp.frequency.linearRampToValueAtTime(freq * 0.975, t + 0.22);   // chirps fall slightly
+    // A second, weaker resonance an octave up — wing harmonics.
+    const bp2 = ctx.createBiquadFilter();
+    bp2.type = 'bandpass'; bp2.Q.value = 18; bp2.frequency.value = freq * 2;
+    const g2 = ctx.createGain(); g2.gain.value = 0.22;
+    // Distance eats the top and drops the level; far crickets are dull and small.
+    const air = ctx.createBiquadFilter();
+    air.type = 'lowpass'; air.frequency.value = 14000 - dist * 8000; air.Q.value = 0.4;
 
-    const pulses = 3 + Math.floor(Math.random() * 3);
-    const pw = 0.016, gap = 0.021;
+    src.connect(bp); bp.connect(air);
+    src.connect(bp2); bp2.connect(g2); g2.connect(air);
+    air.connect(out);
+
+    const level = (0.11 - dist * 0.075) * rand(0.85, 1.15);
+    const pulses = 3 + Math.floor(Math.random() * 4);
+    const pw = rand(0.013, 0.019), gp = pw + rand(0.006, 0.011);
     let tt = t;
     for (let i = 0; i < pulses; i++) {
+      // Each pulse swells and cuts — the first is quietest, which is what
+      // makes a chirp sound like it's being wound up rather than triggered.
+      const amp = level * (i === 0 ? 0.6 : i === pulses - 1 ? 0.85 : 1);
       out.gain.setValueAtTime(0.0001, tt);
-      out.gain.linearRampToValueAtTime(rand(0.06, 0.12), tt + 0.004);
+      out.gain.linearRampToValueAtTime(amp, tt + 0.003);
       out.gain.exponentialRampToValueAtTime(0.0001, tt + pw);
-      tt += gap;
+      tt += gp;
     }
-    o.start(t); o.stop(tt + 0.1);
-    setTimeout(() => { try { out.disconnect(); } catch (e) {} }, (tt - t + 0.5) * 1000);
+    src.start(t, src.loopStart); src.stop(tt + 0.1);
+    setTimeout(() => { try { out.disconnect(); } catch (e) {} }, (tt - t + 0.6) * 1000);
   }
   stop() { this.alive = false; this.timers.forEach(clearTimeout); }
 }
@@ -851,11 +897,13 @@ function migrate(chakraIdx) {
 
 function setLevel(band, v) {
   state.levels[band] = v;
-  if (A.bus[band]) A.bus[band].gain.setTargetAtTime(state.on[band] ? v : 0, now(), 0.15);
+  if (A.trim[band]) A.trim[band].gain.setTargetAtTime(state.on[band] ? v : 0, now(), 0.15);
 }
 function setBandOn(band, on) {
   state.on[band] = on;
-  if (A.bus[band]) A.bus[band].gain.setTargetAtTime(on ? state.levels[band] : 0, now(), 0.25);
+  if (A.trim[band]) A.trim[band].gain.setTargetAtTime(on ? state.levels[band] : 0, now(), 0.25);
+  // The send is pre-fader, so muting a band has to mute its reverb too.
+  if (A.send[band]) A.send[band].gain.setTargetAtTime(on ? A.send[band].__base : 0, now(), 0.25);
 }
 
 /* ==========================================================================
@@ -958,7 +1006,7 @@ function wire() {
     // Re-pitch everything currently sounding, gently.
     if (state.playing) {
       const t = now(), pc = CHAKRAS[state.chakra].pc;
-      E.bed.voices.forEach(v => v.retune(v.midi, t, 3));
+      E.bed.voices.forEach(v => v.retune(v.midi, null, t, 3));   // pitch only
       E.deep.retune(pc, t, 3);
     }
     render();
