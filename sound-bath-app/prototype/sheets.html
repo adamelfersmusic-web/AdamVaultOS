@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheets — sound bath handout generator</title>
+<style>
+  :root {
+    --bg: #0a0910; --panel: #12111a; --panel2: #191824;
+    --line: #221f2e; --line2: #322d42;
+    --ink: #e8e4f0; --ink2: #a29ab4; --ink3: #6b6480; --ink4: #423d52;
+    --amber: #d9a544; --violet: #8b7ab8; --red: #b86a5a;
+    --r: 3px;
+    --f: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f); font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+  button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+  button { background: none; border: none; padding: 0; cursor: pointer; }
+
+  .app { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); min-height: 100vh; }
+  @media (max-width: 940px) { .app { grid-template-columns: 1fr; } }
+
+  /* ---------------- editor ---------------- */
+  .editor { padding: 22px 22px 90px; border-right: 1px solid var(--line); min-width: 0; }
+  .top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  .mark { font-size: 12px; font-weight: 700; letter-spacing: .34em; color: var(--ink2); }
+  .hint { font-size: 11px; color: var(--ink4); }
+
+  .cap { font-size: 10px; font-weight: 600; letter-spacing: .17em; text-transform: uppercase; color: var(--ink3); display: block; margin-bottom: 7px; }
+  .block { margin-bottom: 20px; }
+
+  input[type=text], input[type=number], select, textarea {
+    width: 100%; background: var(--panel); border: 1px solid var(--line2); border-radius: var(--r);
+    color: var(--ink); padding: 9px 11px; outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--violet); }
+  input::placeholder, textarea::placeholder { color: var(--ink4); }
+  select { appearance: none; background-image: none; cursor: pointer; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .grid3 { display: grid; grid-template-columns: 1.4fr 1fr .7fr; gap: 9px; }
+  @media (max-width: 560px) { .grid3 { grid-template-columns: 1fr 1fr; } }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .btn {
+    font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    padding: 9px 13px; border: 1px solid var(--line2); border-radius: var(--r); color: var(--ink2);
+    transition: color .12s, background .12s, border-color .12s;
+  }
+  .btn:hover { color: var(--ink); background: var(--panel2); }
+  .btn.primary { color: #1a1508; background: var(--amber); border-color: var(--amber); }
+  .btn.primary:hover { background: #e8bb63; }
+  .btn.ghost { border-color: var(--line); color: var(--ink3); }
+
+  /* section cards */
+  .sec {
+    border: 1px solid var(--line); border-radius: var(--r); background: var(--panel);
+    padding: 13px; margin-bottom: 9px; position: relative;
+  }
+  .sec.pitched { border-left: 2px solid var(--violet); }
+  .sec.texture { border-left: 2px solid var(--line2); }
+  .sec.space   { border-left: 2px solid var(--ink4); border-style: dashed; }
+  .sechead { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .sechead .num { font-size: 10px; color: var(--ink4); font-variant-numeric: tabular-nums; width: 16px; }
+  .sechead .grow { flex: 1; min-width: 0; }
+  .iconbtn { width: 26px; height: 26px; display: grid; place-items: center; color: var(--ink4); border-radius: var(--r); font-size: 13px; }
+  .iconbtn:hover { color: var(--ink); background: var(--panel2); }
+  .iconbtn.danger:hover { color: var(--red); }
+  .secbody { display: grid; gap: 9px; }
+  .bowlpreview { font-size: 12px; color: var(--ink3); margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .bowlpreview b { color: var(--ink); }
+  .warn { color: var(--red); font-size: 11.5px; margin-top: 5px; }
+
+  .totals { font-size: 11.5px; color: var(--ink3); margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .totals b { color: var(--ink2); }
+
+  /* ---------------- paper preview ---------------- */
+  .paperwrap { padding: 22px; background: #16151d; min-width: 0; }
+  .paperwrap .stick { position: sticky; top: 22px; }
+  .papercap { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .paper {
+    background: #fdfcf9; color: #14131a; border-radius: 2px;
+    padding: 38px 42px; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    font-size: 13px; line-height: 1.5; max-height: calc(100vh - 110px); overflow: auto;
+  }
+  .paper h1 { font-size: 15px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 2px; }
+  .paper .subtitle { font-size: 12.5px; font-style: italic; color: #45414f; margin: 0 0 22px; letter-spacing: .02em; }
+  .paper .kitline { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #7c7789; margin: 0 0 20px; padding-bottom: 10px; border-bottom: 1px solid #ddd9d0; }
+
+  .ps { margin: 0 0 17px; break-inside: avoid; }
+  .ps .hd { font-size: 13.5px; font-weight: 700; letter-spacing: .04em; }
+  .ps.tex .hd { font-weight: 600; font-style: italic; letter-spacing: 0; }
+  .ps .hd .ph { font-weight: 400; font-style: italic; color: #45414f; }
+  .ps .key { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #14131a; margin-top: 1px; }
+  .ps .mins { font-size: 10px; color: #8b8698; letter-spacing: .08em; }
+  .ps .note { font-size: 11px; color: #5d5869; font-style: italic; margin-top: 2px; }
+
+  /* the bowl line — visual weight IS the tier */
+  .bowls { margin-top: 4px; display: flex; align-items: baseline; flex-wrap: wrap; gap: 7px; }
+  .bowls .lbl { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: #8b8698; margin-right: 2px; }
+  .bowls .b { font-variant-numeric: tabular-nums; }
+  .bowls .free { font-size: 21px; font-weight: 600; color: #14131a; }
+  .bowls .free.root { font-size: 25px; font-weight: 800; }
+  .bowls .spare { font-size: 15px; font-weight: 400; color: #6f6a7c; }
+  .bowls .rest  { font-size: 12px; font-weight: 400; color: #a9a4b2; }
+  .bowls .grp { display: inline-flex; align-items: baseline; gap: 5px; }
+  .bowls .grp .paren + .b { margin-left: -3px; }
+  .bowls .grp .b + .paren { margin-left: -3px; }
+  .bowls .paren { color: #a9a4b2; font-size: 13px; }
+
+  .legend { margin-top: 26px; padding-top: 11px; border-top: 1px solid #ddd9d0; font-size: 9.5px; color: #8b8698; line-height: 1.7; letter-spacing: .02em; }
+  .legend b { color: #45414f; }
+
+  /* ---------------- print ---------------- */
+  @media print {
+    .editor, .papercap, .paperwrap .stick > .noprint { display: none !important; }
+    .app { display: block; }
+    .paperwrap { padding: 0; background: #fff; }
+    .paperwrap .stick { position: static; }
+    .paper { box-shadow: none; border-radius: 0; padding: 0; max-height: none; overflow: visible; font-size: 12px; }
+    body { background: #fff; }
+    @page { margin: 16mm 14mm; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="editor">
+    <div class="top">
+      <span class="mark">SHEETS</span>
+      <span class="hint">handouts for bowl players</span>
+    </div>
+
+    <div class="toolbar">
+      <select id="loadFixture" style="width:auto">
+        <option value="">Load a session…</option>
+      </select>
+      <button class="btn" id="btnBlank">New</button>
+      <button class="btn" id="btnJson">Export JSON</button>
+      <button class="btn primary" id="btnPrint">Print</button>
+    </div>
+
+    <div class="block">
+      <span class="cap">Session</span>
+      <div style="display:grid;gap:9px">
+        <input type="text" id="title" placeholder="Title — e.g. Full Moon in Leo">
+        <input type="text" id="subtitle" placeholder="Line under it — e.g. Let it burn what it must">
+      </div>
+    </div>
+
+    <div class="block">
+      <span class="cap">The group's bowls</span>
+      <div class="grid2">
+        <select id="kitType">
+          <option value="standard7">Standard 7 (C D E F G A B)</option>
+          <option value="standard8">Standard 8 (+ octave C)</option>
+          <option value="custom">Custom…</option>
+        </select>
+        <input type="text" id="kitCustom" placeholder="C D E F G A B" style="display:none">
+      </div>
+    </div>
+
+    <div class="block">
+      <span class="cap">Sections</span>
+      <div id="sections"></div>
+      <div class="toolbar" style="margin-top:10px;margin-bottom:0">
+        <button class="btn" data-add="pitched">+ Bowl section</button>
+        <button class="btn ghost" data-add="texture">+ Texture</button>
+        <button class="btn ghost" data-add="space">+ Space</button>
+      </div>
+      <div class="totals" id="totals"></div>
+    </div>
+  </div>
+
+  <div class="paperwrap">
+    <div class="stick">
+      <div class="papercap">
+        <span class="cap" style="margin:0">Handout preview</span>
+        <span class="hint" id="paperHint"></span>
+      </div>
+      <div class="paper" id="paper"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ==========================================================================
+   SHEETS — generates the printed handout bowl players already use.
+
+   The notation is not invented here. It is transcribed from sheets used at
+   real sold-out events, and the algorithm below is verified to reproduce all
+   three known real sections exactly:
+
+     ROOT   · C mixolydian -> 1 3 5 (2 4 6) [7]
+     SACRAL · D major      -> 2 6 (3 5 7) [1, 4]
+     HEART  · F major      -> 4 6 1 8 (2 3 5) [7]
+   ========================================================================== */
+
+const NOTE = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const PRETTY = ['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+
+/* Bowl number = chakra number = scale degree in C, all three at once. This is
+   why C, D and F dominate real sessions — Root, Sacral, Heart. */
+const CHAKRAS = [
+  { n: 1, note: 'C', pc: 0,  name: 'Root',         intent: 'Security + Groundedness' },
+  { n: 2, note: 'D', pc: 2,  name: 'Sacral',       intent: 'Creativity + Pleasure' },
+  { n: 3, note: 'E', pc: 4,  name: 'Solar Plexus', intent: 'Courage + Discipline' },
+  { n: 4, note: 'F', pc: 5,  name: 'Heart',        intent: 'Love + Compassion' },
+  { n: 5, note: 'G', pc: 7,  name: 'Throat',       intent: 'Connection + Expression' },
+  { n: 6, note: 'A', pc: 9,  name: 'Third Eye',    intent: 'Intuition + Wisdom' },
+  { n: 7, note: 'B', pc: 11, name: 'Crown',        intent: 'Faith + Excitement' },
+];
+
+const MODES = {
+  major:      { label: 'MAJOR', scale: [0,2,4,5,7,9,11], triad: [0,4,7] },
+  minor:      { label: 'MINOR', scale: [0,2,3,5,7,8,10], triad: [0,3,7] },
+  mixolydian: { label: 'MIXO',  scale: [0,2,4,5,7,9,10], triad: [0,4,7] },
+  dorian:     { label: 'DORIAN',scale: [0,2,3,5,7,9,10], triad: [0,3,7] },
+  lydian:     { label: 'LYDIAN',scale: [0,2,4,6,7,9,11], triad: [0,4,7] },
+};
+
+const STANDARD7 = [0,2,4,5,7,9,11];
+
+function buildKit() {
+  const t = S.kit.type;
+  if (t === 'standard7') return STANDARD7.map((pc, i) => ({ b: i + 1, pc }));
+  if (t === 'standard8') return STANDARD7.map((pc, i) => ({ b: i + 1, pc })).concat([{ b: 8, pc: 0, octave: true }]);
+  // Custom: parse note names in order; the player numbers them left to right.
+  const parsed = (S.kit.custom || '').trim().split(/[\s,]+/).filter(Boolean).map(tok => {
+    const m = tok.trim().replace('♯','#').replace('♭','b');
+    let pc = NOTE.indexOf(m.toUpperCase());
+    if (pc < 0) {
+      const flats = { DB:1, EB:3, GB:6, AB:8, BB:10 };
+      pc = flats[m.toUpperCase()] ?? -1;
+    }
+    return pc;
+  }).filter(pc => pc >= 0);
+  if (!parsed.length) return STANDARD7.map((pc, i) => ({ b: i + 1, pc }));
+  return parsed.map((pc, i) => ({ b: i + 1, pc, octave: i > 0 && parsed.indexOf(pc) < i }));
+}
+
+/* Tier every bowl in the kit against a section's root + mode. */
+function bowlSheet(rootPc, modeKey, kit) {
+  const mode = MODES[modeKey] || MODES.major;
+  const scale = new Set(mode.scale.map(i => (rootPc + i) % 12));
+  const triad = mode.triad.map(i => (rootPc + i) % 12);
+
+  const free = [], sparing = [], restricted = [];
+  for (const bowl of kit) {
+    // A duplicate bowl (the octave C) is only named separately when the
+    // doubling adds a chord tone that isn't simply the root restated —
+    // which is why C reads "1 3 5" but F reads "4 6 1 8".
+    if (bowl.octave && (bowl.pc === rootPc || !triad.includes(bowl.pc))) continue;
+    const deg = triad.indexOf(bowl.pc);
+    if (deg >= 0) free.push({ ...bowl, deg });
+    else if (scale.has(bowl.pc)) sparing.push(bowl);
+    else restricted.push(bowl);
+  }
+  free.sort((a, b) => a.deg - b.deg || (a.octave ? 1 : 0) - (b.octave ? 1 : 0) || a.b - b.b);
+  return { free, sparing, restricted, rootPc };
+}
+
+const sheetText = s =>
+  [ s.free.map(x => x.b).join(' '),
+    s.sparing.length ? `(${s.sparing.map(x => x.b).join(' ')})` : '',
+    s.restricted.length ? `[${s.restricted.map(x => x.b).join(', ')}]` : ''
+  ].filter(Boolean).join(' ');
+
+/* ==========================================================================
+   State
+   ========================================================================== */
+
+const uid = () => 's' + Math.random().toString(36).slice(2, 8);
+
+const S = {
+  title: '', subtitle: '',
+  kit: { type: 'standard7', custom: '' },
+  sections: [],
+};
+
+function blankSection(kind) {
+  if (kind === 'pitched') return { id: uid(), kind, name: 'Root Chakra', phrase: '', chakra: 1, mode: 'major', minutes: 8, note: '' };
+  if (kind === 'space')   return { id: uid(), kind, name: 'Space', phrase: '', minutes: 3, note: '' };
+  return { id: uid(), kind: 'texture', name: 'Ocean', phrase: '', minutes: 5, note: '' };
+}
+
+/* The two real handouts, transcribed. Same shape the app's session format uses. */
+const FIXTURES = {
+  'full-moon': {
+    title: 'Full Moon in Leo', subtitle: 'Let it burn what it must',
+    kit: { type: 'standard8', custom: '' },
+    sections: [
+      { kind:'pitched', name:'Root Chakra', phrase:'The rock',  chakra:1, mode:'mixolydian', minutes:8, note:'Acoustic · C, F, (B♭)' },
+      { kind:'texture', name:'Ocean',       phrase:'What grows', minutes:6, note:'D major (D, G) — reaching for light' },
+      { kind:'pitched', name:'Sacral',      phrase:'Will live', chakra:2, mode:'major', minutes:8, note:'+ Electric / E-bow' },
+      { kind:'texture', name:'Rain',        phrase:'And shed',  minutes:5, note:'' },
+      { kind:'texture', name:'Gong',        phrase:"What's shed", minutes:4, note:'' },
+      { kind:'texture', name:'Flute & Shakers', phrase:'Will burn', minutes:5, note:'' },
+      { kind:'space',   name:'Space',       phrase:'',          minutes:3, note:'' },
+      { kind:'pitched', name:'Heart Chakra',phrase:"What's left", chakra:4, mode:'major', minutes:9, note:'' },
+      { kind:'texture', name:'Chimes',      phrase:'Is Home',   minutes:4, note:'Roaming' },
+    ],
+  },
+  'seeding': {
+    title: 'Seeding and Watering the Soil', subtitle: 'Let us hold a space for the seeding and watering of their soil',
+    kit: { type: 'standard8', custom: '' },
+    sections: [
+      { kind:'texture', name:'Insects, Big Stick & Poem', phrase:'', minutes:5, note:'Into chiming bowls' },
+      { kind:'pitched', name:'Root',   phrase:'Earth, Seeding', chakra:1, mode:'major', minutes:9, note:'2nd half — some walk and chime' },
+      { kind:'texture', name:'Gongs',  phrase:'Trust, Buried', minutes:5, note:'' },
+      { kind:'texture', name:'Ocean',  phrase:'Water, Watering the soil', minutes:6, note:'Keys in halfway through — D major' },
+      { kind:'pitched', name:'Sacral', phrase:'Flow, The blood of my life', chakra:2, mode:'major', minutes:8, note:'' },
+      { kind:'texture', name:'Drone & Flute', phrase:'Express, from the seed', minutes:6, note:'Shakers' },
+      { kind:'texture', name:'Rain',   phrase:'Release and Receive, Wash away and fill me new', minutes:5, note:'' },
+      { kind:'pitched', name:'Heart',  phrase:'Bloom, from the soil I grow', chakra:4, mode:'major', minutes:10, note:'' },
+    ],
+  },
+};
+
+function loadFixture(key) {
+  const f = FIXTURES[key];
+  if (!f) return;
+  S.title = f.title; S.subtitle = f.subtitle;
+  S.kit = { ...f.kit };
+  S.sections = f.sections.map(s => ({ ...blankSection(s.kind), ...s, id: uid() }));
+  renderAll();
+  save();
+}
+
+/* -------------------------------------------------------------- persistence */
+const KEY = 'sheets.v1';
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY); if (!raw) return false;
+    const o = JSON.parse(raw);
+    if (!o || !Array.isArray(o.sections)) return false;
+    S.title = o.title || ''; S.subtitle = o.subtitle || '';
+    S.kit = o.kit && o.kit.type ? o.kit : { type: 'standard7', custom: '' };
+    S.sections = o.sections.map(s => ({ ...blankSection(s.kind || 'texture'), ...s, id: s.id || uid() }));
+    return true;
+  } catch (e) { return false; }
+}
+/* ==========================================================================
+   Rendering
+   ========================================================================== */
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+function sectionKey(sec) {
+  const c = CHAKRAS[(sec.chakra || 1) - 1];
+  const m = MODES[sec.mode] || MODES.major;
+  return { chakra: c, mode: m, label: `${c.note} ${m.label}` };
+}
+
+/* ------------------------------------------------------------- the editor */
+
+function renderSections() {
+  const kit = buildKit();
+  $('sections').innerHTML = S.sections.map((sec, i) => {
+    const isP = sec.kind === 'pitched';
+    let inner = '';
+    if (isP) {
+      const { chakra } = sectionKey(sec);
+      const sh = bowlSheet(chakra.pc, sec.mode, kit);
+      const usable = sh.free.length + sh.sparing.length;
+      inner = `
+        <div class="grid3">
+          <select data-f="chakra" data-i="${i}">
+            ${CHAKRAS.map(c => `<option value="${c.n}" ${c.n === sec.chakra ? 'selected' : ''}>${c.n} · ${c.name} · ${c.note}</option>`).join('')}
+          </select>
+          <select data-f="mode" data-i="${i}">
+            ${Object.entries(MODES).map(([k, m]) => `<option value="${k}" ${k === sec.mode ? 'selected' : ''}>${m.label.toLowerCase()}</option>`).join('')}
+          </select>
+          <input type="number" min="1" max="60" data-f="minutes" data-i="${i}" value="${sec.minutes}">
+        </div>
+        <div class="bowlpreview">BOWL <b>${esc(sheetText(sh))}</b></div>
+        ${usable < 2 ? `<div class="warn">Only ${usable} bowl${usable === 1 ? '' : 's'} usable here — the group has almost nothing to play.</div>` : ''}`;
+    } else {
+      inner = `<div class="grid2">
+          <input type="text" data-f="note" data-i="${i}" value="${esc(sec.note)}" placeholder="Leader note (not printed large)">
+          <input type="number" min="1" max="60" data-f="minutes" data-i="${i}" value="${sec.minutes}">
+        </div>`;
+    }
+    return `<div class="sec ${sec.kind}">
+      <div class="sechead">
+        <span class="num">${i + 1}</span>
+        <div class="grow"><input type="text" data-f="name" data-i="${i}" value="${esc(sec.name)}" placeholder="Section name"></div>
+        <button class="iconbtn" data-move="-1" data-i="${i}" title="Up">&#9650;</button>
+        <button class="iconbtn" data-move="1" data-i="${i}" title="Down">&#9660;</button>
+        <button class="iconbtn" data-dup="${i}" title="Duplicate">&#10697;</button>
+        <button class="iconbtn danger" data-del="${i}" title="Delete">&times;</button>
+      </div>
+      <div class="secbody">
+        <input type="text" data-f="phrase" data-i="${i}" value="${esc(sec.phrase)}" placeholder="Phrase — the line this section carries">
+        ${inner}
+        ${isP ? `<input type="text" data-f="note" data-i="${i}" value="${esc(sec.note)}" placeholder="Leader note — live chords, instrumentation">` : ''}
+      </div>
+    </div>`;
+  }).join('') || `<div class="hint" style="padding:16px 0">No sections yet. Add one below, or load a session above.</div>`;
+
+  const mins = S.sections.reduce((a, s) => a + (+s.minutes || 0), 0);
+  const poem = S.sections.map(s => s.phrase).filter(Boolean).join(' / ');
+  $('totals').innerHTML =
+    `<b>${S.sections.length}</b> sections &middot; <b>${mins}</b> min` +
+    (poem ? `<br><span style="color:var(--ink4)">${esc(poem)}</span>` : '');
+}
+
+/* -------------------------------------------------------------- the paper */
+
+function renderPaper() {
+  const kit = buildKit();
+  const kitNames = kit.map(b => PRETTY[b.pc]).join(' ');
+  let anyPitched = false;
+
+  const body = S.sections.map(sec => {
+    if (sec.kind === 'pitched') {
+      anyPitched = true;
+      const { chakra, mode } = sectionKey(sec);
+      const sh = bowlSheet(chakra.pc, sec.mode, kit);
+      const free = sh.free.map((x, i) =>
+        `<span class="b free${i === 0 ? ' root' : ''}">${x.b}</span>`).join(' ');
+      const spare = sh.sparing.length
+        ? `<span class="grp"><span class="paren">(</span>${sh.sparing.map(x => `<span class="b spare">${x.b}</span>`).join(' ')}<span class="paren">)</span></span>` : '';
+      const rest = sh.restricted.length
+        ? `<span class="grp"><span class="paren">[</span>${sh.restricted.map(x => `<span class="b rest">${x.b}</span>`).join(' ')}<span class="paren">]</span></span>` : '';
+      return `<div class="ps">
+        <div class="hd">${esc(sec.name.toUpperCase())}${sec.phrase ? ` <span class="ph">| ${esc(sec.phrase)}</span>` : ''}</div>
+        <div class="key">${chakra.note} ${mode.label} <span class="mins">&nbsp;· ${sec.minutes} min</span></div>
+        <div class="bowls"><span class="lbl">Bowl</span>${free} ${spare} ${rest}</div>
+        ${sec.note ? `<div class="note">${esc(sec.note)}</div>` : ''}
+      </div>`;
+    }
+    const dashed = sec.kind === 'space';
+    return `<div class="ps tex">
+      <div class="hd"${dashed ? ' style="color:#7c7789"' : ''}>${esc(sec.name)}${sec.phrase ? ` <span class="ph">| ${esc(sec.phrase)}</span>` : ''}
+        <span class="mins">&nbsp;· ${sec.minutes} min</span></div>
+      ${sec.note ? `<div class="note">${esc(sec.note)}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  $('paper').innerHTML = `
+    <h1>${esc(S.title || 'Untitled session')}</h1>
+    ${S.subtitle ? `<p class="subtitle">${esc(S.subtitle)}</p>` : ''}
+    <p class="kitline">Bowls ${kit.map(b => b.b).join(' · ')} &nbsp;=&nbsp; ${kitNames}</p>
+    ${body || '<p style="color:#8b8698">Add sections to build the handout.</p>'}
+    ${anyPitched ? `<div class="legend">
+      <b>Big numbers</b> — hold these freely. The largest is the root.<br>
+      <b>(In brackets)</b> — use sparingly.<br>
+      <b>[In squares]</b> — rest these; they fight the key.
+    </div>` : ''}`;
+
+  const mins = S.sections.reduce((a, s) => a + (+s.minutes || 0), 0);
+  $('paperHint').textContent = mins ? `${mins} min` : '';
+}
+
+function renderAll() {
+  $('title').value = S.title;
+  $('subtitle').value = S.subtitle;
+  $('kitType').value = S.kit.type;
+  $('kitCustom').style.display = S.kit.type === 'custom' ? '' : 'none';
+  $('kitCustom').value = S.kit.custom;
+  renderSections();
+  renderPaper();
+}
+
+/* ==========================================================================
+   Events
+   ========================================================================== */
+
+function wire() {
+  $('loadFixture').innerHTML = `<option value="">Load a session…</option>` +
+    Object.entries(FIXTURES).map(([k, f]) => `<option value="${k}">${esc(f.title)}</option>`).join('');
+
+  $('loadFixture').onchange = e => { if (e.target.value) loadFixture(e.target.value); e.target.value = ''; };
+  $('btnBlank').onclick = () => {
+    S.title = ''; S.subtitle = ''; S.sections = [];
+    renderAll(); save();
+  };
+  $('btnPrint').onclick = () => window.print();
+  $('btnJson').onclick = () => {
+    const out = {
+      format: 1, title: S.title, subtitle: S.subtitle, refHz: 440,
+      kit: S.kit.type === 'custom' ? { type: 'custom', pitches: buildKit().map(b => b.pc) } : { type: S.kit.type },
+      sections: S.sections.map(s => {
+        const o = { id: s.id, name: s.name, phrase: s.phrase, kind: s.kind, minutes: +s.minutes };
+        if (s.kind === 'pitched') { o.chakra = +s.chakra; o.mode = s.mode; }
+        if (s.note) o.leaderNote = s.note;
+        return o;
+      }),
+    };
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (S.title || 'session').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+
+  $('title').oninput = e => { S.title = e.target.value; renderPaper(); save(); };
+  $('subtitle').oninput = e => { S.subtitle = e.target.value; renderPaper(); save(); };
+  $('kitType').onchange = e => { S.kit.type = e.target.value; renderAll(); save(); };
+  $('kitCustom').oninput = e => { S.kit.custom = e.target.value; renderSections(); renderPaper(); save(); };
+
+  document.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
+    S.sections.push(blankSection(b.dataset.add));
+    renderAll(); save();
+    $('sections').lastElementChild?.querySelector('input')?.focus();
+  });
+
+  // Delegated: field edits.
+  $('sections').addEventListener('input', e => {
+    const el = e.target.closest('[data-f]'); if (!el) return;
+    const i = +el.dataset.i, f = el.dataset.f;
+    S.sections[i][f] = (f === 'minutes' || f === 'chakra') ? +el.value : el.value;
+    if (f === 'chakra' || f === 'mode' || f === 'minutes') renderSections();
+    renderPaper(); save();
+  });
+  $('sections').addEventListener('change', e => {
+    const el = e.target.closest('select[data-f]'); if (!el) return;
+    const i = +el.dataset.i, f = el.dataset.f;
+    S.sections[i][f] = f === 'chakra' ? +el.value : el.value;
+    // Keep the name in step with the chakra unless it's been customised.
+    if (f === 'chakra') {
+      const prev = CHAKRAS.find(c => S.sections[i].name.toLowerCase().startsWith(c.name.toLowerCase()));
+      if (prev) S.sections[i].name = CHAKRAS[+el.value - 1].name + (S.sections[i].name.toLowerCase().includes('chakra') ? ' Chakra' : '');
+    }
+    renderAll(); save();
+  });
+  // Delegated: row buttons.
+  $('sections').addEventListener('click', e => {
+    const mv = e.target.closest('[data-move]');
+    if (mv) {
+      const i = +mv.dataset.i, j = i + (+mv.dataset.move);
+      if (j < 0 || j >= S.sections.length) return;
+      [S.sections[i], S.sections[j]] = [S.sections[j], S.sections[i]];
+      renderAll(); save(); return;
+    }
+    const dup = e.target.closest('[data-dup]');
+    if (dup) {
+      const i = +dup.dataset.dup;
+      S.sections.splice(i + 1, 0, { ...S.sections[i], id: uid() });
+      renderAll(); save(); return;
+    }
+    const del = e.target.closest('[data-del]');
+    if (del) { S.sections.splice(+del.dataset.del, 1); renderAll(); save(); }
+  });
+}
+
+/* ------------------------------------------------------------------ boot */
+if (!load()) loadFixture('full-moon');
+wire();
+renderAll();
+
+/* Self-check against the three known real sections. Logs to console so a
+   regression in the algorithm is visible immediately. */
+(function verify() {
+  const kit8 = STANDARD7.map((pc, i) => ({ b: i + 1, pc })).concat([{ b: 8, pc: 0, octave: true }]);
+  const cases = [
+    ['ROOT · C mixolydian', bowlSheet(0, 'mixolydian', kit8), '1 3 5 (2 4 6) [7]'],
+    ['SACRAL · D major',    bowlSheet(2, 'major', kit8),      '2 6 (3 5 7) [1, 4]'],
+    ['HEART · F major',     bowlSheet(5, 'major', kit8),      '4 6 1 8 (2 3 5) [7]'],
+  ];
+  const fails = cases.filter(([, s, want]) => sheetText(s) !== want);
+  window.__sheetCheck = { ok: fails.length === 0, results: cases.map(([n, s, w]) => ({ n, got: sheetText(s), want: w })) };
+  if (fails.length) console.error('Bowl notation regression:', window.__sheetCheck.results);
+  else console.log('Bowl notation verified against 3 real sections.');
+})();
+</script>
+</body>
+</html>

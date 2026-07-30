@@ -1,0 +1,132 @@
+{
+  "format": 1,
+  "title": "Seeding and Watering the Soil",
+  "subtitle": "Let us hold a space for the seeding and watering of their soil",
+  "note": "Transcribed from a real handout. Same C→D→F ascent, closing on texture.",
+  "refHz": 440,
+  "kit": { "type": "standard7" },
+  "sections": [
+    {
+      "id": "arrival",
+      "name": "Insects, Big Stick & Poem",
+      "phrase": "",
+      "kind": "texture",
+      "minutes": 5,
+      "fadeIn": 30,
+      "bands": {
+        "deep":  { "on": false },
+        "bed":   { "on": false },
+        "voice": { "on": false },
+        "air":   { "on": true,  "level": 0.6, "elements": ["crickets", "wind"] }
+      },
+      "leaderNote": "Spoken poem. Into chiming bowls."
+    },
+    {
+      "id": "root",
+      "name": "Root",
+      "phrase": "Earth, Seeding",
+      "kind": "pitched",
+      "chakra": 1,
+      "mode": "major",
+      "minutes": 9,
+      "fadeIn": 45,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.75 },
+        "bed":   { "on": true,  "level": 0.82, "chords": false },
+        "voice": { "on": true,  "level": 0.4 },
+        "air":   { "on": true,  "level": 0.4, "elements": ["crickets"] }
+      },
+      "leaderNote": "2nd half — some walk and chime"
+    },
+    {
+      "id": "gongs",
+      "name": "Gongs",
+      "phrase": "Trust, Buried",
+      "kind": "texture",
+      "minutes": 5,
+      "fadeIn": 35,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.85 },
+        "bed":   { "on": false },
+        "voice": { "on": false },
+        "air":   { "on": true,  "level": 0.28, "elements": ["wind"] }
+      }
+    },
+    {
+      "id": "ocean",
+      "name": "Ocean",
+      "phrase": "Water, Watering the soil",
+      "kind": "texture",
+      "minutes": 6,
+      "fadeIn": 45,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.55 },
+        "bed":   { "on": false },
+        "voice": { "on": false },
+        "air":   { "on": true,  "level": 0.8, "elements": ["waves"] }
+      },
+      "leaderNote": "Keys in halfway through — D major"
+    },
+    {
+      "id": "sacral",
+      "name": "Sacral",
+      "phrase": "Flow, The blood of my life",
+      "kind": "pitched",
+      "chakra": 2,
+      "mode": "major",
+      "minutes": 8,
+      "fadeIn": 40,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.7 },
+        "bed":   { "on": true,  "level": 0.8, "chords": false },
+        "voice": { "on": true,  "level": 0.42 },
+        "air":   { "on": true,  "level": 0.35, "elements": ["waves"] }
+      }
+    },
+    {
+      "id": "express",
+      "name": "Drone & Flute",
+      "phrase": "Express, from the seed",
+      "kind": "texture",
+      "minutes": 6,
+      "fadeIn": 30,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.6 },
+        "bed":   { "on": true,  "level": 0.65, "chords": false },
+        "voice": { "on": false },
+        "air":   { "on": true,  "level": 0.35, "elements": ["wind"] }
+      },
+      "leaderNote": "Live flute + shakers. Live players mode."
+    },
+    {
+      "id": "release",
+      "name": "Rain",
+      "phrase": "Release and Receive, Wash away and fill me new",
+      "kind": "texture",
+      "minutes": 5,
+      "fadeIn": 40,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.5 },
+        "bed":   { "on": false },
+        "voice": { "on": false },
+        "air":   { "on": true,  "level": 0.82, "elements": ["rain"] }
+      }
+    },
+    {
+      "id": "heart",
+      "name": "Heart",
+      "phrase": "Bloom, from the soil I grow",
+      "kind": "pitched",
+      "chakra": 4,
+      "mode": "major",
+      "minutes": 10,
+      "fadeIn": 55,
+      "bands": {
+        "deep":  { "on": true,  "level": 0.7 },
+        "bed":   { "on": true,  "level": 0.85, "chords": false },
+        "voice": { "on": true,  "level": 0.45 },
+        "air":   { "on": true,  "level": 0.4, "elements": ["crickets"] }
+      }
+    }
+  ]
+}

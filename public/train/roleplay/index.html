@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escensus · Role-play Call</title>
+<meta name="theme-color" content="#0c1b2a">
+<script src="../../brand.js?v=7"></script>
+<style>
+  :root{
+    --navy:#0c1b2a;--navy-deep:#0a1622;--panel:#13273a;--panel-2:#1a3346;
+    --line:#24405a;--line-2:#32536f;--line-strong:#416484;
+    --cream:#f3eee2;--body:#c7d2dc;--ink-2:#93a2b1;--ink-3:#6d7d8d;--ink-4:#4f606f;
+    --gold:#cba14b;--gold-bright:#ddb968;--red:#c66a51;--blue:#6394b6;--hit:#6fa87f;--warn:#d0a94e;
+    --r-sm:8px;--r-md:12px;--r-lg:18px;
+    --display:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    --body-f:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--navy);color:var(--body);font-family:var(--body-f);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:1px solid var(--line);background:var(--navy-deep);position:sticky;top:0;z-index:5}
+  .brand{display:flex;align-items:center;gap:10px}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:20px}
+  .bars i{width:4.5px;border-radius:1.5px;background:var(--gold)}
+  .bars i:nth-child(1){height:40%}.bars i:nth-child(2){height:66%}.bars i:nth-child(3){height:100%}
+  .brand .name{font-family:var(--display);font-size:19px;color:var(--cream)}
+  .back{font-family:var(--mono);font-size:12px;color:var(--gold);text-decoration:none;border:1px solid var(--gold);border-radius:var(--r-sm);padding:6px 12px;background:color-mix(in srgb,var(--gold) 10%,transparent)}
+  .screen{padding:24px 20px 40px;animation:fade .3s ease;flex:1}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .hidden{display:none!important}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+  h1{font-family:var(--display);font-weight:600;font-size:29px;line-height:1.1;color:var(--cream);margin:0 0 10px}
+  .lede{font-size:15px;color:var(--body);margin:0 0 6px}
+  .muted{color:var(--ink-2)}
+
+  /* Dialer */
+  .dialer{margin-top:14px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);overflow:hidden}
+  .lead{display:flex;align-items:center;gap:14px;padding:20px}
+  .avatar{flex:0 0 54px;height:54px;border-radius:50%;background:var(--panel-2);border:1px solid var(--line-2);display:grid;place-items:center;font-family:var(--display);font-size:22px;color:var(--gold-bright)}
+  .lead .who{flex:1}
+  .lead .nm{font-family:var(--display);font-size:20px;color:var(--cream)}
+  .lead .meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);margin-top:2px}
+  .dialpad{border-top:1px solid var(--line);padding:16px 20px 22px;text-align:center}
+  .num{font-family:var(--mono);font-size:15px;color:var(--ink-2);letter-spacing:.06em;margin-bottom:16px}
+  .callbtn{width:66px;height:66px;border-radius:50%;border:none;background:var(--hit);color:#08160c;font-size:26px;cursor:pointer;box-shadow:0 6px 20px rgba(111,168,127,.35)}
+  .callbtn.end{background:var(--red);color:#fff;box-shadow:0 6px 20px rgba(198,106,81,.35)}
+  .callbtn:active{transform:scale(.95)}
+  .callhint{font-family:var(--mono);font-size:12px;color:var(--ink-3);margin-top:12px}
+  .setup{margin-top:20px;font-size:13.5px;color:var(--ink-2);border:1px dashed var(--line-2);border-radius:var(--r-sm);padding:12px 14px}
+  .setup b{color:var(--body)}
+
+  /* Ring overlay */
+  .ring{text-align:center;padding:40px 20px}
+  .ring .av{width:96px;height:96px;border-radius:50%;margin:0 auto 18px;background:var(--panel-2);border:1px solid var(--line-2);display:grid;place-items:center;font-family:var(--display);font-size:38px;color:var(--gold-bright);position:relative}
+  .ring .av::after{content:'';position:absolute;inset:-8px;border-radius:50%;border:2px solid var(--gold);opacity:0;animation:pulse 1.4s infinite}
+  @keyframes pulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.25);opacity:0}}
+  .ring .nm{font-family:var(--display);font-size:24px;color:var(--cream)}
+  .ring .st{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-top:8px}
+
+  /* Meter */
+  .meterbar{position:sticky;top:51px;z-index:4;background:var(--navy-deep);border-bottom:1px solid var(--line);padding:11px 20px}
+  .meter-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+  .meter-lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+  .meter-val{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--gold-bright)}
+  .track{height:7px;border-radius:100px;background:var(--panel-2);overflow:hidden;border:1px solid var(--line)}
+  .fill{height:100%;width:45%;border-radius:100px;background:linear-gradient(90deg,var(--red),var(--warn) 55%,var(--hit));transition:width .5s cubic-bezier(.4,0,.2,1)}
+  .beatlab{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-top:8px}
+
+  /* Convo */
+  .convo{padding:8px 0 4px;min-height:120px}
+  .turn{display:flex;margin:12px 0;animation:fade .3s ease}
+  .turn.them{justify-content:flex-start}
+  .turn.you{justify-content:flex-end}
+  .bub{max-width:80%;padding:11px 14px;border-radius:16px;font-size:14.5px;line-height:1.45}
+  .them .bub{background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:5px;color:var(--body)}
+  .you .bub{background:color-mix(in srgb,var(--gold) 16%,var(--panel-2));border:1px solid var(--line-strong);border-bottom-right-radius:5px;color:var(--cream)}
+  .spk{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:0 4px 3px}
+  .typing .bub{color:var(--ink-3)}
+  .dots i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ink-3);margin:0 1.5px;animation:blink 1.1s infinite}
+  .dots i:nth-child(2){animation-delay:.18s}.dots i:nth-child(3){animation-delay:.36s}
+  @keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+
+  /* Options */
+  .opts{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+  .opt-hint{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-3);text-align:center;margin-bottom:2px}
+  .guide-row{display:flex;justify-content:flex-end;margin-bottom:4px}
+  .guide-btn{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);background:none;border:1px solid var(--line);border-radius:100px;padding:5px 12px;cursor:pointer}
+  .guide-btn.on{color:#23190a;background:var(--gold);border-color:var(--gold-bright);font-weight:600}
+  .guide-card{border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);background:color-mix(in srgb,var(--gold) 8%,transparent);border-radius:var(--r-md);padding:12px 14px;margin-bottom:10px;font-size:14.5px;color:var(--cream);line-height:1.4}
+  .guide-card .gl{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:5px}
+  .opt{text-align:left;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--panel);color:var(--body);padding:13px 15px;font-size:14.5px;font-family:inherit;line-height:1.4;cursor:pointer;transition:border-color .15s,background .15s}
+  .opt:active{transform:scale(.995)}
+  .opt:hover{border-color:var(--line-strong)}
+  .opt .tag{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+
+  /* Mode toggle (Choose vs Talk) */
+  .modes{display:flex;gap:8px;margin-top:16px}
+  .mode{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:12px;font-family:var(--display);font-size:15px;color:var(--ink-2);cursor:pointer;text-align:center}
+  .mode small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:3px}
+  .mode.on{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--panel));color:var(--cream)}
+  .mode.on small{color:var(--gold)}
+
+  /* Talk mode panel (lives in the #opts slot) */
+  .tseg{display:inline-flex;background:var(--navy);border:1px solid var(--line);border-radius:9px;padding:3px;align-self:flex-start}
+  .tseg button{font-family:var(--mono);font-size:11px;color:var(--ink-2);background:none;border:none;padding:7px 13px;border-radius:6px;cursor:pointer}
+  .tseg button.on{background:var(--gold);color:#23190a;font-weight:600}
+  .tcue{border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--panel);padding:16px}
+  .tcue .lab{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+  .tcue .job{font-size:16px;color:var(--cream);line-height:1.42}
+  .tcue .cold{font-size:15px;color:var(--ink-2)}
+  .treveal{margin-top:13px;border-top:1px dashed var(--line-2);padding-top:12px;font-size:14.5px;color:var(--body);line-height:1.45}
+  .treveal .rl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+  .trow{display:flex;gap:9px;align-items:stretch}
+  .tbtn{flex:1;background:var(--gold);color:#23190a;border:none;border-radius:var(--r-md);padding:15px;font-family:var(--display);font-size:15.5px;font-weight:600;cursor:pointer}
+  .tbtn:active{transform:scale(.99)}
+  .tbtn.ghost{background:none;border:1px solid var(--line-2);color:var(--gold-bright);font-weight:500}
+  .tbtn.rec{background:var(--red);color:#fff}
+  .recdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#fff;margin-right:8px;vertical-align:middle;animation:recpulse 1s ease-in-out infinite}
+  @keyframes recpulse{0%,100%{opacity:1}50%{opacity:.25}}
+  #levels{margin-top:8px}
+  .tnote{font-family:var(--mono);font-size:11px;color:var(--warn);text-align:center;margin-top:2px}
+  .tplay{border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--panel);padding:12px 14px}
+  .tplay .rl2{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+  .prow2{display:flex;align-items:center;gap:11px;padding:7px 0;border-top:1px solid var(--line)}
+  .prow2:first-of-type{border-top:none}
+  .pmini{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong);background:none;color:var(--gold-bright);font-size:12px;cursor:pointer}
+  .pln{flex:1;font-size:14px;color:var(--body)}
+
+  /* Review */
+  .outcome{text-align:center;padding:6px 0 4px}
+  .badge{display:inline-block;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;padding:7px 16px;border-radius:100px;margin-bottom:14px}
+  .badge.submitted{color:var(--hit);border:1px solid var(--hit);background:color-mix(in srgb,var(--hit) 12%,transparent)}
+  .badge.soft{color:var(--warn);border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent)}
+  .badge.noset{color:var(--red);border:1px solid var(--red);background:color-mix(in srgb,var(--red) 12%,transparent)}
+  .bignum{font-family:var(--display);font-size:52px;color:var(--cream);line-height:1}
+  .bignum small{font-size:20px;color:var(--ink-2)}
+  .spark{margin:22px 0 6px}
+  .card2{border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel);padding:4px 16px;margin-top:18px}
+  .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+  .row:first-child{border-top:none}
+  .grade{flex:0 0 30px;height:30px;border-radius:8px;display:grid;place-items:center;font-family:var(--mono);font-size:13px;font-weight:700}
+  .grade.g{background:color-mix(in srgb,var(--hit) 18%,transparent);color:var(--hit)}
+  .grade.o{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .grade.p{background:color-mix(in srgb,var(--red) 16%,transparent);color:var(--red)}
+  .row .rt{flex:1}
+  .row .rn{font-size:14px;color:var(--cream)}
+  .row .rd{font-size:12px;color:var(--ink-2);margin-top:1px}
+  .drill{margin-top:20px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:var(--panel-2);padding:16px}
+  .drill .dh{font-family:var(--display);font-size:16px;color:var(--cream);margin-bottom:5px}
+  .drill p{margin:0 0 12px;font-size:13.5px;color:var(--ink-2)}
+  .drill a,.again{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;text-decoration:none;border-radius:var(--r-sm);padding:10px 15px;cursor:pointer;border:1px solid var(--line-strong);color:var(--gold-bright);background:none}
+  .again{background:var(--gold);color:#23190a;border:none;font-weight:600;width:100%;justify-content:center;margin-top:14px}
+  .foot{padding:20px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3);line-height:1.6}
+  .foot b{color:var(--ink-2)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><span class="bars"><i></i><i></i><i></i></span><span class="name">Escensus</span></div>
+    <a class="back" href="../">‹ Training</a>
+  </header>
+
+  <!-- DIALER -->
+  <div class="screen" id="s-dialer">
+    <p class="eyebrow">Practice · Role-play Call</p>
+    <h1>Run the whole call before you run it live.</h1>
+    <p class="lede">A prospect picks up. You run the call start to finish. They react differently every time, so you can't memorize your way through it. You have to actually handle it.</p>
+    <div class="modes" id="modes">
+      <button class="mode on" data-m="choose">Choose<small>tap the move</small></button>
+      <button class="mode" data-m="talk">Talk<small>say it out loud</small></button>
+    </div>
+    <div class="modes" id="levels" style="display:none">
+      <button class="mode on" data-l="rehearse">Rehearse<small>just talk</small></button>
+      <button class="mode" data-l="record">Record<small>+ play it back</small></button>
+      <button class="mode" data-l="score">Score<small>AI grades it</small></button>
+    </div>
+    <div class="dialer">
+      <div class="lead">
+        <div class="avatar" id="d-init">M</div>
+        <div class="who"><div class="nm" id="d-name">Margaret Ellis</div><div class="meta" id="d-meta">FE inquiry · 68 · TX · called in for info</div></div>
+      </div>
+      <div class="dialpad">
+        <div class="num" id="d-num">+1 (512) 555 0148</div>
+        <button class="callbtn" id="callbtn">📞</button>
+        <div class="callhint" id="callhint">Tap to call</div>
+      </div>
+    </div>
+    <div class="setup"><b>How it works.</b> Each moment gives you three ways to play it. Pick the move you'd actually make. Your close probability shifts with every choice, and sometimes they'll throw an objection you didn't see coming. At the end you get the call graded, move by move.</div>
+  </div>
+
+  <!-- RINGING -->
+  <div class="screen hidden" id="s-ring">
+    <div class="ring">
+      <div class="av" id="r-init">M</div>
+      <div class="nm" id="r-name">Margaret Ellis</div>
+      <div class="st" id="r-st">Calling…</div>
+    </div>
+  </div>
+
+  <!-- CALL -->
+  <div class="hidden" id="s-call">
+    <div class="meterbar">
+      <div class="meter-top"><span class="meter-lab" id="m-lab">Close probability</span><span class="meter-val" id="m-val">45%</span></div>
+      <div class="track"><div class="fill" id="m-fill"></div></div>
+      <div class="beatlab" id="m-beat">Open</div>
+    </div>
+    <div class="screen" style="padding-top:14px">
+      <div class="convo" id="convo"></div>
+      <div class="opts" id="opts"></div>
+    </div>
+  </div>
+
+  <!-- REVIEW -->
+  <div class="screen hidden" id="s-review">
+    <div class="outcome">
+      <span class="badge" id="rv-badge">Submitted</span>
+      <div class="bignum" id="rv-score">72<small>%</small></div>
+      <p class="muted" id="rv-sub" style="margin:10px 0 0;font-size:14px"></p>
+    </div>
+    <div class="spark" id="rv-spark"></div>
+    <p class="eyebrow" style="margin-top:24px">Move by move</p>
+    <div class="card2" id="rv-rows"></div>
+    <div class="drill" id="rv-drill"></div>
+    <button class="again" id="rv-again">Run it again ↺</button>
+  </div>
+
+  <div class="foot"><b>Choose</b> is scripted branching: tap a move, the prospect reacts (weighted-random), and you get graded move by move. <b>Talk</b> lets you say the call out loud instead — rehearse it, or record and play your reps back. Next: it scores your spoken lines. Every mode runs on the same call structure the scoring engine grades, so practice and feedback stay one system.</div>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  function el(t,c,h){var e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;}
+  var TTS='speechSynthesis'in window, voices=[];
+  function loadV(){try{voices=(speechSynthesis.getVoices()||[]).filter(function(v){return /^en/i.test(v.lang);});}catch(e){}}
+  if(TTS){loadV();speechSynthesis.onvoiceschanged=loadV;}
+  function say(text, done){
+    // Browser-voice fallback. Calls done() when it finishes so the turn flow can
+    // wait for it, exactly like a real clip. If TTS is off, estimate from length.
+    if(!TTS){ if(done) setTimeout(done, Math.min(2800, 700+(text?text.length:0)*45)); return; }
+    try{ var u=new SpeechSynthesisUtterance(text); if(voices.length)u.voice=voices[0]; u.rate=1;
+      u.onend=function(){ if(done)done(); }; u.onerror=function(){ if(done)done(); };
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    }catch(e){ if(done) setTimeout(done, 1200); } }
+
+  // Deterministic-ish variety without Math.random dependence pitfalls: a seeded RNG.
+  var seed=(new Date().getSeconds()*97+new Date().getMilliseconds())>>>0 || 12345;
+  function rnd(){ seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; }
+  function pick(arr){ return arr[Math.floor(rnd()*arr.length)]; }
+
+  // One prospect voice persona (the replies reference a husband and daughter),
+  // so the leads are all women to match the recorded voice.
+  var LEADS=[
+    {n:'Margaret Ellis',i:'M',num:'+1 (512) 555 0148',meta:'FE inquiry · 68 · TX · called in for info'},
+    {n:'Doris Vaughn',i:'D',num:'+1 (813) 555 0126',meta:'FE inquiry · 66 · FL · online request'},
+    {n:'Carol Simmons',i:'C',num:'+1 (704) 555 0193',meta:'FE inquiry · 71 · NC · mailer reply'},
+    {n:'Nadine Foster',i:'N',num:'+1 (601) 555 0177',meta:'FE inquiry · 73 · MS · called in for info'}
+  ];
+
+  // A move: text = what you say, q = good|ok|poor, d = close-prob delta, reply = their response.
+  // Beats are derived from the call STRUCTURE (functional beats), not any agency's wording.
+  var BEATS=[
+    {id:'open',lab:'Open',them:'Hello?',
+     prompt:'They picked up. Open the call.',
+     opts:[
+       {t:"Hi Margaret, this is Alex, a licensed agent. You reached out about the state-approved final expense coverage. Is now still an okay time?",q:'good',d:10,reply:"Oh. Yes, I did fill something out. Go ahead."},
+       {t:"Hi, do you have a minute? I want to tell you about some great life insurance options we have going right now.",q:'poor',d:-9,reply:"Life insurance? I don't know, I'm kind of busy..."},
+       {t:"Hi Margaret, sorry to bother you, I know you're probably busy. Is this a bad time?",q:'ok',d:-1,reply:"Well... what's this regarding?"}
+     ]},
+    {id:'scope',lab:'Scope & Credibility',them:"Okay. So who are you with again?",
+     prompt:'Prove you are real and set the room. License, then get them on pen and paper.',
+     opts:[
+       {t:"Good question. I'm a licensed agent, my number's on file and you're welcome to verify it with the state. Do me a favor and grab a pen and paper so you can jot a few things down as we go, sound good?",q:'good',d:8,reply:"Alright, hold on a second... okay, I've got a pen."},
+       {t:"I'm with the benefits department, we handle these state-approved plans. Anyway, let's keep going.",q:'poor',d:-7,reply:"The benefits department? I don't even know what company that is."},
+       {t:"I'm a licensed agent in your state. Before we dig in, is it just you making this decision today, or is there a spouse who'd want to be part of it?",q:'ok',d:3,reply:"Just me. My husband passed, so it's my decision."}
+     ]},
+    {id:'frame',lab:'Beneficiary / burden',them:"It was about that burial coverage, I think.",
+     prompt:'Set up why this matters. Surface the beneficiary.',
+     opts:[
+       {t:"Exactly. Most folks want this so the cost doesn't land on their kids. Who would you not want stuck with the bill if something happened?",q:'good',d:9,reply:"My daughter, I suppose. I wouldn't want to leave her with all that."},
+       {t:"Right, burial insurance. So it pays out when you pass. Let me get you some prices.",q:'poor',d:-8,reply:"Okay... I guess. How much is it?"},
+       {t:"Yes, coverage for final expenses. Is it just you on the phone, or is your husband there too?",q:'ok',d:3,reply:"Just me. My husband passed a few years ago."}
+     ]},
+    {id:'discovery',lab:'Discovery',them:"I just don't want to be a burden to her, that's all.",
+     prompt:'Find the emotional why. Go deep before you sell.',
+     opts:[
+       {t:"That says a lot about you, Margaret. When you picture taking care of this, what would it mean to you to know it's handled?",q:'good',d:11,reply:"Honestly? I'd sleep better. It's been on my mind for years."},
+       {t:"Got it. So do you have any coverage right now, or would this be your first policy?",q:'ok',d:2,reply:"I had a little something through work but that ended when I retired."},
+       {t:"Sure. So let's just find you the cheapest plan and get you covered.",q:'poor',d:-7,reply:"I mean, I don't want junk either. I want it to actually pay."}
+     ]},
+    {id:'process',lab:'How it works',them:"So how does this whole thing even work?",
+     prompt:'Frame the process so nothing surprises them. A few questions, then you match them.',
+     opts:[
+       {t:"Simple. I'll ask you a few quick health questions, then I match you with the company most likely to approve you at the best rate. They make the final call, I do the shopping for you. Fair enough?",q:'good',d:8,reply:"Okay, that sounds reasonable. Go ahead."},
+       {t:"You just answer a few questions and then you're covered, easy as that.",q:'poor',d:-7,reply:"That sounds too easy. What's the catch?"},
+       {t:"I'll run through some questions and we'll find you a plan that fits. Ready?",q:'ok',d:2,reply:"I suppose so, yes."}
+     ]},
+    {id:'medical',lab:'Preliminary medical',them:"Alright. I've had a few health things though, is that going to be a problem?",
+     prompt:'The knockout. It decides what you can even present. Handle it carefully.',
+     opts:[
+       {t:"Good question. I'll ask a few quick health questions, then match you to the carrier most likely to approve you and give you today's best rate. Sound fair?",q:'good',d:8,reply:"That's fine. I take blood pressure and cholesterol pills, nothing major."},
+       {t:"Don't worry about the health stuff, everybody gets approved, let's just move on.",q:'poor',d:-11,reply:"Well, I do have COPD, I'd want to make sure that's okay..."},
+       {t:"Okay. What medications are you currently taking?",q:'ok',d:2,reply:"Just the blood pressure and cholesterol ones."}
+     ],
+     follow:{them:"...and I do have COPD too, if that matters. Does that disqualify me?",
+       opts:[
+         {t:"Not necessarily — there are carriers that write COPD every day. That's exactly why I ask, so I steer you to the right one instead of a decline. Let me get the rest and match you.",q:'good',d:7,reply:"Oh. Okay, that's a relief. What else do you need?"},
+         {t:"COPD's a tough one, but let's just see what happens.",q:'poor',d:-7,reply:"That doesn't sound very reassuring, honestly."},
+         {t:"Good to know. Are you on oxygen, or just the inhalers?",q:'ok',d:2,reply:"Just the inhalers. No oxygen."}
+       ]}},
+    {id:'present',lab:'Present options',them:"Alright. So what would something like this run me?",
+     prompt:'Present the tiers. Anchor it to what they told you.',
+     opts:[
+       {t:"Based on what you told me, I've got three options. Grab a pen: a Bronze, a Silver, and a Gold, each with a different monthly and payout. Ready to write these down?",q:'good',d:9,reply:"Okay, hold on, let me get a pen. Alright, go ahead."},
+       {t:"The cheapest one is going to be your best bet, let's just do that one.",q:'poor',d:-8,reply:"I don't even know what it covers though."},
+       {t:"There are a few levels depending on the payout you want. What monthly budget were you thinking?",q:'ok',d:3,reply:"I don't know... whatever's reasonable I guess."}
+     ]},
+    {id:'close',lab:'The close',them:"They all sound alright. I'm just not sure.",
+     prompt:'This is the moment. Go assumptive, let them choose the amount.',
+     opts:[
+       {t:"Most folks in your shoes go with the Silver, it's the sweet spot. Do you want to start there, or step up to the Gold? Either way I'll get the application going now.",q:'good',d:10,reply:"Let's... do the Silver, I think. Okay."},
+       {t:"No pressure at all, take your time and call me back whenever you've thought it over.",q:'poor',d:-12,reply:"Yeah, let me think about it and I'll let you know."},
+       {t:"Which one feels right to you?",q:'ok',d:1,reply:"I really can't decide, that's the thing."}
+     ],
+     follow:{them:"I don't know... it's a lot to decide right now.",
+       opts:[
+         {t:"I hear you — and that's exactly why we lock today's rate in now, before anything changes. You're protected, not overpaying. Want me to start you on the Silver?",q:'good',d:8,reply:"Okay... yeah. Let's do the Silver."},
+         {t:"No rush at all, sleep on it and call me back whenever.",q:'poor',d:-11,reply:"Yeah. Let me think about it."},
+         {t:"What's the part you're unsure about?",q:'ok',d:2,reply:"Just whether I can afford it every month, I guess."}
+       ]}},
+    {id:'tie',lab:'Tie-down',them:"Okay. I hope I'm doing the right thing here.",
+     prompt:'Lock it in. Reassure, get the soft agree, protect the sale.',
+     opts:[
+       {t:"You are, Margaret. You're protected now and this is locked in at this rate. Do me one favor: if money's ever tight, you call me first before you cancel anything. Deal?",q:'good',d:8,reply:"Okay. Thank you, that's a relief. Deal."},
+       {t:"Great, you're all set, I'll send everything over. Bye now.",q:'ok',d:0,reply:"Oh, okay. Bye."},
+       {t:"Perfect. Now I just need your social security and bank account number to finish.",q:'poor',d:-6,reply:"Whoa, wait, over the phone? I don't know about that..."}
+     ]},
+    {id:'eapp',lab:'eApp: info',them:"Okay. So what do you need from me to get it going?",
+     prompt:'Collect the sensitive info without spooking them. Frame WHY before you ask.',
+     opts:[
+       {t:"Just a couple things to submit it. The company verifies your identity and checks your prescription history, so they'll need your Social — nobody comes to your house, it's all done electronically. Whenever you're ready.",q:'good',d:7,reply:"Okay... that makes sense. Let me grab it for you."},
+       {t:"I need your social security number and your bank account number now.",q:'poor',d:-10,reply:"My social AND my bank account? Over the phone? I don't think so."},
+       {t:"There's a little more information the company needs to process everything. Is that alright?",q:'ok',d:1,reply:"I suppose, as long as it's legitimate."}
+     ]}
+  ];
+
+  // Objection detours (fire randomly between beats). Each: their line + 3 handling moves.
+  var OBJECTIONS=[
+    {id:'busy',name:'Too busy',them:"Actually, you know what, I really am in the middle of something right now.",
+     opts:[
+       {t:"Totally fair, this takes five minutes and it's the reason you called in. Can we knock it out now so it's off your plate?",q:'good',d:6,reply:"...alright. Five minutes. Go ahead."},
+       {t:"Okay, when's a better time for me to call you back?",q:'ok',d:-2,reply:"I don't know, maybe next week sometime."},
+       {t:"Oh, okay, sorry to bother you.",q:'poor',d:-10,reply:"Yeah. Bye."}
+     ]},
+    {id:'covered',name:'Already have insurance',them:"I think I already have something like this, though.",
+     opts:[
+       {t:"That's great that you've got something. A lot of folks find it doesn't fully cover the final costs, though. What if I just compare it against today's rates, no obligation?",q:'good',d:6,reply:"I suppose it can't hurt to compare."},
+       {t:"Oh okay. Well do you know how much yours pays out?",q:'ok',d:1,reply:"Honestly, I'm not totally sure."},
+       {t:"Okay, well if you're already covered I won't waste your time.",q:'poor',d:-9,reply:"Alright then. Thanks."}
+     ]},
+    {id:'scam',name:'Is this a scam',them:"How do I even know this is real? You could be anybody.",
+     opts:[
+       {t:"Smart to ask. I'm a licensed agent, my license number is on file, and we work with A-rated carriers you'd recognize. What is it that felt off, so I can put your mind at ease?",q:'good',d:6,reply:"No, that's... okay, that actually makes me feel better."},
+       {t:"I promise it's not a scam, ma'am, I'm one of the good guys.",q:'ok',d:-1,reply:"Everybody says that, though."},
+       {t:"Ma'am, would a scammer call you and tell you it's a scam? Come on.",q:'poor',d:-8,reply:"Don't take that tone with me."}
+     ]}
+  ];
+
+  var QLAB={good:{g:'A',c:'g',w:'Strong move'},ok:{g:'B',c:'o',w:'Playable'},poor:{g:'C',c:'p',w:'Cost you ground'}};
+
+  var state=null;
+  function reset(){ state={lead:pick(LEADS),prob:45,i:0,pending:null,firedObj:false,log:[]}; }
+
+  function setLead(){
+    var L=state.lead;
+    $('d-init').textContent=L.i; $('d-name').textContent=L.n; $('d-meta').textContent=L.meta; $('d-num').textContent=L.num;
+    $('r-init').textContent=L.i; $('r-name').textContent=L.n;
+  }
+  function show(id){ ['s-dialer','s-ring','s-call','s-review'].forEach(function(s){ $(s).classList.toggle('hidden', s!==id); }); }
+
+  function setMeter(beatLab){
+    var p=Math.max(2,Math.min(98,Math.round(state.prob)));
+    $('m-lab').textContent='Close probability';
+    $('m-val').textContent=p+'%'; $('m-fill').style.width=p+'%';
+    if(beatLab) $('m-beat').textContent=beatLab;
+  }
+
+  function addTurn(who,text,cb,aid){
+    var wrap=el('div','turn '+(who==='them'?'them':'you'));
+    var col=el('div'); col.style.maxWidth='84%';
+    col.appendChild(el('div','spk',who==='them'?state.lead.n:'You'));
+    if(who==='them'){
+      var t=el('div','bub','<span class="dots"><i></i><i></i><i></i></span>');
+      col.appendChild(t); wrap.appendChild(col); $('convo').appendChild(wrap);
+      scroll();
+      setTimeout(function(){ t.textContent=text; scroll(); speakProspect(aid, text, function(){ if(cb) setTimeout(cb, 180); }); }, 620);
+    } else {
+      col.appendChild(el('div','bub',text)); wrap.appendChild(col); $('convo').appendChild(wrap); scroll(); if(cb)cb();
+    }
+  }
+  // Prospect voice: play the recorded clip at audio/<aid>.mp3, or the browser
+  // voice if the clip is not there yet. All prospect lines are generic FE
+  // dialogue in our own words, so these clips are safe for the public repo.
+  // Only one prospect can talk at a time. Stop whatever is playing, start the new
+  // clip, and call done() when it actually ends — so the next turn never begins
+  // until Carol has finished the current line. No two clips ever overlap.
+  var curPro=null;
+  function stopProspect(){ if(curPro){ try{curPro.pause();}catch(e){} curPro=null; } try{speechSynthesis.cancel();}catch(e){} }
+  function speakProspect(aid, text, done){
+    stopProspect();
+    if(!aid){ say(text, done); return; }
+    try{
+      var au=new Audio('audio/'+aid+'.mp3'); curPro=au;
+      var fired=false;
+      function fin(fallback){ if(fired)return; fired=true; if(curPro===au)curPro=null; if(fallback){ say(text, done); } else if(done){ done(); } }
+      au.onended=function(){ fin(false); };
+      au.onerror=function(){ fin(true); };
+      var pr=au.play();
+      if(pr&&typeof pr.then==='function'){ pr.catch(function(){ fin(true); }); }
+    }catch(e){ say(text, done); }
+  }
+  // Swap the placeholder name in agent lines for the actual lead's first name.
+  function agentText(t){ var fn=(state&&state.lead)?state.lead.n.split(' ')[0]:'there'; return t.replace(/Margaret/g, fn); }
+  function scroll(){ window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); }
+
+  function clearOpts(){ $('opts').innerHTML=''; }
+  // Guide = training wheels. OFF by default: the real skill is running the call
+  // blind, so you graduate out of it. When on, it shows THIS beat's goal (the
+  // same job Talk mode's Prompt cue uses) — a goal card, never a "you are here" map.
+  var GUIDE=false;
+  function renderOpts(node){
+    clearOpts();
+    state.curNode=node;
+    var host=$('opts');
+    var grow=el('div','guide-row');
+    var gb=el('button','guide-btn'+(GUIDE?' on':''), GUIDE?'Guide: on':'Guide');
+    gb.onclick=function(){ GUIDE=!GUIDE; renderOpts(node); };
+    grow.appendChild(gb); host.appendChild(grow);
+    if(GUIDE){
+      var goal=node.prompt || 'Handle the curveball — acknowledge, reframe, keep them on the phone.';
+      host.appendChild(el('div','guide-card','<span class="gl">Your goal here</span>'+goal));
+    }
+    host.appendChild(el('div','opt-hint','What do you say?'));
+    // shuffle option order so position never signals quality
+    var order=node.opts.map(function(o,ix){return ix;});
+    for(var k=order.length-1;k>0;k--){ var j=Math.floor(rnd()*(k+1)); var tmp=order[k];order[k]=order[j];order[j]=tmp; }
+    order.forEach(function(ix){
+      var o=node.opts[ix];
+      var b=el('button','opt', agentText(o.t).replace(/</g,'&lt;'));
+      b.onclick=function(){ choose(node,o); };
+      $('opts').appendChild(b);
+    });
+  }
+
+  function choose(node,o){
+    clearOpts();
+    state.prob+=o.d;
+    state.log.push({beat:node.name?('Objection · '+node.name):node.lab, q:o.q, d:o.d});
+    var prefix = node.__isObj ? ('p-obj-'+node.id) : node.__isFollow ? ('p-'+node.id+'-f') : ('p-'+node.id);
+    var key = ['a','b','c'][node.opts.indexOf(o)] || 'a';
+    addTurn('you', agentText(o.t), function(){
+      setMeter();
+      addTurn('them', o.reply, function(){
+        // objection or a follow sub-exchange: advance (no new objection right after).
+        if(node.__isObj || node.__isFollow){ nextBeat(); }
+        // a primary beat with a second exchange: play it before advancing.
+        else if(node.follow){
+          var fn=node.follow; fn.__isFollow=true; fn.id=node.id; fn.lab=node.lab+' (cont.)';
+          setMeter(fn.lab);
+          addTurn('them', fn.them, function(){ renderOpts(fn); }, 'p-'+node.id+'-f');
+        }
+        else { maybeObjectionThen(nextBeat); }
+      }, prefix+'-'+key);
+    });
+  }
+
+  function maybeObjectionThen(cb){
+    // ~45% chance to inject one objection per call, only once, not on the last beats
+    if(!state.firedObj && state.i>=2 && state.i<=6 && rnd()<0.55){
+      state.firedObj=true;
+      var obj=pick(OBJECTIONS); obj.__isObj=true;
+      $('m-beat').textContent='Objection';
+      addTurn('them', obj.them, function(){ renderOpts(obj); }, 'p-obj-'+obj.id);
+      return;
+    }
+    cb();
+  }
+
+  function nextBeat(){
+    if(state.i>=BEATS.length){ return finish(); }
+    var b=BEATS[state.i]; state.i++;
+    setMeter(b.lab);
+    // first beat's "them" (Hello?) already shown at call start for open; show for others
+    if(b.id==='open'){ renderOpts(b); return; }
+    addTurn('them', b.them, function(){ renderOpts(b); }, 'p-'+b.id);
+  }
+
+  function startCall(){
+    reset(); setLead(); show('s-ring'); $('r-st').textContent='Calling…';
+    setTimeout(function(){ $('r-st').textContent='Ringing…'; },700);
+    setTimeout(function(){
+      show('s-call'); $('convo').innerHTML=''; setMeter('Open');
+      var b=BEATS[0]; state.i=1;
+      addTurn('them', b.them, function(){ renderOpts(b); }, 'p-'+b.id);
+    }, 1900);
+  }
+
+  function finish(){
+    // score = blend of final probability and quality of moves
+    var good=state.log.filter(function(x){return x.q==='good';}).length;
+    var poor=state.log.filter(function(x){return x.q==='poor';}).length;
+    var qual=state.log.length? (good - poor)/state.log.length : 0;
+    var score=Math.round(Math.max(2,Math.min(98, state.prob*0.7 + (50+qual*50)*0.3 )));
+    var outcome = score>=70?{k:'submitted',b:'Submitted',s:'Application bound, pending carrier approval. That is the win.'}
+                 : score>=45?{k:'soft',b:'Soft',s:'They wavered. "Let me think about it." Winnable next time.'}
+                 : {k:'noset',b:'No Set',s:'Lost them. Look at where the ground slipped.'};
+    $('rv-badge').className='badge '+outcome.k; $('rv-badge').textContent=outcome.b;
+    $('rv-score').innerHTML=score+'<small>%</small>'; $('rv-sub').textContent=outcome.s;
+
+    // trajectory sparkline
+    var pts=[45], run=45;
+    state.log.forEach(function(x){ run=Math.max(2,Math.min(98,run+x.d)); pts.push(run); });
+    $('rv-spark').innerHTML=sparkline(pts);
+
+    // per-move rows
+    var rows=$('rv-rows'); rows.innerHTML='';
+    state.log.forEach(function(x){
+      var L=QLAB[x.q];
+      var r=el('div','row');
+      r.appendChild(el('div','grade '+L.c, L.g));
+      var rt=el('div','rt'); rt.innerHTML='<div class="rn">'+x.beat+'</div><div class="rd">'+L.w+' · '+(x.d>=0?'+':'')+x.d+' close prob</div>';
+      r.appendChild(rt);
+      rows.appendChild(r);
+    });
+
+    // drill-next: point at the worst beat
+    var worst=null; state.log.forEach(function(x){ if(!worst||x.d<worst.d)worst=x; });
+    var d=$('rv-drill');
+    if(worst && worst.q!=='good'){
+      d.innerHTML='<div class="dh">Drill this next</div><p>Your weakest moment was <b>'+worst.beat+'</b>. '+
+        (worst.beat.indexOf('Objection')===0?'Objections are their own skill. Rep them live until the reframe is automatic.':'Loop this section in the Script Trainer, then come back and run the call again.')+'</p>'+
+        (worst.beat.indexOf('Objection')===0?'<a href="../../drill/">Open the Objection Drill →</a>':'<a href="../script/">Open the Script Trainer →</a>');
+    } else {
+      d.innerHTML='<div class="dh">Clean run</div><p>You handled every beat well. Run it again, the prospect will not react the same way twice.</p><a href="../script/">Sharpen in the Script Trainer →</a>';
+    }
+    show('s-review'); window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function sparkline(pts){
+    var w=280,h=64,pad=4, n=pts.length, max=100,min=0;
+    var x=function(i){return pad + i*(w-2*pad)/(n-1);};
+    var y=function(v){return h-pad - (v-min)*(h-2*pad)/(max-min);};
+    var d=''; pts.forEach(function(v,i){ d+=(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' '; });
+    var area=d+'L'+x(n-1).toFixed(1)+' '+(h-pad)+' L'+x(0).toFixed(1)+' '+(h-pad)+' Z';
+    var mid=y(45).toFixed(1);
+    var acc=(window.BRAND&&window.BRAND.accent)||'#cba14b', accB=(window.BRAND&&window.BRAND.accentBright)||'#ddb968';
+    return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none">'+
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+acc+'" stop-opacity=".28"/><stop offset="1" stop-color="'+acc+'" stop-opacity="0"/></linearGradient></defs>'+
+      '<line x1="'+pad+'" y1="'+mid+'" x2="'+(w-pad)+'" y2="'+mid+'" stroke="#32536f" stroke-width="1" stroke-dasharray="3 3"/>'+
+      '<path d="'+area+'" fill="url(#g)"/>'+
+      '<path d="'+d+'" fill="none" stroke="'+accB+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '<circle cx="'+x(n-1).toFixed(1)+'" cy="'+y(pts[n-1]).toFixed(1)+'" r="3.5" fill="#f3eee2"/></svg>';
+  }
+
+  // ---- Talk mode · say the call out loud ----------------------------------
+  // Two levels, toggled on the dialer: Rehearse (just talk) and Record (also
+  // captures your mic so you can play your reps back). Fully isolated from
+  // Choose mode — its own state (T) and functions, wrapped so any failure,
+  // including mic trouble, can only drop back to the dialer or to Rehearse.
+  // The cue (Prompt = the beat's job, Cold = nothing) mirrors the Script
+  // Trainer ladder. This is reps, not a graded run.
+  var MODE='choose', LEVEL='rehearse', CUE='prompt', T=null;
+
+  function setMode(m){
+    MODE=m;
+    var bs=$('modes').querySelectorAll('.mode');
+    for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-m')===m);
+    $('levels').style.display = (m==='talk') ? 'flex' : 'none';
+    $('callhint').textContent = (m==='talk') ? 'Tap to call · you talk' : 'Tap to call';
+  }
+  function setLevel(l){
+    LEVEL=l;
+    var bs=$('levels').querySelectorAll('.mode');
+    for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-l')===l);
+  }
+
+  // --- mic (Record level only), every step guarded so it can't break the flow ---
+  function acquireMic(){
+    T.mic=null; T.micDenied=false;
+    try{
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){ T.micDenied=true; return; }
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ T.mic=s; }).catch(function(){ T.micDenied=true; });
+    }catch(e){ T.micDenied=true; }
+  }
+  function micReady(){ return LEVEL!=='rehearse' && T && T.mic && window.MediaRecorder; }
+  function startRec(){
+    if(!micReady()) return;
+    try{
+      T.chunks=[]; T.rec=new MediaRecorder(T.mic);
+      T.rec.ondataavailable=function(e){ if(e.data && e.data.size) T.chunks.push(e.data); };
+      T.rec.start(); T.recording=true;
+    }catch(e){ T.recording=false; T.rec=null; }
+  }
+  function stopRec(beat, cb){
+    if(!T.recording || !T.rec){ cb(); return; }
+    try{
+      T.rec.onstop=function(){
+        try{ var blob=new Blob(T.chunks,{type:(T.chunks[0]&&T.chunks[0].type)||'audio/webm'}); T.recs.push({lab:beat.lab, id:beat.id, model:(beat.opts&&beat.opts[0]?beat.opts[0].t:''), blob:blob, url:URL.createObjectURL(blob)}); }catch(_){}
+        cb();
+      };
+      T.recording=false; T.rec.stop();
+    }catch(e){ T.recording=false; cb(); }
+  }
+  function cleanupMic(){
+    try{ if(T && T.mic) T.mic.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+    try{ if(T && T.recs) T.recs.forEach(function(r){ URL.revokeObjectURL(r.url); }); }catch(e){}
+  }
+
+  function talkMeter(beat){
+    $('m-lab').textContent='Progress';
+    $('m-val').textContent='Beat '+(T.i+1)+' / '+BEATS.length;
+    $('m-beat').textContent=beat.lab;
+    $('m-fill').style.width=Math.round((T.i/BEATS.length)*100)+'%';
+  }
+
+  // Render the your-turn card. isNew=true means we just arrived on this beat
+  // (so arm recording); a cue re-render passes false so recording is untouched.
+  function talkCard(beat, isNew){
+    if(isNew && LEVEL!=='rehearse') startRec();
+    clearOpts();
+    var host=$('opts');
+    var seg=el('div','tseg');
+    seg.innerHTML='<button data-c="prompt"'+(CUE==='prompt'?' class="on"':'')+'>Prompt</button>'+
+                  '<button data-c="cold"'+(CUE==='cold'?' class="on"':'')+'>Cold</button>';
+    seg.addEventListener('click',function(ev){ var b=ev.target.closest('button'); if(!b)return; CUE=b.getAttribute('data-c'); talkCard(beat,false); });
+    host.appendChild(seg);
+
+    var card=el('div','tcue');
+    if(CUE==='prompt'){ card.innerHTML='<div class="lab">Your move</div><div class="job">'+beat.prompt+'</div>'; }
+    else { card.innerHTML='<div class="cold">Your turn. Say your line, out loud.</div>'; }
+    host.appendChild(card);
+
+    if(CUE==='prompt'){
+      var rev=el('button','tbtn ghost','Reveal a strong version');
+      rev.onclick=function(){
+        rev.parentNode.removeChild(rev);
+        var r=el('div','treveal'); r.innerHTML='<div class="rl">One strong way to say it</div>'+beat.opts[0].t;
+        card.appendChild(r);
+      };
+      var rr=el('div','trow'); rr.appendChild(rev); host.appendChild(rr);
+    }
+
+    var recording=(LEVEL!=='rehearse' && T.recording);
+    var nb=el('button','tbtn'+(recording?' rec':''), recording ? '<span class="recdot"></span>Recording — tap when done' : 'I said it — next ›');
+    nb.onclick=function(){ nb.disabled=true; stopRec(beat, function(){ talkNext(beat); }); };
+    var nr=el('div','trow'); nr.appendChild(nb); host.appendChild(nr);
+
+    if(LEVEL!=='rehearse' && T.micDenied){ host.appendChild(el('div','tnote','Mic unavailable — rehearsing without recording.')); }
+  }
+
+  function talkNext(beat){
+    clearOpts();
+    addTurn('you','🎙', null, null);            // your turn marker (you spoke; no audio)
+    addTurn('them', beat.opts[0].reply, function(){   // model-path response
+      T.i++;
+      if(T.i>=BEATS.length){ talkFinish(); return; }
+      var nb=BEATS[T.i]; talkMeter(nb);
+      addTurn('them', nb.them, function(){ talkCard(nb, true); }, 'p-'+nb.id);
+    }, 'p-'+beat.id+'-a');
+  }
+
+  function escT(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+  function renderPlayback(host){
+    var list=el('div','tplay');
+    list.appendChild(el('div','rl2','Your takes — play them back'));
+    T.recs.forEach(function(r){
+      var row=el('div','prow2');
+      var pb=el('button','pmini','▶');
+      var au=new Audio(r.url);
+      pb.onclick=function(){ try{ if(au.paused){ au.currentTime=0; au.play(); pb.textContent='❚❚'; au.onended=function(){ pb.textContent='▶'; }; } else { au.pause(); pb.textContent='▶'; } }catch(e){} };
+      row.appendChild(pb); row.appendChild(el('div','pln', r.lab));
+      list.appendChild(row);
+    });
+    host.appendChild(list);
+  }
+  function talkAgainBack(host){
+    var again=el('button','tbtn','Run it again ↺'); again.onclick=function(){ cleanupMic(); startTalk(); };
+    var ar=el('div','trow'); ar.appendChild(again); host.appendChild(ar);
+    var back=el('button','tbtn ghost','Back to start'); back.onclick=function(){ try{speechSynthesis.cancel();}catch(e){} stopProspect(); cleanupMic(); show('s-dialer'); window.scrollTo({top:0}); };
+    var br=el('div','trow'); br.appendChild(back); host.appendChild(br);
+  }
+
+  // Endpoint for the AI scoring function (AssemblyAI transcribe -> Claude grade).
+  // Empty on the static build (no server), so Score gracefully shows your takes +
+  // a 'ready for keys' note. Set this to the deployed function URL
+  // (e.g. '/.netlify/functions/score'), put the two API keys in the function's env,
+  // and every spoken line gets graded for real. See netlify/functions/score.js.
+  var SCORE_ENDPOINT='';
+  function blobToDataURL(blob, cb){ try{ var fr=new FileReader(); fr.onload=function(){ cb(fr.result); }; fr.onerror=function(){ cb(null); }; fr.readAsDataURL(blob); }catch(e){ cb(null); } }
+  function buildScorePayload(cb){
+    var items=[], n=T.recs.length, done=0;
+    if(!n){ cb({turns:[]}); return; }
+    T.recs.forEach(function(r,i){ blobToDataURL(r.blob, function(d){ items[i]={beat:r.lab, model:r.model, audio:d}; if(++done===n) cb({turns:items}); }); });
+  }
+  function renderScores(host, data){
+    var turns=(data&&data.turns)||[];
+    if(data && data.overall!=null){ var o=el('div','tcue'); o.innerHTML='<div class="lab">Your score</div><div class="job">'+escT(String(data.overall))+' / 100'+(data.summary?' — '+escT(data.summary):'')+'</div>'; host.appendChild(o); }
+    var list=el('div','tplay'); list.appendChild(el('div','rl2','Line by line'));
+    turns.forEach(function(t){ var row=el('div','prow2'); row.appendChild(el('div','pln','<b>'+escT(t.beat||'')+'</b>'+(t.grade?' · '+escT(t.grade):'')+(t.note?' — '+escT(t.note):''))); list.appendChild(row); });
+    host.appendChild(list);
+  }
+  function scoreCall(host){
+    var status=el('div','tcue');
+    if(!SCORE_ENDPOINT){
+      status.innerHTML='<div class="lab">AI scoring — ready for keys</div><div class="job">Your '+T.recs.length+' spoken lines are captured. Live scoring — transcribe each line and grade it against the move — switches on the moment the AssemblyAI + Anthropic keys are wired to the scoring function. Here are your takes for now.</div>';
+      host.appendChild(status); if(T.recs.length) renderPlayback(host); talkAgainBack(host); return;
+    }
+    status.innerHTML='<div class="lab">Scoring your call…</div><div class="job">Transcribing what you said and grading each line. One moment.</div>';
+    host.appendChild(status);
+    buildScorePayload(function(payload){
+      fetch(SCORE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+        .then(function(res){ if(!res.ok) throw 0; return res.json(); })
+        .then(function(data){ if(status.parentNode) status.parentNode.removeChild(status); renderScores(host, data); talkAgainBack(host); })
+        .catch(function(){ status.innerHTML='<div class="lab">Scoring unavailable</div><div class="job">Could not reach the scoring service — here are your takes.</div>'; if(T.recs.length) renderPlayback(host); talkAgainBack(host); });
+    });
+  }
+
+  function talkFinish(){
+    $('m-lab').textContent='Done'; $('m-val').textContent='Complete'; $('m-beat').textContent='Call complete'; $('m-fill').style.width='100%';
+    clearOpts();
+    var host=$('opts');
+    var c=el('div','tcue'); c.innerHTML='<div class="lab">Nice reps</div><div class="job">You ran all '+BEATS.length+' beats out loud, start to finish. That is the practice.</div>';
+    host.appendChild(c);
+    if(LEVEL==='score'){ scoreCall(host); return; }
+    if(LEVEL==='record' && T.recs && T.recs.length){ renderPlayback(host); }
+    talkAgainBack(host);
+  }
+
+  function startTalk(){
+    try{
+      cleanupMic();
+      reset(); setLead(); show('s-ring'); $('r-st').textContent='Calling…';
+      T={i:0, recs:[], rec:null, recording:false, chunks:[], mic:null, micDenied:false};
+      if(LEVEL!=='rehearse') acquireMic();
+      setTimeout(function(){ $('r-st').textContent='Ringing…'; },700);
+      setTimeout(function(){
+        show('s-call'); $('convo').innerHTML='';
+        var b=BEATS[0]; talkMeter(b);
+        addTurn('them', b.them, function(){ talkCard(b, true); }, 'p-'+b.id);
+      }, 1900);
+    }catch(e){
+      // Talk must never take the app down; fall back to the dialer + Choose mode.
+      try{ stopProspect(); cleanupMic(); }catch(_){}
+      show('s-dialer'); setMode('choose');
+      try{ $('callhint').textContent='Talk mode hit a snag — Choose still works.'; }catch(_){}
+    }
+  }
+
+  // wire
+  reset(); setLead();
+  $('modes').addEventListener('click', function(ev){ var b=ev.target.closest('.mode'); if(b) setMode(b.getAttribute('data-m')); });
+  $('levels').addEventListener('click', function(ev){ var b=ev.target.closest('.mode'); if(b) setLevel(b.getAttribute('data-l')); });
+  $('callbtn').onclick=function(){ (MODE==='talk') ? startTalk() : startCall(); };
+  $('rv-again').onclick=function(){ try{speechSynthesis.cancel();}catch(e){} show('s-dialer'); reset(); setLead(); window.scrollTo({top:0}); };
+
+  // Spacebar advances Talk mode (stop the take / next), the way a desktop user
+  // reaches for it on any recorder. Scoped to Talk + the call screen, and it
+  // preventDefaults so the page never scrolls. Choose mode is untouched.
+  document.addEventListener('keydown', function(ev){
+    if(ev.code!=='Space' && ev.key!==' ') return;
+    if(MODE!=='talk' || $('s-call').classList.contains('hidden')) return;
+    var btn=$('opts').querySelector('.tbtn:not(.ghost)');
+    if(btn && !btn.disabled){ ev.preventDefault(); btn.click(); }
+  });
+})();
+</script>
+</body>
+</html>

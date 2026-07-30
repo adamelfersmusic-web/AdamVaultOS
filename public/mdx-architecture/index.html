@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Runtime MDX in a Parachute vault app — how it's built</title>
+<meta name="description" content="A one-page engineering note on how AdamVaultOS compiles mdx notes in the browser — markdown, components, and Mermaid — from vault bytes, no build step." />
+<style>
+  :root {
+    --bg: #f4f7f6; --surface: #ffffff; --ink: #11201e; --ink-2: #46585a;
+    --ink-3: #71827f; --line: #e1e8e6; --accent: #1b8d84; --accent-2: #345fd8;
+    --code-bg: #0e1a19; --code-ink: #d3e6e1; --code-dim: #7fa39d;
+    --radius: 12px; --maxw: 760px;
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1312; --surface: #111d1c; --ink: #e8f1ef; --ink-2: #a6b7b4;
+      --ink-3: #7c8d8b; --line: #22302e; --accent: #3bb6ab; --accent-2: #6a8ff5;
+      --code-bg: #0a1413; --code-ink: #cfe3df; --code-dim: #6f938d;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--font-sans);
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 72px 28px 96px; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 18px;
+  }
+  h1 {
+    font-size: clamp(30px, 5.4vw, 44px); line-height: 1.08; letter-spacing: -0.022em;
+    font-weight: 660; text-wrap: balance; margin: 0 0 20px;
+  }
+  .lede { font-size: 19px; color: var(--ink-2); margin: 0 0 8px; max-width: 62ch; }
+  .lede code { color: var(--ink); }
+  .rule { height: 1px; background: var(--line); border: 0; margin: 44px 0; }
+  h2 {
+    font-size: 13px; font-family: var(--font-mono); letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 600;
+    margin: 0 0 14px; display: flex; align-items: baseline; gap: 10px;
+  }
+  h2 .n { color: var(--accent); }
+  p { margin: 0 0 14px; max-width: 64ch; }
+  p, li { color: var(--ink-2); }
+  p strong, li strong { color: var(--ink); font-weight: 620; }
+  code {
+    font-family: var(--font-mono); font-size: 0.88em;
+    background: color-mix(in oklab, var(--accent) 12%, transparent);
+    color: color-mix(in oklab, var(--accent) 82%, var(--ink));
+    padding: 0.12em 0.38em; border-radius: 5px;
+  }
+  pre.code {
+    background: var(--code-bg); color: var(--code-ink); font-family: var(--font-mono);
+    font-size: 13px; line-height: 1.62; border-radius: var(--radius); padding: 18px 20px;
+    overflow-x: auto; margin: 0 0 8px;
+    border: 1px solid color-mix(in oklab, var(--code-ink) 10%, transparent);
+  }
+  pre.code .c { color: var(--code-dim); }
+  pre.code .k { color: #8fd6cb; }
+  pre.code .s { color: #b7d59a; }
+  .caption { font-size: 13px; color: var(--ink-3); margin: 0 0 4px; font-family: var(--font-mono); }
+  .canvas {
+    background: #ffffff; border: 1px solid #e6ecea; border-radius: var(--radius);
+    padding: 22px 18px; overflow-x: auto; box-shadow: 0 1px 2px rgba(16,32,30,0.05);
+  }
+  .canvas svg { display: block; margin: 0 auto; min-width: 520px; max-width: 100%; height: auto; }
+  .canvas-label {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #7c8d8b; margin: 10px 2px 0; text-align: center;
+  }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 4px 0 0; }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+  .card .tag {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent); display: block; margin: 0 0 6px;
+  }
+  .card p { font-size: 14.5px; margin: 0; }
+  ul.tight { margin: 0 0 14px; padding-left: 20px; }
+  ul.tight li { margin: 0 0 8px; }
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: color-mix(in oklab, var(--accent) 7%, var(--surface));
+    border-radius: 0 var(--radius) var(--radius) 0; padding: 14px 18px; margin: 0 0 8px;
+  }
+  .callout p { margin: 0; font-size: 14.5px; }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 10px 26px; margin: 8px 0 0;
+    padding-top: 26px; border-top: 1px solid var(--line);
+  }
+  .meta .stat { display: flex; flex-direction: column; gap: 2px; }
+  .meta .stat b { font-size: 20px; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .meta .stat span { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  .sig { margin-top: 30px; font-size: 13.5px; color: var(--ink-3); }
+  .sig b { color: var(--ink-2); font-weight: 600; }
+  a { color: var(--accent-2); text-decoration: none; border-bottom: 1px solid color-mix(in oklab, var(--accent-2) 35%, transparent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">AdamVaultOS · Engineering note</p>
+  <h1>Runtime MDX in a Parachute vault app</h1>
+  <p class="lede">A note whose <code>extension</code> is <code>mdx</code> is compiled <strong>in the browser at read time</strong> — markdown, live components, and Mermaid diagrams, all from the same vault bytes. No build step, no server, no MDX pipeline. Edit the note; the behavior changes on next open.</p>
+
+  <hr class="rule" />
+
+  <section>
+    <h2><span class="n">01</span> The one idea</h2>
+    <p>The vault already serves every note over the same REST API. So the app treats an <code>mdx</code> note like any other fetch — then, instead of rendering it as static markdown, it compiles the source to a React component <em>on the client</em> and mounts it against a fixed registry of components. The note is still just text in the vault; the app is the lens that makes it run.</p>
+
+    <div class="canvas">
+      <svg viewBox="0 0 840 250" role="img" aria-label="Data flow: a vault mdx note is fetched over REST, compiled with evaluate, and either rendered against the component registry or falls back to markdown.">
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#64787a" />
+          </marker>
+        </defs>
+        <!-- edges -->
+        <g fill="none" stroke="#64787a" stroke-width="1.6" marker-end="url(#ar)">
+          <path d="M132 122 H156" />
+          <path d="M254 122 H278" />
+          <path d="M430 122 H452" />
+          <path d="M512 108 C 545 80, 545 74, 560 70" />
+          <path d="M512 136 C 545 164, 545 172, 560 178" />
+          <path d="M690 70 H726" />
+        </g>
+        <text x="536" y="86" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#4b8f88">yes</text>
+        <text x="536" y="176" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#a06060">no</text>
+
+        <!-- V -->
+        <g font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" text-anchor="middle">
+          <rect x="12" y="100" width="120" height="44" rx="9" fill="#eef3f2" stroke="#dbe4e2" />
+          <text x="72" y="126" fill="#12201e">Vault note (.mdx)</text>
+          <!-- F -->
+          <rect x="156" y="100" width="98" height="44" rx="9" fill="#eef3f2" stroke="#dbe4e2" />
+          <text x="205" y="126" fill="#12201e">REST fetch</text>
+          <!-- E (teal) -->
+          <rect x="278" y="100" width="152" height="44" rx="9" fill="#1b8d84" stroke="#1b8d84" />
+          <text x="354" y="126" fill="#ffffff">evaluate() in browser</text>
+          <!-- C diamond -->
+          <polygon points="482,100 522,122 482,144 442,122" fill="#eef3f2" stroke="#dbe4e2" />
+          <text x="482" y="126" fill="#12201e">compiled?</text>
+          <!-- R -->
+          <rect x="560" y="48" width="130" height="44" rx="9" fill="#eef3f2" stroke="#dbe4e2" />
+          <text x="625" y="74" fill="#12201e">React + registry</text>
+          <!-- M -->
+          <rect x="560" y="156" width="150" height="44" rx="9" fill="#f3eeee" stroke="#e4dbdb" />
+          <text x="635" y="182" fill="#5a3f3f">markdown fallback</text>
+          <!-- D (blue) -->
+          <rect x="726" y="48" width="104" height="44" rx="9" fill="#345fd8" stroke="#345fd8" />
+          <text x="778" y="74" fill="#ffffff">Live document</text>
+        </g>
+      </svg>
+    </div>
+    <p class="canvas-label">the whole path — fetch → compile → registry, with a markdown fallback</p>
+  </section>
+
+  <hr class="rule" />
+
+  <section>
+    <h2><span class="n">02</span> The core</h2>
+    <p>The entire renderer is <code>@mdx-js/mdx</code>'s <code>evaluate</code> against the React JSX runtime, plus a registry and an error boundary. Roughly:</p>
+    <p class="caption">MdxNote.tsx (abridged)</p>
+    <pre class="code"><span class="c">// compile the fetched source to a component, in the browser</span>
+<span class="k">const</span> mod = <span class="k">await</span> evaluate(source, { ...jsxRuntime, baseUrl })
+
+<span class="c">// the vocabulary a note may draw on — anything else degrades to text</span>
+<span class="k">const</span> COMPONENTS = { Term, Checklist, LayerQuiz, ObjectionSim,
+                    Mermaid, <span class="s">pre</span>: MermaidFence }
+
+<span class="c">// render; a runtime error falls back to plain markdown so a</span>
+<span class="c">// broken note still reads</span>
+&lt;MdxErrorBoundary source={source}&gt;
+  &lt;mod.default components={COMPONENTS} /&gt;
+&lt;/MdxErrorBoundary&gt;</pre>
+    <div class="callout">
+      <p><strong>Security is explicit.</strong> <code>evaluate</code> runs the source through <code>new Function</code>, so it executes any embedded expression. That's only safe because the content is the reader's own authenticated vault — never third-party MDX. The seam is documented in code and enforced by convention.</p>
+    </div>
+  </section>
+
+  <hr class="rule" />
+
+  <section>
+    <h2><span class="n">03</span> Three capabilities, one pipeline</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag">Markdown</span>
+        <p>Untouched. An MDX note is a superset — tables, code, quotes all render as before. You never give anything up.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Components</span>
+        <p>A curated registry: <code>Term</code> (definitions fetched live from a glossary note), persistent <code>Checklist</code>, a branching <code>ObjectionSim</code>, course widgets. Unknown tags degrade to text.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Mermaid</span>
+        <p>A <code>&lt;Mermaid&gt;</code> tag <em>and</em> a <code>pre</code> override that turns a fenced <code>mermaid</code> block into a diagram — other code blocks pass through untouched.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Data &amp; expressions</span>
+        <p>Read-time <code>{…}</code> expressions and <code>export const</code> datasets mapped into tables, cards, and inline SVG charts. Write the data once.</p>
+      </div>
+    </div>
+    <p style="margin-top:16px">Mermaid is the only heavy dependency, so it's <strong>dynamically imported on first use</strong> — its ~0.5&nbsp;MB lands in its own chunk and never touches the main bundle. Invalid diagram syntax degrades to the raw definition rather than crashing the note.</p>
+  </section>
+
+  <hr class="rule" />
+
+  <section>
+    <h2><span class="n">04</span> One renderer, two read surfaces</h2>
+    <p>The app has both a Library note route and a Notion-style Pages editor. Both compile MDX through the same renderer — but in Pages it mounts <strong>read-only</strong>. An <code>mdx</code> note is never loaded into the block editor, which means the save pipeline can't re-serialize and corrupt it. The branch is gated entirely on <code>extension === "mdx"</code>; every ordinary markdown note keeps its exact existing path.</p>
+  </section>
+
+  <hr class="rule" />
+
+  <section>
+    <h2><span class="n">05</span> Why it's a Parachute story</h2>
+    <ul class="tight">
+      <li><strong>The vault is the substrate; the app is a lens.</strong> The same bytes now back static markdown, a block editor, <em>and</em> a runtime component engine — three surfaces, one file.</li>
+      <li><strong>Nothing leaves the note.</strong> No build-time MDX, no database, no server round-trip — a static bundle over the vault's REST API. Delete the app and every note still stands as plain text.</li>
+      <li><strong>Edit-once, updates-everywhere.</strong> A <code>&lt;Term&gt;</code> pulls its definition from a live glossary note; fix the glossary once and every note that references it updates itself.</li>
+      <li><strong>An escape hatch for the big stuff.</strong> Full-page React documents that exceed the note renderer are esbuild-bundled and hosted as their own pages — the same substrate thesis, scaled up to whole apps.</li>
+    </ul>
+  </section>
+
+  <div class="meta">
+    <div class="stat"><b>~0.5 MB</b><span>mermaid · lazy chunk</span></div>
+    <div class="stat"><b>0</b><span>build-time MDX</span></div>
+    <div class="stat"><b>306</b><span>e2e tests · green</span></div>
+    <div class="stat"><b>2</b><span>read surfaces · 1 renderer</span></div>
+  </div>
+
+  <p class="sig">Built on <b>AdamVaultOS</b> — a parallel surface over the Parachute Vault HTTP API. Runtime MDX + Mermaid shipped July 2026, agent-built and human-gated, behind a full end-to-end suite.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escensus · Training Mode</title>
+<meta name="theme-color" content="#0c1b2a">
+<script src="../../brand.js?v=7"></script>
+<style>
+  :root{
+    --navy:#0c1b2a;--navy-deep:#0a1622;--panel:#13273a;--panel-2:#1a3346;
+    --line:#24405a;--line-2:#32536f;--line-strong:#416484;
+    --cream:#f3eee2;--body:#c7d2dc;--ink-2:#93a2b1;--ink-3:#6d7d8d;--ink-4:#4f606f;
+    --gold:#cba14b;--gold-bright:#ddb968;--red:#c66a51;--hit:#6fa87f;--warn:#d0a94e;
+    --r-sm:8px;--r-md:12px;--r-lg:18px;
+    --display:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    --body-f:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--navy);color:var(--body);font-family:var(--body-f);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .app{max-width:520px;margin:0 auto;min-height:100vh}
+  header{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line);background:var(--navy-deep);position:sticky;top:0;z-index:6}
+  .brand{display:flex;align-items:center;gap:11px}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:22px}
+  .bars i{width:5px;border-radius:1.5px;background:var(--gold)}
+  .bars i:nth-child(1){height:40%}.bars i:nth-child(2){height:66%}.bars i:nth-child(3){height:100%}
+  .brand .name{font-family:var(--display);font-size:20px;color:var(--cream)}
+  .back{font-family:var(--mono);font-size:12px;color:var(--gold);text-decoration:none;border:1px solid var(--gold);border-radius:var(--r-sm);padding:7px 13px;background:color-mix(in srgb,var(--gold) 10%,transparent)}
+  .hidden{display:none!important}
+  .screen{padding:22px 22px 60px;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:0 0 12px}
+  h1{font-family:var(--display);font-weight:600;font-size:28px;line-height:1.12;color:var(--cream);margin:0 0 12px}
+  .lede{font-size:15px;margin:0 0 8px;color:var(--body)}
+  .muted{color:var(--ink-2)}
+
+  /* consent */
+  .consent{border:1px solid var(--line-2);border-radius:var(--r-lg);background:var(--panel);padding:18px;margin:18px 0}
+  .consent h3{font-family:var(--display);font-size:17px;color:var(--cream);margin:0 0 12px}
+  .clist{list-style:none;padding:0;margin:0 0 6px}
+  .clist li{display:flex;gap:10px;padding:8px 0;font-size:14px;color:var(--body);border-top:1px solid var(--line)}
+  .clist li:first-child{border-top:none}
+  .clist .ck{flex:0 0 auto;color:var(--hit);font-weight:700}
+  .rec-note{font-family:var(--mono);font-size:11px;color:var(--warn);border:1px dashed color-mix(in srgb,var(--warn) 45%,transparent);border-radius:var(--r-sm);padding:10px 12px;margin-top:10px}
+  .btn{display:block;width:100%;background:var(--gold);color:#23190a;border:none;border-radius:var(--r-md);padding:16px;font-family:var(--display);font-size:16px;font-weight:600;cursor:pointer;margin-top:16px}
+  .btn:active{transform:scale(.99)}
+  .btn.ghost{background:none;border:1px solid var(--line-2);color:var(--gold-bright);font-weight:500}
+  .btn.red{background:var(--red);color:#fff}
+
+  /* assignments */
+  .who{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .avatar{flex:0 0 auto;width:44px;height:44px;border-radius:50%;background:var(--panel-2);border:1px solid var(--line-2);display:grid;place-items:center;font-family:var(--display);color:var(--gold-bright);font-size:18px}
+  .who .nm{font-family:var(--display);font-size:17px;color:var(--cream)}
+  .who .meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--ink-3);text-transform:uppercase;margin-top:2px}
+  .asg{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);padding:16px 17px;margin-bottom:12px;cursor:pointer;transition:border-color .15s}
+  .asg:hover{border-color:var(--line-strong)}
+  .asg-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .asg-t{font-family:var(--display);font-size:18px;color:var(--cream)}
+  .asg-count{font-family:var(--mono);font-size:11px;color:var(--gold);white-space:nowrap}
+  .asg-goal{font-size:13.5px;color:var(--ink-2);margin-top:5px;line-height:1.4}
+  .bar{height:6px;border-radius:100px;background:var(--panel-2);border:1px solid var(--line);overflow:hidden;margin-top:12px}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));border-radius:100px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+  .asg-done{border-color:color-mix(in srgb,var(--hit) 45%,transparent)}
+  .asg-done .asg-count{color:var(--hit)}
+
+  /* rep session */
+  .rmode{position:sticky;top:51px;z-index:4;background:var(--navy-deep);border-bottom:1px solid color-mix(in srgb,var(--red) 40%,transparent);padding:10px 20px;display:flex;align-items:center;gap:9px}
+  .rmode .dot{width:9px;height:9px;border-radius:50%;background:var(--red);animation:rp 1s ease-in-out infinite}
+  @keyframes rp{0%,100%{opacity:1}50%{opacity:.3}}
+  .rmode .txt{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--red)}
+  .goalcard{border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);background:color-mix(in srgb,var(--gold) 8%,transparent);border-radius:var(--r-md);padding:16px;margin:6px 0 16px}
+  .goalcard .gl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+  .goalcard .gt{font-size:16px;color:var(--cream);line-height:1.4}
+  .reveal{margin-top:12px;border-top:1px dashed var(--line-2);padding-top:11px;font-size:14px;color:var(--body);line-height:1.45}
+  .reveal .rl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
+  .repcount{text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-2);margin:6px 0 14px}
+  .repcount b{color:var(--gold-bright);font-size:15px}
+  .recwrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin:8px 0 4px}
+  .recbtn{width:82px;height:82px;border-radius:50%;border:none;background:var(--gold);color:#23190a;font-size:15px;font-family:var(--display);font-weight:600;cursor:pointer;box-shadow:0 6px 20px rgba(203,161,75,.3)}
+  .recbtn.on{background:var(--red);color:#fff;box-shadow:0 6px 22px rgba(198,106,81,.4)}
+  .recbtn:active{transform:scale(.95)}
+  .rechint{font-family:var(--mono);font-size:11px;color:var(--ink-3);text-align:center}
+
+  /* review / listen back */
+  .replist{border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--panel);padding:6px 14px;margin:14px 0}
+  .repline{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--line)}
+  .repline:first-child{border-top:none}
+  .pmini{flex:0 0 auto;width:36px;height:36px;border-radius:50%;border:1px solid var(--line-strong);background:none;color:var(--gold-bright);font-size:12px;cursor:pointer}
+  .pmini.playing{background:var(--gold);color:#23190a;border-color:var(--gold-bright)}
+  .repmeta{flex:1;min-width:0}
+  .repmeta .rn{font-size:14px;color:var(--cream)}
+  .repmeta .rd{font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:1px}
+  .sync{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--hit);border:1px solid color-mix(in srgb,var(--hit) 40%,transparent);border-radius:var(--r-sm);padding:10px 12px;margin-top:6px;text-align:center}
+  .foot{padding:0 22px 40px;font-size:12.5px;color:var(--ink-3);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><span class="bars"><i></i><i></i><i></i></span><span class="name">Escensus</span></div>
+    <a class="back" href="../">‹ Training</a>
+  </header>
+
+  <!-- INTRO + CONSENT -->
+  <div class="screen" id="s-intro">
+    <p class="eyebrow">Escensus · Training Mode</p>
+    <h1>Your reps, saved — and sent to your trainer.</h1>
+    <p class="lede">Your trainer assigns the reps. You knock them out on your phone. They can see you did them, and hear every take. This is how you get coached without being on a call together.</p>
+    <div class="consent">
+      <h3>Before you start — what this does</h3>
+      <ul class="clist">
+        <li><span class="ck">✓</span><span>Your practice reps are <b>recorded</b> and saved.</span></li>
+        <li><span class="ck">✓</span><span>They're <b>delivered to your trainer</b>, who can listen back and see your progress.</span></li>
+        <li><span class="ck">✓</span><span>You can play your own reps back any time — hear yourself improve.</span></li>
+      </ul>
+      <div class="rec-note">Recording &amp; sharing is on only while Training Mode is active, and only for the reps you record here. Improving the system with anonymized data is a separate choice you make later — never bundled with this.</div>
+      <button class="btn" id="consentBtn">I understand — start training</button>
+      <button class="btn ghost" id="declineBtn">Not now</button>
+    </div>
+    <p class="foot" style="padding:0">Prototype. In this demo your reps are saved on <b>this device</b> and the trainer delivery is simulated — the real version syncs to your trainer's dashboard. Every line here is Escensus's own phrasing.</p>
+  </div>
+
+  <!-- ASSIGNMENTS -->
+  <div class="screen hidden" id="s-home">
+    <div class="who">
+      <div class="avatar">GW</div>
+      <div><div class="nm">Greg Wolfe</div><div class="meta">Agent · assigned by your trainer</div></div>
+    </div>
+    <p class="eyebrow">This week's reps</p>
+    <div id="asgList"></div>
+    <p class="foot" style="padding:22px 0 0">Tap a drill, rep it until it's automatic. Your trainer sees the count and can listen to every take.</p>
+    <a class="btn ghost" href="trainer/" style="margin-top:6px;text-align:center;text-decoration:none">See the trainer's view (demo) ›</a>
+  </div>
+
+  <!-- REP SESSION -->
+  <div class="hidden" id="s-rep">
+    <div class="rmode"><span class="dot"></span><span class="txt" id="rmodeTxt">Training Mode · recording, shared with your trainer</span></div>
+    <div class="screen" style="padding-top:16px">
+      <a class="back" href="#" id="repBack" style="display:inline-block;margin-bottom:14px">‹ Assignments</a>
+      <div class="goalcard" id="repGoal"></div>
+      <div class="repcount" id="repCount"></div>
+      <div class="recwrap">
+        <button class="recbtn" id="recBtn">Record</button>
+        <div class="rechint" id="recHint">Tap to record your rep · spacebar works too</div>
+      </div>
+      <button class="btn ghost" id="toReview" style="margin-top:22px">Listen to my reps ›</button>
+    </div>
+  </div>
+
+  <!-- REVIEW / LISTEN BACK -->
+  <div class="screen hidden" id="s-review">
+    <a class="back" href="#" id="revBack" style="display:inline-block;margin-bottom:14px">‹ Back to the rep</a>
+    <p class="eyebrow" id="revTitle">Your takes</p>
+    <h1 style="font-size:23px" id="revHead">Hear yourself improve.</h1>
+    <button class="btn" id="playAll">▶ Play all, back to back</button>
+    <div class="replist" id="repRows"></div>
+    <div class="sync" id="syncNote">✓ Delivered to your trainer (demo: saved on this device)</div>
+    <button class="btn ghost" id="revDone" style="margin-top:14px">Done</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  function el(t,c,h){var e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;}
+  function show(id){ ['s-intro','s-home','s-rep','s-review'].forEach(function(s){ $(s).classList.toggle('hidden', s!==id); }); window.scrollTo({top:0}); }
+
+  // Trainer-assigned drills. Escensus's own phrasing; safe for the public repo.
+  var ASSIGNMENTS=[
+    {id:'open', title:'Open & Verify', target:10,
+     goal:'Earn the right to stay on the phone. Self-ID, anchor to the request THEY sent in, surface the beneficiary and attach the burden.',
+     model:"Hi [Name], this is [Agent], a licensed agent — I'm following up on the request you sent in about the state-approved final expense plans. Real quick so I'm respectful of your time, who would you not want stuck with the bill if something happened?"},
+    {id:'eapp', title:'The eApp ask — SSN & banking', target:20,
+     goal:'Collect the sensitive info without spooking them. Frame WHY before you ask, keep it calm and matter-of-fact.',
+     model:"Just a couple things to submit it. The company verifies your identity and checks your prescription history, so they'll need your Social — nobody comes to your house, it's all electronic. And nothing drafts until you're approved."},
+    {id:'obj-scam', title:'Objection: “is this a scam?”', target:15,
+     goal:'Acknowledge it, prove credibility, reframe, keep them on the phone. Never get defensive.',
+     model:"Smart to ask. I'm a licensed agent, my number's on file and you can verify it with the state, and we work with A-rated carriers you'd recognize. What is it that felt off, so I can put your mind at ease?"},
+    {id:'close', title:'The assumptive close', target:10,
+     goal:'Go assumptive. Let them choose the amount, and start the application in the same breath.',
+     model:"Most folks in your shoes go with the Silver — it's the sweet spot. Want to start there, or step up to the Gold? Either way I'll get the application going right now."}
+  ];
+
+  // ---- consent (persisted for this page only) ----
+  function consented(){ try{ return localStorage.getItem('esc_training_consent')==='1'; }catch(e){ return false; } }
+  function setConsent(v){ try{ localStorage.setItem('esc_training_consent', v?'1':'0'); }catch(e){} }
+
+  // ---- IndexedDB: store reps (audio blob + metadata) ----
+  var DB=null;
+  function openDB(cb){
+    if(DB){ cb(DB); return; }
+    try{
+      var req=indexedDB.open('escensus-training',1);
+      req.onupgradeneeded=function(e){ var db=e.target.result; if(!db.objectStoreNames.contains('reps')){ var st=db.createObjectStore('reps',{keyPath:'id',autoIncrement:true}); st.createIndex('asg','asg',{unique:false}); } };
+      req.onsuccess=function(e){ DB=e.target.result; cb(DB); };
+      req.onerror=function(){ cb(null); };
+    }catch(e){ cb(null); }
+  }
+  function addRep(asg, blob, dur, cb){
+    openDB(function(db){ if(!db){ cb&&cb(false); return; }
+      try{ var tx=db.transaction('reps','readwrite'); tx.objectStore('reps').add({asg:asg, blob:blob, dur:dur, at:Date.now()}); tx.oncomplete=function(){ cb&&cb(true); }; tx.onerror=function(){ cb&&cb(false); }; }
+      catch(e){ cb&&cb(false); } });
+  }
+  function getReps(asg, cb){
+    openDB(function(db){ if(!db){ cb([]); return; }
+      try{ var out=[]; var idx=db.transaction('reps','readonly').objectStore('reps').index('asg'); var cur=idx.openCursor(IDBKeyRange.only(asg));
+        cur.onsuccess=function(e){ var c=e.target.result; if(c){ out.push(c.value); c.continue(); } else cb(out); };
+        cur.onerror=function(){ cb([]); }; }
+      catch(e){ cb([]); } });
+  }
+  function countReps(asg, cb){ getReps(asg,function(r){ cb(r.length); }); }
+
+  // ---- mic (guarded) ----
+  var mic=null, micDenied=false;
+  function acquireMic(cb){
+    if(mic){ cb(true); return; }
+    try{
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){ micDenied=true; cb(false); return; }
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ mic=s; cb(true); }).catch(function(){ micDenied=true; cb(false); });
+    }catch(e){ micDenied=true; cb(false); }
+  }
+
+  // ---- assignments screen ----
+  function renderHome(){
+    var host=$('asgList'); host.innerHTML='';
+    ASSIGNMENTS.forEach(function(a){
+      countReps(a.id, function(n){
+        var done=n>=a.target;
+        var card=el('div','asg'+(done?' asg-done':''));
+        card.innerHTML='<div class="asg-top"><div class="asg-t">'+a.title+'</div><div class="asg-count">'+n+' / '+a.target+(done?' ✓':'')+'</div></div>'+
+                       '<div class="asg-goal">'+a.goal+'</div>'+
+                       '<div class="bar"><i style="width:'+Math.min(100,Math.round(n/a.target*100))+'%"></i></div>';
+        card.onclick=function(){ openRep(a); };
+        host.appendChild(card);
+      });
+    });
+  }
+
+  // ---- rep session ----
+  var cur=null, rec=null, chunks=[], recording=false, recStart=0;
+  function openRep(a){
+    cur=a;
+    $('repGoal').innerHTML='<div class="gl">'+a.title+' · your goal</div><div class="gt">'+a.goal+'</div>'+
+      '<button class="btn ghost" id="revealBtn" style="margin-top:14px">Reveal a strong version</button>';
+    show('s-rep');
+    $('revealBtn').onclick=function(){ this.parentNode.removeChild(this); var r=el('div','reveal'); r.innerHTML='<div class="rl">One strong way to say it</div>'+a.model; $('repGoal').appendChild(r); };
+    updateCount();
+    resetRecBtn();
+    acquireMic(function(ok){ if(!ok){ $('rmodeTxt').textContent='Training Mode · mic unavailable — check permissions'; $('recHint').textContent='Recording needs mic access.'; } });
+  }
+  function updateCount(){ countReps(cur.id, function(n){ $('repCount').innerHTML='<b>'+n+'</b> of '+cur.target+' reps recorded'; }); }
+  function resetRecBtn(){ var b=$('recBtn'); b.textContent='Record'; b.classList.remove('on'); recording=false; }
+  function toggleRec(){
+    var b=$('recBtn');
+    if(recording){
+      // stop + save
+      try{ recording=false; b.textContent='Saving…'; b.disabled=true; rec.stop(); }catch(e){ b.disabled=false; resetRecBtn(); }
+      return;
+    }
+    if(!mic || !window.MediaRecorder){ acquireMic(function(ok){ if(ok) toggleRec(); }); return; }
+    try{
+      chunks=[]; rec=new MediaRecorder(mic); recStart=(window.performance&&performance.now)?performance.now():0;
+      rec.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
+      rec.onstop=function(){
+        var dur=recStart?Math.round((performance.now()-recStart)/100)/10:0;
+        var blob=new Blob(chunks,{type:(chunks[0]&&chunks[0].type)||'audio/webm'});
+        addRep(cur.id, blob, dur, function(){ $('recBtn').disabled=false; resetRecBtn(); updateCount(); });
+      };
+      rec.start(); recording=true; b.textContent='Stop'; b.classList.add('on');
+    }catch(e){ b.disabled=false; resetRecBtn(); }
+  }
+  $('recBtn').onclick=toggleRec;
+  $('toReview').onclick=function(){ openReview(cur); };
+  $('repBack').onclick=function(e){ e.preventDefault(); if(recording){ try{rec.stop();}catch(_){} } renderHome(); show('s-home'); };
+  // spacebar records/stops in the rep session
+  document.addEventListener('keydown',function(ev){
+    if((ev.code==='Space'||ev.key===' ') && !$('s-rep').classList.contains('hidden')){ ev.preventDefault(); if(!$('recBtn').disabled) toggleRec(); }
+  });
+
+  // ---- review / listen back ----
+  var playing=null;
+  function stopPlaying(){ if(playing){ try{playing.audio.pause();}catch(e){} if(playing.btn) playing.btn.classList.remove('playing'); playing=null; } }
+  function openReview(a){
+    cur=a;
+    $('revTitle').textContent=a.title+' · your takes';
+    getReps(a.id, function(reps){
+      var host=$('repRows'); host.innerHTML='';
+      if(!reps.length){ host.innerHTML='<div class="repline"><div class="repmeta"><div class="rn muted">No reps yet — record a few first.</div></div></div>'; $('playAll').style.display='none'; }
+      else { $('playAll').style.display='block'; }
+      reps.forEach(function(r,i){
+        var url=URL.createObjectURL(r.blob);
+        var row=el('div','repline');
+        var pb=el('button','pmini','▶');
+        var au=new Audio(url);
+        pb.onclick=function(){ if(playing&&playing.audio===au){ stopPlaying(); return; } stopPlaying(); au.currentTime=0; au.play().catch(function(){}); pb.classList.add('playing'); playing={audio:au,btn:pb}; au.onended=function(){ if(playing&&playing.audio===au){ pb.classList.remove('playing'); playing=null; } }; };
+        row.appendChild(pb);
+        row.appendChild(el('div','repmeta','<div class="rn">Rep '+(i+1)+(r.dur?' · '+r.dur+'s':'')+'</div><div class="rd">saved</div>'));
+        host.appendChild(row);
+        row._audio=au;
+      });
+      $('syncNote').textContent = reps.length? ('✓ '+reps.length+' reps delivered to your trainer (demo: saved on this device)') : 'Record reps and they show up here for your trainer.';
+      // play all back to back
+      $('playAll').onclick=function(){
+        stopPlaying();
+        var rows=host.querySelectorAll('.repline'); var i=0;
+        function next(){
+          if(i>=rows.length){ return; }
+          var au=rows[i]._audio; if(!au){ i++; next(); return; }
+          var pb=rows[i].querySelector('.pmini');
+          if(pb) pb.classList.add('playing');
+          try{ au.currentTime=0; }catch(e){}
+          au.play().catch(function(){});
+          playing={audio:au,btn:pb};
+          au.onended=function(){ if(pb) pb.classList.remove('playing'); i++; next(); };
+        }
+        next();
+      };
+    });
+    show('s-review');
+  }
+  $('revBack').onclick=function(e){ e.preventDefault(); stopPlaying(); show('s-rep'); };
+  $('revDone').onclick=function(e){ e.preventDefault(); stopPlaying(); renderHome(); show('s-home'); };
+
+  // ---- wire ----
+  $('consentBtn').onclick=function(){ setConsent(true); renderHome(); show('s-home'); };
+  $('declineBtn').onclick=function(){ window.location.href='../'; };
+  if(consented()){ renderHome(); show('s-home'); } else { show('s-intro'); }
+})();
+</script>
+</body>
+</html>

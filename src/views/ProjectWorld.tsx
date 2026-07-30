@@ -141,6 +141,7 @@ export function ProjectWorld({ path }: { path: string }) {
 
       {section === 'board' && (
         <div className="world-board">
+          <WeekStrip project={project} />
           <WorldNewTask projectKey={project.key} />
           <DatabaseView
             def={TRACKER_DB}
@@ -745,6 +746,82 @@ function WorldLanding({
         <button onClick={() => onDoor('docs')}>docs</button>
       </div>
     </div>
+  )
+}
+
+// ——— Week strip: the one-glance "where we are" line above the Board — the
+// Notion habit (week / phase / this week's goals, owner beside each) condensed
+// to as little text as possible. Stored as a single free-text metadata field
+// on the project's own spine note — no new note, no schema. Click to edit,
+// click away (or Esc) to cancel, ⌘/Ctrl+Enter or blur to save.
+
+function WeekStrip({ project }: { project: Project }) {
+  const saved = String(project.note.metadata['week_status'] ?? '')
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(saved)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (!editing) setDraft(saved)
+  }, [saved, editing])
+
+  const save = async () => {
+    const next = draft.trim()
+    if (next === saved) {
+      setEditing(false)
+      return
+    }
+    setBusy(true)
+    const ok = await setMetadata(project.path, { week_status: next || null }, { silent: true })
+    setBusy(false)
+    if (ok) setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <textarea
+        autoFocus
+        className="week-strip-edit"
+        data-testid="week-strip-edit"
+        value={draft}
+        disabled={busy}
+        placeholder={
+          'Week of 7/19 · Phase 5b\nPhoto selection (Adam)\nVideo editing (Adam)\nFinal review (Cassy, Patricia)'
+        }
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => void save()}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            setDraft(saved)
+            setEditing(false)
+          }
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) void save()
+        }}
+      />
+    )
+  }
+
+  return (
+    <button
+      className="week-strip"
+      data-testid="week-strip"
+      onClick={() => setEditing(true)}
+      title="Click to edit this week's status"
+    >
+      {saved ? (
+        saved
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((line, i) => (
+            <span key={i} className={i === 0 ? 'week-strip-head' : 'week-strip-line'}>
+              {line}
+            </span>
+          ))
+      ) : (
+        <span className="week-strip-empty">+ this week’s status</span>
+      )}
+    </button>
   )
 }
 
