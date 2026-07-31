@@ -141,3 +141,49 @@ because the sheet was always computed from **pitches you own**, not from bowls.
 The differentiator isn't the handpan — it's that **Bed makes a fixed-key
 instrument workable in a session that moves**, which is exactly the problem that
 keeps handpans out of these rooms.
+
+### One collection, five roots — and it's *F* major, not C
+
+Adam, immediately: *"mostly the notes of C major if you think about it… and then
+one section F major would be the exact notes."*
+
+The instinct is right and the arithmetic sharpens it, in a way that turns a
+constraint into a compositional method.
+
+| | |
+|---|---|
+| **D Kurd** | D E F G A **B♭** C |
+| **C major** | C D E F G A **B** |
+| **F major** | F G A **B♭** C D E |
+
+**D Kurd isn't *mostly* C major — it *is* F major, exactly.** One note off from
+C (B♭ where C wants B), and identical to F.
+
+Which means every "different key" in the table above is **the same seven notes
+with the root moved:**
+
+> **D minor · F major · G dorian · A phrygian** — one collection, four centres.
+
+### The method this hands you
+
+A handpan session is therefore **not** "avoid the bad keys." It's:
+
+> ### Keep the collection. Move the root.
+
+That is modal migration rather than modulation, and **Bed already does exactly
+this** — mode is chosen per section, and key migration moves the root while the
+voices keep their roles. So build:
+
+`D minor → F major → G dorian → A phrygian → back to D`
+
+…and **the room changes character five times while the handpan never has a wrong
+note in the entire session.** Nothing to rest, nothing bracketed, no section
+where you sit out.
+
+That is the version worth building the first handpan session around — and it's
+the clearest possible demonstration of the thing nobody else can offer: **a
+fixed-key instrument, in a session that moves.**
+
+*(Add C as a fifth centre if the session wants a brighter room; you lose only the
+leading tone, which the drone never plays anyway — law 2 builds root, 4th, 5th,
+octave and 9th, and no 7th.)*
