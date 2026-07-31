@@ -9,6 +9,44 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.3 — a readable Floor, and no more wizard · 2026-07-31
+
+**Floor now says where it is.** A `0 dB` / `−4 dB` / `+3 dB` readout sits on
+the label line in The room, and a thin mark on the track shows neutral.
+
+The problem it fixes is real and was invisible until someone opened the panel
+in a room: Floor's range is deliberately asymmetric — `−12 … +6`, because a
+room far more often needs *less* floor than more — so **zero sits two-thirds
+along the track and a slider parked at neutral looks boosted.** The one control
+you'd actually reach for mid-session was the one you couldn't read.
+
+The mark is derived from the input's own `min`/`max`, so it can't drift out of
+true if the range is ever changed. At neutral the thumb covers it, so there is
+never a stray second mark on the track.
+
+**Snap-to-zero was considered and dropped.** Floor steps in 1 dB, and a snap
+wide enough to feel would swallow `−1` and `+1` — which are real corrections, not
+rounding error. On an eighteen-step slider with the number right there, the
+readout *is* the snap. Double-tap already returns to neutral, and the hint now
+says so in those words.
+
+**"Wizard" is gone from the interface.** Two strings — *"Let the wizard shape
+it"* and *"Start with the wizard"*. The word is software's, not this room's, and
+it promises magic where the app is actually offering a short conversation. Both
+now name what the thing is: **"Let five questions shape it"** and *"Five
+questions and you have a session you can run."* Internal identifiers are
+untouched; this was a copy change, not a rename.
+
+### Changed since v1.2
+| | |
+|---|---|
+| The room | Floor value readout on the label line; neutral marked on the track |
+| `setFloor()` | calls `renderFloorVal()`, so the number can't fall out of sync |
+| `.capline` / `.slidewrap` | new, and reusable by any control that needs a value or a detent |
+| copy | two "wizard" strings replaced |
+
+---
+
 ## v1.2 — shimmer · 2026-07-31
 
 **A third drone character: Shimmer.** Pad · Choir · Shimmer, on the same Bed
