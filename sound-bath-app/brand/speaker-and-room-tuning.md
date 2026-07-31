@@ -75,10 +75,47 @@ genuinely small.
 
 ## Tier 3 — Let the app listen to the room · *the interesting one*
 
+### The method: seven tones, not a sweep
+
+**The refinement that makes this practical.** The sub only ever lands on chakra
+pitches — C, D, E, F, G, A, B, placed between 38–74 Hz. Seven frequencies,
+known in advance. So there is no reason to sweep and interpolate:
+
+> Play each of the seven for ~2 seconds and measure what arrives at the phone.
+> Twenty seconds total.
+
+Why this beats a sweep, on every axis that matters:
+
+- **No timing to align.** A sweep needs playback and capture correlated; a
+  steady tone does not. This removes the hardest part of the problem.
+- **No windowing, no FFT smearing.** Steady-state level is the most robust
+  measurement available.
+- **The output is directly what we need** — a reinforcement value *per key*,
+  rather than a curve to interpolate.
+- **It is more accurate where it counts.** Room modes are violent and narrow
+  down there. Measuring at exactly the pitches the product will use beats
+  inferring them from a smoothed response.
+
+### What it can then say
+
+Room modes mean a room can be fine in D and a disaster in C — a null in one
+corner, +9 dB in another. Measured per-key, Bed can say:
+
+> **"In this room, C reads thin and F booms."**
+
+That names something a practitioner can *feel* and has never had words for. It
+also stays on the right side of the app's own rule (audit A8): **it diagnoses,
+it does not prescribe.** It reports what the building is doing; it never
+reroutes the session. The leader decides.
+
+---
+
+
+
 Before anyone arrives, the app plays a slow sine sweep through the actual
 speaker, listens on the phone's own microphone, and computes what came back.
 
-**One 60-second step during setup answers everything at once:** which speaker,
+**One short step during setup answers everything at once:** which speaker,
 where it's placed, how the room's modes behave, and whether the corner it's
 sitting in is adding 6 dB. No picker, no list to maintain, no question at all.
 
@@ -124,6 +161,12 @@ none of this is load-bearing.
    play from `hardware-strategy.md`: it works in a city you've never visited.
 3. **Tier 3 as an experiment**, measured against known speakers before anyone
    is asked to trust it. Ship only if it beats the picker.
+
+**First test to run, and it's cheap:** on a laptop, play the seven sub pitches
+through a known speaker, capture on a phone, and see whether the measured
+levels track what the speaker's published response predicts. If they do, the
+method works and everything else is interface. If iOS voice processing eats the
+band, that shows up immediately too — before any of it is built.
 
 ---
 
