@@ -185,6 +185,57 @@ both care about — *how many still have a session six weeks later* — is just
 
 ---
 
+## The first night — and it is not the workshop
+
+2026-07-31. Adam: *"I know 10 of these people in Ohio right now."*
+
+**That is the single most valuable asset in this entire folder**, and it is worth
+being exact about what it is.
+
+Those ten are **conversion C** — practitioners who already lead and have never
+followed a Bed session. Real revenue, not the flywheel. But:
+
+> **One evening converts them into the flywheel's only input.**
+
+You lead. They're your ensemble, holding the sheet in their own kits. Now ten
+people who already run rooms have experienced Bed **from the inside**, which is
+the one thing conversion **B** requires and the one thing money cannot buy.
+
+Then the number, and there is only one:
+
+> ### Six weeks later, how many of the ten built and kept a session of their own?
+
+That is `business-model.md` test #3, run for the price of one evening, with
+people who will come because you asked. **Nobody with a spreadsheet gets to run
+that experiment.**
+
+### Do this before the workshop
+
+The workshop is the packaged version. This is the raw one, and it comes first:
+
+| | |
+|---|---|
+| **1** | **Deploy the relay.** `RELAY_URL` is still `''`, so sync is same-device only. ~10 minutes, `DEPLOY.md` step 2. **Nothing below works until this is done.** |
+| **2** | **One night, ten people, you leading.** No teaching, no pitch, no slides. |
+| **3** | **Names and numbers before anyone leaves** — and it's ten people who already lead, so this is the network's first node in one move. |
+| **4** | **Six weeks. Count.** |
+
+### What it does and does not prove
+
+- ✅ **The flywheel.** Whether experiencing Bed produces authors. The one thing
+  nothing else can test.
+- ✅ **The fifteen minutes**, for anyone who tries.
+- ✅ **The relay, sync and follower kits**, under real load, in a real room, in
+  the dark.
+- ❌ **The market.** `business-model.md` is blunt about it: *"ten warm sales
+  validate your relationships, not a market."* **Buyer eleven is still the test.**
+
+That last line is not a caveat to skip past. **Ten friends will say yes to
+almost anything**, and the number that matters is not whether they turn up —
+it's whether they are still using it when you aren't in the room.
+
+---
+
 ## What it feeds
 
 Everything else in this folder gets its first real input from this day:
