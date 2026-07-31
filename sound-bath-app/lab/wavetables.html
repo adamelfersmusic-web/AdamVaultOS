@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bed — wavetable lab</title>
+<style>
+:root{--bg:#0a0910;--panel:#12111a;--panel2:#191824;--line:#221f2e;--line2:#322d42;
+--ink:#e8e4f0;--ink2:#a29ab4;--ink3:#6b6480;--ink4:#423d52;--amber:#d9a544;--violet:#8b7ab8;
+--sans:-apple-system,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+--serif:Didot,"Bodoni MT","Playfair Display",Georgia,serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.page{max-width:900px;margin:0 auto;padding:30px 24px 90px}
+h1{font-family:var(--serif);font-weight:400;font-size:30px;margin:0 0 6px}
+.sub{color:var(--ink3);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+p{color:var(--ink2);max-width:64ch}
+.cap{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin:18px 0}
+.wt{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:14px;text-align:left;cursor:pointer;
+transition:border-color .12s,background .12s;color:inherit;font:inherit}
+.wt:hover{border-color:var(--line2);background:var(--panel2)}
+.wt.on{border-color:var(--amber)}
+.wt .nm{font-family:var(--serif);font-size:19px}
+.wt .de{font-size:11.5px;color:var(--ink3);margin-top:3px;line-height:1.5}
+.wt canvas{width:100%;height:44px;margin-top:10px;display:block}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:22px 0 6px;
+border-top:1px solid var(--line);padding-top:18px}
+.btn{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:11px 17px;
+border:1px solid var(--line2);border-radius:4px;color:var(--ink2);background:none;cursor:pointer}
+.btn:hover{color:var(--ink);background:var(--panel2)}
+.btn.primary{color:#1a1508;background:var(--amber);border-color:var(--amber)}
+select{background:var(--panel);border:1px solid var(--line2);border-radius:4px;color:var(--ink);padding:10px 12px}
+.hint{font-size:11.5px;color:var(--ink4);line-height:1.7;max-width:64ch}
+.note{border:1px solid var(--line2);border-left:3px solid var(--violet);border-radius:7px;
+background:var(--panel);padding:16px 18px;margin:22px 0}
+.note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Wavetable lab</h1>
+<div class="sub">what a producer's sound becomes inside Bed</div>
+
+<p style="margin-top:18px">Each of these is a <b>harmonic spectrum</b> — a list of amplitudes, a few hundred
+bytes — played through Bed's own Bed-lane chain: dark lowpass tracking pitch, slow filter breath, stereo spread,
+the big dark reverb. This is what a curator pack would actually ship.</p>
+
+<div class="grid" id="grid"></div>
+
+<div class="bar">
+  <button class="btn primary" id="play">Play</button>
+  <button class="btn" id="stop">Stop</button>
+  <select id="root">
+    <option value="0">C — root</option>
+    <option value="2">D — sacral</option>
+    <option value="5" selected>F — heart</option>
+    <option value="7">G — throat</option>
+  </select>
+  <span class="hint" id="status">Pick one and press play. Switching while it plays crossfades over 4 s.</span>
+</div>
+
+<div class="note">
+  <p style="margin:0 0 10px"><b>What to listen for.</b> These all play the same notes — root, fifth, octave,
+  ninth, never a third. The pack changes the <i>timbre</i>, never the harmony. A producer designs the colour;
+  Bed still decides the voicing.</p>
+  <p style="margin:0"><b>The honest limit.</b> A single spectrum is static — it can't evolve, and it carries no
+  attack, no effects, no performance. Bed's filter breath supplies the only motion. If producer packs are worth
+  doing, the extension that makes them expressive is <b>morphing between two or three spectra over 30–60 s</b> —
+  lawful, because that's timbral drift rather than automated dynamics.</p>
+</div>
+
+<p class="hint">Everything here obeys the five laws: no pulse, no third, no automated dynamics, nothing bright by
+default. Nothing is sampled — every one of these is arithmetic.</p>
+</div>
+
+<script>
+'use strict';
+/* Harmonic profiles. Index 0 is DC (always 0); index n is the nth harmonic.
+   These are hand-written approximations of a sustained tone's spectrum — which
+   is exactly what a producer would deliver: render a held note, take its FFT. */
+const TABLES = {
+  bed: { nm:'Bed — current', de:'Two saws and a triangle. The house sound, for reference.',
+    h:[0,1,.5,.33,.25,.2,.17,.14,.12,.11,.1,.09,.08,.07,.06,.05,.04,.03,.02,.01] },
+  cello: { nm:'Cello', de:'Rich and even, energy through the 8th. Wood and rosin.',
+    h:[0,1,.78,.62,.44,.36,.28,.22,.17,.12,.09,.07,.05,.04,.03,.02,.02,.01,.01] },
+  guitar: { nm:'Electric — clean, chorused', de:'Strong fundamental, quick rolloff. Dreamy pad territory.',
+    h:[0,1,.42,.28,.11,.09,.05,.04,.02,.02,.01,.01] },
+  glass: { nm:'Glass', de:'Even harmonics emphasised — the bowl family, an octave up.',
+    h:[0,1,.55,.12,.34,.06,.2,.04,.14,.02,.08,.01,.05] },
+  reed: { nm:'Harmonium / reed', de:'Odd harmonics only. Nasal, ancient, sits under everything.',
+    h:[0,1,.02,.55,.02,.34,.02,.24,.01,.16,.01,.11,.01,.07,.01,.05] },
+  vox: { nm:'Voices', de:'Formant peaks near the 3rd and 7th. Choral without a choir.',
+    h:[0,1,.35,.62,.28,.18,.14,.46,.22,.12,.08,.06,.04,.03,.02] },
+  rhodes:{ nm:'Rhodes / felt', de:'Nearly a sine with a whisper of second. Halpern territory.',
+    h:[0,1,.14,.05,.03,.02,.01,.01] },
+  brass: { nm:'Soft brass', de:'Slow build through the mid harmonics. Warm, wide, patient.',
+    h:[0,1,.62,.48,.42,.36,.3,.26,.2,.15,.11,.08,.05,.03,.02] },
+};
+
+let ctx=null, cur=null, voices=[], curKey='bed';
+const mhz = m => 440*Math.pow(2,(m-69)/12);
+
+function draw(cv, h) {
+  const g=cv.getContext('2d'), W=cv.width=cv.clientWidth*2, H=cv.height=88;
+  g.clearRect(0,0,W,H);
+  g.strokeStyle='#8b7ab8'; g.lineWidth=2; g.beginPath();
+  for(let x=0;x<W;x++){
+    const t=x/W*Math.PI*2; let y=0;
+    for(let n=1;n<h.length;n++) y+=h[n]*Math.sin(n*t);
+    const max=h.reduce((a,b)=>a+b,0);
+    g.lineTo(x, H/2 - (y/max)*H*0.42);
+  }
+  g.stroke();
+}
+
+function build() {
+  const grid=document.getElementById('grid');
+  grid.innerHTML = Object.entries(TABLES).map(([k,t])=>
+    `<button class="wt ${k===curKey?'on':''}" data-k="${k}">
+       <div class="nm">${t.nm}</div><div class="de">${t.de}</div><canvas></canvas></button>`).join('');
+  grid.querySelectorAll('.wt').forEach(el=>{
+    draw(el.querySelector('canvas'), TABLES[el.dataset.k].h);
+    el.onclick=()=>{ curKey=el.dataset.k;
+      grid.querySelectorAll('.wt').forEach(x=>x.classList.toggle('on',x===el));
+      if(cur) start();   // crossfade to the new table
+    };
+  });
+}
+
+function periodic(h){
+  const real=new Float32Array(h.length), imag=new Float32Array(h.length);
+  for(let i=1;i<h.length;i++) imag[i]=h[i];
+  return ctx.createPeriodicWave(real,imag,{disableNormalization:false});
+}
+
+function start(){
+  if(!ctx){
+    ctx=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'playback'});
+    // Bed's own tail: a big dark room, 7.5 s.
+    const sr=ctx.sampleRate, len=sr*7.5|0, buf=ctx.createBuffer(2,len,sr);
+    for(let c=0;c<2;c++){const d=buf.getChannelData(c);let y=0;
+      for(let i=0;i<len;i++){const t=i/sr, k=.42*Math.exp(-t*.55)+.02;
+        y+=k*((Math.random()*2-1)-y); d[i]=y*Math.min(1,t*55)*Math.exp(-3*t/7.5)*.85;}}
+    ctx.__verb=ctx.createConvolver(); ctx.__verb.buffer=buf;
+    const vt=ctx.createBiquadFilter(); vt.type='lowpass'; vt.frequency.value=2600; vt.Q.value=.4;
+    const vg=ctx.createGain(); vg.gain.value=.9;
+    ctx.__verb.connect(vt); vt.connect(vg); vg.connect(ctx.destination);
+    ctx.__send=ctx.createGain(); ctx.__send.gain.value=.42; ctx.__send.connect(ctx.__verb);
+  }
+  if(ctx.state==='suspended') ctx.resume();
+  const t=ctx.currentTime+0.05;
+  stop(true);
+  const pc=+document.getElementById('root').value;
+  const wave=periodic(TABLES[curKey].h);
+  const root=36+pc;
+  // Bed's pitch set: root, fifth, octave, ninth. Never a third.
+  const specs=[[root,.62],[root+7,.46],[root+12,.40],[root+19,.24],[root+26,.11]];
+  const pans=[0,-.45,.4,-.3,.5];
+  cur=ctx.createGain(); cur.gain.value=0; cur.gain.setTargetAtTime(1,t,1.6);
+  cur.connect(ctx.destination); cur.connect(ctx.__send);
+  specs.forEach(([midi,lvl],i)=>{
+    const f=mhz(midi);
+    const o=ctx.createOscillator(); o.setPeriodicWave(wave); o.frequency.value=f;
+    const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.Q.value=.4;
+    const cut=Math.min(f*5.5,1450); lp.frequency.value=cut;
+    // the slow filter breath — the only motion a single spectrum gets
+    const lfo=ctx.createOscillator(); lfo.frequency.value=.028+Math.random()*.024;
+    const lg=ctx.createGain(); lg.gain.value=cut*.17;
+    lfo.connect(lg); lg.connect(lp.frequency); lfo.start(t);
+    const g=ctx.createGain(); g.gain.value=lvl;
+    const p=ctx.createStereoPanner(); p.pan.value=pans[i];
+    o.connect(lp); lp.connect(g); g.connect(p); p.connect(cur);
+    o.start(t); voices.push(o,lfo);
+  });
+  document.getElementById('status').textContent = TABLES[curKey].nm + ' — sounding.';
+}
+
+function stop(quiet){
+  if(!ctx||!cur) return;
+  const t=ctx.currentTime, old=cur, ov=voices.slice();
+  old.gain.setTargetAtTime(0,t,quiet?1.2:1.6);
+  setTimeout(()=>{ov.forEach(n=>{try{n.stop()}catch(e){}});try{old.disconnect()}catch(e){}}, quiet?4000:6000);
+  cur=null; voices=[];
+  if(!quiet) document.getElementById('status').textContent='Stopped.';
+}
+
+document.getElementById('play').onclick=start;
+document.getElementById('stop').onclick=()=>stop(false);
+document.getElementById('root').onchange=()=>{ if(cur) start(); };
+build();
+addEventListener('resize',build);
+</script>
+</body>
+</html>
