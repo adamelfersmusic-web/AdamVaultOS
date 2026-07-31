@@ -713,6 +713,17 @@ body.live #goBtn .glabel { color: var(--amber); }
   <div class="obox">
     <div class="dhd"><span class="t">The room</span><span class="flexspace"></span><button class="xbtn" data-close="utilOvl">&times;</button></div>
     <div class="frow">
+      <span class="cap">Floor &mdash; the sub, in this room</span>
+      <div class="rangewrap">
+        <span class="rv">lighter</span>
+        <input type="range" id="uFloor" min="-12" max="6" step="1" value="0" aria-label="Floor level">
+        <span class="rv">heavier</span>
+      </div>
+      <div class="hint" style="margin-top:6px">The only thing you can't set before you arrive.
+      A corner or a hard floor adds weight you didn't ask for; a thin speaker takes it away.
+      Set it once during arrival, from the middle of the room. Double-tap to reset.</div>
+    </div>
+    <div class="frow">
       <span class="cap">Tone &mdash; dark &harr; bright</span>
       <div class="rangewrap">
         <span class="rv">dark</span>
@@ -1343,7 +1354,7 @@ const store = {
   settings: {
     refHz: 440, kit: { type: 'standard7', custom: '' },
     roster: [], livePlayers: false,
-    deepBreath: true, tilt: 0,
+    deepBreath: true, tilt: 0, floor: 0,
   },
   sessions: [],
   currentId: null,
@@ -1503,7 +1514,7 @@ const bus = {
    ========================================================================== */
 
 const A = {
-  ctx: null, master: null, verb: null, subOut: null,
+  ctx: null, master: null, verb: null, subOut: null, floor: null,
   bus: {}, trim: {}, send: {},
   tiltLo: null, tiltHi: null,
   noise: null, migrating: false,
@@ -1516,6 +1527,19 @@ function setTilt(v) {
   const t = A.ctx.currentTime;
   A.tiltHi.gain.setTargetAtTime(store.settings.tilt * TILT_DB, t, 0.08);
   A.tiltLo.gain.setTargetAtTime(-store.settings.tilt * TILT_DB, t, 0.08);
+}
+
+/* The floor, in dB. Bass is the one thing that can only be tuned by standing
+   in the room: a 45 Hz mode that is perfect in a carpeted studio booms in a
+   stone hall, and a speaker in a corner gains 6 dB for free. Tone deliberately
+   never touches the sub, so without this the band that most needs room tuning
+   is the only one with no room control. Range is asymmetric — rooms far more
+   often need less floor than more. */
+const FLOOR_MIN = -12, FLOOR_MAX = 6;
+function setFloor(db) {
+  store.settings.floor = clamp(db, FLOOR_MIN, FLOOR_MAX);
+  if (!A.floor) return;
+  A.floor.gain.setTargetAtTime(Math.pow(10, store.settings.floor / 20), A.ctx.currentTime, 0.08);
 }
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -1581,7 +1605,15 @@ function initAudio() {
     const trim = ctx.createGain();
     trim.gain.value = 0;
     input.connect(trim);
-    trim.connect(b === 'deep' ? A.subOut : A.master);
+    if (b === 'deep') {
+      // The floor gets a second gain the ARRANGEMENT never touches. trim.deep
+      // is what the lanes drive; A.floor is what a human turns in the room.
+      // Two hands on one band, and they can't fight: one is the plan, one is
+      // the building.
+      A.floor = ctx.createGain();
+      A.floor.gain.value = Math.pow(10, store.settings.floor / 20);
+      trim.connect(A.floor); A.floor.connect(A.subOut);
+    } else trim.connect(A.master);
     A.bus[b] = input;
     A.trim[b] = trim;
     if (sends[b] > 0) {
@@ -3224,6 +3256,7 @@ function wire() {
   $('pExit').onclick = () => {
     if (!T.live || T.ended) { exitPerform(); return; }
     $('uTilt').value = Math.round(store.settings.tilt * 100);
+    $('uFloor').value = store.settings.floor;
     $('uEnd').textContent = 'End the session'; $('uEndHint').textContent = '';
     $('utilOvl').classList.add('open');
   };
@@ -3238,6 +3271,8 @@ function wire() {
   $('followerView').onclick = () => { if (!isFollower()) $('followerView').classList.remove('open'); };
   $('cHome').onclick = exitPerform;
 
+  $('uFloor').oninput = e => { setFloor(+e.target.value); save(); };
+  $('uFloor').ondblclick = e => { e.target.value = 0; setFloor(0); save(); };
   $('uTilt').oninput = e => { setTilt(+e.target.value / 100); save(); };
   $('uTilt').ondblclick = e => { e.target.value = 0; setTilt(0); save(); };
   $('uEnd').onclick = () => {
