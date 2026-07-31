@@ -62,6 +62,25 @@ Tapping it again · leaving Design (hooked in `nav()`) · **BEGIN** (first line 
 this product could have, so all three paths were tested rather than reasoned
 about.
 
+### The phrases now say what they are — without asking anyone to be a poet
+
+The assembled line under the timeline had no label, so a first-timer could fill
+in seven phrases and never notice what they'd made. It now carries one:
+
+| | |
+|---|---|
+| some sections filled | *carried across the arc* |
+| **every** section filled | ***a poem, carried across the whole arc*** |
+
+The field still asks for **"its phrase — the line it carries."** Nobody is ever
+*asked* to write a poem; the caption names the **mechanism**, which is true
+whether you wrote one word or a sonnet and demands nothing of either.
+
+**The word "poem" appears exactly once in the product, and only after the thing
+is finished** — recognition, never an instruction. Plenty of people in this
+scene write. None of them need to be told to at an empty field, and the ones who
+don't think of themselves as writers get to find out they just did.
+
 ### Also
 - **Fade edits now redraw the block** — v1.4 made blocks draw their fades and
   `bdFadeIn`/`bdFadeOut` only called `save()`. The picture went stale.

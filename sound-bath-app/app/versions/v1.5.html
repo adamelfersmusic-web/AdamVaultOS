@@ -555,6 +555,7 @@ body.live #goBtn .glabel { color: var(--amber); }
       </div>
       <div id="dTimeline"></div>
       <div class="poemline" id="dPoem"></div>
+      <div class="cap" id="dPoemCap" style="margin-top:7px;display:none"></div>
       <div class="dhint">
         <b>The ruler is the spine; the lanes are what sounds.</b>
         Tap a section to shape it — name and phrase first, chakra second; the bowls are derived.
@@ -3093,10 +3094,20 @@ function renderDesign() {
   renderPoem();
 }
 
+/* Nobody is ever ASKED to write a poem — the field asks for "its phrase," one
+   line, at the size of a thought. The caption names the mechanism, which is
+   true whether you wrote one word or a sonnet and demands nothing of either.
+   The word "poem" appears exactly once in the whole product, and only after
+   the thing is finished: recognition, never an instruction. Plenty of people
+   in this scene write; none of them need to be told to at an empty field. */
 function renderPoem() {
   const S = currentSession(); if (!S) return;
-  const poem = S.sections.map(s => s.phrase).filter(Boolean).join(' / ');
-  $('dPoem').textContent = poem;
+  const lines = S.sections.map(s => s.phrase).filter(Boolean);
+  $('dPoem').textContent = lines.join(' / ');
+  const cap = $('dPoemCap');
+  const whole = S.sections.length > 1 && lines.length === S.sections.length;
+  cap.style.display = lines.length ? 'block' : 'none';
+  cap.textContent = whole ? 'a poem, carried across the whole arc' : 'carried across the arc';
 }
 
 /* A block drawn as its envelope, not its level. The fill rises over the fade-in,
