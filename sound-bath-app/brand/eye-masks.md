@@ -1,4 +1,4 @@
-# Eye masks
+# Eye masks — and the rest of the object question
 
 2026-07-31. Adam: *"DUDE — blindfolds that say Bed, sold at events."*
 
@@ -105,3 +105,75 @@ out a few hundred dollars and you learned it before designing anything.
 Run it at the same events as the five affiliate deals in
 [`affiliates.md`](affiliates.md) — same rooms, same people, two answers for one
 trip.
+
+---
+
+## The other objects, judged by the same rule
+
+Adam, brainstorming: *"or other Bed merch — a bath towel, maybe an essential
+oil, maybe honestly a journal."* Run each through **sell the thing that makes
+the night better, never the thing that advertises you.**
+
+### ❌ Bath towel — no, and there's a second reason
+
+Fails the rule outright: it has nothing to do with the night. It's a logo
+delivery vehicle, which is the definition of merch.
+
+**And the name collides.** **BED** next to **BATH** reads as a homewares
+chain before it reads as anything of ours. Same class of hazard as BED + ROOMS
+in `taglines.md`, and worse, because this one would be printed on the object.
+
+### 🟡 Essential oil — yes, but not as its own product
+
+It *is* part of the practice, so it passes the rule. But it's a commodity in a
+crowded category with shelf life, batch variation and regulatory edges, and
+nothing about a Bed-branded lavender is different from anyone else's.
+
+**The strong version is already inside the mask.** A weighted eye pillow is
+flax and lavender. Make that the good lavender, say so, and it becomes a
+*reason the mask is better* instead of a second SKU to manage.
+
+> **One object, two claims, no extra inventory.**
+
+### ✅ Journal — the interesting one, and it's not for the attendee
+
+A generic guided journal is merch. **A journal for the practitioner is a
+product**, because Bed already has a paper-shaped thing at its centre: **the
+poem.**
+
+Practitioners work out phrases before they type them — on a napkin, in the notes
+app, in the car. A journal laid out the way the app is laid out — the arc across
+a spread, a line per section, room for the key and the bowls — is where that
+already happens, structured.
+
+**The reason this is worth more than its margin:**
+
+> **It's the free trial that doesn't need software.**
+
+Someone who has filled in three arcs on paper has already learned the model —
+sections, functions, a phrase carried across the whole thing — before they ever
+open Bed. And nothing teaches the fifteen-minute promise faster than having
+already done the thinking part by hand.
+
+**It also serves the avatar exactly.** The person at the threshold, imagining a
+night they haven't led yet, would rather buy a $22 notebook than commit to
+software. Let them. That notebook is the on-ramp.
+
+*(Watch one thing: it must not read as **homework**. Loose, beautiful, mostly
+blank — a place to think, never a worksheet to complete. Same discipline as the
+poem caption: name the mechanism, never assign the task.)*
+
+---
+
+## The order
+
+| | | |
+|---|---|---|
+| 1 | **Eye mask** | used *during* the night · biggest market · simplest object |
+| 2 | **Journal** | used *before* the night · teaches the model · on-ramp for the threshold buyer |
+| — | *lavender* | folded into the mask, never its own SKU |
+| ✕ | *towel, shirts, totes, stickers* | merch, and BED+BATH collides besides |
+
+Both winners share the thing that makes them not-merch: **they'd be in that room
+whether or not we existed.** We're making a better one and putting a quiet mark
+on it.
