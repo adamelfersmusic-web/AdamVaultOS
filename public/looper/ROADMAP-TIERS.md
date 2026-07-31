@@ -24,6 +24,7 @@ switched by ear.
 | **v1** | `/AdamVaultOS/looper/v1/` | ✅ frozen — verified on real speakers |
 | **v2** | `/AdamVaultOS/looper/v2/` | freeze when tier 2 is done |
 | **v3** | `/AdamVaultOS/looper/v3/` | freeze when tier 3 is done |
+| **v4** | `/AdamVaultOS/looper/v4/` | freeze when tier 4 is done |
 | current | `/AdamVaultOS/looper/` | whatever is being worked on |
 
 ---
@@ -37,14 +38,20 @@ question: does this get someone playing sooner, or later? A menu is a decision,
 and decisions are producer mode.
 
 **Keep the UI dead simple.** The list below is long; the interface must not grow
-in proportion. Most of tier 2 adds no visible control at all.
+in proportion. Tier 2 adds no visible control at all, and across all three tiers
+only four things ever appear on screen that aren't there today: a record button,
+a line-in level, whatever cycle mode needs, and a single line of latency text.
 
 ---
 
 # TIER 2 — the same app, better
 
-The rule for this tier: **fix what's there, and add nothing you can see** —
-except one record button. No new panels, no new rows, no settings.
+The rule for this tier: **fix what's there, and add nothing you can see.** Not
+one new control. No panels, no rows, no settings, no buttons. Every item below
+either changes how something already on screen sounds, or changes how it
+behaves when you touch it.
+
+If a change seems to need a control, it belongs in a later tier.
 
 ### 2.1 Percussion — the weakest part, diagnosed
 
@@ -124,31 +131,7 @@ Latency-immune, so it works over Bluetooth like everything else in drone mode.
 *(In tier 3 this splits at C3 so the upper range plays a Rhodes. In tier 2, all
 notes set the root.)*
 
-### 2.7 Recording and saving
-
-**One button** captures everything — drone, kit, and mic if present — to a file
-while you play. Multiple takes kept and playable back. An optional single line of
-text per take, because *"what was that thing I just played"* is the real need and
-a label covers it. **Not a notes app.**
-
-No latency requirement at all, since nothing is layered back in real time.
-
-> **Do NOT build overdub looping.** It needs round-trip latency calibration, and
-> browsers apply echo cancellation, noise suppression and auto-gain to
-> `getUserMedia` by default — AEC will actively duck your instrument whenever
-> the drone plays, because it thinks the drone is echo. All three must be
-> explicitly disabled. See SPEC §6.3.
-
-### 2.8 Shareable URL state
-
-`…/looper/#A/fifth/felt/bossa/96` and someone lands on exactly that setup;
-progressions too. No account, no backend — **the URL is the save file.**
-
-This targets the real risk: not that nobody wants it, but that nobody finds it,
-and "sounds better" survives neither a screenshot nor a feature list. Every
-shared link is a demo arriving pre-configured from someone the recipient trusts.
-
-### 2.9 Level
+### 2.7 Level
 
 **Do not add a master volume.** Measured: both faders at max already hits
 0.1 dBFS, so a master could only attenuate — which the device's hardware volume
@@ -228,8 +211,10 @@ by physics and the app only adds the tail.
 Two real problems, both of which may make it not worth shipping:
 - **Feedback.** A mic in a room with a speaker playing a sustained drone is the
   textbook worst case. Headphones fine; speaker squeals.
-- **Browser DSP.** Same `getUserMedia` trap as 2.7 — AEC will duck the voice
-  against the drone.
+- **Browser DSP.** Browsers apply echo cancellation, noise suppression and
+  auto-gain to `getUserMedia` by default, and AEC will actively duck the voice
+  whenever the drone plays, because it thinks the drone is echo. All three must
+  be explicitly disabled. See SPEC §6.3.
 
 If it doesn't work cleanly, cut it. Plugging a voice into a mixer instead is a
 perfectly good answer.
@@ -259,6 +244,48 @@ No new panel. No counter. Nothing on screen when it's off.
 *only for keyboard players*. A horn player, a singer, a guitarist with both
 hands occupied can't hit a key either. Cycle mode is the hands-free version for
 everyone else — same need, different input.
+
+---
+
+# TIER 4 — the app keeps
+
+**Freeze v3 first.**
+
+Both of these were originally sketched into tier 2 and deliberately moved back.
+Everything before this tier is about the hour you spend playing. This tier is
+about what survives it.
+
+### 4.1 Recording
+
+**One button** captures everything the app is making — drone, kit, and by this
+tier the Rhodes and the guitar too — to a file while you play. Multiple takes
+kept and playable back. An optional single line of text per take, because
+*"what was that thing I just played"* is the real need and a label covers it.
+**Not a notes app.**
+
+No latency requirement at all, since nothing is layered back in real time.
+
+> **This is why it waits until tier 4.** Built in tier 2 it could only capture a
+> drone, a kit, and a bare mic — then tier 3 adds two instruments and it has to
+> be reopened. Built here it is built once, and it records the whole app.
+
+> **Do NOT build overdub looping.** It needs round-trip latency calibration, and
+> it walks into the browser-DSP trap described in 3.4. Capture covers the real
+> need; overdubbing is a different product.
+
+### 4.2 Shareable URL state
+
+`…/looper/#A/fifth/felt/bossa/96` and someone lands on exactly that setup;
+progressions too. No account, no backend — **the URL is the save file.**
+
+This targets the real risk: not that nobody wants it, but that nobody finds it,
+and "sounds better" survives neither a screenshot nor a feature list. Every
+shared link is a demo arriving pre-configured from someone the recipient trusts.
+
+> It sits last because it's about distribution rather than playing, and because
+> the more the app can do, the more a link is worth sharing. But it is **small,
+> self-contained, and depends on nothing in tier 3** — so if tier 3 sprawls,
+> this is the one item worth pulling forward on its own.
 
 ---
 
