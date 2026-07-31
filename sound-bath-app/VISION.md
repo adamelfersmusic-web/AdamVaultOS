@@ -57,10 +57,34 @@ three real sections on every load, warns when a section leaves the group fewer
 than two usable bowls, handles arbitrary kits, and exports the same JSON session
 format the app consumes. Both real handouts ship as loadable examples.
 
+### `app/index.html` — the working app
+
+The exploratory full build. Single self-contained file, ~3,200 lines, no
+backend, localStorage. Wizard to runnable 50-minute structure in about six taps.
+
+- **Library** — both real sessions seeded, each showing its arc as a colour
+  strip. BEGIN and SHAPE as the two verbs.
+- **Perform mode** — the cue clock runs the plan itself, so display-only is
+  genuinely display-only. GO advances early, HOLD freezes the clock (the engine
+  is generative, so everything sounding simply keeps sounding), JUMP goes
+  anywhere. The whole interface drops to ember the moment the room goes live.
+- **Follower view** — the printed handout as a screen: tier is size and
+  brightness, root enormous, brackets small and dim.
+- **Design mode** — the marker ruler over four named lanes, blocks crossing
+  seams by construction, tap-to-edit with edge-drag secondary.
+- **Ensemble** — kit, reference pitch as an editable Hz field, roster, live
+  players switch, Deep breathes, small-speaker reinforcement.
+- Engine ported intact from `bed.html`, including the sub's own 50 ms limiter,
+  one-sine Deep, role-stable migration voices and pre-fader sends.
+
+Three corrections came out of building it, all folded back into the brief: the
+demotion rule's scope (§2.3), `fadeIn` unified to one meaning everywhere, and a
+latent bug where Air's stored `fadeOut` was never populated, so every authored
+air exit silently fell back to 40 s.
+
 ### Still unbuilt
 
-Everything in §B beyond the engine: perform mode, the cue list, follower sync,
-design mode, the wizard, lights, marketplace.
+Multi-device sync, lights, live instrument inputs, the marketplace.
 
 ---
 
@@ -779,10 +803,15 @@ forever and no longer blocks anything.
 **Phase 1 — The sheet generator.** ✅ **Built.** Not yet handed to real bowl
 players — that test is outstanding and costs nothing.
 
-**Phase 2 — Templates + perform mode.** Cue list, HOLD/NEXT/JUMP, follower sync.
-Performable without a designer existing.
+**Phase 2 — Templates + perform mode.** ✅ **Built** (exploratory). Cue list with
+GO / HOLD / JUMP, follower view on the same device. Multi-device sync still open.
 
-**Phase 3 — Design mode.** Four-band Lego timeline, the wizard, ensemble config.
+**Phase 3 — Design mode.** ✅ **Built** (exploratory). Marker ruler over four
+lanes, the wizard, ensemble config.
+
+> Both were built **wide rather than deep**, to see the shape — expect to
+> rebuild. But the domain logic, the session format and the engine are all
+> proven now, so a rebuild inherits the hard parts rather than re-deriving them.
 
 **Phase 4 — Pack format hardening + in-house curator packs.**
 
