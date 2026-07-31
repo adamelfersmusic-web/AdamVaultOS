@@ -185,6 +185,37 @@ under 3% of one event's gross**, and less per year than a mallet set.
 **Always present it next to gear, never next to software.**
 
 Beside a bowl, $149 a year is obviously cheap. Beside an app, it's expensive.
+### It isn't a pricing tactic. It's the casting.
+
+Adam, 2026-07-31: *"Keeping the person and the instrument they love at the
+centre. They're the hero, and their singing bowl is their trusty companion. Bed
+is just the thing that takes them from what they imagine at night to actually
+doing it for real."*
+
+That upgrades the rule from a price frame to a **positioning principle**, and it
+supplies the character nobody had named.
+
+| Role | Who |
+|---|---|
+| **Hero** | the practitioner |
+| **Companion** | the bowl they already own and love |
+| **The thing that gets them over** | Bed |
+
+The posture — *the hero is always the person, never the software* — only ever
+said what Bed **isn't**. This says what the **bowl** is, and it changes how
+every image and every sentence should be built. **Bed never competes with the
+bowl; it is never even in the frame with it as an equal.** The bowl is the
+beloved object. Bed is the thing that made the night possible.
+
+Which is also why *"from what they imagine at night to actually doing it for
+real"* is the truest sentence anyone has written about this product. It's the
+avatar exactly — someone who already loves this and hasn't led one yet — and it
+names the **threshold** rather than the features. See `taglines.md`.
+
+**Practical consequence, and it's concrete:** in any photograph, film frame or
+page, the bowl is lit and Bed is not. A shot where the screen is the subject is
+a shot that sells software.
+
 Same number, opposite reaction, and the framing is entirely ours to choose.
 This is why the descriptor is *an instrument for holding space*, and why BOOK
 insists on **a rig, not an app**: *"nobody pays four figures for software they
