@@ -31,6 +31,17 @@
 
 # An open device should always pick up the newest build, never a stale cache.
 # The service worker is network-first for the same reason.
+# ⚠️ BOTH rules are needed and neither is redundant. Netlify matches the REQUEST
+# path, not the file it resolves to — and everybody opens /app/, not
+# /app/index.html. With only the second rule the app is served from cache, and
+# the failure mode is vicious: a laptop silently runs a build from before
+# RELAY_URL was set, talks over BroadcastChannel, and no phone can ever reach
+# it. Nothing errors. It just never connects.
+[[headers]]
+  for = "/app/*"
+  [headers.values]
+    Cache-Control = "no-cache"
+
 [[headers]]
   for = "/app/index.html"
   [headers.values]
