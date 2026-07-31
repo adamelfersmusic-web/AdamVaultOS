@@ -32,6 +32,7 @@ unchanged.
 | Sync technical spec — wire format, join flow, seams | [`sync-spec.md`](sync-spec.md) |
 | **Distribution & saving** — deploy, storage, and the staged plan | [`distribution-and-saving.md`](distribution-and-saving.md) |
 | **Hardware strategy** — not speakers, yes lights, and why | [`hardware-strategy.md`](hardware-strategy.md) |
+| **Eye masks** — the best hardware product on the list, and why | [`eye-masks.md`](eye-masks.md) |
 | **Speaker & room tuning** — "Bed knows this speaker", in three tiers | [`speaker-and-room-tuning.md`](speaker-and-room-tuning.md) |
 | **Ecosystem** — the practitioner network, packs, events, sequencing | [`ecosystem.md`](ecosystem.md) |
 | **Business model** — watching is free, making is paid | [`business-model.md`](business-model.md) |
