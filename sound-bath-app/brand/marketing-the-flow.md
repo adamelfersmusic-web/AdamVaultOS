@@ -105,6 +105,22 @@ shot 8 of the film.
 - The room settles fast — it happens — and the arrival texture is now just
   making everyone wait.
 
+**⚠️ The one that is only possible with Bed — and it's the strongest scene here:**
+- You want to pick up the rain stick and walk it around the room, or take the
+  chimes over the heads of the people at the back. **Every practitioner knows
+  what that costs.** The second you leave your bowls, the floor goes with you —
+  and for everyone who isn't directly under the chimes, the bath just thinned
+  out. So you either don't move, or you accept that the room drops while you do.
+
+  With Bed the floor keeps going. *"It allows you to move and add that magic,
+  that personal customised thing, without dropping the bed beneath you."*
+  (Adam, 2026-07-31.)
+
+  **This is the clearest thing the product does that nothing else does, and it
+  is not about sound design at all — it's about the human being free to move.**
+  Everything else here frees the practitioner's *attention*. This one frees
+  their *body*.
+
 **The one only insiders will clock:**
 - The hall is stone, everything rings twice as long as it did in the studio,
   and the whole night wants to be slower. **You can't know that until you're
