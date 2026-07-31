@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bed — bowl stickers</title>
+<style>
+/* ==========================================================================
+   BED — BOWL STICKERS, product sheet + press-ready artwork.
+   Open in a browser. Cmd/Ctrl-P prints the sheet at TRUE SIZE on A4:
+   18 mm circles, no scaling. Set margins to None and scale to 100%.
+   ========================================================================== */
+:root {
+  --bg: #0a0910; --panel: #12111a; --line: #221f2e; --line2: #322d42;
+  --ink: #e8e4f0; --ink2: #a29ab4; --ink3: #6b6480; --ink4: #423d52;
+  --violet: #8b7ab8; --red: #b86a5a;
+  --sticker-ink: #14102a; --sticker-ground: #e8e4f0;
+  --sans: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --serif: "Didot", "Bodoni MT", "Playfair Display", "Cormorant Garamond", Georgia, serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans);
+  font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 940px; margin: 0 auto; padding: 56px 24px 90px; }
+
+h1 { font-family: var(--serif); font-size: clamp(38px, 7vw, 62px); margin: 0 0 4px; font-weight: 400; }
+.sub { font-family: var(--serif); font-style: italic; font-size: clamp(18px, 3vw, 25px); color: var(--ink2); margin: 0 0 6px; }
+.cap { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink4); }
+h2 { font-family: var(--serif); font-size: 27px; font-weight: 400; margin: 54px 0 14px; }
+p { color: var(--ink2); max-width: 62ch; }
+b { color: var(--ink); font-weight: 600; }
+.warn { color: var(--red); }
+
+/* ── the three-way identity ───────────────────────────────────────────── */
+.identity { display: grid; grid-template-columns: auto 1fr; gap: 0 30px; align-items: center;
+  background: var(--panel); border: 1px solid var(--line2); border-radius: 10px; padding: 28px 32px; margin: 26px 0; }
+.identity .big { font-family: var(--serif); font-size: 128px; line-height: .9; color: var(--ink); }
+.identity ul { margin: 0; padding: 0; list-style: none; }
+.identity li { padding: 7px 0; border-bottom: 1px solid var(--line); color: var(--ink2); }
+.identity li:last-child { border-bottom: none; }
+.identity li b { display: inline-block; min-width: 8.5em; color: var(--ink); }
+.identity .line { grid-column: 1 / -1; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line);
+  font-family: var(--serif); font-size: 21px; color: var(--ink); }
+.identity .line em { color: var(--ink3); font-size: 15px; font-style: normal; display: block; margin-top: 5px; font-family: var(--sans); }
+
+/* ── the bowl drawing ─────────────────────────────────────────────────── */
+.placement { display: grid; grid-template-columns: 300px 1fr; gap: 36px; align-items: center; margin: 26px 0; }
+@media (max-width: 720px) { .placement, .identity { grid-template-columns: 1fr; } .identity .big { font-size: 84px; } }
+
+/* ── swatch row ───────────────────────────────────────────────────────── */
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 18px 0 4px; }
+.chip { width: 74px; height: 74px; border-radius: 50%; background: var(--sticker-ground);
+  color: var(--sticker-ink); display: grid; place-items: center;
+  font-family: var(--serif); font-size: 40px; line-height: 1; }
+.chip.ring { box-shadow: inset 0 0 0 3px var(--rc); }
+
+table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink2); }
+th { color: var(--ink4); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 400; }
+td b { color: var(--ink); }
+
+.check { background: var(--panel); border: 1px solid var(--line2); border-left: 3px solid var(--violet);
+  border-radius: 8px; padding: 22px 26px; margin: 26px 0; }
+.check .q { font-family: var(--serif); font-size: 25px; color: var(--ink); margin-bottom: 8px; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE PRINTABLE SHEET — true size, A4.
+   ══════════════════════════════════════════════════════════════════════ */
+.sheet { background: #fff; color: #14102a; border-radius: 10px; padding: 12mm 10mm;
+  margin: 30px 0; width: 210mm; max-width: 100%; }
+.sheet h3 { font-family: var(--serif); font-weight: 400; font-size: 20px; margin: 0 0 2px; color: #14102a; }
+.sheet .note { font-size: 10.5px; color: #4a4560; max-width: 150mm; margin: 0 0 7mm; line-height: 1.45; }
+.sheet .note b { color: #14102a; }
+.grid { display: grid; grid-template-columns: repeat(8, 18mm); gap: 5mm 5mm; }
+.st { width: 18mm; height: 18mm; border-radius: 50%; background: var(--sticker-ground);
+  color: var(--sticker-ink); display: grid; place-items: center;
+  font-family: var(--serif); font-size: 11mm; line-height: 1;
+  /* the cut line — a hairline the trimmer follows, not part of the design */
+  outline: .2mm dashed #b9b3c8; outline-offset: 0; }
+.st.ring { box-shadow: inset 0 0 0 .8mm var(--rc); }
+.sheet .foot { margin-top: 7mm; font-size: 9px; color: #6b6480; display: flex; justify-content: space-between; }
+.sheet .foot b { letter-spacing: .3em; color: #14102a; }
+
+@media print {
+  @page { size: A4; margin: 0; }
+  body { background: #fff; }
+  .wrap > *:not(.sheet):not(.printonly) { display: none !important; }
+  .wrap { padding: 0; max-width: none; }
+  .sheet { border-radius: 0; margin: 0; padding: 12mm 10mm; page-break-after: always; }
+  .st { outline-color: #ccc; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="cap">Bed &middot; bowl stickers &middot; product sheet</span>
+  <h1>One number.</h1>
+  <p class="sub">Your bowl, your chakra, your note &mdash; all at once.</p>
+  <p style="margin-top:18px">The app tells the room <b>2&nbsp;6&nbsp;(3&nbsp;5&nbsp;7)&nbsp;[1,&nbsp;4]</b>.
+  Those numbers are worth nothing until they point at objects. <b>These are the objects.</b></p>
+
+  <h2>What the number means</h2>
+  <div class="identity">
+    <div class="big">3</div>
+    <ul>
+      <li><b>Your bowl</b> the third one up from your lowest</li>
+      <li><b>Your chakra</b> Solar Plexus &mdash; courage and discipline</li>
+      <li><b>Your note</b> the third of the key</li>
+    </ul>
+    <div class="line">The player learns none of it.
+      <em>They read a number, they hit that bowl, and they are right on all three at once.
+      That identity is the design — it is why Bed never asks anyone for a key.</em></div>
+  </div>
+
+  <h2>Where it goes</h2>
+  <div class="placement">
+    <svg viewBox="0 0 300 220" xmlns="http://www.w3.org/2000/svg" aria-label="A singing bowl in section, showing the sticker on the outer wall">
+      <defs>
+        <linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3a3348"/><stop offset="1" stop-color="#191527"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="150" cy="196" rx="96" ry="10" fill="#0d0c14"/>
+      <path d="M46 62 C46 150 88 190 150 190 C212 190 254 150 254 62 Z" fill="url(#bowl)"/>
+      <path d="M46 62 C46 62 90 78 150 78 C210 78 254 62 254 62" fill="none" stroke="#4a4360" stroke-width="2"/>
+      <ellipse cx="150" cy="62" rx="104" ry="17" fill="none" stroke="#6b6480" stroke-width="3"/>
+      <!-- the sticker, on the outer wall, upper third, facing the player -->
+      <circle cx="150" cy="118" r="21" fill="#e8e4f0"/>
+      <text x="150" y="118" text-anchor="middle" dominant-baseline="central"
+            font-family="Didot, 'Bodoni MT', Georgia, serif" font-size="26" fill="#14102a">3</text>
+      <text x="150" y="46" text-anchor="middle" font-family="-apple-system, Arial, sans-serif"
+            font-size="9.5" letter-spacing="1.6" fill="#b86a5a">NEVER ON THE RIM</text>
+      <line x1="150" y1="52" x2="150" y2="60" stroke="#b86a5a" stroke-width="1.4"/>
+    </svg>
+    <div>
+      <table>
+        <tr><th>Where</th><td><b>Outer wall, upper third, facing the player.</b> You should see it without moving your head.</td></tr>
+        <tr><th class="warn">Never</th><td><b class="warn">Not the rim.</b> That is the striking and rubbing surface &mdash; it wears the sticker off, and it is the part that moves most.</td></tr>
+        <tr><th>Size</th><td><b>18 mm.</b> Readable at arm's length by candlelight; invisible from the floor.</td></tr>
+        <tr><th>Order</th><td><b>1 is your lowest bowl.</b> Work up from there.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h2>The check that catches every mistake</h2>
+  <div class="check">
+    <div class="q">Play them 1 &rarr; 8 in order. Does it go up?</div>
+    <p style="margin:0">If it does, they're on right. If it doesn't, two of them are swapped.</p>
+    <p style="margin:10px 0 0;color:var(--ink3);font-size:13.5px">Fifteen seconds, no musical knowledge required, and it catches
+    every possible mis-application. <b>Stickering out of order breaks everything Bed says with no symptom at all</b> &mdash;
+    so the instrument gets read back before it's trusted, like everything else here.</p>
+  </div>
+
+  <h2>Two versions</h2>
+  <p><b>Plain</b> is the one to make. <b>Ring</b> adds a cool position band &mdash; it encodes
+  <i>order</i>, not a chakra-colour claim. Warm chakra colours are deliberately not used: the room kills them,
+  and orange sits too close to amber, which in Bed means one thing only &mdash; <i>live and making sound</i>.</p>
+  <div class="row">
+    <span class="chip">1</span><span class="chip">4</span><span class="chip">8</span>
+    <span style="width:20px"></span>
+    <span class="chip ring" style="--rc:#5d6aa8">1</span>
+    <span class="chip ring" style="--rc:#7b74b4">4</span>
+    <span class="chip ring" style="--rc:#a68cc0">8</span>
+  </div>
+
+  <h2>⚠️ This sheet is for C major sets</h2>
+  <p>For a standard C major 7 or 8 &mdash; which is nearly every set in the room &mdash; the number
+  on the bowl and the note it plays agree. <b>Other tunings need their own sheet, and that decision
+  isn't made yet.</b> A sticker is permanent, so it is not the place to bake in an open question.
+  See <code>brand/numbering-and-tuning.md</code>.</p>
+
+  <h2>Print it</h2>
+  <p>Cmd/Ctrl-P &rarr; A4, margins <b>None</b>, scale <b>100%</b>. The circles come out at true 18 mm.
+  Matte vinyl, not gloss &mdash; gloss catches candlelight and flashes.
+  <b class="warn">Test the adhesive on a bowl you don't love, and record before and after</b> &mdash;
+  these go on instruments people care about.</p>
+
+  <!-- ══════════ printable sheet ══════════ -->
+  <div class="sheet">
+    <h3>Bed &mdash; bowl numbers</h3>
+    <p class="note">
+      <b>1 is your lowest bowl. Work up from there.</b> Outer wall, upper third, facing you &mdash;
+      <b>never on the rim.</b><br>
+      Then play them <b>1 &rarr; 8 in order. It should sound like a scale going up.</b>
+      If it doesn't, two are swapped. &nbsp;·&nbsp; For C major sets.
+    </p>
+    <div class="grid" id="grid"></div>
+    <div class="foot"><span><b>BED</b></span><span>18 mm &middot; print at 100% &middot; matte vinyl</span></div>
+  </div>
+
+</div>
+<script>
+/* Six full sets of 1–8. A player needs one set; the spares are for the bowls
+   they buy next, and for the friend who turns up without any. */
+const RING = ['#5d6aa8','#65699f','#6d70ab','#7b74b4','#8b7ab8','#9781bc','#a68cc0','#b294c6'];
+let html = '';
+for (let set = 0; set < 6; set++)
+  for (let n = 1; n <= 8; n++)
+    html += `<div class="st" style="--rc:${RING[n-1]}">${n}</div>`;
+document.getElementById('grid').innerHTML = html;
+</script>
+</body>
+</html>

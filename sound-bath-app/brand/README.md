@@ -41,6 +41,8 @@ unchanged.
 | **Speaker & room tuning** — "Bed knows this speaker", in three tiers | [`speaker-and-room-tuning.md`](speaker-and-room-tuning.md) |
 | **You don't need seven bowls** — the yoga-teacher on-ramp, and guitar in Bed | [`you-dont-need-seven-bowls.md`](you-dont-need-seven-bowls.md) |
 | **⚠️ Numbering & the tuner** — what "3" means, why it fails as shared vocabulary, and the calibration nobody checks | [`numbering-and-tuning.md`](numbering-and-tuning.md) |
+| **Stickers** — the number on the bowl; the weakest link in the chain, and the on-ramp | [`stickers.md`](stickers.md) |
+| Bowl stickers — product sheet, prints to A4 at true size | [`assets/stickers.html`](assets/stickers.html) (open in a browser) |
 | **The workshop** — the strongest thing on the list, and the Ohio monthly | [`the-workshop.md`](the-workshop.md) |
 | **Ecosystem** — the practitioner network, packs, events, sequencing | [`ecosystem.md`](ecosystem.md) |
 | **Business model** — watching is free, making is paid | [`business-model.md`](business-model.md) |

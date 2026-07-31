@@ -92,6 +92,57 @@ It only bites when **two different kits are in one room** — which is exactly t
 ensemble, which is exactly the business model. Nine practitioners per session is
 the flywheel in [`business-model.md`](business-model.md).
 
+## ⚠️ Addendum — the C anchor is structural, and that's the mechanism
+
+Adam, following up: *"Are we assuming everything's based on a major scale? I
+don't want this to become a fucking music theory app. And could you actually
+calibrate a session around D major so D becomes 1? It throws off the chakra
+thing."*
+
+That instinct is right and it's stronger than he thought. There is a comment
+already sitting in the app:
+
+```js
+/* Bowl number = chakra number = scale degree in C, all three at once.
+   The UI never asks for a key — it asks for a chakra and derives it. */
+```
+
+**There is no key control anywhere in Bed.** A section has a `chakra` (1–7) and
+the root pitch falls out of a table: 1=C Root, 2=D Sacral, 3=E Solar Plexus,
+4=F Heart, 5=G Throat, 6=A Third Eye, 7=B Crown. That's it. **The chakra *is*
+the key.**
+
+Which answers all three of his questions at once:
+
+- **"Are we assuming major?"** Not quite — `MODES` carries major, minor,
+  mixolydian, dorian and lydian, so a section can have modal colour. What's
+  fixed is that every root is a **white key**, because every root is a chakra.
+  It's diatonic to C, not "everything is major."
+- **"Could you calibrate to D?"** Not today, and not by a setting. It would
+  mean transposing the chakra table — one offset applied to all seven pitches.
+  **That is genuinely a single number**, and it preserves the identity
+  (number = chakra = degree); only the absolute pitch moves. So it's the one
+  version of regional calibration that doesn't turn Bed into a music theory
+  app. It is also entirely unnecessary until someone asks.
+- **"It throws off the chakra thing."** Yes — and this is the real cost, and
+  it isn't musical. **C=Root is a printed convention in the sound-healing
+  world.** A transposed session would have Bed saying "Root chakra" over a D,
+  visibly contradicting what practitioners have on their own charts. Whether
+  that correspondence is physically meaningful is not ours to adjudicate; that
+  the audience treats it as meaningful is a fact about the room. **A transpose
+  is a musical convenience with a credibility cost in the exact community we're
+  selling to.**
+
+> **This is why the elegance holds: one number, three meanings. Break the C
+> anchor and you break the identity that lets the UI never ask anyone for a key.**
+
+**Verdict: v1 ships everything in C.** Adam's own call — *"these other issues I
+don't really know if we're gonna run into, and we can deal with them when we
+do."* Correct. Filed so that when it does come up, nobody rediscovers it from
+scratch.
+
+---
+
 ## The recommendation — and why it's cheap right now
 
 **Move to A (absolute, 1 = C) when the first non-C kit shows up in a real
@@ -265,6 +316,7 @@ actually ask.
 |---|---|
 | **Now** | Nothing. The app is already fixed-within-a-session, which is the part that matters, and C sets are unaffected by the open question. |
 | **Soon, cheap** | Say what a number means somewhere a user will actually see it. Today it's one line in the wizard and nowhere else — a follower's phone shows `2 6 (3 5 7)` with a legend explaining the *brackets* and never the *numbers*. |
+| **⚠️ Before stickers** | Stickers end the grace period on this decision — they're permanent, and a person labels their bowls once. See [`stickers.md`](stickers.md). The way through is to ship the first sheet **for C major sets**, where positional and absolute agree, and say so on the sheet. |
 | **When the first mixed-kit ensemble happens** | Decide absolute vs positional, with people in a room, watching whether they say numbers to each other. |
 | **Before any hardware or ensemble scale** | The tuner — built to the standard above, or not at all. |
 
