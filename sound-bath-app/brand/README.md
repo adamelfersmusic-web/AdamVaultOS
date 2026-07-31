@@ -33,6 +33,7 @@ unchanged.
 | **Speaker & room tuning** — "Bed knows this speaker", in three tiers | [`speaker-and-room-tuning.md`](speaker-and-room-tuning.md) |
 | **Ecosystem** — the practitioner network, packs, events, sequencing | [`ecosystem.md`](ecosystem.md) |
 | **Business model** — watching is free, making is paid | [`business-model.md`](business-model.md) |
+| **Affiliates** — teachers, not marketers; pay in students, credit, then money | [`affiliates.md`](affiliates.md) |
 | **The monthly session** — the subscription's payload, and the free-tier fix | [`the-monthly.md`](the-monthly.md) |
 | Mark decision — the review that settled the stack | [`mark-decision.md`](mark-decision.md) |
 | **Structure & flow** — "a playlist can't hold", the concrete scenes | [`marketing-the-flow.md`](marketing-the-flow.md) |

@@ -23,6 +23,108 @@ line has to earn its way in *beside* them, never over them.
 
 ---
 
+## ✅ SETTLED 2026-07-31 — the decision, delegated and made
+
+Adam: *"I honestly like both guide the room and hold the room. As long as
+they're both written somewhere we can find later, I'm fine. I'm honestly going
+to let you make a decision about them."*
+
+Made. Both are kept, with a rule for which goes where — because they were never
+competing for the same slot.
+
+### The descriptor
+
+> ## Bed — the instrument that holds you, so you can hold the room.
+
+Adam's own line, and it is the answer to the argument that ran all night.
+
+The objection to *hold* was that Bed already holds the structure, so telling
+**you** to hold the room makes two holdings compete. **This sentence doesn't
+dodge the collision — it names it, and the collision turns out to be the
+mechanism.** Bed holds you; you hold the room; the room holds the people. One
+act at three scales, which is exactly what a practitioner means when they say
+they felt held.
+
+It passes every test: the person is the hero in the payoff clause, *instrument*
+carries the gear frame, it's differentiated because nobody else can say it, and
+it explains the product rather than labelling it.
+
+### The tag, under the wordmark
+
+> **holding space** — unchanged.
+
+The earlier objection was test 3: every practitioner's bio already says it. That
+objection is now answered rather than overruled. Once *hold* is settled as the
+brand's central verb, the tag is simply **the shortest possible instance of
+it** — the seed of the chain the descriptor completes. It isn't trying to
+differentiate. It's trying to be recognised.
+
+### Where "guide" lives
+
+**Retired as the tagline. Kept as the verb for what the practitioner does**, in
+body copy, wherever "hold" would collide with the software's holding.
+
+> **The rule:** when the sentence contains Bed, the person **guides** — the
+> software is already the one holding. When the sentence is only about the
+> person, they **hold** the room.
+
+Both stay on the record. Neither was wrong; they were answering different
+questions.
+
+---
+
+## Vocabulary law — **instrument**, not **app**
+
+Adam, same session: *"I think we should use the word 'instrument' more than
+'app'. It will crossover but I like thinking of it that way."*
+
+Adopt it as a rule, because it is doing commercial work as well as poetic work.
+`business-model.md`: **always present Bed next to a bowl, never next to
+software** — *"nobody pays four figures for software they open on a phone; they
+do pay it for a system."* Every "app" in the copy quietly reprices the product.
+
+**The rule:** *instrument* in anything a practitioner reads. *App* only where it
+means the literal software artefact and nothing else would be true — "add to
+home screen," a browser instruction.
+
+**There are 11 in the app and 5 on the landing page.** Some are load-bearing and
+correct (*"the app plays only what your hands can't"* — that sentence is about
+the machine's role, so the machine's word is right there). Most are habit. Worth
+one deliberate pass, not a find-and-replace.
+
+---
+
+## 📣 A social post, ready to go
+
+Adam flagged the HOLD table as one, and he's right — it's the rare marketing
+artefact that's true, specific, and needs no ask attached.
+
+> The name has been saying it since before the app existed. Nobody designed
+> that — it got found, which is usually the only reliable sign a name is
+> actually right.
+>
+> | Layer | |
+> |---|---|
+> | the name | a **bed** holds you |
+> | the tag | *holding space* |
+> | the promise | *put the plan down and **hold** the room* |
+> | the control | **HOLD** — *"holding — the plan waits"* |
+> | the feature | a **held** section |
+> | **their words** | *"I felt really held tonight"* |
+>
+> One verb, six layers — and the last one isn't ours. That's what makes it worth
+> something.
+
+**Why it works as a post:** it's a *craft* post, not a product post. The hero is
+the naming, not the software. It ends on the practitioner's own sentence, which
+is the only line in it that the reader already owns. And it sells nothing, which
+is why it would travel.
+
+**Note for the final version:** swap *"before the app existed"* for *"before any
+of this was built"* — per the vocabulary law above.
+
+---
+
 ## The five tests
 
 Derived from canon, not invented here. A line that fails 1 or 2 is dead
