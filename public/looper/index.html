@@ -651,9 +651,13 @@ function initAudio() {
   // 18 ms against a 2 ms attack — and turns clean sub into grit while pumping
   // the mix at the kick's rate. So lows get their own limiter with an attack
   // longer than one cycle, and only the highs keep the fast wall.
+  // Glue at v1's exact settings. The softened version (part of the bed.html
+  // port) made the full mix read ~1.4 dB hotter than the speaker-verified
+  // balance; both halves of that port are now reverted on measurement, and
+  // only the genuine fix below (the band-split safety stage) remains.
   const glue = ctx.createDynamicsCompressor();
-  glue.threshold.value = -14; glue.knee.value = 24; glue.ratio.value = 2;
-  glue.attack.value = 0.06; glue.release.value = 0.35;
+  glue.threshold.value = -16; glue.knee.value = 24; glue.ratio.value = 2.5;
+  glue.attack.value = 0.05; glue.release.value = 0.3;
 
   // Linkwitz-Riley 4th-order split at 150 Hz: sums back allpass-flat.
   // (lowpass/highpass Q is specified in dB: -3.01 dB = Butterworth.)
@@ -673,10 +677,13 @@ function initAudio() {
   // DynamicsCompressor applies spec-mandated makeup gain ((1/fullRangeGain)^0.6),
   // and the two stages compute it slightly differently — trim the low band so
   // both bands carry identical static gain and the crossover sums flat.
+  // 1.057 is measured, not derived: the sub limiter's knee softens its actual
+  // makeup below the closed-form value, and this restores the last ~0.45 dB
+  // of low band that the arithmetic missed.
   const subTrim = ctx.createGain();
-  subTrim.gain.value = Math.pow(10, ((2.8125 - 2.75) * 0.6) / 20);
+  subTrim.gain.value = 1.057;
   const sum = ctx.createGain();
-  const out = ctx.createGain(); out.gain.value = 0.74;
+  const out = ctx.createGain(); out.gain.value = 0.908;
   // Last-resort ceiling. Unity below 0.88 — every normal signal path never
   // touches it — then a smooth tanh approach to full scale, so the abuse case
   // (both faders at max, downbeat stack) rounds off instead of wrapping hard
@@ -722,7 +729,7 @@ function initAudio() {
   A.padTrim = ctx.createGain(); A.padTrim.gain.value = state.mix.pad;
   const padLp = ctx.createBiquadFilter(); padLp.type = 'lowpass'; padLp.frequency.value = 5200; padLp.Q.value = 0.4;
   const padShelf = ctx.createBiquadFilter(); padShelf.type = 'highshelf'; padShelf.frequency.value = 2800; padShelf.gain.value = -4;
-  A.padBus = ctx.createGain(); A.padBus.gain.value = 0.54;
+  A.padBus = ctx.createGain(); A.padBus.gain.value = 0.34;
   A.padBus.connect(padLp); padLp.connect(padShelf); padShelf.connect(A.padTrim);
   A.padTrim.connect(A.master);
   const padSend = ctx.createGain(); padSend.gain.value = 0.38;
@@ -1113,8 +1120,9 @@ function scheduleStep(step, t) {
     // Human velocity: ghosts wobble half again more than accents.
     const jv = soft => machine ? 1
       : 1 + (Math.random() + Math.random() - 1) * 0.16 * Math.min(loose, 1.5) * (soft ? 1.5 : 1);
-    // Downbeat weight: you should feel the bar, not read a counter.
-    const down = machine ? 1 : slot === 0 ? 1.16 : slot === 16 ? 1.1 : 1;
+    // Downbeat weight: you should feel the bar, not read a counter — but
+    // gently. The louder first cut of this read as impact on speakers.
+    const down = machine ? 1 : slot === 0 ? 1.08 : slot === 16 ? 1.05 : 1;
     const lvl = {
       kick: KIT_GAIN[state.kit.kick], shake: KIT_GAIN[state.kit.shake], rim: KIT_GAIN[state.kit.rim],
     };

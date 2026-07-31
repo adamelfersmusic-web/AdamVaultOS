@@ -284,6 +284,28 @@ paths are idle (drone and groove levels bit-identical to v2).
    is on screen when it's off. Works with the kit silent — the scheduler
    counts bars either way.
 
+### Post-v4 — the ears overruled two numbers (current)
+
+The first real listen said the new version was **brighter, less deep, drums
+in-your-face**. Measured and confirmed: the tier-2 level raise (+1.3–2.6 dB)
+was most of it, plus a real ~0.45 dB low-band shortfall from the sub
+limiter's knee-softened makeup gain. Reverted on `/looper/` (v2–v4 stay
+frozen as built):
+
+- Pad bus and glue back to **v1's exact values**; output re-tuned so the
+  drone-only default is **byte-level v1 loudness** (−12.82 dBFS rms, exact).
+- Spectrum now matches v1 within 0.06 dB in every band, both pads measured.
+- Kit loudness within 0.4 dB of v1; downbeat weight halved (+8%, felt not
+  heard).
+- Roadmap 2.7 (raise the drone) is therefore **deliberately not shipped** —
+  the device volume knob does that job without costing the mix its depth.
+- Full-groove mixes read ~+1.4 dB over v1 with everything matched: that is
+  v1's kick-rate pad-ducking no longer happening, not added level.
+- Honest ledger: with v1's glue restored, whole-chain nonlinearity measures
+  ≈ v1. What the band-split still buys: low tops rounded ~1 dB smoothly
+  instead of clamped 16:1 at 2 ms, lows no longer modulate the highs, and
+  the crossover sums flat.
+
 ### Tier 4 — built, measured (v4)
 
 The app keeps. Tier 2/3 sound untouched (levels bit-identical to v2/v3).
