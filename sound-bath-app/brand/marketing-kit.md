@@ -81,10 +81,24 @@ The settled lines, in the order you'd reach for them:
 3. **Say yes on Thursday.** — the short form; use the long form where it needs
    its setup: *The promise isn't better sound baths. It's that you can say yes
    on Thursday.*
-4. *The sound design was never the art. Leading the room is.*
-5. *It plays only what humans physically can't — the floor, the drone, the
+4. **Two bowls and Bed is a sound bath. Seven bowls and Bed is an orchestra.**
+   — the entry line. Use it wherever someone is deciding whether they're
+   allowed to start.
+5. *The sound design was never the art. Leading the room is.*
+6. *It plays only what humans physically can't — the floor, the drone, the
    air.* (lifted verbatim from the app's own ensemble screen; extraction, not
    invention)
+
+**Why #4 earns its place, and it's a different job from the rest.** Every other
+line here speaks to someone who already leads. **This one is the only line that
+answers the first question of someone who doesn't yet: *what do I need to
+start?*** A seven-bowl set is $1,500–5,000 and it's the wall that stops people
+*before* their first attempt.
+
+It also **scales with whoever is reading it.** Two bowls and you're already in;
+seven and you're being told you're more than you thought. Nobody lands outside
+it. And *orchestra* pays off *"one violin player becomes a symphony"* without
+repeating it — the same idea arriving from the other end.
 
 **Provenance note:** #3's short form was proposed in v1 under the "propose in
 a note, don't silently replace" rule, and ratified by Adam the same day. It is

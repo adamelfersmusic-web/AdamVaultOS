@@ -169,6 +169,41 @@ sentence exists to prevent.
 
 ---
 
+## ✅ SETTLED — the entry line
+
+> ## Two bowls and Bed is a sound bath.
+> ## Seven bowls and Bed is an orchestra.
+
+Ratified by Adam the day it was written. See
+[`you-dont-need-seven-bowls.md`](you-dont-need-seven-bowls.md) for the argument
+underneath it.
+
+**It does a job no other settled line does.** The promise, the line, the
+descriptor and the product line all address someone who **already leads**. This
+is the only one that answers the first question of someone who **doesn't yet**:
+
+> *What do I need to start?*
+
+A full seven-bowl set is **$1,500–5,000**, and it is the wall that stops most
+people who want to lead a sound bath — a wall that stands *before* the first
+attempt, not after. This sentence takes it down in eleven words without ever
+mentioning money.
+
+**Three things make it work:**
+
+1. **It scales with the reader.** Two bowls and you're already in. Seven and
+   you're being told you're more than you thought. **Nobody lands outside it.**
+2. **It's true**, and already built — the sheet is computed per kit, and the
+   drone fills what nobody is playing.
+3. **"Orchestra" pays off *"one violin player becomes a symphony"*** without
+   repeating it. Same idea, arriving from the other end.
+
+⚠️ **Say it as permission, never as a spec.** *"You don't need seven bowls"*
+invites someone in; *"works with as few as 2 bowls"* is a feature bullet that
+sounds like a limitation. Same fact, opposite feeling.
+
+---
+
 ## The five tests
 
 Derived from canon, not invented here. A line that fails 1 or 2 is dead
