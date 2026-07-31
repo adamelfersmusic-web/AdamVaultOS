@@ -20,6 +20,7 @@ unchanged.
 | Landing page | [`../site/index.html`](../site/index.html) |
 | Compact mark / favicon | [`assets/mark.svg`](assets/mark.svg) |
 | Wordmark lockup | [`assets/wordmark.svg`](assets/wordmark.svg) |
+| **How this gets decided** — the method, not the decisions; read before a hard call | [`how-this-gets-decided.md`](how-this-gets-decided.md) |
 | **⚠️ Ear tests** — the things only Adam can answer, on the real rig | [`ear-tests.md`](ear-tests.md) |
 | **Sessions travel** — export/import, rehearsal, and the share link | [`sessions-travel.md`](sessions-travel.md) |
 | **Taglines** — the running list, the five tests, the BED+ROOMS hazard | [`taglines.md`](taglines.md) |
