@@ -53,6 +53,23 @@ curate, calibration data to maintain and packs to make. **Charging recurrently
 for things that genuinely recur is honest; charging recurrently for a file you
 own is not.**
 
+> ### ⚠️ But do not lean on the relay, and never say it out loud
+>
+> **The relay costs about $7 a month, flat, for everyone.** It stores nothing,
+> forwards a few hundred bytes per section change, and a 60-person room is 61
+> mostly-idle sockets. It would take hundreds of simultaneous sound baths
+> worldwide before that number moves.
+>
+> So *"there's a relay to run"* is **the weakest item on that list**, and citing
+> it as a reason for a subscription would be a bad-faith argument that a
+> practitioner could see through in one search. **The honest recurring costs are
+> the monthly session and the network** — a person's time, every month, forever.
+> Lead with those.
+>
+> The near-zero marginal cost per user is a *fact about the architecture*, not
+> an embarrassment: it's what makes free followers possible, and free followers
+> are the entire distribution model.
+
 **The churn objection is about *monthly*, not about *recurring*.** Someone who
 plays five times a year and pays monthly spends seven months paying for
 nothing, and cancels correctly. The same person renewing once a year — around
