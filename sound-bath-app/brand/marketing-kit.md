@@ -12,6 +12,10 @@ Two minutes. Three cuts of a screen in the entire piece — that ratio is the
 philosophy: the technical layer disappears. Everything else is a room, and
 people, and light.
 
+**Status, 2026-07-31:** shots 4 and 8 were aspirational when this was written —
+the app was one device. **Multi-device sync now works**, so both document real
+behaviour. Nothing in this treatment depicts a feature that doesn't exist.
+
 **Production notes, before the shot list**
 
 - **Sound is diegetic only.** The film's score is the session itself, recorded
@@ -39,8 +43,31 @@ people, and light.
 | 5 | 0:38–0:52 | Details, golden hour into dusk | Bowls out of a canvas bag, one by one. Candles lit. Mats laid down in rows. Cables taped, once, briefly. | Bowl rims, cloth, room |
 | 6 | 0:52–1:02 | Doorway, night | People arriving who didn't know this existed on Monday. Shoes off. Someone greeted by name. | Murmur; the drone already faintly underneath |
 | 7 | 1:02–2:22 | The room. Eighty seconds. Slow, wide, patient | Live players. Candlelight. Sixty people on the floor. The leader moves between bowls. A flute stands. Chimes roam. The camera never finds a screen. | The session, full. This is the whole pitch |
-| 8 | inside 7 | A hand raised mid-session — **SCREEN 3** | The leader's hand comes up, mallet still in it. One-second insert: a thumb resting on the amber-ringed GO, the ring nearly full, the word HOLD breathing. Back to the wide: the whole room's sound turns together, ten players, no click track, no caption. Outsiders read atmosphere. Practitioners sit up. | The turn itself — a key migrating under held bowls |
+| 8 | inside 7 | **The turn.** A hand raised mid-session — **SCREEN 3** | The leader's hand comes up, mallet still in it. One-second insert: a phone face-up on a mat beside someone's knee — the sheet turns. Back to the wide, and the room moves *at once*: someone rises with a bamboo rain stick and starts walking, chimes answer from the far side, the light shifts. Ten players, no click track, no caption. Outsiders read atmosphere. Practitioners sit up. | The turn itself — a key migrating under held bowls, the rain arriving before the key lands |
 | 9 | 2:22–2:40 | After. Warm, loose, handheld | Mats being stacked. Someone smiling, flushed. To a friend: **"We made it happen."** Cut to black. End card, ink on the violet-black ground: **"Say yes on Thursday."** Then the ring mark, BED, *holding space*. | Room tone; chimes decaying |
+
+### Shot 8, in detail — it is now literally filmable
+
+No longer a staged impression of coordination; it is **documentation of the
+product doing the thing.**
+
+- The hand is the **human** cue, and stays the hero — the film must never imply
+  the software raised it.
+- The phones turn **because** the leader's device broadcast a state snapshot.
+  Ten sheets change within a heartbeat, and each shows *that player's own
+  bowls*, filtered against the kit they declared once.
+- The rain stick starts walking **before** the key lands, because lane blocks
+  cross section seams by construction. That overlap is the difference between a
+  room that breathes and one that steps — it's why the shot reads as music
+  rather than as a cue.
+- **The lights are the same subscriber.** `section:change`, `key:migrate` and
+  `fade:start` already ride the same bus the sheets ride. A lighting rig is not
+  new architecture — it is one more listener.
+
+**Direction note:** shoot the wide first and let it run. The insert is one
+second and must feel *found*, not staged — a phone lying on a mat, not a device
+being operated. The screen is the **echo** of the hand, never its origin; if the
+edit makes the screen read as the cause, the shot is lost.
 
 ---
 
