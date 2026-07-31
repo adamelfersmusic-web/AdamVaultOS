@@ -1,16 +1,27 @@
-# Bed deploys straight from this folder — no copy, no drift.
+# Bed deploys from this folder — no copy, no drift.
 # Every push to the connected branch is live in ~30s.
 # This does NOT affect the repo's existing GitHub Pages workflow (different
 # service, different product): that still builds public/ via Actions.
+#
+# ⚠️ Bed now lives in its own private repo (adamelfersmusic-web/bed) and
+# deploys from there. This file is the older path, kept working until
+# sound-bath-app/ comes out of this repo — at which point both should go.
+#
+# ── Why there is a build command for a site with no build ──────────────────
+# The published directory is an ALLOWLIST assembled at deploy time, never the
+# folder itself: only the landing page and the app reach the CDN. The brand
+# book, the business model, BOOK, IDEAS-LOG, the prototype and the relay all
+# live under sound-bath-app/ and must never get a public URL. Publishing the
+# folder wholesale would have handed out the pricing strategy to anyone who
+# guessed the path.
 [build]
-  publish = "sound-bath-app"
-  command = ""
-
-# The landing page is the front door; the app lives at /app/.
-[[redirects]]
-  from = "/"
-  to = "/site/index.html"
-  status = 200
+  publish = "_site"
+  command = """
+    rm -rf _site && mkdir -p _site
+    cp -R sound-bath-app/site/. _site/
+    cp -R sound-bath-app/app _site/app
+    rm -rf _site/README.md _site/app/README.md _site/app/versions
+  """
 
 # Short join link for follower phones: bed.example/join?c=ABCD
 [[redirects]]
@@ -18,6 +29,8 @@
   to = "/app/index.html"
   status = 200
 
+# An open device should always pick up the newest build, never a stale cache.
+# The service worker is network-first for the same reason.
 [[headers]]
   for = "/app/index.html"
   [headers.values]

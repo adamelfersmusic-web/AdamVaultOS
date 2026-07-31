@@ -9,3 +9,6 @@ e2e/.shots
 tsconfig.node.tsbuildinfo
 *.tsbuildinfo
 e2e/real-graph/
+
+# Netlify allowlist build output
+_site/
