@@ -6,6 +6,11 @@ kit and the app disagree, the app wins, then fix the app.
 **The one rule that governs everything:** amber `#d9a544` means *live and
 making sound*. Nothing else may ever wear it.
 
+**Open decision:** the mark. Two candidates exist — the amber ring extracted
+from the app, and a four-layer stack from an independent design pass. Scored
+side by side in [`mark-comparison.html`](mark-comparison.html). Neither is
+adopted; the wordmark (didone caps, tracked `.28em`) is settled either way.
+
 | Piece | Where |
 |---|---|
 | Brand book — wordmark, palette, type, section arc, motion, judgment calls | [`index.html`](index.html) (open in a browser; it demonstrates what it states, including the live/ember shift) |
@@ -15,7 +20,7 @@ making sound*. Nothing else may ever wear it.
 | Wordmark lockup | [`assets/wordmark.svg`](assets/wordmark.svg) |
 | Open questions | [`audit-questions.md`](audit-questions.md) |
 | BOOK comparison pass | [`book-comparison.md`](book-comparison.md) |
-| Mark comparison — ring vs stack | [`mark-comparison.html`](mark-comparison.html) (open in a browser) |
+| Mark comparison — ring vs stack | [`mark-comparison.html`](mark-comparison.html) (open in a browser — a decision doc, nothing adopted yet) |
 
 ## ⚠️ Publishing
 
