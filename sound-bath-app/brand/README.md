@@ -35,6 +35,7 @@ unchanged.
 | **Hardware strategy** — not speakers, yes lights, and why | [`hardware-strategy.md`](hardware-strategy.md) |
 | **Eye masks** — the best hardware product on the list, and why | [`eye-masks.md`](eye-masks.md) |
 | **Speaker & room tuning** — "Bed knows this speaker", in three tiers | [`speaker-and-room-tuning.md`](speaker-and-room-tuning.md) |
+| **You don't need seven bowls** — the yoga-teacher on-ramp, and guitar in Bed | [`you-dont-need-seven-bowls.md`](you-dont-need-seven-bowls.md) |
 | **The workshop** — the strongest thing on the list, and the Ohio monthly | [`the-workshop.md`](the-workshop.md) |
 | **Ecosystem** — the practitioner network, packs, events, sequencing | [`ecosystem.md`](ecosystem.md) |
 | **Business model** — watching is free, making is paid | [`business-model.md`](business-model.md) |
