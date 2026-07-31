@@ -1,3 +1,14 @@
+# Bed — versions
+
+Frozen snapshots you can open directly in a browser, so two versions can be
+played side by side and compared **by ear**. Git already keeps every version
+forever; these exist because a file you can double-click is more useful than a
+command when the thing you're judging is sound.
+
+The live app is always `../index.html`. These are history.
+
+---
+
 ## v1.6 — lamp mode, and a wake lock that tells you the truth · 2026-07-31
 
 ### A screen is a light
@@ -45,17 +56,6 @@ quietly ruin a follower's night.**
 | `renderFollower()` | paints the lamp field from `fnColor(sec.function)` |
 | `requestWake()` | tracks `wakeOk`, re-checks on release, renders a chip |
 | `#followerView.lamp` | hides everything, kills padding |
-
----
-
-# Bed — versions
-
-Frozen snapshots you can open directly in a browser, so two versions can be
-played side by side and compared **by ear**. Git already keeps every version
-forever; these exist because a file you can double-click is more useful than a
-command when the thing you're judging is sound.
-
-The live app is always `../index.html`. These are history.
 
 ---
 
