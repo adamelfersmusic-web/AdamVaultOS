@@ -9,6 +9,47 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.13 — your bowls, the size of your hand · 2026-07-31
+
+The thing filed in `lumen.md` as *"most of the magic for a small change"*, built.
+
+**Lamp mode now shows your own bowls, enormous, over the section's colour.**
+
+No reading `4 6 1` and mapping it onto metal in the dark. **The number is the
+size of your palm and it is already the colour of the room.** Same brackets, same
+meanings, same numbers the sheet always showed — only the scale changed, so
+there is nothing new to learn while lying on a floor.
+
+### Two lamps, and the difference is who's holding it
+
+| | |
+|---|---|
+| **Beside a bowl** (`?c=…&lamp=1`) | colour only — it's lighting the bowl, and a number on the floor points at nothing |
+| **In a hand** (tap **lamp** on your sheet) | colour **and** your bowls |
+
+**Not a setting.** A spare phone joining with `&lamp=1` is a pad; anything else
+is a person. The distinction falls out of how you arrived.
+
+### What it does not do
+
+**It never says *play now*.** It shows what's *available* — large for freely,
+dim for sparingly, faint for rest — and changes only when the section changes.
+Law 1 is untouched: **the *when* stays yours.** That is the whole line between an
+instrument and karaoke, and it's why this is legal at all
+(`lumen.md` → *Per-bowl light*).
+
+In a texture or space section it shows **nothing but colour**, because there is
+nothing to play. Verified, along with the pad case.
+
+### Why it matters more than it looks
+
+A sound bath is one performer and sixty receivers. **If someone can look at a
+glowing number and know it's theirs, being in the ensemble stops requiring
+training.** The hard part of a large ensemble was never the playing — it was the
+rehearsing, and there is nothing here to rehearse.
+
+---
+
 ## v1.12 — the relay is woken forty minutes before it's needed · 2026-07-31
 
 Two numbers that were getting confused, and one of them is a real hazard:
