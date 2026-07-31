@@ -1,12 +1,24 @@
-# Netlify config for the Escensus training app.
-# The public/ folder is the static site; netlify/functions holds the serverless
-# scoring function (Talk-mode L3). GitHub Pages serves the same static site and
-# simply ignores this file + the functions — scoring stays dormant there.
-#
-# To enable AI scoring on a Netlify deploy:
-#   1. Set env vars in the Netlify UI:  ASSEMBLYAI_API_KEY  and  ANTHROPIC_API_KEY
-#   2. In public/train/roleplay/index.html set  SCORE_ENDPOINT = '/.netlify/functions/score'
-
+# Bed deploys straight from this folder — no copy, no drift.
+# Every push to the connected branch is live in ~30s.
+# This does NOT affect the repo's existing GitHub Pages workflow (different
+# service, different product): that still builds public/ via Actions.
 [build]
-  publish = "public"
-  functions = "netlify/functions"
+  publish = "sound-bath-app"
+  command = ""
+
+# The landing page is the front door; the app lives at /app/.
+[[redirects]]
+  from = "/"
+  to = "/site/index.html"
+  status = 200
+
+# Short join link for follower phones: bed.example/join?c=ABCD
+[[redirects]]
+  from = "/join"
+  to = "/app/index.html"
+  status = 200
+
+[[headers]]
+  for = "/app/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"

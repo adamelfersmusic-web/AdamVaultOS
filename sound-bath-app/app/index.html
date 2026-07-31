@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a0910">
 <title>Bed</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0910'/%3E%3Cg fill='%23e8e4f0'%3E%3Crect x='12.6' y='9.9' width='6.8' height='1.2' rx='.6'/%3E%3Crect x='10.2' y='13.9' width='11.6' height='1.45' rx='.72'/%3E%3Crect x='7.6' y='18' width='16.8' height='1.75' rx='.87'/%3E%3Crect x='5' y='22.3' width='22' height='2.2' rx='1.1'/%3E%3C/g%3E%3C/svg%3E">
 <style>
 /* ==========================================================================
@@ -3343,14 +3345,46 @@ function sessionHash(S) {
 /* The only vendor-aware code in the app. BroadcastChannel syncs tabs and
    windows on one machine with no infrastructure at all; a relay swaps in here
    for real cross-device, same wire format either way. */
+/* Point this at a relay to sync real devices. Empty = same-device only
+   (BroadcastChannel across tabs), which needs no infrastructure at all.
+   The relay is 30 lines and stores nothing — see relay/server.js. */
+const RELAY_URL = '';        // e.g. 'wss://bed-relay.onrender.com'
+
 const Net = {
-  join(code, onMsg) {
+  join(code, onMsg) { return RELAY_URL ? Net._ws(code, onMsg) : Net._local(code, onMsg); },
+
+  /* Same device, across tabs and windows. Zero infrastructure. */
+  _local(code, onMsg) {
     let ch = null;
     try { ch = new BroadcastChannel('bed-room-' + code); } catch (e) { return null; }
     ch.onmessage = e => { try { onMsg(e.data); } catch (err) { console.error(err); } };
     return {
       send(obj) { try { ch.postMessage(obj); } catch (e) {} },
       leave() { try { ch.close(); } catch (e) {} },
+    };
+  },
+
+  /* Real devices. Reconnects with backoff — and because the wire carries state
+     snapshots rather than events, a reconnect needs no catch-up: the next
+     heartbeat makes the device correct again. */
+  _ws(code, onMsg) {
+    let ws = null, closed = false, tries = 0; const queue = [];
+    const retry = () => { if (!closed) setTimeout(open, Math.min(1000 * Math.pow(2, tries++), 15000)); };
+    function open() {
+      try { ws = new WebSocket(RELAY_URL.replace(/\/+$/, '') + '/' + code); }
+      catch (e) { return retry(); }
+      ws.onopen = () => { tries = 0; while (queue.length) ws.send(queue.shift()); };
+      ws.onmessage = e => { try { onMsg(JSON.parse(e.data)); } catch (err) {} };
+      ws.onclose = () => { if (!closed) retry(); };
+      ws.onerror = () => { try { ws.close(); } catch (e) {} };
+    }
+    open();
+    return {
+      send(obj) {
+        const m = JSON.stringify(obj);
+        if (ws && ws.readyState === 1) ws.send(m); else if (queue.length < 40) queue.push(m);
+      },
+      leave() { closed = true; try { ws && ws.close(); } catch (e) {} },
     };
   },
 };
@@ -3490,6 +3524,10 @@ function renderJoin() {
 
 /* ---------------------------------------------------------------- boot */
 
+if (location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
 verifyNotation();
 if (!loadStore()) { seedLibrary(); save(); }
 wire();
@@ -3500,7 +3538,8 @@ wire();
   .forEach(ev => bus.on(ev, () => publishState(true)));
 
 /* A follower never seeds a library, never touches the engine, never ticks. */
-const joinParam = new URLSearchParams(location.search).get('join');
+const _q = new URLSearchParams(location.search);
+const joinParam = _q.get('join') ?? _q.get('c');
 if (joinParam !== null) {
   nav('join');
   renderJoin();
