@@ -505,6 +505,27 @@ body.live #goBtn .glabel { color: var(--amber); }
 .relaystate.on { color: var(--ink2); }
 .relaystate.off { color: var(--red); }
 .sharecode { font-family: var(--serif); font-size: clamp(46px,13vw,72px); letter-spacing: .22em; padding-left: .22em; color: var(--ink); }
+
+/* ── the QR card ──────────────────────────────────────────────────────────
+   The one bright surface in the whole product, and it earns it: this is the
+   setup moment, not the session, and a stranger's camera gets exactly one try
+   in a dark room. Moonlight ground, violet-black modules — both straight out
+   of the palette, so it reads as Bed without a single lost scan. Amber is
+   nowhere near it; amber still means sounding.
+   ⚠️ Do NOT round the modules, tint them --violet, or invert the card. All
+   three were built and measured against a decoder (brand/the-share-moment.md);
+   all three cost reads. Colour is the free variable here. Shape is not. */
+.qrcard { display: inline-block; background: #e8e4f0; padding: 8px; border-radius: 8px; line-height: 0; cursor: zoom-in; }
+.qrcard svg { display: block; width: min(238px, 58vw); height: auto; }
+/* Above .ovl (80): it is opened FROM the share dialog and has to cover it. */
+#qrFull { position: fixed; inset: 0; z-index: 90; background: #e8e4f0; display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: 4vh; cursor: zoom-out; }
+#qrFull.open { display: flex; }
+#qrFull svg { display: block; width: min(90vw, 68vh); height: auto; }
+#qrFull .c { font-family: var(--serif); font-size: clamp(28px,9vw,52px); letter-spacing: .22em;
+  padding-left: .22em; color: #14102a; }
+#qrFull .h { position: absolute; bottom: calc(20px + env(safe-area-inset-bottom));
+  font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #6b6480; }
 .fstale { position: absolute; bottom: calc(38px + env(safe-area-inset-bottom)); left: 0; right: 0; font-size: 10px; letter-spacing: .1em; color: var(--ink4); display: none; }
 #followerView.stale .fstale { display: block; }
 /* Shown from the moment a follower joins until the first cue arrives. A blank
@@ -816,9 +837,18 @@ body.live #goBtn .glabel { color: var(--amber); }
 <div class="ovl" id="shareOvl">
   <div class="obox" style="text-align:center">
     <div class="dhd"><span class="t">Share the sheet</span><span class="flexspace"></span><button class="xbtn" data-close="shareOvl">&times;</button></div>
-    <div class="sharecode" id="shareCode">&mdash;&mdash;&mdash;&mdash;</div>
-    <div class="hint" style="margin-top:10px">Open <b id="shareUrl"></b> on any phone &mdash;
-    the link carries the code. One device makes the sound; the rest are the sheet.</div>
+    <!-- The code first, because it is what the room sees; the card under it is
+         how they get there without typing anything. -->
+    <div id="shareQR" style="margin:4px auto 0"></div>
+    <div class="sharecode" id="shareCode" style="margin-top:14px">&mdash;&mdash;&mdash;&mdash;</div>
+    <div class="hint" id="shareQRHint" style="margin-top:6px">Point a camera at it. Tap it to fill the screen &mdash;
+    then set the phone down by the door and let people come to it.</div>
+    <div class="drawacts" id="shareActs" style="justify-content:center;border-top:none;padding-top:0;margin-top:14px">
+      <button class="btn ghost" id="shareCopy">Copy link</button>
+      <button class="btn ghost" id="shareSend" style="display:none">Send it to myself</button>
+    </div>
+    <div class="hint" style="margin-top:12px"><b id="shareUrl"></b><br>
+    The link carries the code. One device makes the sound; the rest are the sheet.</div>
     <div class="hint" style="margin-top:8px">Spare phone? Add <b>&amp;lamp=1</b> and it opens
     straight into a light &mdash; no kit, no sheet. Face up beside a bowl, plugged in,
     brightness up.</div>
@@ -828,13 +858,21 @@ body.live #goBtn .glabel { color: var(--amber); }
       Set <code>RELAY_URL</code> in the app to the relay's address (see <code>DEPLOY.md</code>)
       and phones in the room will join.
     </div>
-    <div id="shareQR" style="margin:18px auto 4px"></div>
     <div class="hint relaystate" id="shareRelay" style="margin-top:12px;display:none"></div>
     <div class="hint" id="shareCount" style="margin-top:6px"></div>
     <div class="drawacts" style="justify-content:center">
       <button class="btn ghost" data-close="shareOvl">Done</button>
     </div>
   </div>
+</div>
+
+<!-- The code, as big as the glass gets. Set the phone or the iPad down on the
+     floor by the door and the room scans it on the way in — no passing a
+     device around, no reading a URL aloud in the dark. Screen stays awake. -->
+<div id="qrFull">
+  <div id="qrFullSvg"></div>
+  <div class="c" id="qrFullCode"></div>
+  <div class="h">tap anywhere to go back</div>
 </div>
 
 <!-- jump anywhere, out of order -->
@@ -1030,7 +1068,7 @@ body.live #goBtn .glabel { color: var(--amber); }
 
 <script>
 'use strict';
-const BED_VERSION = '1.15';
+const BED_VERSION = '1.16';
 
 /* ==========================================================================
    BED — exploratory full build.
@@ -3762,6 +3800,13 @@ function wire() {
   // The join screen used to be reachable only by ?c= — which meant the share
   // dialog's own instruction ("open this and enter the code") led nowhere.
   $('btnJoin').onclick = () => { nav('join'); renderJoin(); $('joinCode').focus(); };
+  // getting the link to the room — the part that used to be "read this URL out
+  // loud in the dark", which is not a thing anyone will do twice
+  $('shareCopy').onclick = copyShareLink;
+  $('shareSend').onclick = () => {
+    navigator.share({ title: 'Bed', text: shareText(), url: joinUrl(L.code) }).catch(() => {});
+  };
+  $('qrFull').onclick = () => $('qrFull').classList.remove('open');
   $('btnBlank').onclick = () => {
     const S = normalizeSession({ format: 2, title: 'Untitled session', sections: [], lanes: {} });
     store.sessions.unshift(S);
@@ -3917,6 +3962,7 @@ function wire() {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
     const onPerform = document.body.dataset.screen === 'perform';
     if (e.code === 'Escape') {
+      if ($('qrFull').classList.contains('open')) { $('qrFull').classList.remove('open'); return; }
       closeOvl('jumpOvl'); closeOvl('utilOvl');
       closeDrawer('secDrawer'); closeDrawer('blkDrawer');
       $('followerView').classList.remove('open');
@@ -4141,10 +4187,196 @@ function joinUrl(code) {
   return `${base}?c=${code || ''}`;
 }
 
+/* ── QR, byte mode, EC level M, versions 1–6 ────────────────────────────────
+   ~250 lines of nothing, rather than a dependency — this app is one file that
+   works with the wifi off, and it stays that way. Level M rather than L on
+   purpose: the code gets photographed off a glowing screen, at an angle, in a
+   dark room, and everyone gets one try.
+   ⚠️ Every constant here was checked against an independent decoder before it
+   shipped. If you touch it, check it again — a wrong QR looks completely
+   normal and simply never reads, and you find out in front of the room. */
+const QR_M = {
+  1: { size: 21, ec: 10, blocks: [1, 16], align: [] },
+  2: { size: 25, ec: 16, blocks: [1, 28], align: [6, 18] },
+  3: { size: 29, ec: 26, blocks: [1, 44], align: [6, 22] },
+  4: { size: 33, ec: 18, blocks: [2, 32], align: [6, 26] },
+  5: { size: 37, ec: 24, blocks: [2, 43], align: [6, 30] },
+  6: { size: 41, ec: 16, blocks: [4, 27], align: [6, 34] },
+};
+const GF_EXP = new Uint8Array(512), GF_LOG = new Uint8Array(256);
+(() => { let x = 1; for (let i = 0; i < 255; i++) { GF_EXP[i] = x; GF_LOG[x] = i; x <<= 1; if (x & 256) x ^= 0x11d; }
+  for (let i = 255; i < 512; i++) GF_EXP[i] = GF_EXP[i - 255]; })();
+const gmul = (a, b) => (a && b) ? GF_EXP[GF_LOG[a] + GF_LOG[b]] : 0;
+
+function rsGen(n) { let p = [1];
+  for (let i = 0; i < n; i++) { const q = [...p, 0];
+    for (let j = 0; j < p.length; j++) q[j + 1] ^= gmul(p[j], GF_EXP[i]); p = q; } return p; }
+
+function rsEncode(data, n) {
+  const gen = rsGen(n), res = new Array(n).fill(0);
+  for (const d of data) { const f = d ^ res[0]; res.shift(); res.push(0);
+    if (f) for (let i = 0; i < n; i++) res[i] ^= gmul(gen[i + 1], f); }
+  return res;
+}
+
+/* Returns a size×size array of 0/1, or null if the string won't fit in v6.
+   A null is not a failure worth hiding — the caller falls back to the link. */
+function qrEncode(str) {
+  const bytes = Array.from(new TextEncoder().encode(str));
+  let ver = 0;
+  for (let v = 1; v <= 6; v++) {
+    const c = QR_M[v], cap = c.blocks[0] * c.blocks[1] - 2;   // minus the 12-bit header
+    if (bytes.length <= cap) { ver = v; break; }
+  }
+  if (!ver) return null;
+  const cfg = QR_M[ver], nb = cfg.blocks[0], dpb = cfg.blocks[1], totalData = nb * dpb;
+
+  // bitstream: mode 0100, 8-bit count, data, terminator, pad
+  const bits = [];
+  const push = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); };
+  push(4, 4); push(bytes.length, 8);
+  for (const b of bytes) push(b, 8);
+  for (let i = 0; i < 4 && bits.length < totalData * 8; i++) bits.push(0);
+  while (bits.length % 8) bits.push(0);
+  const dat = [];
+  for (let i = 0; i < bits.length; i += 8) dat.push(parseInt(bits.slice(i, i + 8).join(''), 2));
+  const PAD = [0xEC, 0x11];
+  for (let i = 0; dat.length < totalData; i++) dat.push(PAD[i % 2]);
+
+  // error correction per block, then interleave both halves
+  const dBlocks = [], eBlocks = [];
+  for (let i = 0; i < nb; i++) {
+    const blk = dat.slice(i * dpb, (i + 1) * dpb);
+    dBlocks.push(blk); eBlocks.push(rsEncode(blk, cfg.ec));
+  }
+  const final = [];
+  for (let i = 0; i < dpb; i++) for (const b of dBlocks) final.push(b[i]);
+  for (let i = 0; i < cfg.ec; i++) for (const b of eBlocks) final.push(b[i]);
+
+  // function patterns
+  const N = cfg.size;
+  const m = Array.from({ length: N }, () => new Array(N).fill(null));
+  const set = (r, c, v) => { if (r >= 0 && r < N && c >= 0 && c < N) m[r][c] = v; };
+  const finder = (r, c) => { for (let i = -1; i <= 7; i++) for (let j = -1; j <= 7; j++) {
+      const on = (i >= 0 && i <= 6 && (j === 0 || j === 6)) || (j >= 0 && j <= 6 && (i === 0 || i === 6))
+              || (i >= 2 && i <= 4 && j >= 2 && j <= 4);
+      set(r + i, c + j, on ? 1 : 0); } };
+  finder(0, 0); finder(0, N - 7); finder(N - 7, 0);
+  for (let i = 8; i < N - 8; i++) { m[6][i] = i % 2 ? 0 : 1; m[i][6] = i % 2 ? 0 : 1; }
+  const lastAl = cfg.align[cfg.align.length - 1];
+  for (const r of cfg.align) for (const c of cfg.align) {
+    if ((r === 6 && c === 6) || (r === 6 && c === lastAl) || (c === 6 && r === lastAl)) continue;
+    for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++)
+      set(r + i, c + j, (Math.max(Math.abs(i), Math.abs(j)) !== 1) ? 1 : 0);
+  }
+  // reserve both format strips — written for real once a mask is chosen
+  for (let i = 0; i < 9; i++) { if (m[8][i] === null) m[8][i] = 0; if (m[i][8] === null) m[i][8] = 0; }
+  for (let i = 0; i < 8; i++) { if (m[8][N - 1 - i] === null) m[8][N - 1 - i] = 0;
+                                if (m[N - 1 - i][8] === null) m[N - 1 - i][8] = 0; }
+  m[N - 8][8] = 1;                                    // the dark module
+  const reserved = m.map(row => row.map(v => v !== null));
+
+  // data, zig-zagging up and down two columns at a time from the bottom right
+  let bi = 0, up = true;
+  const dbits = [];
+  for (const b of final) for (let i = 7; i >= 0; i--) dbits.push((b >> i) & 1);
+  for (let col = N - 1; col > 0; col -= 2) {
+    if (col === 6) col--;                             // the timing column is not a lane
+    for (let k = 0; k < N; k++) {
+      const row = up ? N - 1 - k : k;
+      for (const c of [col, col - 1]) if (!reserved[row][c]) m[row][c] = bi < dbits.length ? dbits[bi++] : 0;
+    }
+    up = !up;
+  }
+
+  // mask + format, keep the lowest penalty
+  const MASKS = [ (r,c)=>(r+c)%2===0, (r,c)=>r%2===0, (r,c)=>c%3===0, (r,c)=>(r+c)%3===0,
+                  (r,c)=>(((r/2)|0)+((c/3)|0))%2===0, (r,c)=>((r*c)%2)+((r*c)%3)===0,
+                  (r,c)=>((((r*c)%2)+((r*c)%3))%2)===0, (r,c)=>((((r+c)%2)+((r*c)%3))%2)===0 ];
+  let best = null, bestPen = Infinity;
+  for (let mk = 0; mk < 8; mk++) {
+    const t = m.map((row, r) => row.map((v, c) => reserved[r][c] ? v : (MASKS[mk](r, c) ? v ^ 1 : v)));
+    /* Format info: 2 bits EC (M = 00) + 3 bits mask, BCH(15,5), xor 0x5412.
+       ⚠️ Bit 0 is the LSB and it starts at the TOP of the left strip and the
+       RIGHT END of the top strip. The two copies run in opposite directions
+       and each skips a lane — the vertical one steps over the timing row at 6,
+       the horizontal one over the timing column at 6. Transpose the two, or
+       number them from the wrong end, and you get a symbol that looks perfect
+       to the eye and that no scanner on earth will read. This was the bug. */
+    let fmt = mk, d = fmt << 10;
+    for (let i = 4; i >= 0; i--) if (d & (1 << (i + 10))) d ^= 0x537 << i;
+    const f = ((fmt << 10) | d) ^ 0x5412;
+    for (let i = 0; i < 15; i++) {
+      const bit = (f >> i) & 1;
+      if (i < 6) t[i][8] = bit;                       // down the left of the finder
+      else if (i < 8) t[i + 1][8] = bit;              //   …skipping the timing row
+      else t[N - 15 + i][8] = bit;                    // then up from the bottom edge
+      if (i < 8) t[8][N - 1 - i] = bit;               // in from the right edge
+      else if (i === 8) t[8][7] = bit;                //   …skipping the timing column
+      else t[8][14 - i] = bit;                        // then along the finder's top
+    }
+    t[N - 8][8] = 1;
+    const pen = qrPenalty(t, N);
+    if (pen < bestPen) { bestPen = pen; best = t; }
+  }
+  return best;
+}
+
+/* All four penalty rules, not the cheap two. The short version happily picks a
+   mask that grows a finder-lookalike out in the data — reads fine on a desk,
+   fails at four feet in the dark, which is the only condition that matters. */
+function qrPenalty(t, N) {
+  let pen = 0;
+  const RUN = [1, 0, 1, 1, 1, 0, 1];
+  const line = (get) => {
+    let run = 1, prev = get(0), local = 0;
+    const buf = [prev];
+    for (let i = 1; i < N; i++) {
+      const v = get(i); buf.push(v);
+      if (v === prev) run++; else { if (run >= 5) local += 3 + (run - 5); run = 1; prev = v; }
+    }
+    if (run >= 5) local += 3 + (run - 5);
+    for (let i = 0; i + 7 <= N; i++) {
+      if (!RUN.every((b, k) => buf[i + k] === b)) continue;
+      const before = buf.slice(Math.max(0, i - 4), i), after = buf.slice(i + 7, i + 11);
+      if ((before.length === 4 && before.every(x => !x)) || (after.length === 4 && after.every(x => !x))) local += 40;
+    }
+    return local;
+  };
+  for (let r = 0; r < N; r++) pen += line(i => t[r][i]);
+  for (let c = 0; c < N; c++) pen += line(i => t[i][c]);
+  for (let r = 0; r < N - 1; r++) for (let c = 0; c < N - 1; c++)
+    if (t[r][c] === t[r][c+1] && t[r][c] === t[r+1][c] && t[r][c] === t[r+1][c+1]) pen += 3;
+  let dark = 0; for (const row of t) for (const v of row) dark += v;
+  pen += Math.floor(Math.abs(dark * 100 / (N * N) - 50) / 5) * 10;
+  return pen;
+}
+
+/* Moonlight ground, violet-black modules — the palette, at 15:1 contrast.
+   The four-module quiet zone lives in the viewBox so it can't be styled away;
+   without it the code sits on the panel edge and half of scanners give up. */
+const QR_INK = '#14102a', QR_GROUND = '#e8e4f0';
+function qrSvg(m) {
+  const N = m.length, W = N + 8;
+  let d = '';
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (m[r][c]) d += `M${c + 4} ${r + 4}h1v1h-1z`;
+  return `<svg viewBox="0 0 ${W} ${W}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">`
+       + `<rect width="${W}" height="${W}" fill="${QR_GROUND}"/><path d="${d}" fill="${QR_INK}"/></svg>`;
+}
+
+/* What a facilitator sends. Short enough to forward, and it says what tapping
+   it will do — nobody opens an unexplained link from a group text. */
+const shareText = () => `Tonight's session. Open this on your phone. Code ${L.code || ''}.`;
+
 function showShare() {
   $('shareCode').textContent = L.code || '————';
   const u = joinUrl(L.code);
   $('shareUrl').textContent = u.replace(/^https?:\/\//, '');
+  const m = L.code ? qrEncode(u) : null;
+  $('shareQR').innerHTML = m ? `<div class="qrcard" id="shareCard">${qrSvg(m)}</div>` : '';
+  $('shareQRHint').style.display = m ? 'block' : 'none';
+  $('shareSend').style.display = navigator.share ? '' : 'none';
+  $('shareCopy').textContent = 'Copy link';
   /* ⚠️ Without a relay, Net.join falls back to BroadcastChannel — same device,
      across tabs, and nothing else. A leader staring at "Waiting for the first
      device" forever, in the dark, before a session, is the worst silent failure
@@ -4153,6 +4385,37 @@ function showShare() {
   paintRelayState();
   paintShareCount();
   $('shareOvl').classList.add('open');
+  const card = $('shareCard');
+  if (card) card.onclick = () => showQRFull(m);
+}
+
+/* The whole glass, and nothing else on it. This is the version that works in a
+   room: the leader sets the phone or the iPad down and walks away, and people
+   scan it on their way in. Wake lock, or it goes dark in thirty seconds and
+   the first person to arrive finds a black rectangle. */
+function showQRFull(m) {
+  if (!m) return;
+  $('qrFullSvg').innerHTML = qrSvg(m);
+  $('qrFullCode').textContent = L.code || '';
+  $('qrFull').classList.add('open');
+  requestWake();
+}
+
+function copyShareLink() {
+  const u = joinUrl(L.code), btn = $('shareCopy');
+  const done = () => { btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = 'Copy link'; }, 1600); };
+  /* Safari only gives you the async clipboard on https, and a facilitator
+     testing over a plain-http LAN address is a real case. Fall back rather
+     than fail silently at the one moment they need the link. */
+  if (navigator.clipboard?.writeText) { navigator.clipboard.writeText(u).then(done, fallback); return; }
+  fallback();
+  function fallback() {
+    const ta = document.createElement('textarea');
+    ta.value = u; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) { btn.textContent = 'Select the link below'; }
+    ta.remove();
+  }
 }
 
 /* ---- follower ---- */

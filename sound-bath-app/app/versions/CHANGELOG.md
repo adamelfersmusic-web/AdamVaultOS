@@ -9,6 +9,64 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.16 — a code you point a camera at · 2026-07-31
+
+Sync worked. Joining didn't. The only way onto the sheet was for a leader to
+**read a URL out loud in a dark room** while people typed it — which nobody
+does twice, and which quietly made the whole multi-device product unusable by
+anyone who wasn't already holding the laptop.
+
+### A QR code, written by hand
+
+~250 lines of Galois-field arithmetic in `index.html` instead of a script tag,
+because this app is one file that works with the wifi off. **A join screen that
+needs a CDN to draw itself is the wrong join screen.** Byte mode, versions 1–6,
+**error correction level M rather than L** — L is smaller and prettier, M is
+the one that survives a phone camera at an angle, at four feet, in candlelight,
+held by someone who gets exactly one try.
+
+### Tap it and it fills the screen
+
+The version that actually works in a room: set the phone or the iPad down by
+the door and walk away. Wake lock is held while it's up — a code that goes
+black after thirty seconds is worse than no code, because the leader thinks
+it's working.
+
+### Copy link · Send it to myself
+
+`navigator.share` where it exists, so the link lands in Notes, Messages or
+AirDrop with one thumb. Clipboard falls back to the old `execCommand` path,
+because Safari withholds the async clipboard over plain http and a facilitator
+testing on a LAN address is a real case — failing silently at the one moment
+they need the link is not acceptable.
+
+### ⚠️ The bug worth naming: format bits
+
+The first working encoder produced symbols that were **structurally perfect and
+completely unreadable.** Finders right, timing right, data byte-identical to a
+reference encoder — 12 modules wrong, all of them format info. The two copies
+of the format string run in *opposite directions* and each skips a different
+lane. Transposed, they look fine and no scanner on earth reads them.
+
+Caught only because the output was decoded back with an independent library
+instead of eyeballed. **A wrong QR has no failure mode you can see** — it looks
+completely normal and simply never scans, and you find out in front of a room.
+Anything that touches that block gets re-verified the same way.
+
+### ⚠️ Colour is the free variable. Shape is not.
+
+Violet-black `#14102a` on moonlight `#e8e4f0` — both from the palette, 14.9:1
+contrast. Rounded modules, `--violet` modules and an inverted card were all
+built and measured; **all three cost reads** (rounding at radius .25 lost 64 of
+360 decodes). Reasoning and numbers in
+[`../../brand/the-share-moment.md`](../../brand/the-share-moment.md).
+
+This is law 6 in a different room: *you may tune the colour, never the
+geometry.* The change that looks like harmless taste is the one that breaks the
+mechanism in public.
+
+---
+
 ## v1.15 — the cold start, found by the first real two-device test · 2026-07-31
 
 The relay deployed, a laptop led, a phone followed — and the phone took
