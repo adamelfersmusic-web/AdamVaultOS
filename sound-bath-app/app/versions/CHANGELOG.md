@@ -9,6 +9,52 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.15 — the cold start, found by the first real two-device test · 2026-07-31
+
+The relay deployed, a laptop led, a phone followed — and the phone took
+**30–60 seconds** to show anything, with a blank sheet the whole time. Three
+separate faults stacked, and the app made a hardware-tier limitation worse than
+it needed to be.
+
+### 1 · Only the leader woke the relay
+
+`wakeRelay()` fired on Design and BEGIN. **`followerJoin()` never called it** —
+so a follower's very first contact with a sleeping free tier was a WebSocket
+handshake, which is the slowest possible way to knock. It now sends the HTTP
+poke too, in parallel with the socket's own attempt.
+
+### 2 · The backoff was tuned for a dead server, not a waking one
+
+```js
+Math.min(1000 * 2**tries, 15000)   →   Math.min(700 * 2**tries, 4000)
+```
+
+**Exponential backoff is right for a server that's down. It's wrong for one
+that's booting.** Render's free tier takes ~40 seconds, and a 15-second cap
+means a client can sit idle for fifteen more seconds *after the relay is already
+answering.* A reconnect attempt costs nothing; the old cap was buying politeness
+nobody asked for with time that mattered.
+
+### 3 · ⚠️ The worst of the three — the follower said nothing
+
+A joined follower with no session yet rendered an **empty sheet**. No spinner,
+no message, no way to tell *still connecting* from *broken* — which is exactly
+the judgement someone has to make in a dark room with people arriving.
+
+Now it says so:
+
+> *finding the session…*
+> **the relay may be waking — up to a minute the first time**
+
+Cleared the instant a real cue renders, not when the socket opens — because the
+socket opening isn't the thing you're waiting for.
+
+**The lesson is the one this product keeps relearning:** the failure wasn't the
+delay, it was the silence. Same shape as the share dialog's *"same device
+only"*, and the wake lock chip. **A wait you understand is not a fault.**
+
+---
+
 ## v1.14 — making the lamp actually good · 2026-07-31
 
 Adam: *"I want lamp-to-your-bowls to exist and be good."* It existed at v1.13.
