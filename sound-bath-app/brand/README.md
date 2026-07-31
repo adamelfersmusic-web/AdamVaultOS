@@ -26,6 +26,7 @@ unchanged.
 | **Sync is the product** — why multi-device is the business, not a feature | [`sync-is-the-product.md`](sync-is-the-product.md) |
 | Sync technical spec — wire format, join flow, seams | [`sync-spec.md`](sync-spec.md) |
 | **Distribution & saving** — deploy, storage, and the staged plan | [`distribution-and-saving.md`](distribution-and-saving.md) |
+| **Hardware strategy** — not speakers, yes lights, and why | [`hardware-strategy.md`](hardware-strategy.md) |
 | Mark decision — the review that settled the stack | [`mark-decision.md`](mark-decision.md) |
 | **Structure & flow** — "a playlist can't hold", the concrete scenes | [`marketing-the-flow.md`](marketing-the-flow.md) |
 | Mark comparison — ring vs stack | [`mark-comparison.html`](mark-comparison.html) (open in a browser — a decision doc, nothing adopted yet) |
