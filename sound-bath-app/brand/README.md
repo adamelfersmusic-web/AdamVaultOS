@@ -28,6 +28,7 @@ unchanged.
 | **Distribution & saving** — deploy, storage, and the staged plan | [`distribution-and-saving.md`](distribution-and-saving.md) |
 | **Hardware strategy** — not speakers, yes lights, and why | [`hardware-strategy.md`](hardware-strategy.md) |
 | **Speaker & room tuning** — "Bed knows this speaker", in three tiers | [`speaker-and-room-tuning.md`](speaker-and-room-tuning.md) |
+| **Ecosystem** — the practitioner network, packs, events, sequencing | [`ecosystem.md`](ecosystem.md) |
 | Mark decision — the review that settled the stack | [`mark-decision.md`](mark-decision.md) |
 | **Structure & flow** — "a playlist can't hold", the concrete scenes | [`marketing-the-flow.md`](marketing-the-flow.md) |
 | Mark comparison — ring vs stack | [`mark-comparison.html`](mark-comparison.html) (open in a browser — a decision doc, nothing adopted yet) |
