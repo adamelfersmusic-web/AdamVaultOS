@@ -20,6 +20,7 @@ unchanged.
 | Landing page | [`../site/index.html`](../site/index.html) |
 | Compact mark / favicon | [`assets/mark.svg`](assets/mark.svg) |
 | Wordmark lockup | [`assets/wordmark.svg`](assets/wordmark.svg) |
+| **Taglines** — the running list, the five tests, the BED+ROOMS hazard | [`taglines.md`](taglines.md) |
 | Open questions | [`audit-questions.md`](audit-questions.md) |
 | BOOK comparison pass | [`book-comparison.md`](book-comparison.md) |
 | **Structural language audit** — is the sound bath taxonomy our own words? | [`structure-language-audit.md`](structure-language-audit.md) |
