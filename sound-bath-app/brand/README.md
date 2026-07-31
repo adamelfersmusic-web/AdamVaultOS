@@ -15,6 +15,7 @@ making sound*. Nothing else may ever wear it.
 | Wordmark lockup | [`assets/wordmark.svg`](assets/wordmark.svg) |
 | Open questions | [`audit-questions.md`](audit-questions.md) |
 | BOOK comparison pass | [`book-comparison.md`](book-comparison.md) |
+| Mark comparison — ring vs stack | [`mark-comparison.html`](mark-comparison.html) (open in a browser) |
 
 ## ⚠️ Publishing
 
