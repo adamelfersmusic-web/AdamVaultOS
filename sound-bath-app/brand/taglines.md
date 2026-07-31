@@ -121,6 +121,65 @@ practitioner is genuinely responsible for.
 
 ---
 
+## HOLD is the brand's central verb — and the name was always saying so
+
+Adam, 2026-07-31, on naming the design-screen audition **held** rather than
+*looped*:
+
+> *It's not loop, it's HELD — which has a double meaning, because in sound bath
+> you say "I felt really held tonight," or "held by the facilitators," and that
+> means safe. It's the perfect word for that function.*
+
+Right, and it's **triple**, not double. The third one is the one nobody had to
+invent:
+
+> ### A bed is the thing that holds you.
+
+The name has been saying this since before the app existed. Nothing about that
+was designed — it was found, which is usually the only reliable sign a name is
+actually right.
+
+### Every layer of the product is already using it
+
+| Layer | |
+|---|---|
+| The name | a **bed** holds you |
+| The tag | *holding space* |
+| The promise | *put the plan down and **hold** the room* |
+| The control | **HOLD** — *"holding — the plan waits"* |
+| The feature | a **held** section |
+| The buyer's own words | *"I felt really held tonight"* |
+
+**One verb, six layers, and one of them is the customer's vocabulary rather than
+ours.** That's not a motif to exploit; it's evidence the model underneath is
+coherent, and it means the language of this product should be pruned toward
+"hold" wherever a synonym has crept in.
+
+### What it settles immediately
+
+The design-screen feature needs **no new vocabulary at all**. Not *preview*, not
+*audition*, not *solo*, not *loop* — all four are borrowed from software that
+isn't this. The section card says **held**, the perform screen already says
+**holding**, and both wear the same gold. A brand-new feature that adds zero
+words to the product is rare, and it's the strongest argument that it belongs.
+
+### What it re-opens — but not tonight
+
+It puts a real crack in the argument that pushed **guide** over **hold** for the
+tagline. That argument was: *if Bed holds the structure and the tagline tells
+you to hold the room, the two holdings compete.*
+
+Maybe the competition **is the thesis.** Bed holds you, you hold the room, the
+room holds the people — the same act at three scales, which is exactly what a
+practitioner means when they say they felt held. A chain, not a collision.
+
+**Not being relitigated here.** *Guide* still wins on the principle it won on —
+a tagline should name the person's half. Filed so the question is on the record
+rather than lost, and so the next pass starts from this rather than rediscovering
+it.
+
+---
+
 ## The avatar, stated properly — and what it does to the brief
 
 Adam, 2026-07-31:
