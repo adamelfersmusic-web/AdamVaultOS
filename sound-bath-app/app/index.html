@@ -871,7 +871,20 @@ const MODES = {
 
 const STANDARD7 = [0,2,4,5,7,9,11];
 
-/* The canonical language. A function sets the defaults; the label is the poem. */
+/* The canonical language. A function sets the defaults; the label is the poem.
+
+   ⚠️ PROVISIONAL — DO NOT RENAME WITHOUT THE SESSION REVIEW.
+   These nine are fitted to the two real handouts seeded below. An audit
+   (brand/structure-language-audit.md) traced them to Adam's own phrases and
+   found four gaps where a generic word replaced his:
+     ground → he wrote "Earth"      ("Earth, Seeding")
+     wash   → he wrote "Water"      ("Water, Watering the soil")
+     return → he wrote "Home"       (Full Moon in Leo ends "Is Home")
+     wash also conflates Ocean and Gong — and textureElements() sounds a
+     "wash" gong as WIND, so the label and the sound already disagree.
+     "Trust, Buried" is a function word from a real sheet with no slot here.
+   The fix is gated on reviewing the 2024–25 sessions, not on taste. Renaming
+   early would bake a two-session fit into the product's brain. */
 const FUNCTIONS = {
   arrive:  { label: 'Arrive',  color: 'var(--c-arrive)',  kind: 'texture', name: 'Arrival',  mins: 4 },
   ground:  { label: 'Ground',  color: 'var(--c-ground)',  kind: 'pitched', name: 'Root',     mins: 9, chakra: 1, mode: 'major' },
