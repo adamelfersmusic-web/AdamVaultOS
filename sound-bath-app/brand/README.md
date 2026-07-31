@@ -24,6 +24,7 @@ unchanged.
 | **⚠️ Ear tests** — the things only Adam can answer, on the real rig | [`ear-tests.md`](ear-tests.md) |
 | **The last screen** — the follower's phone at session end, and whether it links | [`the-last-screen.md`](the-last-screen.md) |
 | **The share moment** — how forty people get onto the sheet; the QR, and what colour may and may not do | [`the-share-moment.md`](the-share-moment.md) |
+| **⚠️ Things only machines read** — the failure with no visible symptom, and the three layers that stop it | [`things-only-machines-read.md`](things-only-machines-read.md) |
 | **Sessions travel** — export/import, rehearsal, and the share link | [`sessions-travel.md`](sessions-travel.md) |
 | **Taglines** — the running list, the five tests, the BED+ROOMS hazard | [`taglines.md`](taglines.md) |
 | Open questions | [`audit-questions.md`](audit-questions.md) |

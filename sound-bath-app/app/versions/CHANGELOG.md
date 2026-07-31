@@ -9,6 +9,83 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.17 — never once in a hundred thousand · 2026-07-31
+
+Adam, on hearing that v1.16's first encoder produced perfect-looking,
+completely unreadable codes: *"This would ruin our whole product. How do we
+prevent this from never, ever happening — not once in a hundred thousand
+times?"*
+
+### ⚠️ The uncomfortable part first
+
+The obvious answer is "have the app check its own work", and that shipped —
+`qrVerify()` reads every finished symbol back the way a scanner would and
+refuses to show anything that doesn't decode to the string that went in.
+
+**And it would have shipped the original bug.** A read-back check written from
+the same understanding reads the format bits from the same wrong coordinates
+and agrees with itself. The bug was reinstated and measured: the self-check
+alone **refused 72 of 144 cases and passed the other 72.**
+
+> **A misunderstanding cannot audit itself.**
+
+### Three layers, each catching what the others structurally cannot
+
+1. **`qrVerify()`, in the app, on every code.** Recovers the format word,
+   checks its BCH, requires both copies to agree, unmasks, re-walks the
+   zig-zag, de-interleaves, runs the Reed–Solomon syndromes, compares the
+   payload. Answers *"is this code, right now, on this device, correct?"* —
+   which no test that ran last March can answer.
+2. **`tools/qr-golden.json` — 144 matrices from an implementation with no
+   relationship to ours**, pinning all 6 versions × all 8 masks. With the bug
+   reinstated: **0 of 144 matched.** The only layer that can answer *"is our
+   understanding of the format right at all?"*
+3. **The gate is the first line of the Netlify build.** Broken encoder → build
+   fails → nothing reaches the CDN. 0.6s, zero dependencies.
+
+Plus: the verifier must be able to *fail*, so the gate flips every module of a
+finished symbol one at a time — 2,210 of them — and requires a refusal every
+time. And `set -e` is load-bearing: a multi-line build command reports the exit
+status of its last line, so without it a failed check followed by a successful
+copy publishes the broken build with a green tick. Found by testing the gate
+rather than trusting it.
+
+Full reasoning in [`tools/README.md`](../../tools/README.md) and
+[`../../brand/things-only-machines-read.md`](../../brand/things-only-machines-read.md).
+
+### The code now belongs to the session, not the broadcast
+
+*"A leader should be able to get tomorrow's link today."* The room code was
+minted at BEGIN, which meant the link could not exist before the leader was
+already standing in the room — so **Share the sheet** moved to Design, and the
+code is minted once, kept through reloads and re-runs, and retired only by a
+deliberate **New code**.
+
+This also kills the cold-relay wait for the whole room: people who tapped the
+link in the car park are connected before anyone lies down.
+
+### Save the code
+
+Renders the card to a canvas and hands it to the OS — *Save Image* on iOS, a
+download on desktop. **⚠️ The date on it is not decoration:** a saved image
+outlives its session, and a screenshot found six weeks later is a dead code
+that looks like a broken product. The card carries the day it was minted and
+the file is named `bed-VXZF-2026-07-31.png`.
+
+### ⚠️ The pre-flight test, from both ends
+
+*"You should always test before it starts"* is a product requirement wearing
+advice's clothes — if the leader has to remember, one night one of them won't,
+and it fails in front of a room. So the test is now a thing they're already
+looking at:
+
+- **Leader:** *"2 devices connected — scan one more to be sure, then begin."*
+- **Follower:** *"You're in"* — connected-but-not-begun is its own state now,
+  not a blank sheet, which is also exactly what an early joiner sees. One piece
+  of design answers both.
+
+---
+
 ## v1.16 — a code you point a camera at · 2026-07-31
 
 Sync worked. Joining didn't. The only way onto the sheet was for a leader to

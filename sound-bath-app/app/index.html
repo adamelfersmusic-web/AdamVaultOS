@@ -504,6 +504,8 @@ body.live #goBtn .glabel { color: var(--amber); }
 .relaystate { letter-spacing: .12em; text-transform: uppercase; font-size: 10px; }
 .relaystate.on { color: var(--ink2); }
 .relaystate.off { color: var(--red); }
+/* Not amber. Amber means sounding, and this is a room that has not begun. */
+#shareCount.ok { color: var(--ink2); }
 .sharecode { font-family: var(--serif); font-size: clamp(46px,13vw,72px); letter-spacing: .22em; padding-left: .22em; color: var(--ink); }
 
 /* ── the QR card ──────────────────────────────────────────────────────────
@@ -539,6 +541,17 @@ body.live #goBtn .glabel { color: var(--amber); }
 #followerView.waiting .fphrase, #followerView.waiting .fbowls, #followerView.waiting .fnote,
 #followerView.waiting .flegend, #followerView.waiting .wakechip { display: none !important; }
 #followerView.lamp .fwaiting { display: none !important; }
+
+/* Connected, not begun. Its own state — see followerApply. */
+.fready { display: none; text-align: center; color: var(--ink2); font-family: var(--serif); font-size: clamp(28px, 7vw, 46px); }
+.fready span { display: block; margin-top: 6px; font-size: .52em; font-style: italic; color: var(--ink3); }
+.fready em { display: block; margin-top: 18px; font-family: var(--sans); font-style: normal; font-size: 10px;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--ink4); }
+#followerView.ready .fready { display: block; }
+#followerView.ready .fnext, #followerView.ready .fkey, #followerView.ready .fname,
+#followerView.ready .fphrase, #followerView.ready .fbowls, #followerView.ready .fnote,
+#followerView.ready .flegend { display: none !important; }
+#followerView.lamp .fready { display: none !important; }
 .fafter { display: none; text-align: center; }
 #followerView.after .fafter { display: block; }
 #followerView.after .fkey, #followerView.after .fname, #followerView.after .fphrase,
@@ -640,6 +653,9 @@ body.live #goBtn .glabel { color: var(--amber); }
           <div class="dbtns">
             <button class="btn ghost" id="dWeave" title="Rebuild the four lanes from the section markers">Weave lanes</button>
             <button class="btn ghost" id="dExport">Export</button>
+            <!-- Before BEGIN on purpose. The link has to be sendable the day
+                 before, and the room has to be testable before it fills. -->
+            <button class="btn ghost" id="dShare">Share the sheet</button>
             <button class="btn" id="dEnsemble">Ensemble</button>
             <button class="btn primary" id="dBegin">Begin</button>
           </div>
@@ -827,6 +843,7 @@ body.live #goBtn .glabel { color: var(--amber); }
   </div>
   <div class="fstale">not receiving &mdash; showing the last cue</div>
   <div class="fwaiting" id="fWaiting">finding the session&hellip;<span>the relay may be waking &mdash; up to a minute the first time</span></div>
+  <div class="fready">You&rsquo;re in.<span id="fReadyName"></span><em>the sheet appears when the session begins</em></div>
   <div class="flegend">big &mdash; freely, the largest is the root &nbsp;&middot;&nbsp; (mid) &mdash; sparingly &nbsp;&middot;&nbsp; [small] &mdash; rest, it fights the key</div>
   <!-- In normal flow under the legend rather than absolutely placed: it must
        never overlap a cue, and a cue must never overlap it. -->
@@ -843,9 +860,11 @@ body.live #goBtn .glabel { color: var(--amber); }
     <div class="sharecode" id="shareCode" style="margin-top:14px">&mdash;&mdash;&mdash;&mdash;</div>
     <div class="hint" id="shareQRHint" style="margin-top:6px">Point a camera at it. Tap it to fill the screen &mdash;
     then set the phone down by the door and let people come to it.</div>
+    <div class="hint" id="shareMade" style="margin-top:4px"></div>
     <div class="drawacts" id="shareActs" style="justify-content:center;border-top:none;padding-top:0;margin-top:14px">
       <button class="btn ghost" id="shareCopy">Copy link</button>
       <button class="btn ghost" id="shareSend" style="display:none">Send it to myself</button>
+      <button class="btn ghost" id="shareSave">Save the code</button>
     </div>
     <div class="hint" style="margin-top:12px"><b id="shareUrl"></b><br>
     The link carries the code. One device makes the sound; the rest are the sheet.</div>
@@ -862,6 +881,9 @@ body.live #goBtn .glabel { color: var(--amber); }
     <div class="hint" id="shareCount" style="margin-top:6px"></div>
     <div class="drawacts" style="justify-content:center">
       <button class="btn ghost" data-close="shareOvl">Done</button>
+      <!-- A code that lasts needs a way to be retired: same session run again
+           next month wants a room the last room's screenshots can't walk into. -->
+      <button class="btn ghost" id="shareNew" title="Retire this code and mint a new one">New code</button>
     </div>
   </div>
 </div>
@@ -1068,7 +1090,7 @@ body.live #goBtn .glabel { color: var(--amber); }
 
 <script>
 'use strict';
-const BED_VERSION = '1.16';
+const BED_VERSION = '1.17';
 
 /* ==========================================================================
    BED — exploratory full build.
@@ -1497,6 +1519,12 @@ function normalizeSession(raw) {
     refHz: +S.refHz || 440, kit: S.kit || { type: 'standard7' },
     sections: (S.sections || []).map(s => ({ ...s, id: s.id || uid() })),
     lanes: { deep: [], bed: [], voice: [], air: [], ...(S.lanes || {}) },
+    /* The room code belongs to the SESSION, not to the broadcast. Minted the
+       first time it's asked for and kept, so a leader can post tomorrow's link
+       today and it is still the code when they walk in. Followers who tapped
+       it in the car park are already connected, which also happens to kill the
+       cold-relay wait for the whole room. */
+    room: S.room && typeof S.room.code === 'string' ? S.room : null,
   };
   respine(S, S.sections.map(s => Math.max(1, (s.toMin - s.fromMin) || 5)));
   return S;
@@ -2807,6 +2835,9 @@ function startPerform(S, pos, from) {
   renderPerformSection();
   renderBands();
   updatePerformClock(true);
+  // followers who joined from a link sent out yesterday get the edited session
+  // and the live flag the moment BEGIN is pressed, not a heartbeat later
+  if (L.net) { publishSession(); publishState(true); }
 }
 
 function beginLive() {
@@ -3803,8 +3834,17 @@ function wire() {
   // getting the link to the room — the part that used to be "read this URL out
   // loud in the dark", which is not a thing anyone will do twice
   $('shareCopy').onclick = copyShareLink;
+  $('shareSave').onclick = saveShareImage;
+  $('shareNew').onclick = () => {
+    const S = shareSession(); if (!S) return;
+    if (L.seen.size && !confirm(`${L.seen.size} device${L.seen.size === 1 ? '' : 's'} already joined on ${S.room.code}. A new code drops them. Carry on?`)) return;
+    newRoomCode(S);
+    stopSharing();
+    startSharing();
+  };
   $('shareSend').onclick = () => {
-    navigator.share({ title: 'Bed', text: shareText(), url: joinUrl(L.code) }).catch(() => {});
+    const S = shareSession();
+    navigator.share({ title: 'Bed', text: shareText(), url: joinUrl(S && S.room && S.room.code) }).catch(() => {});
   };
   $('qrFull').onclick = () => $('qrFull').classList.remove('open');
   $('btnBlank').onclick = () => {
@@ -3909,6 +3949,7 @@ function wire() {
   $('pFloor').onclick = () => $('pExit').click();     // the readout is also the way in
   $('pSheet').onclick = () => { renderFollower(); $('followerView').classList.add('open'); };
   $('pShare').onclick = startSharing;
+  $('dShare').onclick = startSharing;
   $('joinGo').onclick = () => {
     const code = ($('joinCode').value || '').trim().toUpperCase();
     if (code.length < 3) { $('joinMsg').textContent = 'Enter the code shown on the leader’s screen.'; return; }
@@ -4130,30 +4171,68 @@ const Net = {
 
 /* ---- leader ---- */
 
-const L = { net: null, code: null, lid: null, seq: 0, lastPub: 0, sh: null, seen: new Set() };
+const L = { net: null, code: null, lid: null, seq: 0, lastPub: 0, sh: null, beat: null, seen: new Set() };
+
+/* Sharing can start on the Design screen, before BEGIN, before T.S exists —
+   that is the whole point of a link you can send out the day before. So the
+   session being broadcast is the one being performed if there is one, and
+   otherwise the one on the bench. */
+const shareSession = () => T.S || currentSession();
 
 function publishState(force) {
-  if (!L.net || !T.S) return;
-  const sec = sectionAt(T.S, T.pos);
+  const S = shareSession();
+  if (!L.net || !S) return;
+  const perf = !!T.S, pos = perf ? T.pos : 0;
+  const sec = sectionAt(S, pos);
   L.lastPub = Date.now();
   L.net.send({
     v: SYNC_V, t: 'state', lid: L.lid, seq: ++L.seq, sh: L.sh,
     sec: sec ? sec.id : null,
-    pos: +T.pos.toFixed(3),
-    hold: !!T.holding, live: !!T.live, end: !!T.ended,
+    pos: +pos.toFixed(3),
+    hold: perf && !!T.holding, live: perf && !!T.live, end: perf && !!T.ended,
   });
 }
 
 function publishSession() {
-  if (!L.net || !T.S) return;
-  L.net.send({ v: SYNC_V, t: 'session', sh: L.sh, session: T.S });
+  const S = shareSession();
+  if (!L.net || !S) return;
+  L.sh = sessionHash(S);        // it may have been edited since sharing opened
+  L.net.send({ v: SYNC_V, t: 'session', sh: L.sh, session: S });
 }
 
+/* The session's own code, minted once and kept. Deliberately NOT regenerated
+   per broadcast: a code that changes every time the leader hits BEGIN can't be
+   sent out in advance, and a link sent in advance is the only version of this
+   that works for a room of forty. */
+function roomFor(S) {
+  if (!S) return null;
+  if (!S.room) { S.room = { code: roomCode(), made: todayStamp() }; save(); }
+  return S.room;
+}
+function newRoomCode(S) {
+  S.room = { code: roomCode(), made: todayStamp() };
+  save();
+  return S.room;
+}
+/* Local calendar date, stamped on the saved image so a code found in a camera
+   roll six weeks later can be recognised as spent instead of broken. */
+function todayStamp() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+const prettyStamp = s => {
+  const [y, m, d] = (s || '').split('-').map(Number);
+  if (!y) return '';
+  return `${d} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m - 1]} ${y}`;
+};
+
 function startSharing() {
+  const S = shareSession();
+  if (!S) return;
   if (L.net) { showShare(); return; }
-  L.code = roomCode();
+  L.code = roomFor(S).code;
   L.lid = 'l' + Math.random().toString(36).slice(2, 8);
-  L.sh = sessionHash(T.S);
+  L.sh = sessionHash(S);
   L.seq = 0; L.seen = new Set();
   L.net = Net.join(L.code, msg => {
     if (!msg || msg.v !== SYNC_V) return;
@@ -4163,20 +4242,34 @@ function startSharing() {
   bus.emit('sync:open', { code: L.code });
   publishSession();
   publishState(true);
+  /* The perform loop heartbeats every 2 s; before BEGIN there is no loop, and
+     a follower who joined early would cross the 30 s threshold and be told it
+     is "not receiving" while sitting perfectly connected in a car park. */
+  clearInterval(L.beat);
+  L.beat = setInterval(() => { if (L.net && !T.live) publishState(); }, 2000);
   showShare();
 }
 
 function stopSharing() {
   if (!L.net) return;
   publishState(true);
+  clearInterval(L.beat); L.beat = null;
   L.net.leave();
   L.net = null; L.code = null;
 }
 
+/* ⚠️ This line IS the pre-flight test. "Always check sync before you start" is
+   advice, and advice fails the night somebody forgets — so the check is a
+   thing the leader is already looking at while they hold the code up, and it
+   says the answer rather than implying it from an empty list. */
 function paintShareCount() {
   const n = L.seen.size;
-  const el = $('shareCount');
-  if (el) el.textContent = n ? `${n} ${n === 1 ? 'device is' : 'devices are'} reading the sheet.` : 'Waiting for the first device.';
+  const el = $('shareCount'); if (!el) return;
+  el.classList.toggle('ok', n > 0);
+  el.textContent = n
+    ? (T.live ? `${n} ${n === 1 ? 'device is' : 'devices are'} reading the sheet.`
+              : `${n} ${n === 1 ? 'device' : 'devices'} connected — scan one more to be sure, then begin.`)
+    : 'Waiting for the first device. Scan the code with a phone to test it now.';
 }
 
 /* The link carries the code, so nobody types anything in a dark room — and it
@@ -4195,6 +4288,10 @@ function joinUrl(code) {
    ⚠️ Every constant here was checked against an independent decoder before it
    shipped. If you touch it, check it again — a wrong QR looks completely
    normal and simply never reads, and you find out in front of the room. */
+/* qr:begin — ⚠️ these two sentinels are load-bearing. tools/qr-check.js lifts
+   everything between them out of this file and runs it against matrices from an
+   independent encoder. Move or rename them and the check silently stops
+   checking, which is worse than not having it. */
 const QR_M = {
   1: { size: 21, ec: 10, blocks: [1, 16], align: [] },
   2: { size: 25, ec: 16, blocks: [1, 28], align: [6, 18] },
@@ -4219,9 +4316,82 @@ function rsEncode(data, n) {
   return res;
 }
 
-/* Returns a size×size array of 0/1, or null if the string won't fit in v6.
-   A null is not a failure worth hiding — the caller falls back to the link. */
-function qrEncode(str) {
+/* ── The geometry, written down once ────────────────────────────────────────
+   Both the encoder and the read-back check below use these. Two copies of the
+   same coordinates, kept in step by comment discipline, is exactly the shape
+   of the bug that nearly shipped — so there is one copy and both directions
+   walk it.
+
+   The 15 format-module coordinates, bit 0 (the LSB) first.
+   ⚠️ Bit 0 starts at the TOP of the left strip and the RIGHT END of the top
+   strip. The two copies run in opposite directions and each steps over a
+   timing lane. Transpose them, or number them from the wrong end, and you get
+   a symbol that is perfect to the eye and that no scanner on earth will read.
+   That is not hypothetical — it is what v1.16 did before it was caught. */
+const qrFmtA = N => Array.from({ length: 15 }, (_, i) =>      // down the left, then up from the bottom
+  i < 6 ? [i, 8] : i < 8 ? [i + 1, 8] : [N - 15 + i, 8]);
+const qrFmtB = N => Array.from({ length: 15 }, (_, i) =>      // in from the right, then along the top
+  i < 8 ? [8, N - 1 - i] : i === 8 ? [8, 7] : [8, 14 - i]);
+
+/* Finders, timing, alignment, the dark module, and both format strips marked
+   as taken. Returns the partial matrix and the map of what data may not touch. */
+function qrFrame(cfg) {
+  const N = cfg.size;
+  const m = Array.from({ length: N }, () => new Array(N).fill(null));
+  const set = (r, c, v) => { if (r >= 0 && r < N && c >= 0 && c < N) m[r][c] = v; };
+  const finder = (r, c) => { for (let i = -1; i <= 7; i++) for (let j = -1; j <= 7; j++) {
+      const on = (i >= 0 && i <= 6 && (j === 0 || j === 6)) || (j >= 0 && j <= 6 && (i === 0 || i === 6))
+              || (i >= 2 && i <= 4 && j >= 2 && j <= 4);
+      set(r + i, c + j, on ? 1 : 0); } };
+  finder(0, 0); finder(0, N - 7); finder(N - 7, 0);
+  for (let i = 8; i < N - 8; i++) { m[6][i] = i % 2 ? 0 : 1; m[i][6] = i % 2 ? 0 : 1; }
+  const lastAl = cfg.align[cfg.align.length - 1];
+  for (const r of cfg.align) for (const c of cfg.align) {
+    if ((r === 6 && c === 6) || (r === 6 && c === lastAl) || (c === 6 && r === lastAl)) continue;
+    for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++)
+      set(r + i, c + j, (Math.max(Math.abs(i), Math.abs(j)) !== 1) ? 1 : 0);
+  }
+  for (const [r, c] of [...qrFmtA(N), ...qrFmtB(N)]) if (m[r][c] === null) m[r][c] = 0;
+  m[N - 8][8] = 1;                                    // the dark module
+  return { N, m, reserved: m.map(row => row.map(v => v !== null)) };
+}
+
+/* Every data module in order, zig-zagging up and down two columns at a time
+   from the bottom right. The encoder writes along it; the check reads along it. */
+function qrPath(N, reserved) {
+  const path = [];
+  let up = true;
+  for (let col = N - 1; col > 0; col -= 2) {
+    if (col === 6) col--;                             // the timing column is not a lane
+    for (let k = 0; k < N; k++) {
+      const row = up ? N - 1 - k : k;
+      for (const c of [col, col - 1]) if (!reserved[row][c]) path.push([row, c]);
+    }
+    up = !up;
+  }
+  return path;
+}
+
+const QR_MASKS = [ (r,c)=>(r+c)%2===0, (r,c)=>r%2===0, (r,c)=>c%3===0, (r,c)=>(r+c)%3===0,
+                   (r,c)=>(((r/2)|0)+((c/3)|0))%2===0, (r,c)=>((r*c)%2)+((r*c)%3)===0,
+                   (r,c)=>((((r*c)%2)+((r*c)%3))%2)===0, (r,c)=>((((r+c)%2)+((r*c)%3))%2)===0 ];
+
+/* Format info: 2 bits EC (M = 00) + 3 bits mask, BCH(15,5), xor 0x5412. */
+function qrFormatBits(mk) {
+  let d = mk << 10;
+  for (let i = 4; i >= 0; i--) if (d & (1 << (i + 10))) d ^= 0x537 << i;
+  return ((mk << 10) | d) ^ 0x5412;
+}
+
+/* Returns a size×size array of 0/1, or null if the string won't fit in v6 —
+   or if the finished symbol fails to read back as itself. A null is not a
+   failure worth hiding: the caller shows the link instead and says so.
+
+   forceMask exists for tools/qr-check.cjs and nothing else. Mask CHOICE is a
+   heuristic — two encoders can pick differently and both be right — but mask
+   APPLICATION and module placement are not, and pinning those needs the mask
+   held still. Leave it undefined everywhere in the app. */
+function qrEncode(str, forceMask) {
   const bytes = Array.from(new TextEncoder().encode(str));
   let ver = 0;
   for (let v = 1; v <= 6; v++) {
@@ -4253,73 +4423,110 @@ function qrEncode(str) {
   for (let i = 0; i < dpb; i++) for (const b of dBlocks) final.push(b[i]);
   for (let i = 0; i < cfg.ec; i++) for (const b of eBlocks) final.push(b[i]);
 
-  // function patterns
-  const N = cfg.size;
-  const m = Array.from({ length: N }, () => new Array(N).fill(null));
-  const set = (r, c, v) => { if (r >= 0 && r < N && c >= 0 && c < N) m[r][c] = v; };
-  const finder = (r, c) => { for (let i = -1; i <= 7; i++) for (let j = -1; j <= 7; j++) {
-      const on = (i >= 0 && i <= 6 && (j === 0 || j === 6)) || (j >= 0 && j <= 6 && (i === 0 || i === 6))
-              || (i >= 2 && i <= 4 && j >= 2 && j <= 4);
-      set(r + i, c + j, on ? 1 : 0); } };
-  finder(0, 0); finder(0, N - 7); finder(N - 7, 0);
-  for (let i = 8; i < N - 8; i++) { m[6][i] = i % 2 ? 0 : 1; m[i][6] = i % 2 ? 0 : 1; }
-  const lastAl = cfg.align[cfg.align.length - 1];
-  for (const r of cfg.align) for (const c of cfg.align) {
-    if ((r === 6 && c === 6) || (r === 6 && c === lastAl) || (c === 6 && r === lastAl)) continue;
-    for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++)
-      set(r + i, c + j, (Math.max(Math.abs(i), Math.abs(j)) !== 1) ? 1 : 0);
-  }
-  // reserve both format strips — written for real once a mask is chosen
-  for (let i = 0; i < 9; i++) { if (m[8][i] === null) m[8][i] = 0; if (m[i][8] === null) m[i][8] = 0; }
-  for (let i = 0; i < 8; i++) { if (m[8][N - 1 - i] === null) m[8][N - 1 - i] = 0;
-                                if (m[N - 1 - i][8] === null) m[N - 1 - i][8] = 0; }
-  m[N - 8][8] = 1;                                    // the dark module
-  const reserved = m.map(row => row.map(v => v !== null));
-
-  // data, zig-zagging up and down two columns at a time from the bottom right
-  let bi = 0, up = true;
+  const { N, m, reserved } = qrFrame(cfg);
+  const path = qrPath(N, reserved);
   const dbits = [];
   for (const b of final) for (let i = 7; i >= 0; i--) dbits.push((b >> i) & 1);
-  for (let col = N - 1; col > 0; col -= 2) {
-    if (col === 6) col--;                             // the timing column is not a lane
-    for (let k = 0; k < N; k++) {
-      const row = up ? N - 1 - k : k;
-      for (const c of [col, col - 1]) if (!reserved[row][c]) m[row][c] = bi < dbits.length ? dbits[bi++] : 0;
-    }
-    up = !up;
-  }
+  path.forEach(([r, c], i) => { m[r][c] = i < dbits.length ? dbits[i] : 0; });
 
   // mask + format, keep the lowest penalty
-  const MASKS = [ (r,c)=>(r+c)%2===0, (r,c)=>r%2===0, (r,c)=>c%3===0, (r,c)=>(r+c)%3===0,
-                  (r,c)=>(((r/2)|0)+((c/3)|0))%2===0, (r,c)=>((r*c)%2)+((r*c)%3)===0,
-                  (r,c)=>((((r*c)%2)+((r*c)%3))%2)===0, (r,c)=>((((r+c)%2)+((r*c)%3))%2)===0 ];
   let best = null, bestPen = Infinity;
   for (let mk = 0; mk < 8; mk++) {
-    const t = m.map((row, r) => row.map((v, c) => reserved[r][c] ? v : (MASKS[mk](r, c) ? v ^ 1 : v)));
-    /* Format info: 2 bits EC (M = 00) + 3 bits mask, BCH(15,5), xor 0x5412.
-       ⚠️ Bit 0 is the LSB and it starts at the TOP of the left strip and the
-       RIGHT END of the top strip. The two copies run in opposite directions
-       and each skips a lane — the vertical one steps over the timing row at 6,
-       the horizontal one over the timing column at 6. Transpose the two, or
-       number them from the wrong end, and you get a symbol that looks perfect
-       to the eye and that no scanner on earth will read. This was the bug. */
-    let fmt = mk, d = fmt << 10;
-    for (let i = 4; i >= 0; i--) if (d & (1 << (i + 10))) d ^= 0x537 << i;
-    const f = ((fmt << 10) | d) ^ 0x5412;
-    for (let i = 0; i < 15; i++) {
-      const bit = (f >> i) & 1;
-      if (i < 6) t[i][8] = bit;                       // down the left of the finder
-      else if (i < 8) t[i + 1][8] = bit;              //   …skipping the timing row
-      else t[N - 15 + i][8] = bit;                    // then up from the bottom edge
-      if (i < 8) t[8][N - 1 - i] = bit;               // in from the right edge
-      else if (i === 8) t[8][7] = bit;                //   …skipping the timing column
-      else t[8][14 - i] = bit;                        // then along the finder's top
-    }
+    if (forceMask !== undefined && mk !== forceMask) continue;
+    const t = m.map((row, r) => row.map((v, c) => reserved[r][c] ? v : (QR_MASKS[mk](r, c) ? v ^ 1 : v)));
+    const f = qrFormatBits(mk);
+    for (const pos of [qrFmtA(N), qrFmtB(N)])
+      pos.forEach(([r, c], i) => { t[r][c] = (f >> i) & 1; });
     t[N - 8][8] = 1;
     const pen = qrPenalty(t, N);
     if (pen < bestPen) { bestPen = pen; best = t; }
   }
-  return best;
+  /* ⚠️ Nothing leaves this function unread. See qrVerify. */
+  return qrVerify(best, str) ? best : null;
+}
+
+/* ── Read it back out, the way a scanner would ──────────────────────────────
+   Walks the finished matrix from scratch: recovers the format word, checks its
+   BCH, checks the two copies agree, unmasks with the mask it just recovered,
+   re-reads the zig-zag, de-interleaves, runs the Reed–Solomon syndromes, and
+   compares the decoded payload to the string that went in. Any failure and the
+   code is not shown at all.
+
+   ⚠️ Be precise about what this catches, because it is NOT everything.
+   It catches: a bad string, a version boundary never exercised, a mask branch
+   never taken, a block-interleave that only breaks at 2 or 4 blocks, an
+   encoder edited by someone in a hurry. Anything the DATA does.
+   It does NOT catch a shared misunderstanding of the geometry — if the format
+   coordinates were wrong, this would read them back from the same wrong place
+   and cheerfully agree. That was the actual v1.16 bug, and only an outside
+   reference catches that class. That is what tools/qr-check.js is for, and it
+   is why its expected matrices must never be regenerated from this file.
+   The two layers answer different questions. Keep both. */
+function qrVerify(m, str) {
+  try {
+    if (!Array.isArray(m) || !m.length) return false;
+    const N = m.length, ver = (N - 17) / 4, cfg = QR_M[ver];
+    if (!cfg || !Number.isInteger(ver)) return false;
+    if (m.some(row => row.length !== N || row.some(v => v !== 0 && v !== 1))) return false;
+    if (m[N - 8][8] !== 1) return false;                    // the dark module
+
+    // format word — both copies, and it has to be a legal BCH codeword
+    const readAt = pos => pos.reduce((a, [r, c], i) => a | (m[r][c] << i), 0);
+    const fA = readAt(qrFmtA(N)), fB = readAt(qrFmtB(N));
+    if (fA !== fB) return false;
+    const mk = (fA ^ 0x5412) >> 10;
+    if (mk < 0 || mk > 7) return false;
+    if (qrFormatBits(mk) !== fA) return false;              // EC level M, intact BCH
+
+    /* Every function module, compared against a frame built from scratch.
+       ⚠️ Easy to skip, because the payload decodes fine without it — and then
+       a damaged finder or a broken timing run ships, which is the one thing a
+       scanner needs BEFORE it can read a single bit. The format strips are
+       excluded here; they carry the mask and are checked by their own BCH. */
+    const frame = qrFrame(cfg);
+    const fmtCells = new Set([...qrFmtA(N), ...qrFmtB(N)].map(([r, c]) => r * N + c));
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
+      if (frame.reserved[r][c] && !fmtCells.has(r * N + c) && m[r][c] !== frame.m[r][c]) return false;
+
+    // unmask and re-read the data lane
+    const reserved = frame.reserved;
+    const path = qrPath(N, reserved);
+    const bits = path.map(([r, c]) => m[r][c] ^ (QR_MASKS[mk](r, c) ? 1 : 0));
+    const nb = cfg.blocks[0], dpb = cfg.blocks[1], total = nb * (dpb + cfg.ec);
+    if (bits.length < total * 8) return false;
+    const cw = [];
+    for (let i = 0; i < total; i++)
+      cw.push(bits.slice(i * 8, i * 8 + 8).reduce((a, b) => (a << 1) | b, 0));
+    /* The leftover modules past the last codeword. A scanner ignores them, so
+       this is not a correctness requirement — it is the encoder's own
+       signature, and asserting it is what lets the gate say the absolute
+       thing: NO single-module change to a finished symbol survives the check. */
+    for (let i = total * 8; i < bits.length; i++) if (bits[i] !== 0) return false;
+
+    // de-interleave, then prove every block is error-free rather than repairing it
+    const dat = [];
+    for (let b = 0; b < nb; b++) {
+      const blk = [];
+      for (let i = 0; i < dpb; i++) blk.push(cw[i * nb + b]);
+      dat.push(...blk);
+      for (let i = 0; i < cfg.ec; i++) blk.push(cw[nb * dpb + i * nb + b]);
+      for (let j = 0; j < cfg.ec; j++) {                   // syndromes must all be zero
+        let s = 0;
+        for (const byte of blk) s = gmul(s, GF_EXP[j]) ^ byte;
+        if (s !== 0) return false;
+      }
+    }
+
+    // payload
+    const pb = [];
+    for (const b of dat) for (let i = 7; i >= 0; i--) pb.push((b >> i) & 1);
+    const num = (o, n) => pb.slice(o, o + n).reduce((a, b) => (a << 1) | b, 0);
+    if (num(0, 4) !== 4) return false;                      // byte mode
+    const len = num(4, 8), out = [];
+    if (12 + len * 8 > pb.length) return false;
+    for (let i = 0; i < len; i++) out.push(num(12 + i * 8, 8));
+    return new TextDecoder().decode(new Uint8Array(out)) === str;
+  } catch (e) { return false; }
 }
 
 /* All four penalty rules, not the cheap two. The short version happily picks a
@@ -4352,6 +4559,8 @@ function qrPenalty(t, N) {
   return pen;
 }
 
+/* qr:end */
+
 /* Moonlight ground, violet-black modules — the palette, at 15:1 contrast.
    The four-module quiet zone lives in the viewBox so it can't be styled away;
    without it the code sits on the panel edge and half of scanners give up. */
@@ -4366,17 +4575,34 @@ function qrSvg(m) {
 
 /* What a facilitator sends. Short enough to forward, and it says what tapping
    it will do — nobody opens an unexplained link from a group text. */
-const shareText = () => `Tonight's session. Open this on your phone. Code ${L.code || ''}.`;
+const shareText = () => {
+  const S = shareSession();
+  return `${S && S.title ? S.title : "Tonight's session"}. Open this on your phone. Code ${(S && S.room && S.room.code) || ''}.`;
+};
 
 function showShare() {
-  $('shareCode').textContent = L.code || '————';
-  const u = joinUrl(L.code);
+  const S = shareSession();
+  const room = S ? roomFor(S) : null;
+  const code = room ? room.code : null;
+  $('shareCode').textContent = code || '————';
+  const u = joinUrl(code);
   $('shareUrl').textContent = u.replace(/^https?:\/\//, '');
-  const m = L.code ? qrEncode(u) : null;
+  const m = code ? qrEncode(u) : null;
   $('shareQR').innerHTML = m ? `<div class="qrcard" id="shareCard">${qrSvg(m)}</div>` : '';
-  $('shareQRHint').style.display = m ? 'block' : 'none';
+  /* ⚠️ Never a silently missing code. qrEncode refuses rather than draw
+     something unscannable, and a blank space where a code should be is the
+     same failure as a code that doesn't work — say it, and the link is still
+     right there. */
+  $('shareQRHint').innerHTML = m
+    ? 'Point a camera at it. Tap it to fill the screen &mdash; then set the phone down by the door and let people come to it.'
+    : '<b style="color:var(--red)">No code for this link.</b> It’s too long to draw, or the check refused it &mdash; send the link below instead.';
+  $('shareSave').style.display = m ? '' : 'none';
+  $('shareMade').textContent = room && room.made
+    ? `code made ${prettyStamp(room.made)} — it stays this code until you change it`
+    : '';
   $('shareSend').style.display = navigator.share ? '' : 'none';
   $('shareCopy').textContent = 'Copy link';
+  $('shareSave').textContent = 'Save the code';
   /* ⚠️ Without a relay, Net.join falls back to BroadcastChannel — same device,
      across tabs, and nothing else. A leader staring at "Waiting for the first
      device" forever, in the dark, before a session, is the worst silent failure
@@ -4386,23 +4612,91 @@ function showShare() {
   paintShareCount();
   $('shareOvl').classList.add('open');
   const card = $('shareCard');
-  if (card) card.onclick = () => showQRFull(m);
+  if (card) card.onclick = () => showQRFull(m, code);
 }
 
 /* The whole glass, and nothing else on it. This is the version that works in a
    room: the leader sets the phone or the iPad down and walks away, and people
    scan it on their way in. Wake lock, or it goes dark in thirty seconds and
    the first person to arrive finds a black rectangle. */
-function showQRFull(m) {
+function showQRFull(m, code) {
   if (!m) return;
   $('qrFullSvg').innerHTML = qrSvg(m);
-  $('qrFullCode').textContent = L.code || '';
+  $('qrFullCode').textContent = code || '';
   $('qrFull').classList.add('open');
   requestWake();
 }
 
+/* ── The card, as a picture ─────────────────────────────────────────────────
+   A code on a screen dies when the phone locks. A code in the camera roll can
+   go in the event's group chat, on a story, or printed and taped by the door —
+   and it survives the app being closed.
+
+   ⚠️ THE DATE IS NOT DECORATION. A saved image outlives its session, so a
+   screenshot found six weeks later is a dead code that looks like a broken
+   product. Stamped with the day it was minted, a spent code is recognisable as
+   spent. Anything that ever renders this card carries the date, or it doesn't
+   ship. */
+function qrCardCanvas(m, code, made, url) {
+  const N = m.length, S = 12, pad = 4;                 // 12px per module, 4-module quiet zone
+  const w = (N + pad * 2) * S, h = w + 190;
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const g = cv.getContext('2d');
+  g.fillStyle = QR_GROUND; g.fillRect(0, 0, w, h);
+  g.fillStyle = QR_INK;
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
+    if (m[r][c]) g.fillRect((c + pad) * S, (r + pad) * S, S, S);
+  g.textAlign = 'center';
+  g.font = '600 26px ' + "'Didot','Bodoni MT',Georgia,serif";
+  g.letterSpacing = '14px';
+  g.fillText('BED', w / 2 + 7, w + 6);
+  g.letterSpacing = '18px';
+  g.font = '64px ' + "'Didot','Bodoni MT',Georgia,serif";
+  g.fillText(code, w / 2 + 9, w + 78);
+  g.letterSpacing = '0px';
+  g.fillStyle = '#6b6480';
+  // shrink to fit rather than run off the edge — preview hosts get long
+  const short = url.replace(/^https?:\/\//, '');
+  let size = 20;
+  do { g.font = size + 'px -apple-system,"SF Pro Text",system-ui,sans-serif'; size--; }
+  while (size > 10 && g.measureText(short).width > w - 40);
+  g.fillText(short, w / 2, w + 118);
+  g.font = '18px -apple-system,"SF Pro Text",system-ui,sans-serif';
+  g.fillText(prettyStamp(made), w / 2, w + 152);
+  return cv;
+}
+
+function saveShareImage() {
+  const S = currentSession(), room = S && S.room;
+  if (!room) return;
+  const url = joinUrl(room.code), m = qrEncode(url);
+  const btn = $('shareSave');
+  if (!m) { btn.textContent = 'Can’t draw a code'; return; }
+  const cv = qrCardCanvas(m, room.code, room.made, url);
+  const name = `bed-${room.code}-${room.made}.png`;
+  cv.toBlob(blob => {
+    if (!blob) { btn.textContent = 'Couldn’t save'; return; }
+    const file = new File([blob], name, { type: 'image/png' });
+    /* iOS gives "Save Image" in the share sheet; there is no other way onto a
+       camera roll from a web page. Desktop has no share sheet, so it falls
+       through to a plain download, which is where a Mac wants it anyway. */
+    if (navigator.canShare?.({ files: [file] })) {
+      navigator.share({ files: [file] }).catch(() => {});
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    btn.textContent = 'Saved';
+    setTimeout(() => { btn.textContent = 'Save the code'; }, 1600);
+  }, 'image/png');
+}
+
 function copyShareLink() {
-  const u = joinUrl(L.code), btn = $('shareCopy');
+  const S = shareSession();
+  const u = joinUrl(S && S.room && S.room.code), btn = $('shareCopy');
   const done = () => { btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = 'Copy link'; }, 1600); };
   /* Safari only gives you the async clipboard on https, and a facilitator
      testing over a plain-http LAN address is a real case. Fall back rather
@@ -4432,6 +4726,14 @@ function followerApply(msg) {
   document.body.classList.toggle('live', !!msg.live);
   const fv = $('followerView');
   fv.classList.toggle('after', !!msg.end);
+  /* ⚠️ Connected-but-not-begun is its OWN state, not a blank sheet and not the
+     first section shown early. It is what makes the pre-flight test work
+     without anyone being told to run one: the leader watches the count go up,
+     the person holding the phone reads "You're in", and both ends have
+     confirmed before the room fills. It is also what an early joiner sees when
+     they tap a link that was sent out the day before. */
+  fv.classList.toggle('ready', !msg.live && !msg.end);
+  if (!msg.live && !msg.end) { $('fReadyName').textContent = T.S.title || ''; return; }
   if (msg.end) {
     const poem = T.S.sections.map(x => x.phrase).filter(Boolean).join(' / ');
     $('faPoem').textContent = poem || T.S.subtitle || T.S.title || '';

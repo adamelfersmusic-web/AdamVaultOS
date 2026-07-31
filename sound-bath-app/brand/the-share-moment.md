@@ -84,11 +84,15 @@ horizontal.* Same instinct, same reason: the thing that looks like a harmless
 aesthetic choice is the thing that quietly breaks the mechanism, and it breaks
 it in front of people.
 
-**None of this was decided by taste.** The encoder was checked byte-for-byte
-against an independent reference encoder across 32 join URLs, then the app's
-own rendered screen was screenshotted at phone resolution and decoded back
-out. The rounding and colour numbers above are measurements, not opinions. If
-someone wants to make the code prettier later, that's the bar: re-run it.
+**None of this was decided by taste.** The rounding and colour numbers above
+are measurements, not opinions — decoder runs, not judgement calls. If someone
+wants to make the code prettier later, that's the bar: re-run it.
+
+The encoder itself is checked on every deploy against an independent
+implementation, and the app reads every code back before it shows it. That
+whole apparatus, and the bug that caused it, is in
+[`things-only-machines-read.md`](things-only-machines-read.md) — read it before
+touching the encoder.
 
 ---
 
@@ -109,58 +113,68 @@ still ~12:1. Do not invert it.
 
 ---
 
-## Adam's considerations — filed, not built
+## Adam's dissemination notes — all four shipped in v1.17
 
-From the same message. All good, none of them shipped in v1.16; this is the
-list to work from next.
+Filed from his message the same night, then built.
 
-### Save the code to the camera roll
+### Save the code to the camera roll ✅
 > *"Can you actually save the QR to your camera roll as facilitator, or do you
 > have to keep it on screen?"*
 
-**Worth building, and it's small.** A saved image is a code that survives the
-app being closed, the phone locking, the battery dying, and the leader wanting
-their screen back for something else. It also makes the code postable — into
-the event's group chat, onto a story, printed on a card by the door. Render the
-SVG to a canvas, `toBlob`, and either `navigator.share({files})` (iOS gives
-*Save Image*) or a plain `download` attribute.
+**Save the code** renders the card to a canvas and hands it to the OS —
+`navigator.share({files})`, which on iOS offers *Save Image*; a plain download
+on desktop. Now it can go in the event's group chat, on a story, or printed and
+taped by the door, and it survives the app being closed and the phone locking.
 
-**The catch worth knowing before it's built:** a saved image is a code that
-outlives its session. Room codes are per-session, so a screenshot from last
-month is a dead code and looks like a broken product. Whatever ships should put
-the date on the image.
+**⚠️ The date on the image is not decoration.** A saved image outlives its
+session — a screenshot found six weeks later is a dead code that looks like a
+broken product. The card carries *31 Jul 2026* under the URL, and the filename
+is `bed-VXZF-2026-07-31.png`. Anything that ever renders this card carries the
+date or it doesn't ship.
 
-### Screenshot it
-Already works, for free, today. Worth saying out loud in the note above the
-button rather than building anything.
+### Screenshot it ✅
+Worked for free the whole time. Now there's a real button, which is better,
+because a screenshot has the browser chrome in it.
 
-### Send the link out beforehand
+### Send the link out beforehand ✅ — this was the biggest one
 > *"You could even send out the link to people beforehand, so as soon as they
 > arrive they just click it."*
 
-**This is the strongest one on the list and it isn't a feature — it's a
-sentence in the event description.** It also fixes the cold-relay wait for
-free: people who tapped the link in the parking lot are already connected. The
-thing that would make it real is a **code that survives being made in advance**
-— today the code is minted when the session opens. Filed as the actual
-requirement behind this: *a leader should be able to get tomorrow's link
-today.*
+Adam called it a sentence in the event description rather than a feature. It
+was both — the feature underneath was that **the code didn't exist until the
+leader pressed BEGIN.**
 
-### Set the iPad down / pass the phone
-Both are the full-screen mode, which shipped. The iPad-on-a-stand version is
-the one to design for: it's the only one that scales past about eight people,
-and it needs the screen to stay awake — which it now does.
+Now the room code belongs to the **session**, not to the broadcast: minted the
+first time it's asked for and kept, through reloads, through re-runs, until
+someone deliberately taps **New code**. *Share the sheet* moved to the Design
+screen, before BEGIN, so tomorrow's link can be posted today.
 
-### ⚠️ Always test before it starts
+And it fixes the cold-relay wait for the whole room for free — people who
+tapped the link in the car park are already connected before anyone lies down.
+
+### Set the iPad down / pass the phone ✅
+The full-screen mode, shipped in v1.16, with the wake lock held. Still the only
+one of these that scales past about eight people.
+
+### ⚠️ Always test before it starts ✅
 > *"You should always do a brief test, probably before it starts, to make sure
 > everything syncs."*
 
-**This is a product requirement disguised as advice.** If the leader has to
-remember to test, some night one of them won't, and the failure lands in front
-of a room. The share dialog already says *"Waiting for the first device"* and
-then counts them — that's the test, and it's passive. What's missing is the
-other end: **the follower should be able to tell that they're connected before
-anything is happening.** Filed alongside the waiting state added in v1.15.
+**A product requirement wearing advice's clothes.** If the leader has to
+remember, one night one of them won't, and it fails in front of a room. So the
+test is now a thing they're already looking at, from both ends:
+
+- **The leader**, in the share dialog they're holding up anyway: *"2 devices
+  connected — scan one more to be sure, then begin."*
+- **The follower**, which is the half that was missing: *"You're in"*, with the
+  session's name, and *the sheet appears when the session begins*.
+
+Connected-but-not-begun is now its own state rather than a blank sheet — which
+is also exactly what an early joiner sees, so one piece of design answers both
+the pre-flight and the link sent out yesterday.
+
+> **A check nobody has to remember is the only kind that survives contact with
+> a real night.**
 
 ---
 

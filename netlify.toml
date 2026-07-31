@@ -14,9 +14,24 @@
 # live under sound-bath-app/ and must never get a public URL. Publishing the
 # folder wholesale would have handed out the pricing strategy to anyone who
 # guessed the path.
+#
+# ── ⚠️ The QR gate runs here, on the deploy path, on purpose ────────────────
+# A wrong QR code has no visible failure mode: it looks completely normal and
+# simply never scans, and you find out in front of a room. A check that depends
+# on someone remembering to run it will, one day, not be run. So it is the
+# first line of the build — if the encoder in app/index.html stops agreeing
+# with an independent implementation, the build FAILS and the broken code never
+# reaches the CDN. Takes 0.6s and needs nothing installed.
+# ⚠️ `set -e` is load-bearing. A multi-line build command reports the exit
+# status of its LAST line, so without it a failed check is followed by a
+# successful copy and Netlify publishes the broken build with a green tick —
+# a gate that reports nothing but its own presence.
+# See sound-bath-app/tools/README.md.
 [build]
   publish = "_site"
   command = """
+    set -e
+    node sound-bath-app/tools/qr-check.cjs
     rm -rf _site && mkdir -p _site
     cp -R sound-bath-app/site/. _site/
     cp -R sound-bath-app/app _site/app
