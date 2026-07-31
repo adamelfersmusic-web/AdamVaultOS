@@ -9,6 +9,47 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.9 — the relay can actually be deployed · 2026-07-31
+
+`RELAY_URL = ''` is the one line standing between Bed and everything downstream
+of it — the ensemble, the workshop, Lumen pads, the first night in Ohio. So the
+path to filling it in got cleared.
+
+### The relay would have failed to deploy, and the error wouldn't have said why
+
+`server.js` was a bare `WebSocketServer({ port })`. **Render, Railway and Fly all
+detect and health-check a service by making a plain HTTP request to its port** —
+and a bare ws server answers nothing on HTTP. The platform concludes the service
+never started and kills it, logging *"no open ports detected"* and **nothing at
+all about websockets.**
+
+`ws` is now attached to an `http.createServer`, and `GET /` returns
+`{"ok":true,"service":"bed-relay","rooms":N}` — the health check the platform is
+looking for, and something a human can open in a browser. Room *count* only,
+never codes.
+
+**Verified rather than reasoned about:** the server was started, the health check
+fetched, and two clients joined room `VXZF` — one sent, the other received.
+
+### Also in the relay
+- **A 30-second ping**, dropping whatever stops answering. Free tiers idle out
+  and proxies drop quiet sockets after ~60s — and **a drone holds for fifty
+  minutes without anyone sending a thing**, which is exactly the shape that gets
+  disconnected.
+- **`render.yaml`** — root dir, build, start, health check. New → Blueprint →
+  this repo, nothing to type.
+
+### `?relay=wss://…` — prove it before you commit it
+
+A new relay can now be tested from two real devices *before* its address is
+written into the app. Test with the param, then paste it into `RELAY_URL` once.
+
+**`RELAY_URL` stays the shipped default, deliberately:** set once, in code, so
+every device that loads the app has it. **A follower must never have to configure
+anything.** The param is for the ten minutes before you're sure.
+
+---
+
 ## v1.8 — a follower's phone doesn't sleep, and it says so · 2026-07-31
 
 Adam: *"we have to take note and make this dead simple so follower apps don't

@@ -39,18 +39,41 @@ different service building `public/` via Actions for a different product.
 Without it the app still runs completely; sync just stays same-device (across
 tabs). With it, phones in the room follow the leader.
 
-1. Deploy `sound-bath-app/relay/` to Render, Railway or Fly — pick "Node", the
-   start command is `npm start`. It is ~30 lines and **stores nothing**: a room
-   exists only while someone is in it. No database, no accounts, no session
-   data at rest.
-2. Copy the resulting host.
-3. In `app/index.html`, set:
+It is ~40 lines and **stores nothing**: a room exists only while someone is in
+it. No database, no accounts, no session data at rest.
+
+1. **Render → New → Blueprint**, point it at this repo. `relay/render.yaml`
+   already sets root dir, build command, start command and health check —
+   there is nothing to type. *(Railway and Fly work the same way: Node, root
+   `relay/`, `npm start`.)*
+2. **Check it came up.** Open `https://<your-host>/` in a browser. You should
+   see `{"ok":true,"service":"bed-relay","rooms":0}`. That endpoint exists so a
+   failure is visible in one click instead of in a dark room.
+3. **Prove it with two real devices before committing the address.** Open the
+   app on both, with the relay passed in:
+
+   ```
+   …/app/?relay=wss://your-relay-host
+   ```
+
+   Share the sheet on one, join on the other. If the follower's sheet follows,
+   the relay works.
+4. **Then make it permanent** — in `app/index.html`:
 
    ```js
    const RELAY_URL = 'wss://your-relay-host';
    ```
 
-4. Push. Done.
+   Set once, here, so every device that loads the app has it. **A follower must
+   never have to configure anything.**
+5. Push. Done.
+
+> **Why there is an HTTP server inside a websocket relay:** Render, Railway and
+> Fly detect and health-check a service by making a plain HTTP request to its
+> port. A bare `WebSocketServer({ port })` answers nothing on HTTP, so the
+> platform concludes the service never started and kills it — logging *"no open
+> ports detected"* and nothing at all about websockets. That is a genuinely
+> confusing hour, and the http server is what avoids it.
 
 ---
 

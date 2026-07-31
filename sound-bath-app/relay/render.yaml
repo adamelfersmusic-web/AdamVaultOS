@@ -1,0 +1,11 @@
+# One-click deploy. In Render: New → Blueprint → point at this repo.
+# Everything below is what you'd otherwise type into the dashboard by hand.
+services:
+  - type: web
+    name: bed-relay
+    runtime: node
+    plan: free
+    rootDir: relay
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
