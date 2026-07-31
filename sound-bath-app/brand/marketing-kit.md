@@ -40,7 +40,7 @@ people, and light.
 | 6 | 0:52–1:02 | Doorway, night | People arriving who didn't know this existed on Monday. Shoes off. Someone greeted by name. | Murmur; the drone already faintly underneath |
 | 7 | 1:02–2:22 | The room. Eighty seconds. Slow, wide, patient | Live players. Candlelight. Sixty people on the floor. The leader moves between bowls. A flute stands. Chimes roam. The camera never finds a screen. | The session, full. This is the whole pitch |
 | 8 | inside 7 | A hand raised mid-session — **SCREEN 3** | The leader's hand comes up, mallet still in it. One-second insert: a thumb resting on the amber-ringed GO, the ring nearly full, the word HOLD breathing. Back to the wide: the whole room's sound turns together, ten players, no click track, no caption. Outsiders read atmosphere. Practitioners sit up. | The turn itself — a key migrating under held bowls |
-| 9 | 2:22–2:40 | After. Warm, loose, handheld | Mats being stacked. Someone smiling, flushed. To a friend: **"We made it happen."** Cut to black. Ring mark, BED, *holding space*. | Room tone; chimes decaying |
+| 9 | 2:22–2:40 | After. Warm, loose, handheld | Mats being stacked. Someone smiling, flushed. To a friend: **"We made it happen."** Cut to black. End card, ink on the violet-black ground: **"Say yes on Thursday."** Then the ring mark, BED, *holding space*. | Room tone; chimes decaying |
 
 ---
 
@@ -51,17 +51,18 @@ The settled lines, in the order you'd reach for them:
 1. *You already have the love, the instruments, and the presence. This is the
    first thing that lets you lead with them.*
 2. *One violin player becomes a symphony.*
-3. *The sound design was never the art. Leading the room is.*
-4. *It plays only what humans physically can't — the floor, the drone, the
+3. **Say yes on Thursday.** — the short form; use the long form where it needs
+   its setup: *The promise isn't better sound baths. It's that you can say yes
+   on Thursday.*
+4. *The sound design was never the art. Leading the room is.*
+5. *It plays only what humans physically can't — the floor, the drone, the
    air.* (lifted verbatim from the app's own ensemble screen; extraction, not
    invention)
-5. *The promise isn't better sound baths. It's that you can say yes on
-   Thursday.*
 
-**Proposed, not replacing** (per the "propose in a note" rule): a compressed
-card-back variant of #5 — **"Say yes on Thursday."** Four words, carries the
-whole story once the film exists. The settled long form stays canonical until
-someone decides otherwise.
+**Provenance note:** #3's short form was proposed in v1 under the "propose in
+a note, don't silently replace" rule, and ratified by Adam the same day. It is
+now settled: it closes the landing page and the film's end card. The long form
+remains canonical wherever the story hasn't been told yet.
 
 ---
 
