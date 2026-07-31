@@ -6,10 +6,12 @@ kit and the app disagree, the app wins, then fix the app.
 **The one rule that governs everything:** amber `#d9a544` means *live and
 making sound*. Nothing else may ever wear it.
 
-**Open decision:** the mark. Two candidates exist — the amber ring extracted
-from the app, and a four-layer stack from an independent design pass. Scored
-side by side in [`mark-comparison.html`](mark-comparison.html). Neither is
-adopted; the wordmark (didone caps, tracked `.28em`) is settled either way.
+**The mark is settled:** the four-layer stack — sub, drone, motif, texture — in
+**ink, static, one master**. The amber ring was demoted to what it always was,
+the GO control, so amber no longer appears anywhere in the identity. Reasoning
+in [`mark-comparison.html`](mark-comparison.html) and
+[`mark-decision.md`](mark-decision.md); the wordmark (didone caps, `.28em`) is
+unchanged.
 
 | Piece | Where |
 |---|---|
@@ -23,6 +25,8 @@ adopted; the wordmark (didone caps, tracked `.28em`) is settled either way.
 | **Structural language audit** — is the sound bath taxonomy our own words? | [`structure-language-audit.md`](structure-language-audit.md) |
 | **Sync is the product** — why multi-device is the business, not a feature | [`sync-is-the-product.md`](sync-is-the-product.md) |
 | Sync technical spec — wire format, join flow, seams | [`sync-spec.md`](sync-spec.md) |
+| **Distribution & saving** — deploy, storage, and the staged plan | [`distribution-and-saving.md`](distribution-and-saving.md) |
+| Mark decision — the review that settled the stack | [`mark-decision.md`](mark-decision.md) |
 | **Structure & flow** — "a playlist can't hold", the concrete scenes | [`marketing-the-flow.md`](marketing-the-flow.md) |
 | Mark comparison — ring vs stack | [`mark-comparison.html`](mark-comparison.html) (open in a browser — a decision doc, nothing adopted yet) |
 
