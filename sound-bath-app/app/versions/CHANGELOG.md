@@ -9,6 +9,49 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.10 — it points at the relay already, and says what the relay is doing · 2026-07-31
+
+Adam: *"is it possible to fix it so when I wake up tomorrow I can join my phone."*
+Close to it. **The app no longer needs a second edit or a second push** — deploy
+the blueprint and it connects.
+
+### RELAY_URL now points at the host the blueprint creates
+
+`relay/render.yaml` names the service `bed-relay`, which on Render becomes
+`bed-relay.onrender.com`. So:
+
+```js
+const RELAY_URL = 'wss://bed-relay.onrender.com';
+```
+
+**Deploy the blueprint and that's it** — no editing, no pushing, no waiting for
+another build. And because `_ws` retries with backoff, a device left open will
+join **the moment the relay comes up**, without anyone reloading anything.
+
+*(If the service ends up named differently, change that one string.)*
+
+### And the app says what the relay is doing
+
+Pointing at a host that might not exist yet would have been irresponsible
+without this. **A leader must never have to infer, from an empty device count,
+whether the problem is the relay, the code, or the other phone.** So the share
+dialog now carries one line:
+
+| | |
+|---|---|
+| **relay connected** | it's up, devices can join |
+| *reaching the relay…* | trying |
+| **relay not answering — retrying** | (red) it isn't deployed, or it's asleep |
+
+**Both states verified against a real server**, not reasoned about: the relay was
+run locally, the app pointed at it, and then pointed at a dead port.
+
+> Render's free tier sleeps after 15 minutes idle and takes ~30 seconds to wake.
+> *"Relay not answering — retrying"* going green after half a minute is that, not
+> a fault. Open the share dialog a minute before anyone arrives.
+
+---
+
 ## v1.9 — the relay can actually be deployed · 2026-07-31
 
 `RELAY_URL = ''` is the one line standing between Bed and everything downstream
