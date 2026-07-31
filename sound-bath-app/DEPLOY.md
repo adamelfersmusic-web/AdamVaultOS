@@ -42,9 +42,10 @@ tabs). With it, phones in the room follow the leader.
 It is ~40 lines and **stores nothing**: a room exists only while someone is in
 it. No database, no accounts, no session data at rest.
 
-1. **Render → New → Blueprint**, point it at this repo. `relay/render.yaml`
-   already sets root dir, build command, start command and health check —
-   there is nothing to type. *(Railway and Fly work the same way: Node, root
+1. **Render → New → Blueprint**, point it at this repo. **`render.yaml` at the
+   repo root** already sets root dir, build command, start command and health
+   check — there is nothing to type. *(It has to be at the root: Render reads
+   Blueprints from there and nowhere else.)* *(Railway and Fly work the same way: Node, root
    `relay/`, `npm start`.)*
 2. **Check it came up.** Open `https://<your-host>/` in a browser. You should
    see `{"ok":true,"service":"bed-relay","rooms":0}`. That endpoint exists so a

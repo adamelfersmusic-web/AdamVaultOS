@@ -1,0 +1,16 @@
+# ⚠️ This file must live at the ROOT of the repository, not in relay/.
+# Render only reads a Blueprint named render.yaml from the repo root; anywhere
+# else and "New → Blueprint" reports that it found nothing. rootDir below is
+# what points it at the relay.
+#
+# One-click deploy:  Render → New → Blueprint → pick this repo → Apply.
+# Everything here is what you would otherwise type into the dashboard by hand.
+services:
+  - type: web
+    name: bed-relay
+    runtime: node
+    plan: free
+    rootDir: relay
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
