@@ -107,3 +107,33 @@ population.
 That is worth saying out loud, because it means the sequencing is simpler than
 it looks: **find and serve fifteen practitioners properly, and every one of
 these becomes available at once.**
+
+---
+
+## The couchsurfing framing — and why it's the right one
+
+Adam's word for it, and it is better than "directory": **a couchsurfing of
+sound bath practitioners.** Not a booking platform — a network of people who
+host each other, based on trust and reciprocity rather than transactions.
+
+**It explains the founding story.** *"Musicians you love are passing through
+town"* currently requires you to already know musicians. Most practitioners
+don't — that is exactly the gap Adam can see and they can't.
+
+> **The network is what makes the Thursday story available to someone without
+> Adam's rolodex.**
+
+That reframes it entirely. The network is not a second business bolted onto the
+product; it is the mechanism that makes the core promise reachable. A
+practitioner in a city they've never played gets the same Thursday.
+
+And it runs both directions, which is what makes it a network rather than a
+list: players travel and sit in; practitioners host; whoever hosted gets hosted.
+Reciprocity, not invoicing.
+
+**The cautionary tale is in the name.** Couchsurfing was a genuinely beloved
+network whose asset was trust, and it damaged itself badly by monetising that
+trust directly. The lesson transfers exactly: **charge for the instrument,
+never for the introduction.** The network's job is to make sessions happen;
+sessions sell leader licences, packs and rentals. The moment a booking fee
+appears, the thing that made it worth joining is gone.

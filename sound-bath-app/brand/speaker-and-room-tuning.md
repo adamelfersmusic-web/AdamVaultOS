@@ -108,12 +108,7 @@ also stays on the right side of the app's own rule (audit A8): **it diagnoses,
 it does not prescribe.** It reports what the building is doing; it never
 reroutes the session. The leader decides.
 
----
-
-
-
-Before anyone arrives, the app plays a slow sine sweep through the actual
-speaker, listens on the phone's own microphone, and computes what came back.
+### What one measurement gives you
 
 **One short step during setup answers everything at once:** which speaker,
 where it's placed, how the room's modes behave, and whether the corner it's
@@ -145,7 +140,7 @@ Worth stating plainly, because this is the tier that could quietly not work:
 
 ### Why it degrades safely
 
-If the sweep fails, is refused, or looks implausible, fall back to Tier 2. If
+If the measurement fails, is refused, or looks implausible, fall back to Tier 2. If
 there's no profile, fall back to Tier 1 — which is already shipping and already
 correct. **Every tier is an improvement on a floor that already works**, so
 none of this is load-bearing.
