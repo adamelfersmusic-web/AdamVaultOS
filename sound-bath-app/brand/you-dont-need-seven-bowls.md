@@ -86,3 +86,58 @@ it's the arrangement the engine was designed around.
 practitioners can't play an instrument at that level. A sound bath with a real
 guitarist over a held floor is a *different event*, and the first night in Ohio
 is the place to find out how different.
+
+---
+
+## Handpan in Bed — and which one to buy
+
+2026-07-31. Adam: *"I want to get one of those handpans… that would also be sick
+in Bed, and no one really uses something like that in a sound bath."*
+
+**Right, and there is a trap worth knowing before spending the money.**
+
+### The conflict nobody would see coming
+
+**A handpan cannot change key. Bed's signature move is changing key.** A handpan
+is hammered to one fixed scale — that's the instrument, not a limitation of a
+model — so a session that migrates from C to F to A will leave a handpan player
+stranded in most of it.
+
+That is a genuine collision between the product's best feature and the
+instrument, and it decides *which handpan to buy.*
+
+### The answer: **D Kurd**, and here is the arithmetic
+
+D Kurd gives you **D E F G A B♭ C**. Run it against Bed's seven chakra keys:
+
+| Chakra | Key | D Kurd |
+|---|---|---|
+| 2 Sacral | **D** | ✅ exact — D minor |
+| 4 Heart | **F** | ✅ exact — F major |
+| 5 Throat | **G** | ✅ exact — G **dorian** *(already in `MODES`)* |
+| 6 Third Eye | **A** | ✅ exact — A phrygian |
+| 1 Root | **C** | 🟡 six of seven; only the leading tone B is missing |
+| 3 Solar Plexus | **E** | ❌ |
+| 7 Crown | **B** | ❌ |
+
+**Five of seven, four of them exact.** That is not a coincidence — it's why D
+Kurd is the most common handpan there is. **Build sessions that live in D, F, A,
+G and C, and the handpan plays the whole night.**
+
+### And Bed already works this out for you
+
+Enter it as a **custom kit** — `D E F G A Bb C` — and the sheet does the rest.
+`buildKit()` parses flats, and the bracket algorithm grades every section as
+*freely / sparingly / rest, it fights the key*. **So an E-major section will
+simply tell you to rest**, in the same notation the bowls use, without anyone
+special-casing anything.
+
+The app was built for bowls and handles a handpan correctly on the first try,
+because the sheet was always computed from **pitches you own**, not from bowls.
+
+### Why it's worth doing at all
+
+*"No one really uses something like that in a sound bath"* is the whole point.
+The differentiator isn't the handpan — it's that **Bed makes a fixed-key
+instrument workable in a session that moves**, which is exactly the problem that
+keeps handpans out of these rooms.
