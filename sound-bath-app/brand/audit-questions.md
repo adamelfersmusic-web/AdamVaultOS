@@ -94,6 +94,33 @@ before its entry)?
 **Lean: maybe — one pulse, 60s before a band enters or exits.** It's the
 band-row equivalent of "next — Chimes." Prototype it, feel it live.
 
+**A11 · ✅ SHIPPED — the sub no longer asks a question nobody can answer.**
+"Small speaker" was a toggle asking a practitioner whether their speaker
+reaches 40 Hz. Most don't know, and **the failure was silent**: get it wrong
+and the Deep band — the one thing nothing else in the space has — simply isn't
+there, with nothing on screen saying so. BOOK is explicit: *"Never ask whether
+the user has a sub — most don't know. Always reinforce at a level masked when
+the real fundamental is present."*
+
+Worse, it was a single setting for a floor that **moves**. The sub sits
+anywhere from 38–74 Hz depending on key, so one toggle was wrong by up to an
+octave the moment a session migrated.
+
+Now automatic and pitch-scaled: `subReinforce(hz) = clamp((70 - hz) / 30, 0.15, 1)`
+— full reinforcement near 40 Hz where almost nothing in a yoga studio
+reproduces it, nearly none by 70 Hz where most speakers do. It updates on every
+key migration, including through the duck-out path a large leap takes.
+
+**Why it's safe on a real rig:** the harmonics sit far enough under the
+fundamental to be masked when it's actually present — on a system with a true
+sub you hear the fundamental, not the help. *That is the contract, and it's the
+thing to listen for.* If it ever proves audible on a good system, the fix is
+the constant in `subReinforce`, not a control returning to the UI.
+
+→ **Open:** verify by ear on a rig with a real sub (Adam's), and on a Bose S1
+(rolls off ~62 Hz, so a C session's floor was previously near-absent without
+the toggle). Two A/B listens settle it.
+
 **A10 · Landscape and the leader's station.**
 Perform is a portrait column. On an iPad lying flat next to the bowls — a
 likely prop — landscape may be the natural orientation. Verified portrait only.

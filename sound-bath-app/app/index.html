@@ -582,14 +582,10 @@ body.live #goBtn .glabel { color: var(--amber); }
               <span class="sd" style="display:block">Six cycles a minute &mdash; a timbral property of the sub, not a dynamic. The one deliberate exception.</span>
             </span>
           </button>
-          <button class="switchrow" id="eSmall" style="width:100%">
-            <span class="sw"></span>
-            <span style="text-align:left">
-              <span class="st">Small speaker</span>
-              <span class="sd" style="display:block">Reinforces the sub's harmonics so a speaker that can't reach 40 Hz still reads as depth.</span>
-            </span>
-          </button>
         </div>
+        <div class="hint" style="margin-top:9px">The floor carries itself to whatever speaker is in the room &mdash;
+        the lower the key sits, the more its harmonics are reinforced, so a speaker that can't reach 40&nbsp;Hz still
+        reads as depth. Nothing to set: on a rig with a real sub you hear the fundamental, not the help.</div>
       </div>
 
       <div class="ensfoot" id="ensFoot"></div>
@@ -724,13 +720,6 @@ body.live #goBtn .glabel { color: var(--amber); }
         <span class="rv">bright</span>
       </div>
       <div class="hint" style="margin-top:6px">A full room absorbs the top. Add air only if the space eats it &mdash; never to rescue a bright default. Double-tap to reset.</div>
-    </div>
-    <div class="frow">
-      <button class="switchrow" id="uSmall" style="width:100%">
-        <span class="sw"></span>
-        <span style="text-align:left"><span class="st">Small speaker</span>
-        <span class="sd" style="display:block">Reinforce the sub's harmonics.</span></span>
-      </button>
     </div>
     <div class="drawacts" style="border-top:1px solid var(--line)">
       <button class="btn danger" id="uEnd">End the session</button>
@@ -1354,7 +1343,7 @@ const store = {
   settings: {
     refHz: 440, kit: { type: 'standard7', custom: '' },
     roster: [], livePlayers: false,
-    deepBreath: true, smallSpeaker: false, tilt: 0,
+    deepBreath: true, tilt: 0,
   },
   sessions: [],
   currentId: null,
@@ -1682,6 +1671,20 @@ function deepPitch(pc, prevMidi = null) {
   return inRange.reduce((a, m) => Math.abs(m - prevMidi) < Math.abs(a - prevMidi) ? m : a, inRange[0]);
 }
 
+/* How much missing-fundamental reinforcement this pitch needs.
+
+   Never a question the user is asked: most practitioners don't know whether
+   their speaker reaches 40 Hz, and the failure is silent — the band that makes
+   Bed different simply isn't there, with nothing on screen saying so.
+
+   Scaled by how low the fundamental sits. At ~40 Hz almost no speaker in a
+   yoga studio reproduces it, so reinforce fully; by ~70 Hz most do, so nearly
+   none. The harmonics sit far enough under the fundamental to be masked when
+   it IS present, so a real sub is unchanged — that is the whole contract. If
+   it ever proves audible on a good system, this constant is the fix, not a
+   control. */
+const subReinforce = hz => clamp((70 - hz) / 30, 0.15, 1);
+
 /* ---- DEEP. 20–80 Hz. Nothing else is allowed down here. ---- */
 class Deep {
   constructor(pc, t) {
@@ -1703,7 +1706,7 @@ class Deep {
 
     // Missing-fundamental reinforcement for speakers that can't go low.
     this.harm = ctx.createGain();
-    this.harm.gain.value = store.settings.smallSpeaker ? 1 : 0.0001;
+    this.harm.gain.value = subReinforce(f);
     this.harm.connect(this.out);
     this.harmOscs = [];
     [[2, 0.16], [3, 0.1], [4, 0.05]].forEach(([mult, lvl]) => {
@@ -1723,7 +1726,6 @@ class Deep {
     this.nodes.push(this.lfo);
   }
   setBreath(on, t) { this.lfo.depth.gain.setTargetAtTime(on ? 0.07 : 0, t, 1.5); }
-  setSmall(on, t) { this.harm.gain.setTargetAtTime(on ? 1 : 0.0001, t, 0.8); }
   /* Small moves glide; large ones duck out and back in, so the floor changes
      without ever being heard to travel. */
   retune(pc, t, glide) {
@@ -1738,11 +1740,15 @@ class Deep {
       const back = t + 4.5;
       this.osc.frequency.setValueAtTime(clampF(f), back);
       for (const h of this.harmOscs) h.o.frequency.setValueAtTime(clampF(f * h.mult), back);
+      this.harm.gain.setTargetAtTime(subReinforce(f), back, 2);
       dip.setTargetAtTime(1, back, 2.2);
       return;
     }
     this.osc.frequency.setTargetAtTime(clampF(f), t, glide / 3);
     for (const h of this.harmOscs) h.o.frequency.setTargetAtTime(clampF(f * h.mult), t, glide / 3);
+    // The floor moves by key, so the reinforcement has to move with it —
+    // C needs far more help than D on the same speaker.
+    this.harm.gain.setTargetAtTime(subReinforce(f), t, Math.max(glide / 3, 2));
   }
   stop(t) {
     this.out.gain.setTargetAtTime(0, t, 1.2);
@@ -3082,7 +3088,6 @@ function renderEnsemble() {
   $('eHz432').classList.toggle('primary', Math.abs(s.refHz - 432) < 0.5);
   $('eLive').classList.toggle('on', s.livePlayers);
   $('eBreath').classList.toggle('on', s.deepBreath);
-  $('eSmall').classList.toggle('on', s.smallSpeaker);
 
   $('rosterList').innerHTML = s.roster.map((r, i) => {
     const inst = INSTRUMENTS.find(x => x.id === r.instrument) || INSTRUMENTS[0];
@@ -3211,11 +3216,6 @@ function wire() {
     if (T.inst.deep) T.inst.deep.setBreath(store.settings.deepBreath, now());
     save(); renderEnsemble();
   };
-  $('eSmall').onclick = () => {
-    store.settings.smallSpeaker = !store.settings.smallSpeaker;
-    if (T.inst.deep) T.inst.deep.setSmall(store.settings.smallSpeaker, now());
-    save(); renderEnsemble();
-  };
 
   // perform
   $('goBtn').onclick = goNext;
@@ -3224,7 +3224,6 @@ function wire() {
   $('pExit').onclick = () => {
     if (!T.live || T.ended) { exitPerform(); return; }
     $('uTilt').value = Math.round(store.settings.tilt * 100);
-    $('uSmall').classList.toggle('on', store.settings.smallSpeaker);
     $('uEnd').textContent = 'End the session'; $('uEndHint').textContent = '';
     $('utilOvl').classList.add('open');
   };
@@ -3241,11 +3240,6 @@ function wire() {
 
   $('uTilt').oninput = e => { setTilt(+e.target.value / 100); save(); };
   $('uTilt').ondblclick = e => { e.target.value = 0; setTilt(0); save(); };
-  $('uSmall').onclick = () => {
-    store.settings.smallSpeaker = !store.settings.smallSpeaker;
-    if (T.inst.deep) T.inst.deep.setSmall(store.settings.smallSpeaker, now());
-    save(); $('uSmall').classList.toggle('on', store.settings.smallSpeaker);
-  };
   $('uEnd').onclick = () => {
     if ($('uEnd').dataset.armed) {
       delete $('uEnd').dataset.armed;
