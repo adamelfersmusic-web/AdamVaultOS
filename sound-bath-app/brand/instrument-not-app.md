@@ -100,3 +100,52 @@ where there is currently no word at all:
 them safe to do in one sitting when someone is fresh. Filed rather than done
 because the four sit next to sixteen that must not move, and that's exactly the
 situation where a tired pass does damage.
+
+
+---
+
+## The same problem, a different word: **drone**
+
+2026-07-31. Adam: *"'drone' is a weird word here — people who aren't musicians
+might get a military vibe."*
+
+**He's right about half the product, and the half matters.**
+
+### Keep it in the app
+
+*Drone* is completely native to this world — tanpura drones, vocal drones,
+harmonium. A practitioner reads it correctly and instantly, and it's the precise
+word for what the Bed lane does. It's also load-bearing in the laws
+(*"no third in the drone"*), the lane labels, and the block names. **Do not
+touch any of it.**
+
+### Avoid it on first contact
+
+A stranger skimming a marketing page has no context, and the first thing the
+word means outside music is an aircraft. **That's a risk with no upside on a
+page whose job is to be warm in four seconds.**
+
+Changed on the landing page:
+
+> ~~Whatever a small kit can't reach, the floor and **the drone** are already
+> holding.~~
+> Whatever a small kit can't reach, **the floor of sound underneath** is already
+> holding.
+
+That phrase is already established two paragraphs above it, so it reads as a
+callback rather than a definition.
+
+### The three that stay, and why
+
+| Line | Why it keeps the word |
+|---|---|
+| The device frame's band row — `Drone` | It's a **screenshot of the app**. Changing it would be a lie about the product. |
+| *"only what humans physically can't: the floor, the drone, the air"* | Lifted verbatim from the app's own Ensemble screen. It's a quotation, and by then the reader has seen the frame. |
+| *"No third in the drone"* | **A law.** Stated in the app's language on purpose. |
+
+### The rule
+
+> **Name the lanes where the reader has already seen them. Describe what they do
+> where they haven't.**
+
+Same shape as *instrument, not app*: the word isn't wrong, it's **early**.
