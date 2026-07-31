@@ -753,7 +753,14 @@ class PadInstance {
       v.oscs.push({ o, ratio });
     };
     partial(2, 0.16, 0.05 + Math.random() * 0.03);
-    partial(3, 0.06, 0.07 + Math.random() * 0.03);
+    // The 3rd partial IS a fifth (an octave and a fifth up), so on any voicing
+    // that already contains a fifth this doubles it — and the octave voice's
+    // 3rd partial lands on exactly the same pitch as the fifth voice's 2nd,
+    // stacking constructively. Felt hides its own 3rd behind a lowpass sitting
+    // at ~3.2x the fundamental; Vox uses triangles, whose 3rd is naturally
+    // weak. Glass was the only pad where it was explicit and unfiltered, which
+    // is why the fifth read louder here than anywhere else.
+    partial(3, 0.028, 0.07 + Math.random() * 0.03);
     this.voices.push(v);
   }
 
