@@ -65,8 +65,8 @@ time already work that way.
 
 | Tier | Price | What it is |
 |---|---|---|
-| **Follow** | **free, no account** | The follower sheet, forever. Plus enough authoring to feel it — one saved session. |
-| **Season** | **$149/yr** (or $19/mo) | Unlimited sessions. Rooms — sync and follower devices. **All packs included.** The network. |
+| **Follow** | **free, no account** | The follower sheet, forever — plus **run every session that ships with the app**. A real demo, not a teaser. |
+| **Season** | **$149/yr** (or $19/mo) | Unlimited sessions of your own. Rooms — sync and follower devices. **A new curated session every month.** The network. |
 | **Perpetual** | **$400 one-time** | The instrument, kept: author, save and perform solo, forever, on the version you bought. No rooms, no new packs. |
 
 **The Season/Perpetual split is honest rather than arbitrary.** Rooms need a
@@ -229,6 +229,21 @@ commercial reason the rental and speaker-tuning work matter.
    Visible the first time a session runs with real follower devices.
 4. **Buyer eleven.** *"Ten warm sales validate your relationships, not a
    market."*
+
+---
+
+## Amended by the monthly session
+
+See [`the-monthly.md`](the-monthly.md). Two changes, both improvements:
+
+- **Packs are superseded by the monthly.** A new curated session each month —
+  authored by a named practitioner — is a better subscription payload than
+  packs sold or bundled: a rhythm, an announcement, and twelve marketing beats
+  a year that feature a person rather than the software.
+- **The free tier becomes "run everything that ships."** A genuinely working
+  demo rather than a one-session teaser, which moves the paywall onto the
+  emotional moment — wanting *your* arc, *your* poem, *your* name on it — and
+  off an artificial limit.
 
 ---
 
