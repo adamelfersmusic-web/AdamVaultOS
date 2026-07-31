@@ -9,6 +9,34 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.11 — `&lamp=1`, a phone that is only ever a light · 2026-07-31
+
+Adam: *"how far off is picking up an old phone in my house and having it become
+lights for Bed."* **Zero code — but it was four steps, and it should be one.**
+
+A spare phone joining as a lamp was going through the kit picker (*which bowls
+do you have?* — it has none) and landing on the sheet (*which it will never
+show*) before anyone could tap **lamp**. At 7pm with people arriving, that's the
+difference between a thing you'd do and a thing you'd mean to do.
+
+```
+…/app/?c=VXZF&lamp=1
+```
+
+Opens straight into colour. No kit, no sheet, one motion: **tap the link, put it
+face up beside a bowl.** The share dialog hands out the recipe next to the
+ordinary link.
+
+### The three practical things, learned the hard way by anyone who tries this
+- **Plug it in.** A screen at full brightness for fifty minutes will finish an
+  old battery.
+- **Turn the phone's brightness up.** Lamp mode errs dark by design (law 5) —
+  the phone's own slider is the hand that adds.
+- **Auto-Lock → Never** on a dedicated lamp phone. There's no downside on a
+  device that is doing nothing else and is plugged in.
+
+---
+
 ## v1.10 — it points at the relay already, and says what the relay is doing · 2026-07-31
 
 Adam: *"is it possible to fix it so when I wake up tomorrow I can join my phone."*
