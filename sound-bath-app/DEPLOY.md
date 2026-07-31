@@ -1,5 +1,10 @@
 # Deploying Bed
 
+<!-- ⚠️ DO NOT copy this file between repos. The bed and AdamVaultOS copies
+     diverge on purpose — different repo name, different Netlify setup, and
+     one publishes an allowlist the other doesn't. This copy is AdamVaultOS.
+     Mirror every other file freely; edit this one in place, twice. -->
+
 Two steps, both small. Nothing here copies files — **the live site is built
 from this folder**, so everything you push stays in sync automatically.
 
