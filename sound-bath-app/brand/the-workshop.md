@@ -36,8 +36,13 @@ the positioning collapses.
 at once — and if it fails, you see *exactly where* they got stuck, which no
 survey and no analytics would ever tell you.
 
-Test #3 (*does someone who experiences Bed become someone who makes their own?*)
-gets answered the same day.
+**But it does *not* answer test #3, and I said it did.** Workshop attendees paid
+to be in the room — they're pre-qualified and pre-motivated, which makes them the
+strongest cohort that will ever exist. That's perfect for testing the
+fifteen-minute claim and it tells you **nothing** about whether a *cold* follower
+converts. See the three conversions in `business-model.md`: a workshop measures
+**C**, adoption by people who already lead. The flywheel is **B**, and only a real
+session with real follower devices can measure it.
 
 ### 3 · The projector is a demo nobody could buy
 

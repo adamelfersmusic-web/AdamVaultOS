@@ -142,7 +142,7 @@ the network makes sessions happen
         ↓
 each session puts Bed in ten hands, for fifty minutes, in candlelight
         ↓
-some fraction of those hands want to make their own
+some fraction of those hands want to author and keep a session of their own
         ↓
 they hit the authoring paywall — at the exact moment they want to lead
 ```
@@ -153,6 +153,24 @@ session, and some fraction will want to lead their own."*
 
 **The paywall lands at the moment of highest intent**, which is the only place
 a paywall ever works.
+
+### ⚠️ Three conversions, and only one is the flywheel
+
+*"They make their own"* is too loose to measure, and the looseness hides real
+differences. Written out:
+
+| | The move | Reality |
+|---|---|---|
+| **A** | **Attendee → practitioner.** Lay on the floor, decides to lead baths. | Rare and slow — they need bowls, training and a room. A **life change, not a purchase.** Lovely when it happens; never plan on it. |
+| **B** | **Follower → author.** Played in someone's ensemble holding the sheet, then builds and keeps a session of their own. | **This is test #3. This is the flywheel.** They already lead; the question is whether they now lead *with Bed*. |
+| **C** | **Practitioner → Bed practitioner.** Already leads, never followed one, adopts Bed directly. | Not a flywheel question at all — it's a **sales** question. Does the tool win on its merits. |
+
+**Only B compounds**, because only B is caused by a session having happened.
+A is a rounding error you should be delighted by and never forecast. C is real
+revenue and it scales with effort, not with usage.
+
+**Measuring them as one number is how a business talks itself into believing it
+has a flywheel when what it has is a sales process.**
 
 ---
 
@@ -257,7 +275,9 @@ commercial reason the rental and speaker-tuning work matter.
    Costs nothing and settles the most load-bearing claim in the product.
 2. **Will ten practitioners pay $149/yr?** Not a survey. A price.
 3. **Does a follower become an author?** The one number the flywheel rests on.
-   Visible the first time a session runs with real follower devices.
+   Visible the first time a session runs with real follower devices. **Read the
+   next section before measuring it** — three different conversions get confused
+   for this one, and only one of them is the flywheel.
 4. **Buyer eleven.** *"Ten warm sales validate your relationships, not a
    market."*
 

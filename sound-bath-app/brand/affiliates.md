@@ -115,8 +115,10 @@ That number is the whole business. If it's high, the program is real and worth
 building software for. If it's low, no commission rate would have saved it — and
 you found out for the cost of some free seats.
 
-It also runs `business-model.md`'s test #3 (*does a follower become an author?*)
-against a warm, motivated cohort instead of strangers.
+A note on what it does **not** measure: students in a training are conversion
+**C** in `business-model.md` — people who already lead, adopting the tool. That's
+real revenue and worth knowing. **It is not the flywheel**, which is conversion
+**B**, and only a real session with real follower devices can test that.
 
 ---
 
