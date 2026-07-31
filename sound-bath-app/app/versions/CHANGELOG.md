@@ -9,6 +9,34 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.4 — blocks draw their envelope · 2026-07-31
+
+A block used to draw its **level** — a rectangle filled from the bottom. It now
+draws its **envelope**: the fill rises over the fade-in, holds at the level, and
+falls over the fade-out.
+
+The gap this closes is real. In the demo session the Root floor departs over 45
+seconds and the gong floor arrives in 6; those feel nothing alike in a room, and
+a timeline whose entire job is time was drawing them identically.
+
+**Proportional on purpose.** A short fade *should* read as near-vertical — this
+is a clock, and putting a taper somewhere other than where it happens would be a
+nicer picture and a false one. So on a 4-minute gong block a 6-second entry is a
+2.5% bevel and a 45-second exit is a 19% slope, and the difference between them
+is exactly the thing you can now see. Fades that would overlap on a short block
+scale down together into a triangle rather than crossing over.
+
+One `clip-path` polygon; no new markup. `.lv` became full-bleed and the clip does
+what the height used to.
+
+### Changed since v1.3
+| | |
+|---|---|
+| `envelope(b)` | new — returns the polygon for a block's fade-in / level / fade-out |
+| `.blk .lv` | `inset: 0` + `clip-path`, was `bottom: 0` + `height` |
+
+---
+
 ## v1.3 — a readable Floor, and no more wizard · 2026-07-31
 
 **Floor now says where it is.** A `0 dB` / `−4 dB` / `+3 dB` readout sits on
