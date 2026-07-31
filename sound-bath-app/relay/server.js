@@ -24,7 +24,15 @@ const rooms = new Map();                       // code -> Set<socket>
 const server = http.createServer((req, res) => {
   // Health check, and something human to look at. Never lists rooms or codes —
   // the count is all anyone outside needs and all we are willing to say.
-  res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+  // CORS is deliberate: the health check is public by design — it says only
+  // "up" and a room count — and letting the app read it means a leader can be
+  // told the relay is awake instead of inferring it from a socket that hasn't
+  // failed yet.
+  res.writeHead(200, {
+    'content-type': 'application/json',
+    'cache-control': 'no-store',
+    'access-control-allow-origin': '*',
+  });
   res.end(JSON.stringify({ ok: true, service: 'bed-relay', rooms: rooms.size }));
 });
 

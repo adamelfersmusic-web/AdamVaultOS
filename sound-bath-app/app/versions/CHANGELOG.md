@@ -9,6 +9,35 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.12 — the relay is woken forty minutes before it's needed · 2026-07-31
+
+Two numbers that were getting confused, and one of them is a real hazard:
+
+- **15 minutes with nobody connected** → Render's free tier stops the relay.
+- **~30–60 seconds** → how long it takes to boot when someone next connects.
+
+That wait is harmless at 6:40 and **awful at 7:15 with forty people already on
+the floor.** And it's the likely shape of a real evening: set up early,
+everything green, go greet people for twenty minutes, relay sleeps, session
+starts, first phone sits red for a minute.
+
+**So the app now knocks on the door as early as it possibly can.** One `GET` to
+the health endpoint when a session is opened in **Design**, and again on
+**BEGIN** — long before anyone taps Share. Fire and forget: no `await`, nothing
+surfaced, and the socket keeps its own retry regardless. Throttled to once a
+minute.
+
+By the time it matters, the relay has been awake for half an hour.
+
+### The relay's health check is now readable from the browser
+
+`access-control-allow-origin: *` on `GET /`. It is public by design — it says
+only *up* and a room count, never a code — and letting the app read it means a
+leader can be **told** the relay is awake rather than inferring it from a socket
+that hasn't failed yet.
+
+---
+
 ## v1.11 — `&lamp=1`, a phone that is only ever a light · 2026-07-31
 
 Adam: *"how far off is picking up an old phone in my house and having it become
