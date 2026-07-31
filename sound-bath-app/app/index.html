@@ -926,7 +926,9 @@ const BED_VERSION = '1.4';
    its measured fixes intact; bowl notation ported from prototype/sheets.html
    and verified against the three real sections on every load.
 
-   The five laws, enforced structurally rather than by convention:
+   Five laws for the engine and one for the interface, all enforced
+   structurally rather than by convention. The landing page says "the engine
+   keeps five laws" and that stays true — law 6 governs the screen, not sound:
      1. No pulse ever            — nothing is scheduled to a tempo
      2. No third in the drone    — Bed only builds root / 4th / 5th / 8ve / 9th
      3. No automated dynamics    — levels change only on a scheduled layer
@@ -934,6 +936,26 @@ const BED_VERSION = '1.4';
      4. No competing melody      — Voice is sparse, quiet, register-separated,
                                    and yields to any melodic human in the room
      5. Never bright by default  — every default errs dark; tone only ADDS air
+     6. No transport, ever       — you may hear a DECISION; you may never play
+                                   the session back. See below.
+
+   Law 6 is the only one about the interface rather than the sound, and it is
+   here rather than in a design note because its failure mode is invisible.
+   Nothing would sound wrong. Bed would simply become a DAW: a playhead, a
+   scrub bar, play-from-minute-22, tweak, replay — and then the fifteen-minute
+   promise dies of a thousand small improvements, and the room becomes a
+   rehearsal of something the leader already heard.
+
+   What IS allowed: sounding one thing, now, at its level, in its key, while a
+   finger is on it. That is striking a bowl to check it. Time is not passing,
+   so there is nothing to arrange against, and the arc stays unheard until GO.
+
+   What is never allowed, however reasonable it looks in a ticket:
+     · a playhead or position indicator anywhere in Design
+     · play/pause/stop, or any control that starts time moving off the
+       perform screen
+     · hearing two sections in sequence, or a transition between them
+     · any preview that continues after the gesture that started it ends
    ========================================================================== */
 
 /* ------------------------------------------------------------------ domain */
