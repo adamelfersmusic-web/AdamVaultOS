@@ -9,11 +9,17 @@ against what came before.
 
 ## The freeze protocol
 
-Before starting any tier, freeze the one that came before it:
+**The moment a tier is finished and sounds right, freeze it** — before anything
+from the next tier is written:
 
 ```
 cp public/looper/index.html public/looper/vN/index.html
 ```
+
+So a session's last act is the freeze, not its first. `v1` is already frozen,
+which means a tier 2 session starts by building; a tier 3 session starts by
+checking that `v2/` exists and creating it from the current file if the tier 2
+session forgot.
 
 Frozen copies are **never edited, never cleaned up, never deleted.** They deploy
 alongside the live app so any two versions can be opened in adjacent tabs and
