@@ -34,6 +34,8 @@ unchanged.
 | **Speaker & room tuning** — "Bed knows this speaker", in three tiers | [`speaker-and-room-tuning.md`](speaker-and-room-tuning.md) |
 | **Ecosystem** — the practitioner network, packs, events, sequencing | [`ecosystem.md`](ecosystem.md) |
 | **Business model** — watching is free, making is paid | [`business-model.md`](business-model.md) |
+| **Instrument, not app** — the word pass: 4 to change, 16 that must not move | [`instrument-not-app.md`](instrument-not-app.md) |
+| Social post — "one verb, six layers", 1080×1350 | [`assets/post-hold.html`](assets/post-hold.html) (open and screenshot on a Mac, where Didot exists) |
 | **Affiliates** — teachers, not marketers; pay in students, credit, then money | [`affiliates.md`](affiliates.md) |
 | **The monthly session** — the subscription's payload, and the free-tier fix | [`the-monthly.md`](the-monthly.md) |
 | Mark decision — the review that settled the stack | [`mark-decision.md`](mark-decision.md) |

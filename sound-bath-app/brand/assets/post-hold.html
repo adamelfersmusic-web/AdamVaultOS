@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bed — social post: one verb, six layers</title>
+<!-- ==========================================================================
+     SOCIAL POST — 1080 × 1350 (Instagram 4:5).
+
+     Open this file and screenshot the frame at 2× on a Mac, where Didot
+     actually exists. The font stack is the brand's real one; on any machine
+     without a didone the preview falls back to a book serif and the letterforms
+     will be wrong even though the layout is right.
+
+     ⚠️ Amber audit: there is NO amber on this page, and there must never be.
+     Amber means live and making sound. Nothing on a marketing graphic is
+     making sound. The mark is ink, the rules are ink, the emphasis is ink.
+     ========================================================================== -->
+<style>
+:root {
+  --bg: #0a0910; --line: #221f2e; --line2: #322d42;
+  --ink: #e8e4f0; --ink2: #a29ab4; --ink3: #6b6480; --ink4: #423d52;
+  --sans: -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: "Didot", "Bodoni MT", "Playfair Display", "Cormorant Garamond", Georgia, serif;
+}
+* { box-sizing: border-box; margin: 0; }
+body { background: #000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+
+.post {
+  width: 1080px; height: 1350px; background: var(--bg); color: var(--ink);
+  font-family: var(--sans); position: relative;
+  padding: 72px 92px 66px; display: flex; flex-direction: column;
+  /* the faintest lift off pure black, so the ground reads as a room and not as ink */
+  background-image: radial-gradient(120% 80% at 50% 0%, #100e18 0%, #0a0910 62%);
+}
+
+/* ------------------------------------------------------------------ mark */
+.mark { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.mark svg { display: block; }
+.mark .wm {
+  font-family: var(--serif); font-size: 22px; letter-spacing: .34em; padding-left: .34em;
+  color: var(--ink2);
+}
+
+/* --------------------------------------------------------------- opening */
+.open {
+  font-family: var(--serif); font-size: 41px; line-height: 1.34; letter-spacing: .002em;
+  margin-top: 46px; color: var(--ink);
+}
+.open .q { color: var(--ink3); }
+
+/* ----------------------------------------------------------------- table */
+.layers { margin-top: 44px; border-top: 1px solid var(--line); }
+.row {
+  display: grid; grid-template-columns: 250px 1fr; align-items: baseline;
+  gap: 26px; padding: 16px 0 15px; border-bottom: 1px solid var(--line);
+}
+.row .k {
+  font-size: 15px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--ink4);
+}
+.row .v { font-family: var(--serif); font-size: 33px; line-height: 1.24; color: var(--ink2); }
+.row .v b { color: var(--ink); font-weight: 700; }
+.row .v i { font-style: italic; }
+
+/* The last row is the punchline: it is the only line here we didn't write. */
+.row.theirs { border-bottom: none; padding-top: 24px; }
+.row.theirs .k { color: var(--ink2); }
+.row.theirs .v { font-size: 38px; color: var(--ink); font-style: italic; }
+
+/* ----------------------------------------------------------------- close */
+.foot { margin-top: auto; padding-top: 34px; }
+.rule { height: 1px; background: var(--line2); margin-bottom: 28px; }
+.close { font-size: 25px; line-height: 1.5; color: var(--ink2); max-width: 26em; }
+.close b { color: var(--ink); font-weight: 600; }
+/* One quiet line of identification. A stranger scrolling past has no idea what
+   Bed is otherwise — and this is the whole ask, which is why it can be this
+   small. Ink, never amber: nothing here is making sound. */
+.desc {
+  margin-top: 24px; font-family: var(--serif); font-style: italic;
+  font-size: 22px; color: var(--ink4);
+}
+</style>
+</head>
+<body>
+
+<div class="post">
+
+  <div class="mark">
+    <!-- the four-layer stack — sub, drone, motif, texture. Ink, static, one master. -->
+    <svg width="128" height="128" viewBox="0 0 32 32" aria-label="Bed">
+      <g fill="#e8e4f0">
+        <rect x="12.6" y="9.9"  width="6.8"  height="1.2"  rx=".6"/>
+        <rect x="10.2" y="13.9" width="11.6" height="1.45" rx=".72"/>
+        <rect x="7.6"  y="18"   width="16.8" height="1.75" rx=".87"/>
+        <rect x="5"    y="22.3" width="22"   height="2.2"  rx="1.1"/>
+      </g>
+    </svg>
+    <div class="wm">BED</div>
+  </div>
+
+  <div class="open">
+    The name had been saying it since before any of this was built.
+    <span class="q">Nobody designed that — it got found, which is usually the
+    only reliable sign a name is actually right.</span>
+  </div>
+
+  <div class="layers">
+    <div class="row"><span class="k">the name</span><span class="v">a <b>bed</b> holds you</span></div>
+    <div class="row"><span class="k">the tag</span><span class="v"><i>holding space</i></span></div>
+    <div class="row"><span class="k">the promise</span><span class="v"><i>put the plan down and <b>hold</b> the room</i></span></div>
+    <div class="row"><span class="k">the control</span><span class="v"><b>HOLD</b> — <i>“holding — the plan waits”</i></span></div>
+    <div class="row"><span class="k">the feature</span><span class="v">a <b>held</b> section</span></div>
+    <div class="row theirs"><span class="k">their words</span><span class="v">“I felt really <b>held</b> tonight.”</span></div>
+  </div>
+
+  <div class="foot">
+    <div class="rule"></div>
+    <div class="close">
+      One verb, six layers — and <b>the last one isn’t ours.</b>
+      That’s what makes it worth something.
+    </div>
+    <div class="desc">Bed — the instrument that holds you, so you can hold the room.</div>
+  </div>
+
+</div>
+
+</body>
+</html>
