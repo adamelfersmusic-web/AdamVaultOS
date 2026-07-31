@@ -105,6 +105,82 @@ Loud failures can live in documentation. Silent ones can't.
 
 ---
 
+## ⚠️ 6b · THE MACHINE-READ GATE — a standing check, not a principle
+
+Rule 6 says put invisible failures in the code. This is the case where **the
+code can't see it either**, and it gets a gate rather than a paragraph.
+
+### When it applies
+
+Ask one question about anything being built:
+
+> ### If this were wrong, what would complain?
+
+If the honest answer is *"nothing, until it's in front of people"* — because
+the only thing that reads it is **a machine we don't own** — this gate is on.
+It is not a judgement call and it is not proportional to how important the
+thing feels. It's on or it's off.
+
+### The two questions it forces
+
+Both. Neither substitutes for the other, and the one that gets skipped is
+always the second, because it feels redundant right up until it's the only
+thing between you and a room where nothing works.
+
+| | Question | What it catches | What it cannot |
+|---|---|---|---|
+| **1 · Read it back** | *Does my own output decode, right now, into exactly what went in?* | this instance, this device, this input — forever, including cases nobody thought to test | **a shared misunderstanding.** It reads from the same wrong assumption and agrees with itself |
+| **2 · An outside opinion** | *Does something I didn't build agree with what I produced?* | being confidently wrong about the format itself | whether it works today, on this phone, for this input |
+
+> ## A misunderstanding cannot audit itself.
+
+Not a slogan — a measurement. The QR read-back check, run against the real bug
+that nearly shipped, **refused 72 of 144 cases and passed the other 72.** The
+outside reference caught 144 of 144.
+
+### The three sub-rules, all learned by getting them wrong
+
+- **The check must be able to fail.** A verifier that never says no is
+  decoration. Prove it refuses: corrupt the output — exhaustively, if you can —
+  and require a refusal every time. My first version hand-picked seven spots
+  and three of them sailed through.
+- **The gate goes on the deploy path, not in a habit.** `qr-check` is the first
+  line of the Netlify build; a broken encoder cannot reach the CDN. A check
+  that depends on remembering will, one night, not be run. And **verify the
+  gate actually blocks** — a multi-line build command reports the exit status
+  of its *last* line, so a failed check followed by a successful copy publishes
+  the broken build with a green tick.
+- **⚠️ Never regenerate the expected values to make a failing check pass.** This
+  is the one that will actually happen, one tired evening. It converts the
+  outside opinion into a mirror, and a mirror agrees with everything. If the
+  reference disagrees, **we are wrong until proven otherwise** — and if it turns
+  out we're right, that belongs in a commit message, not in a quiet re-run.
+
+### The surfaces this is already on, or will be
+
+The QR was the first, not the last. Every one of these has the same shape — we
+write it, someone else's machine reads it, and when we're wrong nothing
+complains:
+
+| Surface | Read by | Gate |
+|---|---|---|
+| **QR join code** | a stranger's camera, in the dark, one try | ✅ shipped — `tools/qr-check.cjs`, in the build |
+| **Sync wire format** | another copy of Bed, on someone else's phone | ⬜ owed. A follower silently on the wrong schema shows a wrong sheet, not an error |
+| **Exported sessions** | a version of the app that doesn't exist yet | ⬜ owed. Round-trip every shipped session through export → import → compare |
+| **Lumen / WLED packets** | an ESP32 across the room | ⬜ owed before any light ships |
+| **MIDI to the Neotone** | firmware we didn't write | ⬜ owed |
+| **A printed code on a card** | a camera, and no way to fix it after printing | ⬜ owed — the one with no undo at all |
+
+**Nothing on that list ships without both questions answered.** Add a row when
+a new surface appears; never remove one.
+
+### The sentence, for the top of a ticket
+
+> **Anything whose only reader is a machine you don't own must be read back
+> before it's shown — and held against an opinion formed outside your own head.**
+
+---
+
 ## 7 · A rule is only worth having once it has cost something
 
 > The amber rule survived tonight because it had already been expensive: **the

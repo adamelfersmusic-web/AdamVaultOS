@@ -150,6 +150,39 @@ phones that don't work.
 
 ---
 
+## ⚠️ Addendum, same night: the fix needs the same treatment as the bug
+
+Asked whether the share work was "bulletproof and finished," the honest answer
+was no — and the way to find out was to go back through it hunting, not to
+answer the question. Six defects, and **five of the six were the same class as
+the QR bug**: nothing would have complained.
+
+- The room code rode along inside exported session files and duplicated
+  sessions — two leaders silently sharing one relay room.
+- The device count could only ever grow, so the pre-flight test would report
+  *"1 device connected"* for a room that was empty. **A check that reports
+  success for a failure is worse than no check.**
+- *Save the code* would have silently done nothing on iOS: the file was built
+  in an async callback, and iOS refuses `navigator.share()` outside the tap.
+  No error, no share sheet, nothing to see.
+- A lamp joining early stayed black, which looks exactly like a lamp that
+  never connected.
+
+Every one of them: no exception, no warning, no visible symptom — just a thing
+that quietly doesn't work in front of a room. **The gate applies to the code
+you wrote to satisfy the gate.**
+
+And one false alarm worth keeping: the audit's own iOS assertion failed because
+the comment explaining why `toBlob` is *not* used matched a regex looking for
+`toBlob`. **A test that fails for the wrong reason teaches the same bad habit
+as one that passes for the wrong reason** — it trains you to explain failures
+away. Assert on code with the comments stripped.
+
+The six now live as assertions in `tools/share-check.cjs`, so they can only
+come back loudly.
+
+---
+
 ## The smaller rule that falls out
 
 > **When something can fail invisibly, the fallback must be loud.**

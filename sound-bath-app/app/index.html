@@ -1090,7 +1090,7 @@ body.live #goBtn .glabel { color: var(--amber); }
 
 <script>
 'use strict';
-const BED_VERSION = '1.17';
+const BED_VERSION = '1.17a';
 
 /* ==========================================================================
    BED — exploratory full build.
@@ -3227,6 +3227,11 @@ function exportSession(S) {
     : { type: store.settings.kit.type };
   const out = { ...S, refHz: store.settings.refHz, kit };
   delete out.id;
+  /* ⚠️ The room code NEVER travels with a session. Sessions are meant to be
+     passed around — that is most of sessions-travel.md — and a code baked into
+     a file means two leaders in two cities silently share one relay room and
+     overwrite each other's followers. The recipient mints their own. */
+  delete out.room;
   const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -3862,6 +3867,7 @@ function wire() {
       try {
         const S = normalizeSession(JSON.parse(rd.result));
         S.id = uid();
+        S.room = null;            // belt and braces: old files may still carry one
         store.sessions.unshift(S);
         save(); renderLibrary();
       } catch (err) { alert('That file didn’t read as a session.'); }
@@ -3881,8 +3887,8 @@ function wire() {
     if (act.dataset.act === 'shape') { store.currentId = S.id; nav('design'); }
     if (act.dataset.act === 'export') exportSession(S);
     if (act.dataset.act === 'dup') {
-      const C = normalizeSession(JSON.parse(JSON.stringify({ ...S, id: null })));
-      C.id = uid(); C.title = S.title + ' — copy';
+      const C = normalizeSession(JSON.parse(JSON.stringify({ ...S, id: null, room: null })));
+      C.id = uid(); C.title = S.title + ' — copy';   // a copy is a new room, not a second door into the old one
       store.sessions.splice(store.sessions.indexOf(S) + 1, 0, C);
       save(); renderLibrary();
     }
@@ -4233,11 +4239,11 @@ function startSharing() {
   L.code = roomFor(S).code;
   L.lid = 'l' + Math.random().toString(36).slice(2, 8);
   L.sh = sessionHash(S);
-  L.seq = 0; L.seen = new Set();
+  L.seq = 0; L.seen = new Map();
   L.net = Net.join(L.code, msg => {
     if (!msg || msg.v !== SYNC_V) return;
     if (msg.t === 'need') { publishSession(); publishState(true); }
-    if (msg.t === 'here' && msg.fid) { L.seen.add(msg.fid); paintShareCount(); }
+    if (msg.t === 'here' && msg.fid) { L.seen.set(msg.fid, Date.now()); paintShareCount(); }
   });
   bus.emit('sync:open', { code: L.code });
   publishSession();
@@ -4246,7 +4252,11 @@ function startSharing() {
      a follower who joined early would cross the 30 s threshold and be told it
      is "not receiving" while sitting perfectly connected in a car park. */
   clearInterval(L.beat);
-  L.beat = setInterval(() => { if (L.net && !T.live) publishState(); }, 2000);
+  L.beat = setInterval(() => {
+    if (!L.net) return;
+    if (!T.live) publishState();
+    paintShareCount();          // so a device that left is reflected, not remembered
+  }, 2000);
   showShare();
 }
 
@@ -4262,13 +4272,24 @@ function stopSharing() {
    advice, and advice fails the night somebody forgets — so the check is a
    thing the leader is already looking at while they hold the code up, and it
    says the answer rather than implying it from an empty list. */
+/* ⚠️ Followers are counted by a REPEATING "here", not by a single hello, and
+   the count expires. A set that only ever grows told a leader "2 devices
+   connected" long after both had walked out of the building — which is a
+   pre-flight test that reports success for a room that isn't there, and that
+   is worse than having no count at all. */
+const SEEN_TTL = 45000;
+function liveFollowers() {
+  const cut = Date.now() - SEEN_TTL;
+  for (const [fid, t] of L.seen) if (t < cut) L.seen.delete(fid);
+  return L.seen.size;
+}
 function paintShareCount() {
-  const n = L.seen.size;
+  const n = liveFollowers();
   const el = $('shareCount'); if (!el) return;
   el.classList.toggle('ok', n > 0);
   el.textContent = n
     ? (T.live ? `${n} ${n === 1 ? 'device is' : 'devices are'} reading the sheet.`
-              : `${n} ${n === 1 ? 'device' : 'devices'} connected — scan one more to be sure, then begin.`)
+              : `${n} ${n === 1 ? 'device is' : 'devices are'} connected and holding. Ready when you are.`)
     : 'Waiting for the first device. Scan the code with a phone to test it now.';
 }
 
@@ -4675,23 +4696,29 @@ function saveShareImage() {
   if (!m) { btn.textContent = 'Can’t draw a code'; return; }
   const cv = qrCardCanvas(m, room.code, room.made, url);
   const name = `bed-${room.code}-${room.made}.png`;
-  cv.toBlob(blob => {
-    if (!blob) { btn.textContent = 'Couldn’t save'; return; }
-    const file = new File([blob], name, { type: 'image/png' });
-    /* iOS gives "Save Image" in the share sheet; there is no other way onto a
-       camera roll from a web page. Desktop has no share sheet, so it falls
-       through to a plain download, which is where a Mac wants it anyway. */
-    if (navigator.canShare?.({ files: [file] })) {
-      navigator.share({ files: [file] }).catch(() => {});
-      return;
-    }
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = name;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    btn.textContent = 'Saved';
-    setTimeout(() => { btn.textContent = 'Save the code'; }, 1600);
-  }, 'image/png');
+  /* ⚠️ SYNCHRONOUS ON PURPOSE. canvas.toBlob() is async, and iOS Safari
+     refuses navigator.share() once the user-activation window has closed —
+     which an async callback does. The share sheet simply never appears and
+     nothing errors anywhere the leader can see. toDataURL is synchronous, so
+     the whole path stays inside the tap. */
+  const bin = atob(cv.toDataURL('image/png').split(',')[1]);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  const blob = new Blob([buf], { type: 'image/png' });
+  const file = new File([blob], name, { type: 'image/png' });
+  /* iOS offers "Save Image" in the share sheet; there is no other route onto a
+     camera roll from a web page. Desktop has no share sheet, so it falls
+     through to a download, which is where a Mac wants it anyway. */
+  if (navigator.canShare?.({ files: [file] })) {
+    navigator.share({ files: [file] }).catch(() => {});
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  btn.textContent = 'Saved';
+  setTimeout(() => { btn.textContent = 'Save the code'; }, 1600);
 }
 
 function copyShareLink() {
@@ -4714,7 +4741,7 @@ function copyShareLink() {
 
 /* ---- follower ---- */
 
-const F = { net: null, code: null, lid: null, lastSeq: -1, sh: null, last: 0, staleTimer: null, fid: null };
+const F = { net: null, code: null, lid: null, lastSeq: -1, sh: null, last: 0, staleTimer: null, hereTimer: null, fid: null };
 
 function followerApply(msg) {
   if (!F.sh || F.sh !== msg.sh || !T.S) {                 // don't have this session yet
@@ -4732,8 +4759,13 @@ function followerApply(msg) {
      the person holding the phone reads "You're in", and both ends have
      confirmed before the room fills. It is also what an early joiner sees when
      they tap a link that was sent out the day before. */
-  fv.classList.toggle('ready', !msg.live && !msg.end);
-  if (!msg.live && !msg.end) { $('fReadyName').textContent = T.S.title || ''; return; }
+  /* A lamp has no text to read, so "You're in" would leave it black — and a
+     black lamp beside a bowl is indistinguishable from one that never
+     connected. Let it light the first section's colour instead: that IS the
+     confirmation, in the only language a lamp has. */
+  const lamp = fv.classList.contains('lamp');
+  fv.classList.toggle('ready', !msg.live && !msg.end && !lamp);
+  if (!msg.live && !msg.end && !lamp) { $('fReadyName').textContent = T.S.title || ''; return; }
   if (msg.end) {
     const poem = T.S.sections.map(x => x.phrase).filter(Boolean).join(' / ');
     $('faPoem').textContent = poem || T.S.subtitle || T.S.title || '';
@@ -4767,7 +4799,10 @@ function followerJoin(code) {
   });
   if (!F.net) { alert('This browser can’t join a session.'); return; }
   F.net.send({ v: SYNC_V, t: 'need', sh: null });
-  F.net.send({ v: SYNC_V, t: 'here', fid: F.fid });
+  const here = () => F.net && F.net.send({ v: SYNC_V, t: 'here', fid: F.fid });
+  here();
+  clearInterval(F.hereTimer);
+  F.hereTimer = setInterval(here, 15000);   // presence, so the leader's count can decay
   requestWake();
   clearInterval(F.staleTimer);
   F.staleTimer = setInterval(() => {

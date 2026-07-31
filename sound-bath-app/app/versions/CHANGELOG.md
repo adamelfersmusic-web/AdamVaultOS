@@ -9,6 +9,45 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.17a — the audit of v1.17 · 2026-07-31
+
+*"Is this bulletproof and finished?"* No — six defects, found by going back
+through it looking for them rather than answering the question. Each one is
+now covered by an assertion in `tools/share-check.cjs`.
+
+**⚠️ The room code rode along inside exported sessions.** `exportSession` did
+`{...S}`, which now includes `room`. Sessions are *meant* to travel — that's
+most of `sessions-travel.md` — so a code baked into a file would put two
+leaders in two cities into one relay room, silently overwriting each other's
+followers. Same bug in **duplicate**, which handed a copy a second door into
+the original's room. Both stripped, plus a belt-and-braces strip on import for
+files already in the wild.
+
+**⚠️ The device count could not go down.** `L.seen` was a Set that only ever
+grew, so a leader who tested with their own phone and closed it was still told
+*"1 device connected"* — **a pre-flight test that reports success for a room
+that isn't there, which is worse than having no count at all.** Followers now
+repeat their presence every 15 s, the count expires after 45, and it repaints
+on the heartbeat so a device that left is reflected rather than remembered.
+
+**⚠️ Save the code would have silently done nothing on iOS.** The card was
+built in `canvas.toBlob()`'s async callback, and iOS Safari refuses
+`navigator.share()` once the user-activation window has closed. The share sheet
+never appears and nothing errors anywhere the leader can see. Rebuilt
+synchronously via `toDataURL`, so the whole path stays inside the tap.
+
+**A lamp joining early stayed black** — indistinguishable from one that never
+connected. It now lights the first section's colour, which is the only language
+a lamp has for *"I'm here."*
+
+**And one false alarm, worth recording:** the first version of the audit failed
+its own iOS assertion because the comment explaining why `toBlob` is *not* used
+matched a regex looking for `toBlob`. Assert on code with the comments
+stripped. A test that fails for the wrong reason teaches the same bad habit as
+one that passes for the wrong reason.
+
+---
+
 ## v1.17 — never once in a hundred thousand · 2026-07-31
 
 Adam, on hearing that v1.16's first encoder produced perfect-looking,

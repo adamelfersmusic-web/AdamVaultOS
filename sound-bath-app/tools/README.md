@@ -1,15 +1,27 @@
 # tools
 
-Checks for the parts of Bed whose only reader is a machine.
+Checks for the parts of Bed whose only reader is a machine. The standing rule
+they implement is `brand/how-this-gets-decided.md` § 6b.
 
 ```sh
-node tools/qr-check.cjs      # ~0.6s, no dependencies, no network
+node tools/qr-check.cjs       # ~0.6s, no dependencies, runs in the Netlify build
+node tools/share-check.cjs    # needs Playwright; run by hand
 ```
 
-Run it before any commit that touches the QR encoder in `app/index.html`.
-Green means the encoder is byte-identical to an independent implementation
-across all 48 version × mask configurations, and the app's own read-back check
-refuses every possible single-module corruption.
+**`qr-check.cjs`** is the gate. Run it before any commit that touches the QR
+encoder in `app/index.html` — though you don't have to remember to, because
+it's the first line of the build. Green means the encoder is byte-identical to
+an independent implementation across all 48 version × mask configurations, and
+the app's own read-back check refuses every possible single-module corruption.
+
+**`share-check.cjs`** drives the share flow in a real browser. It isn't the
+gate because it needs Playwright, and a gate that needs installing is a gate
+that gets skipped. Every assertion in it exists because the thing it checks was
+broken: the room code riding along inside exported session files, a duplicated
+session inheriting its original's code, a device count that only ever grew (so
+a leader could be told "2 devices connected" after both had left the building),
+a saved card built in an async callback that iOS treats as outside the tap, and
+a lamp that stayed black when it joined early.
 
 ---
 
