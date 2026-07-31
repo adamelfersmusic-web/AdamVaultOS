@@ -2045,7 +2045,16 @@ class Bed {
     return { held, moving: moving.length, total };
   }
   /* The optional colour: a soft IV beneath the drone — root and octave of the
-     fourth degree only. Still no third anywhere; still static once entered. */
+     fourth degree only. Still no third anywhere; still static once entered.
+
+     ⚠️ UNVERIFIED BY EAR — see brand/ear-tests.md E1. This puts a whole tone in
+     the bass: root+5 sits directly under root+7, which on a C root is F2 (87 Hz)
+     against G2 (98 Hz), ~11 Hz apart and well inside one critical band. Those
+     two tones BEAT. That may be the best thing in the engine — law 3 forbids
+     automated dynamics, so beating between fixed tones is the only movement Bed
+     is allowed to have — or it may be mud in the one band nothing else competes
+     in. Nobody has listened to it on a real sub yet. Do not tune these levels
+     from the numbers; run E1 first. */
   setChords(on, t) {
     if (on === this.chordsOn) return;
     this.chordsOn = on;

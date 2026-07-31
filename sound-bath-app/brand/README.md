@@ -20,6 +20,8 @@ unchanged.
 | Landing page | [`../site/index.html`](../site/index.html) |
 | Compact mark / favicon | [`assets/mark.svg`](assets/mark.svg) |
 | Wordmark lockup | [`assets/wordmark.svg`](assets/wordmark.svg) |
+| **⚠️ Ear tests** — the things only Adam can answer, on the real rig | [`ear-tests.md`](ear-tests.md) |
+| **Sessions travel** — export/import, rehearsal, and the share link | [`sessions-travel.md`](sessions-travel.md) |
 | **Taglines** — the running list, the five tests, the BED+ROOMS hazard | [`taglines.md`](taglines.md) |
 | Open questions | [`audit-questions.md`](audit-questions.md) |
 | BOOK comparison pass | [`book-comparison.md`](book-comparison.md) |
