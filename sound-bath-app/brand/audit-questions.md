@@ -2,7 +2,12 @@
 
 Captured mid-immersion, right after extracting the brand from the app.
 Each entry: the context that raises it → the question → my lean.
-Four are marked **⛔ blocking** — they gate something already in motion.
+
+**Updated after the BOOK comparison pass** (`book-comparison.md`): M1 and M3
+were already answered in the pre-app strategy doc and are retired; A4 is
+reversed. **Two blockers remain — M2 and M4** — and M4 now also carries
+*where Bed gets published at all*, since `sound-bath-app/` is deliberately
+outside the repo's published surface.
 
 ---
 
@@ -31,13 +36,15 @@ Screen 2 of the film shows three phones changing section together.
 exists (one device propped up, passed around)?
 **Lean: don't film a lie.** Either build the sync or reframe shot 4.
 
-**A4 · "432, 528, anything."**
-The ensemble screen's own microcopy names 528 Hz — deep frequency-healing
-territory — while the brand forbids claims about what frequencies do to a body.
-A number is a label, but naming *that* number is a wink.
-→ Keep the wink, or swap the example ("432, 441, anything")?
-**Lean: keep 432 (it's a genuine tuning practice), drop 528.** The app
-shouldn't name-check numerology the marketing is forbidden to touch.
+**A4 · "432, 528, anything." — REVISED: keep 528.**
+Originally I leaned toward dropping it. BOOK reverses me: the reference pitch is
+a Hz *field* precisely so 432, 528 and the whole Solfeggio set "fall out of one
+control" without the app endorsing any of them. BOOK is blunter than I was —
+the chakra-note mapping is a 20th-century Western construction, the competing
+systems disagree "which is the tell," and 440 is a 1939 committee decision so
+"432 isn't wrong, it's differently arbitrary." The rule it lands on is the
+canon's: **treat it as vocabulary, not mechanism — the app labels, it never
+explains.** A number in a field is not a claim.
 
 **A5 · The band row is binary; the floor never leaves.**
 During a Space section the sub sinks to 0.35 but keeps sounding — so the row
@@ -94,13 +101,14 @@ likely prop — landscape may be the natural orientation. Verified portrait only
 
 ## Marketing
 
-**M1 · ⛔ "Bed" is unsearchable.**
-Beautiful name, hopeless SEO — you cannot rank for "bed." Every printed URL,
-handle, and QR code needs an answer first.
-→ What's the public handle? bed.fm? getbed? bedholds.space? Does the wordmark
-always travel with "holding space" in public for meaning and findability?
-**Blocking: any printed artefact.** My lean: lean into the tag — the pair
-"Bed · holding space" is distinctive where "Bed" alone vanishes.
+**M1 · ✅ RETIRED — the name was already decided, and my lean was wrong.**
+See `book-comparison.md` §2. BOOK settled this on the opposite logic: Bed sells
+hand-to-hand inside a community, so memorability and meaning beat search volume
+— the reverse of Pedal's constraint. Alternatives were rejected with reasons
+(Bath collides with bathtubs; bathsound.io inverts a compound; Atmos is Dolby's).
+And the meaning I'd missed: **Bed means the musical bed, the thing people are
+lying on, and the sense of being held, all at once.**
+→ Still open, much smaller: a URL to print. Not a blocker.
 
 **M2 · ⛔ Documentary or staged?**
 The film's insider shot only lands with real hands, and the brand's honesty
@@ -112,30 +120,36 @@ a real night with consent built into the invitation?
 **Blocking: production planning.** My lean: the invited room — real
 practitioners, real session, everyone came knowing. Staged honesty.
 
-**M3 · ⛔ Price posture vs. the ownership story.**
-The buyer spends $800 on a bowl without blinking; not looking for cheap, not
-looking for clinical. Meanwhile the landing page promises "sessions are files
-you own" and "no account" — a sovereignty story that a subscription would
-quietly contradict.
-→ One-time purchase like an instrument? Subscription? Free app + paid
-something-else (sessions? training? the ensemble layer)?
-**Blocking: any buy button.** My lean: price it like an instrument, not a SaaS
-— it's the only model the copy already believes in.
+**M3 · ✅ RETIRED — answered in BOOK, and my lean converged with it.**
+See `book-comparison.md` §2. BOOK: **"Price like gear."** A rig, not an app —
+the sub is what makes the price legible. **Packs, not subscriptions** (four
+sessions a year makes a pack closer to buying another bowl). **Don't raise.**
+Hardware sequencing: recommend → affiliate → rent → bundle; never manufacture.
+The strongest move, which I didn't have: **rent the sub** — needed 4–5×/year,
+$100 against an event grossing thousands, and whoever rents twice is a real
+customer. Resolves the tension I flagged: "files you own" and gear pricing are
+the same posture, not a contradiction.
 
-**M4 · ⛔ What does the landing page want?**
-"Open Bed" currently opens the free app, no gate. Fine for now — but is the
-page's conversion event direct use, a waitlist, or booking a first session
-with a founding practitioner?
-**Blocking: the final CTA.** My lean: for launch, keep "Open Bed" ungated and
-add one quiet secondary action for the founding circle (M5).
+**M4 · ⛔ What does the landing page want — and where does Bed live?**
+"Open Bed" currently opens the free app, no gate. Is the conversion event
+direct use, a waitlist, or booking a first session with a founding
+practitioner? **Now bigger than a CTA:** `sound-bath-app/` sits outside
+`public/` and is intentionally unpublished, so this question also decides
+whether Bed moves into `public/` or lifts into its own repo.
+**Blocking: the CTA and the deploy.** My lean: keep "Open Bed" ungated, add one
+quiet secondary action for the founding circle (M5), and lift Bed into its own
+repo rather than mixing it into the other product's published surface.
 
-**M5 · The endorsement path.**
-"The people whose endorsement matters most" are practitioners — and this
-market lives in teacher trainings, retreats, and IG, not on launch sites.
-→ Is there a founding circle — ten practitioners, free forever, their real
-sessions become seed fixtures with credit (the library already ships two
-transcribed real sessions; that pattern is the growth loop)?
-**Lean: yes, and their names in the library is the ask that flatters.**
+**M5 · The endorsement path. — MERGED with BOOK's growth loop.**
+My founding-circle idea (ten practitioners, free forever, their real sessions
+become seed fixtures with credit) still stands, but BOOK has the stronger
+mechanic: **one leader licence, N follower devices** — "nine practitioners
+experience the app from the inside every session, and some fraction will want
+to lead their own." Plus **local legends**: the biggest practitioner in each
+regional scene writes a pack and becomes an affiliate — "that's how it starts,
+not with a marquee signing." **The product's multiplayer shape IS the
+distribution.** Also BOOK's validation test: ten warm sales validate your
+relationships, not a market — **the real signal is buyer eleven.**
 
 **M6 · May we say "sold-out"?**
 The code itself says the seed sessions were "transcribed from handouts used at
