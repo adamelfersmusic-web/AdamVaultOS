@@ -5,7 +5,7 @@ A drone-first practice tool for improvising musicians.
 **Live:** https://adamelfersmusic-web.github.io/AdamVaultOS/looper/
 **Source:** `public/looper/index.html` — one self-contained file. No
 dependencies, no build step, no network, works offline.
-**Status:** shipped. Unverified on real speakers.
+**Status:** shipped and **verified on real speakers.** v1 frozen at `/looper/v1/` for A/B.
 
 > **A separate product from the sound bath app** (`/sound-bath-app/`).
 > Different user, different room, different problem. They share a synthesis
