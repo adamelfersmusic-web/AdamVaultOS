@@ -6,8 +6,8 @@ A drone-first practice tool for improvising musicians.
 **Source:** `public/looper/index.html` — one self-contained file. No
 dependencies, no build step, no network, works offline.
 **Status:** shipped and **verified on real speakers.** v1 frozen at `/looper/v1/` for A/B.
-Tier 2 and Tier 3 (see `ROADMAP-TIERS.md`) built and measured headlessly; frozen at
-`/looper/v2/` and `/looper/v3/`, awaiting speaker listens.
+Tiers 2–4 (see `ROADMAP-TIERS.md`) built and measured headlessly; frozen at
+`/looper/v2/`, `/looper/v3/` and `/looper/v4/`, awaiting speaker listens.
 
 > **A separate product from the sound bath app** (`/sound-bath-app/`).
 > Different user, different room, different problem. They share a synthesis
@@ -284,6 +284,26 @@ paths are idle (drone and groove levels bit-identical to v2).
    is on screen when it's off. Works with the kit silent — the scheduler
    counts bars either way.
 
+### Tier 4 — built, measured (v4)
+
+The app keeps. Tier 2/3 sound untouched (levels bit-identical to v2/v3).
+
+1. **Recording.** One button in the transport captures everything the app is
+   making — drone, kit, Rhodes, line in — from a tap on the final output.
+   Takes land as **16-bit WAV** (chosen over webm/opus because takes need to
+   open in whatever the player edits with), kept in IndexedDB with one
+   optional line of text each, playable back, downloadable. Capture runs on
+   the audio thread (AudioWorklet; ScriptProcessor fallback on `file://`).
+   Verified: a 3.15 s take produced a byte-exact 44.1 kHz RIFF/WAVE with the
+   mix at −13.7 dBFS inside it. Not a notes app; **no overdub looping.**
+2. **The URL is the save file.** `#A/fifth/felt/bossa/96` lands on exactly
+   that drone; `#loop/Dm7,G7,CM7-2/felt/bossa/96` on exactly that form
+   (`-N` = bars, `M7`/`m7`/`h7`/`5` = Δ/m7/ø7/power chord, `Cs`/`Eb` for
+   accidentals). A shared hash beats localStorage on load; every change
+   rewrites it in place via `replaceState`, so the address bar is always a
+   shareable snapshot. Round-trip and garbage-rejection verified. No account,
+   no backend.
+
 ---
 
 ## 6. What to build next, in order
@@ -408,6 +428,7 @@ sound change.
 | **v1 — verified on speakers** | `/AdamVaultOS/looper/v1/` |
 | **v2 — tier 2, measured, awaiting listen** | `/AdamVaultOS/looper/v2/` |
 | **v3 — tier 3, measured, awaiting listen** | `/AdamVaultOS/looper/v3/` |
+| **v4 — tier 4, measured, awaiting listen** | `/AdamVaultOS/looper/v4/` |
 
 `v1/index.html` is a frozen copy and must never be edited. Freeze another
 snapshot the same way before any change big enough to need comparing.

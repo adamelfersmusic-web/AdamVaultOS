@@ -30,7 +30,7 @@ switched by ear.
 | **v1** | `/AdamVaultOS/looper/v1/` | ✅ frozen — verified on real speakers |
 | **v2** | `/AdamVaultOS/looper/v2/` | ✅ frozen — tier 2 built, measured headlessly; awaiting speaker listen |
 | **v3** | `/AdamVaultOS/looper/v3/` | ✅ frozen — tier 3 built, measured headlessly; awaiting speaker listen |
-| **v4** | `/AdamVaultOS/looper/v4/` | freeze when tier 4 is done |
+| **v4** | `/AdamVaultOS/looper/v4/` | ✅ frozen — tier 4 built, measured headlessly; awaiting speaker listen |
 | current | `/AdamVaultOS/looper/` | whatever is being worked on |
 
 ---
