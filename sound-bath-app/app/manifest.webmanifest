@@ -1,7 +1,7 @@
 {
   "name": "Bed — holding space",
   "short_name": "Bed",
-  "description": "An instrument for holding space.",
+  "description": "The instrument that holds you, so you can hold the room.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
