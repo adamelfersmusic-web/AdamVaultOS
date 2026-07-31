@@ -9,6 +9,49 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.14 — making the lamp actually good · 2026-07-31
+
+Adam: *"I want lamp-to-your-bowls to exist and be good."* It existed at v1.13.
+**Three things were wrong with it**, and working and good are not the same thing.
+
+### 1 · It ran off the edge of the phone
+
+At `24vmin` the root glyph alone was ~200px, and *"1 3 5 2 4 6 7"* on one line
+was ~570px on a 430px screen. **The numbers were literally falling off the
+screen** — the exact failure that matters most, since the whole point is reading
+it at a glance.
+
+**Now two rows**, stacked: what's yours, then what's also available. That keeps
+each row to three or four glyphs, which is what allows them to be this large at
+all. It's also better design — the tiers *mean* different things, and stacking
+them says so without a bracket.
+
+### 2 · It showed you numbers you must not play
+
+v1.13 rendered the full sheet including the **restricted** group. At sheet size,
+`[1 4]` reads as *rest* because the brackets are legible. **At lamp size the
+brackets become enormous punctuation and the numbers register long before
+them** — so a person on a floor sees a giant "4" and plays it.
+
+**Restricted is gone from the lamp entirely.** The lamp shows only what's yours.
+The full picture is one tap away on the sheet, where the brackets work.
+
+### 3 · It fired the crossfade on first paint
+
+The fade exists so a section change isn't a jolt at that scale. It was also
+running when the lamp opened, so the numbers **faded in from nothing every
+time** — which looks like a bug because it is one. It now only crossfades when
+there was something there to leave.
+
+### Also
+- **`vmin`, not `vw`.** A phone face-up on a floor is as likely to be landscape,
+  where `22vw` was absurd.
+- **Tighter ratios than the sheet.** The root is 1.9em on the sheet against
+  12–15px text and that reads as emphasis; at lamp scale the same ratio is what
+  ran a four-bowl section off the edge. The root still wins, by less.
+
+---
+
 ## v1.13 — your bowls, the size of your hand · 2026-07-31
 
 The thing filed in `lumen.md` as *"most of the magic for a small change"*, built.
