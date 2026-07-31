@@ -34,6 +34,7 @@ unchanged.
 | **Distribution & saving** — deploy, storage, and the staged plan | [`distribution-and-saving.md`](distribution-and-saving.md) |
 | **Lumen** — the arc made physical: lamp mode, WLED pads, and the honest limit | [`lumen.md`](lumen.md) |
 | **Hardware strategy** — not speakers, yes lights, and why | [`hardware-strategy.md`](hardware-strategy.md) |
+| Eye mask — product sheet, the object drawn | [`assets/mask.html`](assets/mask.html) (open in a browser) |
 | **Eye masks** — the best hardware product on the list, and why | [`eye-masks.md`](eye-masks.md) |
 | **Speaker & room tuning** — "Bed knows this speaker", in three tiers | [`speaker-and-room-tuning.md`](speaker-and-room-tuning.md) |
 | **You don't need seven bowls** — the yoga-teacher on-ramp, and guitar in Bed | [`you-dont-need-seven-bowls.md`](you-dont-need-seven-bowls.md) |
