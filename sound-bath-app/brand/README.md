@@ -20,6 +20,7 @@ adopted; the wordmark (didone caps, tracked `.28em`) is settled either way.
 | Wordmark lockup | [`assets/wordmark.svg`](assets/wordmark.svg) |
 | Open questions | [`audit-questions.md`](audit-questions.md) |
 | BOOK comparison pass | [`book-comparison.md`](book-comparison.md) |
+| **Structural language audit** — is the sound bath taxonomy our own words? | [`structure-language-audit.md`](structure-language-audit.md) |
 | Mark comparison — ring vs stack | [`mark-comparison.html`](mark-comparison.html) (open in a browser — a decision doc, nothing adopted yet) |
 
 ## ⚠️ Publishing
