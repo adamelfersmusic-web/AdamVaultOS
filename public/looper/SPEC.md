@@ -6,7 +6,8 @@ A drone-first practice tool for improvising musicians.
 **Source:** `public/looper/index.html` — one self-contained file. No
 dependencies, no build step, no network, works offline.
 **Status:** shipped and **verified on real speakers.** v1 frozen at `/looper/v1/` for A/B.
-Tier 2 (see `ROADMAP-TIERS.md`) built and measured headlessly; frozen at `/looper/v2/`, awaiting a speaker listen.
+Tier 2 and Tier 3 (see `ROADMAP-TIERS.md`) built and measured headlessly; frozen at
+`/looper/v2/` and `/looper/v3/`, awaiting speaker listens.
 
 > **A separate product from the sound bath app** (`/sound-bath-app/`).
 > Different user, different room, different problem. They share a synthesis
@@ -247,6 +248,42 @@ rather than being high-passed: constant wet under a moving dry *is* a timbre
 change. Sends stay post-fader; the softened glue (the other half of that fix)
 stayed and cut kick-rate pumping from +4.1 dB to +3.1 dB.
 
+### Tier 3 — built, measured (v3)
+
+The app plays. Measured headlessly; Tier 2's sound is untouched when the new
+paths are idle (drone and groove levels bit-identical to v2).
+
+1. **MIDI splits at C3.** Below C3 a note-on sets the drone root (same
+   downbeat quantise as a tap); C3 and up plays a **Rhodes** — two-op 1:1 FM
+   with a seventh-partial tine that hardens with velocity. Measured: 21 dB
+   velocity-to-level range; attack brightness grades 293 → 501 Hz centroid
+   across velocity while the sustain stays warm (2nd partial ≈ −12 dB);
+   ~1.4 s decay at C4, longer low. Sustain pedal (CC64) honoured, 12-voice
+   polyphony with oldest-note stealing, keys panned by position. Fortissimo
+   four-note chord over full kit and drone peaks −0.91 dBFS.
+2. **Latency, reported once** — first time a keyboard appears, one line under
+   the transport: "*N* ms — good / fine for drones, late for keys / use wired
+   output", from `baseLatency + outputLatency`. A true impulse round-trip
+   needs mic calibration and stays out of scope. No setting.
+3. **Line in** — one `In` fader (the sanctioned line-in level). At zero
+   nothing is requested; the first move asks for the input with **all speech
+   DSP disabled** (echo cancellation would duck the instrument whenever the
+   drone plays). Channel strip: 70 Hz highpass, gentle 2.2:1 compression
+   (makeup gain cancelled), −3 dB shelf at 3.4 kHz, into the master **and the
+   same reverb the pads use** — the instrument sits inside the room instead
+   of on top of it. No amp sim, deliberately. Verified with a fake input
+   device: +17 dB signal over the fader-zero floor.
+4. **Voice** rides the identical path (3.4): headphones fine; a mic in a
+   room with a speaker playing a sustained drone is the textbook feedback
+   case, and that is the room's problem, not a setting's.
+5. **Cycle mode** — long-press the root strip, pick one of five intervals
+   (4ths, 5ths, half, whole, m3) and 4/8/16 bars; the row collapses and the
+   root strip itself is the visualiser. Verified: roots walk exactly by the
+   interval on exact bar boundaries (measured 4.36–4.42 s against a 4.36 s
+   grid at 220 bpm); tapping any root takes manual control and stops; nothing
+   is on screen when it's off. Works with the kit silent — the scheduler
+   counts bars either way.
+
 ---
 
 ## 6. What to build next, in order
@@ -370,6 +407,7 @@ sound change.
 | **Current / evolving** | `/AdamVaultOS/looper/` |
 | **v1 — verified on speakers** | `/AdamVaultOS/looper/v1/` |
 | **v2 — tier 2, measured, awaiting listen** | `/AdamVaultOS/looper/v2/` |
+| **v3 — tier 3, measured, awaiting listen** | `/AdamVaultOS/looper/v3/` |
 
 `v1/index.html` is a frozen copy and must never be edited. Freeze another
 snapshot the same way before any change big enough to need comparing.
