@@ -9,6 +9,68 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.5 — held sections · 2026-07-31
+
+**You can now hear a section while you edit it, and you still cannot play your
+session back.** Those two facts have to stay true together, so law 6 grew a
+sharper edge:
+
+> ### You may tune the vertical. Never the horizontal.
+
+**Vertical is balance** — four lanes at once, is the motif too loud under that
+drone. That's a chord, and holding a chord while you pull a stop is what an
+instrument *is*. **Horizontal is arc** — how it arrives, what section two feels
+like after section one. That's the fifty minutes, and it stays unheard until GO.
+Everything dangerous lives in the horizontal; nothing dangerous lives in the
+vertical.
+
+### What a held section is
+
+Tap **hold** on a section card (or **Hold** in its drawer) and it *sustains*:
+its key, its four lanes, at their plateau levels. Open any block and change a
+level, a character, an element — you hear it move, because `syncHeld()` is
+called from `renderTimeline()`, so the picture and the sound cannot disagree.
+
+Deliberately absent, and **to be refused when asked for by name**:
+
+- **No fades.** Not in, not out. A fade is time, and *"but I want to hear how it
+  arrives"* is the most reasonable-sounding request that would turn this into a
+  transport. `HELD_RAMP` is declick, not a fade.
+- **No advance to the next section. No repeat** — nothing ended.
+- **No position**, because there is no position. Nothing to scrub.
+
+### Why it's called "held"
+
+The app already owned the word. **HOLD** on the perform screen means the sound
+continues and the plan waits — which is exactly this. And in this room, *"I felt
+really held tonight"* means safe. A bed is the thing that holds you.
+
+So a brand-new feature ships with **zero new vocabulary**: not *preview*, not
+*audition*, not *solo*, not *loop* — all four borrowed from software that isn't
+this.
+
+### Amber, and why that's the rule rather than an exception
+
+A held section wears the amber border. Amber means *live and making sound*, and
+a held section is making sound. **First time the rule has told us what to do
+instead of what not to do.**
+
+### It stops, three ways, verified
+
+Tapping it again · leaving Design (hooked in `nav()`) · **BEGIN** (first line of
+`startPerform`). Sound left running after you walk away would be the worst bug
+this product could have, so all three paths were tested rather than reasoned
+about.
+
+### Also
+- **Fade edits now redraw the block** — v1.4 made blocks draw their fades and
+  `bdFadeIn`/`bdFadeOut` only called `save()`. The picture went stale.
+- The **hold** chip appears only on cards wide enough to carry it without eating
+  the section's name; narrow sections are held from the drawer. The name never
+  gets traded for an affordance.
+
+---
+
 ## v1.4 — blocks draw their envelope · 2026-07-31
 
 A block used to draw its **level** — a rectangle filled from the bottom. It now
