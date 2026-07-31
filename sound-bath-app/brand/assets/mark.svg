@@ -1,8 +1,18 @@
-<!-- BED — the compact mark. A bowl seen from above; also the GO ring.
-     It wears amber because the mark depicts a sounding bowl — the one thing
-     amber is allowed to mean. The dark plate travels with it: never set the
-     ring on white. Identical to the app's favicon on purpose. -->
+<!-- BED — the mark. Four layers: sub, drone, motif, texture — the strata of the
+     bed seen from the side, heaviest line at the bottom where the sub lives.
+     A cross-section of the sound, and of a bed.
+
+     INK, NEVER AMBER. Amber means one thing in this system — live and making
+     sound — and the identity must not hold an exception to the rule the whole
+     system rests on. The GO control wears amber; the mark never does.
+
+     STATIC. Never animate the bars, never fill them individually: bars that
+     light up one at a time are a level meter, which is on the anti-reference
+     list. Always stacked, always centred, never rotated, never boxed.
+
+     ONE MASTER. Gaps are tuned for 16px and hold at any size — there is no
+     second small-size variant to maintain. The dark plate travels with it. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Bed">
   <rect width="32" height="32" fill="#0a0910"/>
-  <circle cx="16" cy="16" r="7" fill="none" stroke="#d9a544" stroke-width="1.5"/>
+  <g fill="#e8e4f0"><rect x="12.6" y="9.9" width="6.8" height="1.2" rx=".6"/><rect x="10.2" y="13.9" width="11.6" height="1.45" rx=".72"/><rect x="7.6" y="18" width="16.8" height="1.75" rx=".87"/><rect x="5" y="22.3" width="22" height="2.2" rx="1.1"/></g>
 </svg>
