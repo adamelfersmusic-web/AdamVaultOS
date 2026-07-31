@@ -309,16 +309,6 @@ input[type=range]::-moz-range-thumb { width: 5px; height: 20px; border: none; ba
 .ptop { display: flex; align-items: center; gap: 12px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); }
 .ptop .pt-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .ptop .pt-clock { font-variant-numeric: tabular-nums; letter-spacing: .06em; }
-/* The floor, when it isn't neutral. Visible state rather than a hidden
-   setting — a leader shouldn't have to remember they moved it, and seeing it
-   is how anyone learns the control exists at all. Tap opens the room. */
-.ptop .pt-floor {
-  display: none; font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--ink3); font-variant-numeric: tabular-nums; padding: 6px 8px;
-  border: 1px solid var(--line); border-radius: var(--r);
-}
-.ptop .pt-floor.on { display: block; }
-.ptop .pt-floor:hover { color: var(--ink2); border-color: var(--line2); }
 .ptop button { color: var(--ink3); font-size: 15px; padding: 8px 10px; }
 .ptop button:hover { color: var(--ink); }
 .parc { display: flex; height: 5px; border-radius: 3px; overflow: hidden; gap: 1px; margin: 10px 0 0; position: relative; }
@@ -628,7 +618,6 @@ body.live #goBtn .glabel { color: var(--amber); }
         <button id="pExit" aria-label="Session menu">&#9776;</button>
         <span class="pt-title" id="pTitle"></span>
         <span class="flexspace"></span>
-        <button class="pt-floor" id="pFloor" aria-label="The room"></button>
         <span class="pt-clock" id="pClock"></span>
       </div>
       <div class="parc" id="pArc"></div>
@@ -881,8 +870,6 @@ body.live #goBtn .glabel { color: var(--amber); }
     <div class="chips" id="bdElements"></div>
   </div>
   <div class="frow" id="bdBedRow" style="display:none">
-    <span class="cap" style="display:block;margin-bottom:7px">Character</span>
-    <div class="chips" id="bdChar" style="margin-bottom:14px"></div>
     <button class="switchrow" id="bdChords" style="width:100%">
       <span class="sw"></span>
       <span style="text-align:left"><span class="st">Colour &mdash; a fourth under the drone</span>
@@ -899,8 +886,6 @@ body.live #goBtn .glabel { color: var(--amber); }
 
 <script>
 'use strict';
-const BED_VERSION = '1.1';
-
 /* ==========================================================================
    BED — exploratory full build.
    Perform first, design second. Engine ported from prototype/bed.html with
@@ -1803,25 +1788,12 @@ class Deep {
   }
 }
 
-/* Vowel formants, in Hz — FIXED, and deliberately never scaled with pitch.
-   This is why a choir cannot ship as a wavetable: harmonics travel with the
-   note, vowels do not. Sing low and high on "ooh" and the vowel stays put.
-   Measured in lab/wavetables.html — see lab/README.md for why the wavetable
-   approach failed and this one didn't. */
-const VOWELS = {
-  ooh: [[320, 1, 90], [800, .28, 110], [2600, .06, 180]],
-  oh:  [[450, 1, 95], [840, .42, 120], [2700, .08, 190]],
-  ah:  [[700, 1, 110], [1220, .5, 140], [2600, .1, 200]],
-};
-const BED_CHARACTERS = { pad: 'Pad', choir: 'Choir' };
-
 /* ---- BED. The drone — the harmonic body. Sustained and deliberately static
    in the 200 Hz – 4 kHz range, because that is where the bowls live. ---- */
 class BedVoice {
   constructor(spec, t, idx) {
     const ctx = A.ctx;
     this.spec = spec; this.midi = spec.midi; this.nodes = [];
-    this.character = spec.character || 'pad';
     const f = mhz(spec.midi);
 
     this.out = ctx.createGain(); this.out.gain.value = 0;
@@ -1830,8 +1802,6 @@ class BedVoice {
     const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
     if (pan) { pan.pan.value = [0, -0.45, 0.4, -0.3, 0.5, -0.2, 0.25][idx] || 0; this.out.connect(pan); pan.connect(A.bus.bed); }
     else this.out.connect(A.bus.bed);
-
-    if (this.character === 'choir') { this.buildChoir(ctx, f, t, idx); return; }
 
     // Dark lowpass tracking pitch, breathing over twenty to thirty seconds.
     this.lp = ctx.createBiquadFilter();
@@ -1870,55 +1840,14 @@ class BedVoice {
     sh.connect(shg); shg.connect(this.out);
     sh.start(t); this.nodes.push(sh); this.oscs.push({ o: sh, ratio: 4 });
   }
-  /* A section, not a soloist. Several singers a few cents apart through FIXED
-     formant filters, so the vowel holds still while the key migrates beneath
-     it. The voice is the most attention-grabbing sound there is, so this sits
-     lower and darker than the pad — the drone's job is still to disappear. */
-  buildChoir(ctx, f, t, idx) {
-    this.sum = ctx.createGain(); this.sum.gain.value = 0.9;
-    this.oscs = [];
-    [-7, -2.5, 3, 6.5].forEach(cents => {
-      const o = ctx.createOscillator();
-      o.type = 'sawtooth';
-      o.frequency.setValueAtTime(clampF(f), t);
-      o.detune.value = cents;
-      const g = ctx.createGain(); g.gain.value = 0.22;
-      o.connect(g); g.connect(this.sum);
-      o.start(t); this.nodes.push(o); this.oscs.push({ o, ratio: 1 });
-    });
-
-    // Breath — the thing that makes it read human rather than synthetic.
-    const ns = ctx.createBufferSource();
-    ns.buffer = A.noise; ns.loop = true;
-    const nf = ctx.createBiquadFilter();
-    nf.type = 'bandpass'; nf.frequency.value = 1800; nf.Q.value = 0.7;
-    const ng = ctx.createGain(); ng.gain.value = 0.01;
-    ns.connect(nf); nf.connect(ng); ng.connect(this.sum);
-    ns.start(t); this.nodes.push(ns);
-
-    // Three formants per part, each drifting slowly — a section breathing,
-    // never a wobble. The vowel per part keeps the stack from sounding unison.
-    const vowel = VOWELS[['ooh', 'oh', 'ooh', 'ah', 'ooh'][idx] || 'ooh'];
-    vowel.forEach(([hz, amp, q]) => {
-      const bp = ctx.createBiquadFilter();
-      bp.type = 'bandpass'; bp.frequency.value = hz; bp.Q.value = hz / q;
-      const bg = ctx.createGain(); bg.gain.value = amp;
-      this.sum.connect(bp); bp.connect(bg); bg.connect(this.out);
-      this.nodes.push(slowLFO(rand(0.017, 0.037), hz * 0.03, bp.frequency, t));
-    });
-  }
-
   /* The level must travel with the pitch — a voice landing on the top of the
      voicing has to arrive at the top voice's volume, or it screams. */
   retune(midi, level, t, glide) {
     this.midi = midi;
     const f = mhz(midi);
     for (const s of this.oscs) s.o.frequency.setTargetAtTime(clampF(f * s.ratio), t, glide / 3);
-    // Formants are fixed — the vowel must NOT travel with the key.
-    if (this.lp) {
-      this.baseCut = Math.min(f * 5.5, 1450);
-      this.lp.frequency.setTargetAtTime(this.baseCut, t, glide / 3);
-    }
+    this.baseCut = Math.min(f * 5.5, 1450);
+    this.lp.frequency.setTargetAtTime(this.baseCut, t, glide / 3);
     if (level != null) {
       this.spec.lvl = level;
       this.out.gain.setTargetAtTime(level, t, glide / 3);
@@ -1932,28 +1861,12 @@ class BedVoice {
 }
 
 class Bed {
-  constructor(pc, t, character) {
+  constructor(pc, t) {
     const specs = bedPitches(pc);
     this.rootMidi = specs[0].midi;
-    this.character = character || 'pad';
-    this.voices = specs.map((s, i) => new BedVoice({ ...s, character: this.character }, t, i));
+    this.voices = specs.map((s, i) => new BedVoice(s, t, i));
     this.chordVoices = null;      // the optional IV colour — root+octave of IV
     this.chordsOn = false;
-  }
-
-  /* Changing character rebuilds the voice set and crossfades — slow, because
-     everything in this app is slower than the UI that triggers it. The pitch
-     logic is untouched, so a migration mid-crossfade still lands correctly. */
-  setCharacter(character, t, secs = 10) {
-    if (character === this.character) return;
-    this.character = character;
-    const old = this.voices;
-    const specs = bedPitches(this.rootMidi - 36 >= 0 ? (this.rootMidi % 12) : 0);
-    // keep the exact pitches we're already on — only the timbre changes
-    this.voices = old.map((v, i) => new BedVoice(
-      { midi: v.midi, lvl: 0, role: v.spec.role, character }, t, i));
-    this.voices.forEach((v, i) => v.fadeTo(old[i].spec.lvl, t, secs / 3));
-    old.forEach(v => { v.fadeTo(0, t, secs / 3); setTimeout(() => { try { v.stop(now()); } catch (e) {} }, secs * 1000); });
   }
   /* Voices keep their ROLE — voice 0 is always the root, voice 4 always the
      top. Because bedPitches() picks the root octave nearest the previous
@@ -2259,7 +2172,7 @@ const T = {
   inst: { deep: null, bed: null, voice: null },
   bands: { deep: 0, bed: 0, voice: 0, air: 0 },
   air: {},                         // element -> { inst, gain, level }
-  ui: { remain: '', clock: '', ring: -1, arcIdx: -1, bands: '', floor: 0 },
+  ui: { remain: '', clock: '', ring: -1, arcIdx: -1, bands: '' },
 };
 
 function activeBlocks(lane, p) { return (T.S.lanes[lane] || []).filter(b => p >= b.fromMin && p < b.toMin); }
@@ -2317,10 +2230,7 @@ function evaluate(jumped) {
       rampBand(k, level, ramp);
     }
     if (k === 'voice' && T.inst.voice) T.inst.voice.setActive(level > 0.001);
-    if (k === 'bed' && T.inst.bed) {
-      T.inst.bed.setChords(blocks.some(b => b.chords), now());
-      if (gov) T.inst.bed.setCharacter(gov.character || 'pad', now());
-    }
+    if (k === 'bed' && T.inst.bed) T.inst.bed.setChords(blocks.some(b => b.chords), now());
     (T.lastGov = T.lastGov || {})[k] = gov;
   }
 
@@ -2427,7 +2337,7 @@ function startPerform(S, pos, from) {
   T.live = false; T.holding = false; T.ended = false;
   T.curSecId = null; T.curPc = 0; T.air = {}; T.lastGov = null;
   T.bands = { deep: 0, bed: 0, voice: 0, air: 0 };
-  T.ui = { remain: '', clock: '', ring: -1, arcIdx: -1, bands: '', floor: 0 };
+  T.ui = { remain: '', clock: '', ring: -1, arcIdx: -1, bands: '' };
   $('scr-perform').classList.remove('done');
   document.body.classList.remove('live');
   nav('perform');
@@ -2605,14 +2515,6 @@ function updatePerformClock(force) {
       $('goBtn').style.setProperty('--p', ring.toFixed(3));
     }
   }
-  const fl = store.settings.floor || 0;
-  if (force || fl !== T.ui.floor) {
-    T.ui.floor = fl;
-    const el = $('pFloor');
-    el.classList.toggle('on', fl !== 0);
-    el.textContent = fl ? `floor ${fl > 0 ? '+' : '−'}${Math.abs(fl)}` : '';
-  }
-
   const clock = `${mmss(T.pos)} · ${mmss(total)}`;
   if (force || clock !== T.ui.clock) {
     T.ui.clock = clock;
@@ -2701,8 +2603,7 @@ function renderLibrary() {
   const check = window.__sheetCheck;
   $('libFoot').innerHTML =
     `${check && check.ok ? '<b>Bowl notation verified</b> against the three real sections on load.' : '<b style="color:var(--red)">Bowl notation check FAILED — see console.</b>'}<br>` +
-    `Everything lives in this browser. Export a session to keep or share it — it's a few kilobytes of parameters, never audio.` +
-    `<br><span style="color:var(--ink4)">v${BED_VERSION}</span>`;
+    `Everything lives in this browser. Export a session to keep or share it — it's a few kilobytes of parameters, never audio.`;
 }
 
 function exportSession(S) {
@@ -2923,7 +2824,7 @@ function renderTimeline() {
     const blocks = (S.lanes[k] || []).map((b, i) => {
       const w = (b.toMin - b.fromMin) * D.ppm;
       const label = k === 'air' ? (b.elements || []).join(' · ')
-        : k === 'bed' ? ((b.character === 'choir' ? 'choir' : 'drone') + (b.chords ? ' + iv' : ''))
+        : k === 'bed' ? ('drone' + (b.chords ? ' + iv' : ''))
         : k === 'voice' ? 'motif' : 'floor';
       return `<button class="blk" data-blk="${k}:${i}" style="left:${b.fromMin * D.ppm + 1}px;width:${Math.max(w - 2, 10)}px;--bc:${laneColors[k]}">
         <span class="lv" style="height:${Math.round((b.level ?? 0.6) * 100)}%"></span>
@@ -3164,14 +3065,6 @@ function openBlkDrawer(lane, idx) {
   if (lane === 'bed') {
     $('bdChords').classList.toggle('on', !!b.chords);
     $('bdChords').onclick = () => { b.chords = !b.chords; save(); openBlkDrawer(lane, idx); renderTimeline(); };
-    $('bdChar').innerHTML = Object.entries(BED_CHARACTERS).map(([k, label]) =>
-      `<button class="chip ${(b.character || 'pad') === k ? 'on' : ''}" data-char="${k}">${label}</button>`).join('');
-    $('bdChar').querySelectorAll('[data-char]').forEach(el => el.onclick = () => {
-      b.character = el.dataset.char;
-      if (b.character === 'pad') delete b.character;
-      save(); openBlkDrawer(lane, idx); renderTimeline();
-      if (T.live && T.inst.bed) evaluate(false);
-    });
   }
 
   const crossed = S.sections.filter(s => b.fromMin < s.toMin && b.toMin > s.fromMin);
@@ -3367,7 +3260,6 @@ function wire() {
     $('uEnd').textContent = 'End the session'; $('uEndHint').textContent = '';
     $('utilOvl').classList.add('open');
   };
-  $('pFloor').onclick = () => $('pExit').click();     // the readout is also the way in
   $('pSheet').onclick = () => { renderFollower(); $('followerView').classList.add('open'); };
   $('pShare').onclick = startSharing;
   $('joinGo').onclick = () => {
