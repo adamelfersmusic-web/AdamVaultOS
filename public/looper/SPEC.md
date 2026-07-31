@@ -172,16 +172,43 @@ rim, whatever. That is the only customisation that matters.
 
 ---
 
-## 5. The one open question
+## 5. Verified on speakers ✅
 
-**Nobody has heard it on real speakers.**
+**Tested in a real room. It works.** *"Actually really cool"* — and separately,
+*"cool and fun to use."* That was the one thing gating everything: the whole
+differentiator is "good enough that you'd leave it running for an hour," and it
+now has an answer from someone with ears.
 
-It was built and metered, never listened to. The whole differentiator is "this
-sounds good enough that you'd leave it running for an hour," and that is
-currently unverified. The failure mode is **fatigue**, which does not appear in
-a thirty-second audition — it appears at minute twenty.
+What the listen turned up, in the practitioner's own ranking:
 
-Everything in §6 is speculative until that listen happens.
+| | Verdict |
+|---|---|
+| **Overall** | Works. Fun to use. The framing holds. |
+| **Pads / tones** | *"Could be a bit better — not bad, but not incredible."* Good enough to keep, not yet the thing the pitch claims. |
+| **Percussion** | **The weakest part** — both the sounds and the grooves. This is the priority. |
+| **Missing** | Recording. Wants to keep motifs and loop files. |
+
+### Why the percussion is weak — diagnosed, not guessed
+
+1. **The limiter is chewing the kick.** The master brick-wall has a 3 ms attack;
+   one cycle at 55 Hz is 18 ms, so it tracks *inside* the waveform and turns a
+   clean sine drop grainy. Identical bug to the one measured and fixed in
+   `bed.html`, where it took the sub from grit to a −92 dB second harmonic.
+2. **The kick is too simple.** Two sines — a 160→51 Hz drop plus a quiet
+   octave. Clean in the sense of *empty*. Digital kicks that hold up have a
+   transient, a pitched body and a short noise component.
+3. **The shaker's filter is far too wide.** Bandpass at 6.1 kHz with Q = 0.9 is
+   barely filtering — it reads as a noise blip rather than beads in a shell, and
+   it lacks the two-stage strike-then-rattle shape.
+4. **The grooves are correct but not *played*.** The patterns are
+   musicologically right — the bossa and son claves are accurate. But velocity
+   varies by only ±4% on every groove except Dust, there are no ghost notes
+   anywhere, and the shaker patterns are fixed grids. Rhythmically accurate,
+   performatively dead.
+
+The fix is not new patterns. It is velocity life and micro-timing across *all*
+grooves rather than only the lo-fi one, ghost notes on the kick, and a real
+two-stage shaker.
 
 ---
 
@@ -292,3 +319,26 @@ important half of the product, and `FlowSound` is generic enough to be invisible
 The naming territory worth mining is the positioning itself: staying in
 improviser mode, never entering producer mode, an instrument rather than a
 studio.
+
+---
+
+## 8. Comparing versions
+
+The version verified on speakers is frozen and deployed alongside the live one,
+so two browser tabs can be A/B'd directly — which is the only way to judge a
+sound change.
+
+| | URL |
+|---|---|
+| **Current / evolving** | `/AdamVaultOS/looper/` |
+| **v1 — verified on speakers** | `/AdamVaultOS/looper/v1/` |
+
+`v1/index.html` is a frozen copy and must never be edited. Freeze another
+snapshot the same way before any change big enough to need comparing.
+
+Git also tags it as `pedal-v1`, so the exact state is recoverable by name
+rather than by hash:
+
+```
+git show pedal-v1:public/looper/index.html > /tmp/pedal-v1.html
+```
