@@ -22,6 +22,8 @@ adopted; the wordmark (didone caps, tracked `.28em`) is settled either way.
 | BOOK comparison pass | [`book-comparison.md`](book-comparison.md) |
 | **Structural language audit** — is the sound bath taxonomy our own words? | [`structure-language-audit.md`](structure-language-audit.md) |
 | **Sync is the product** — why multi-device is the business, not a feature | [`sync-is-the-product.md`](sync-is-the-product.md) |
+| Sync technical spec — wire format, join flow, seams | [`sync-spec.md`](sync-spec.md) |
+| **Structure & flow** — "a playlist can't hold", the concrete scenes | [`marketing-the-flow.md`](marketing-the-flow.md) |
 | Mark comparison — ring vs stack | [`mark-comparison.html`](mark-comparison.html) (open in a browser — a decision doc, nothing adopted yet) |
 
 ## ⚠️ Publishing
