@@ -9,6 +9,31 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.2 — shimmer · 2026-07-31
+
+**A third drone character: Shimmer.** Pad · Choir · Shimmer, on the same Bed
+block control added in v1.1 — no new surface, one more entry in a list that
+already existed.
+
+**It is not a new layer.** A barely-there shimmer two octaves up has been in
+every Bed voice since the beginning, at gain `0.007` — about −43 dB, the only
+thing above ~3 kHz. Shimmer brings it forward and adds a fifth and a third
+octave above it (`f×4`, `f×6`, `f×8`), while the body pulls back to 62% so the
+voice gets **brighter, never louder**.
+
+**Why it doesn't fatigue.** Brightness is the one variable BOOK calls
+asymmetric — *"slightly dark is pleasant, slightly bright is fatiguing within
+minutes and ruins a room."* Two things keep this on the right side: the extra
+energy is high *partials* at low level rather than a raised filter cutoff, and
+each glint breathes on its own slow cycle so they never pulse together. That
+independence is what reads as light moving instead of tremolo. All of it rides
+the pre-fader reverb send, so the shimmer is mostly room.
+
+**Law 5 is intact.** *Never bright by default* is a statement about defaults.
+Shimmer is opt-in, per block, and every default is still `pad`.
+
+---
+
 ## v1.1 — the choir · 2026-07-31
 
 **Drone character on bed blocks.** Each Bed-lane block can now be **Pad** (the
