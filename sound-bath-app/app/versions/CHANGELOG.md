@@ -9,6 +9,44 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.8 — a follower's phone doesn't sleep, and it says so · 2026-07-31
+
+Adam: *"we have to take note and make this dead simple so follower apps don't
+sleep."* Right — this is the failure that happens **to forty people at once**,
+silently, while they're lying on the floor.
+
+### What changed
+
+- **Followers re-request the lock on returning.** The `visibilitychange` handler
+  only re-asked when `T.live` — a leader condition. **A follower's phone spends a
+  whole session face-up on a mat being ignored, and iOS drops the lock on every
+  lock/unlock.** Now `F.net` counts too.
+- **The status line moved into normal flow**, centred under the phrase. It was
+  absolutely positioned and collided with the next-section cue. **A cue must never
+  be overlapped by anything, least of all by a warning about the screen.**
+- **When it fails, the line is tappable** and gives the one-time fix in plain
+  words.
+
+### The fix we can't make from here, said plainly
+
+`Settings → Display & Brightness → Auto-Lock → Never` — and on iPhone,
+**Low Power Mode blocks wake lock outright**, which matters because phones at a
+sound bath are frequently low.
+
+**So the second half of the message is the more important half:**
+
+> *If you'd rather not: it costs you nothing. Tap the screen any time and you're
+> back on the current cue immediately — this sheet always shows where the room is
+> now, never where it was.*
+
+**That is true because of an architecture decision made months ago.** The
+follower is **state-synced, not event-streamed** — every message is a full
+snapshot, so a sleeping phone has nothing to catch up on. A tap restores it.
+Sleeping is an inconvenience, never a loss, and telling people that is worth more
+than any amount of fighting the OS.
+
+---
+
 ## v1.7 — the join path, and a silent failure made loud · 2026-07-31
 
 Found by Adam trying to do the obvious thing: share a code on a laptop, join
