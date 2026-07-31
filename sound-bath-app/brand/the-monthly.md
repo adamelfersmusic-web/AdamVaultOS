@@ -22,6 +22,43 @@ That is easy to miss when you've just spent weeks building the design tools.
 
 ---
 
+## ⚠️ The frequency assumption is contested
+
+BOOK says practitioners build *"somewhere between four sessions a year and one
+every few months, and repeat them freely."* **Adam disputes this from the
+scene:** the practitioners he knows are running these **monthly, or every few
+weeks.**
+
+This is a premise correction, and several decisions rest on it.
+
+**If the real cadence is 12–26 a year:**
+
+- **Staleness is a real problem, not a hypothetical.** Four a year you repeat
+  freely and nobody notices. Twenty a year with an overlapping audience, you
+  cannot.
+- **A high-frequency practitioner is a *better* subscriber, not a worse one** —
+  they are precisely the people who cannot design fast enough to keep up.
+- **The economics improve sharply.** $149/yr over twenty sessions is **$7.50 a
+  session.** It stops being a purchase decision.
+- **Authoring matters more, not less** — the monthly alone won't feed someone
+  playing weekly. The library, packs and authoring compound.
+
+**Both numbers are probably true, of different people:**
+
+| Segment | Cadence | What they need |
+|---|---|---|
+| **The flagship event** — 60–100 people, candlelit, ticketed | a few times a year | structure, ensemble, sync. It is a production. |
+| **The regular practice** — 10–30 people, studio, semi-regular | monthly or weekly | **variety without work** |
+
+Same product, different value proposition — and the second group is plausibly
+the larger population *and* the better subscriber. That would be a meaningful
+change to who the marketing addresses.
+
+→ **Settled by the session review** ([[bed/08-session-review]] in the vault):
+"how often did you play" is now one of the questions.
+
+---
+
 ## What it solves
 
 The open weakness in the subscription was: *what does a Season visibly deliver,
@@ -109,6 +146,40 @@ artificial limit:** the point at which they want *their* arc, *their* poem,
 
 **Packs are superseded as a separate concept.** The monthly *is* the pack
 programme, with a schedule and a name attached.
+
+---
+
+## Featured musicians — and why the sound can genuinely be theirs
+
+Adam: *"imagine we feature a different musician on the pack — some beautiful,
+dreamy electric guitar."*
+
+**The architecture for this already exists in BOOK, and it beats sampling:**
+
+> *"Wavetables for the Bed. `createPeriodicWave()` takes harmonic amplitudes and
+> plays them at any pitch — sampled character, synthesised pitch, migration
+> intact. Design a pad in a DAW, render a sustained note, extract its spectrum.
+> A wavetable is a few hundred bytes, so a curator's signature sound ships as
+> JSON."*
+
+So a musician's pack can carry **their actual timbre** — the spectrum of that
+guitar-through-pedals sound — and Bed plays it at any pitch, **migrating with
+the room.** Not a loop. A named musician's sound, in a few hundred bytes, that
+can still travel from C to F over thirty seconds.
+
+That is what makes featured-musician packs a real product rather than a
+marketing sticker: **their sound, their sections, their name.**
+
+### The honest constraint
+
+A wavetable captures a *sustained* tone's harmonic content, not behaviour. It
+works for the Bed/drone lane; it will not capture picking, feedback swells or
+tremolo. This is the same rule BOOK used to reject synthetic flute — *"needs
+breath, tonguing and articulation... one bad voice cheapens the whole
+palette."*
+
+**Guitar as a pad: yes. Guitar as a melody: no.** Worth saying out loud to any
+musician being invited, so the collaboration is scoped honestly from the start.
 
 ---
 
