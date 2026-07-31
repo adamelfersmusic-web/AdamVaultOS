@@ -131,3 +131,74 @@ tier 2 without new hardware.
 **Step 1 makes step 4 optional.** That's the point of doing it first — the
 concept gets proven before the inventory exists, and if the answer is *"the
 phones were already enough,"* that's a good answer too.
+
+---
+
+## Per-bowl light — the biggest idea, and what law 1 does to it
+
+2026-07-31. Adam: *"imagine if it lit up the correct bowl with the correct colour
+at the correct time — people would legitimately play in sync and you could have a
+huge ensemble that otherwise would be so fucking hard to have."*
+
+**This is the largest idea in the file. It also runs straight into law 1, and the
+version that survives is better than the version proposed.**
+
+### The collision
+
+*"At the correct time"* is a **cue**. A sequence of cues is a rhythm. **That is a
+pulse.**
+
+The sheet deliberately says *which bowls are yours this section* — freely,
+sparingly, rest — and never *strike now*. The moment it says *now*, Bed is
+conducting and the human has stopped playing.
+
+### The fix
+
+> ### The light shows what's AVAILABLE, not what to DO.
+
+Your bowl glows when it's yours **in this section**: bright for freely, dim for
+sparingly, dark for rest. It changes when the section changes, on the same slow
+crossfade as everything else, **never on a beat.**
+
+You look down, your bowl is lit, **and you play when you feel it.** The *when*
+stays yours — which is the entire posture, and it's the difference between an
+instrument and karaoke.
+
+### The version buildable now, with no hardware at all
+
+The follower sheet shows **"4 6 1"** — numbers to map onto your bowls, in the
+dark. Lamp mode shows colour with no text. **Put them together:**
+
+> A phone per player, showing **their** bowls, huge, in the section's colour.
+
+No reading, no mapping. Your number, glowing, in the colour of the room. It is a
+small change to two things that already exist and it costs nothing.
+
+It also draws the honest line between two different objects:
+
+| | |
+|---|---|
+| A lamp **beside a bowl** | colour only — it's lighting the bowl |
+| A lamp **in a player's hand** | their number, in the colour |
+
+Same mode, different job. Both already have a home in `?c=…&lamp=1`.
+
+### What it unlocks, which is the actual point
+
+A sound bath today is **one performer and sixty receivers.**
+
+If someone can look at a glowing number and know it's theirs, **being in the
+ensemble stops requiring training.** That isn't a better sound bath — it's a
+different event, and nothing in this space does it.
+
+> **The hard part of a large ensemble was never the playing. It was the
+> rehearsing.** Bed deletes the rehearsal.
+
+Twenty people playing correctly who could never have rehearsed, because there was
+nothing to rehearse. **Same sheet, addressed more finely** — not a new feature.
+
+### The one thing that still needs a person
+
+Lighting a bowl doesn't teach anyone how to strike one. **That is what the first
+hour of the workshop is for** (`the-workshop.md`), and it's the right division:
+the software removes the literacy, a human teaches the hands.
