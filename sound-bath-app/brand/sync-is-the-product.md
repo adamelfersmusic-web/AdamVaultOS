@@ -81,3 +81,57 @@ projection, live inputs — is the same subscriber pattern afterwards.
   devices are what make that price legible, alongside the sub.
 - **Hand signals:** BOOK notes that if the app defines the signals, the app
   becomes the standard — a social moat. Ship them with sync.
+
+---
+
+## Why twenty players works — and it's law 1, not the network
+
+2026-07-31. Adam: *"are you telling me you could lead a Bed session with like 20
+practitioners and it would still stay in sync?"*
+
+Yes, and the reason is worth writing down because it isn't the obvious one.
+
+### The network half is boring, deliberately
+
+State **snapshots**, not event streaming. Every message is the whole picture, so
+a device that misses ten messages is corrected by the eleventh, a dropped packet
+needs no replay, someone joining at minute 30 is right within one heartbeat, and
+a phone that slept is right the moment it's tapped. No per-device state on the
+leader — one broadcast to N sockets. **21 sockets and a few hundred bytes every
+few minutes. The relay wouldn't notice 200.**
+
+### The half that actually matters
+
+**"In sync" here does not mean locked to a beat.** There is no beat. Twenty
+people are synchronised to a *context* — which section, which key, which of
+their own bowls right now.
+
+> **Nobody plays together. Everybody plays *within*.**
+
+Gamelan, or a raga ensemble. Not an orchestra with a conductor's downbeat.
+
+### The finding
+
+> ### The absence of a pulse is what makes an ensemble scale.
+
+With a beat, twenty players would have to lock to it across Bluetooth latency,
+wifi jitter and human reaction time, and it would be a shambles. **Without one,
+latency is irrelevant** — a phone half a second behind is still in the right
+section, the right key, on the right bowl. `DEPLOY.md` already says this about
+Bluetooth speakers without noticing it generalises.
+
+**Law 1 was written for the room's calm. It turns out to be the thing that lets
+twenty people play at once.** Nobody designed that; it fell out.
+
+### The real limit is mud, and the sheet is the answer
+
+Twenty people playing bowls freely is an enormous amount of sound. What stops it
+turning to porridge is the other half of the sheet — **freely / sparingly /
+rest, it fights the key**, computed per person against the current section.
+
+**At twenty players the sheet stops being a convenience and becomes the
+arrangement.** Some are playing freely, some sparingly, some resting, and none
+of them had to be told by the leader.
+
+> **You could lead twenty, and the reason you could is that you would not have to
+> conduct them.**
