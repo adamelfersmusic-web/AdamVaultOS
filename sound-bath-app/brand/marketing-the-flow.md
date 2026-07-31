@@ -113,6 +113,59 @@ shot 8 of the film.
 
 ---
 
+## The sub — the honest technical proof point
+
+The Deep band is the one thing nothing else in this space has, and the
+marketing has never mentioned it. It should — but the framing decides whether
+it reads as craft or as pseudoscience.
+
+**Say it about the instrument, never about the body:**
+
+> **Crystal bowls live from about 200 Hz up, and produce essentially nothing
+> below that. That's physics, not technique. Bed is the missing half of the
+> spectrum.**
+
+Companion line, from BOOK: *your bowls own the mids and the top; the app owns
+the floor.* And the honest pitch that follows from it — **your bowls and one
+speaker.** There is no PA at these events, so the app is the only thing needing
+amplification: one source, one speaker, no mixer, no feedback.
+
+**Why this framing and not the obvious one.** The tempting version — *sub-bass
+is the most immersive, embodied frequency there is* — is a claim about what a
+frequency does to a body. That is the banned category, and it's also the exact
+register that makes technically-minded people suspicious. The spectrum framing
+is stronger anyway: it is verifiable, every practitioner already knows what
+their own bowls sound like, and it says the app is **completing** the
+instrument rather than doing something to the listener.
+
+**Describing sound is fine; describing effects is not.** "Below ~80 Hz you stop
+only hearing and start feeling" is acoustics. "…which calms your nervous
+system" is a health claim. The line sits exactly there, and it's not close.
+
+### For technical readers — publish the measurements, don't cite research
+
+The credible move is not citing studies about low frequency. It is publishing
+what *this instrument* measures, which is a spec sheet for a piece of gear —
+the register this buyer already respects:
+
+| Property | Measured |
+|---|---|
+| Sub purity | 2nd harmonic **−92 dB** relative to fundamental — a genuinely clean sine |
+| Sub range | **38–74 Hz.** Below ~35 Hz the ear stops hearing pitch and starts hearing cycles as flutter |
+| Sub modulation | **7.6%** — the six-per-minute breath and nothing else |
+| Tone control | **0.10 dB** effect on the sub — dark must never mean more sub |
+| Level-dependent tone | **0%** spectral drift across the full fader range |
+
+**Plus, as of 2026-07-31:** reinforcement of the missing fundamental is
+automatic and scales with how low the current key sits, so the floor survives a
+speaker that can't reach 40 Hz — and is masked when a real sub is present.
+There is nothing to configure and nothing to get wrong.
+
+Citing research invites the "is this pseudoscience" argument. Publishing
+measurements ends it.
+
+---
+
 ## Why it can't be copied
 
 HOLD works because the engine is generative and pulseless. Freeze the clock in
