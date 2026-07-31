@@ -306,6 +306,28 @@ frozen as built):
   instead of clamped 16:1 at 2 ms, lows no longer modulate the highs, and
   the crossover sums flat.
 
+### Post-v4, second listen — two rooms, and a real Rhodes (current)
+
+A guitarist's A/B found the app only felt worth playing with a hardware
+plate in the monitor chain; separately, the Rhodes read as a cheap FM
+preset. Measured conclusion: **one room cannot serve both masters** — the
+pads' verified body *is* the old room's 8-second low wash (roughly half the
+pad's power), and that same wash is what cheapened the guitar.
+
+- **Two rooms now.** Pads and kit keep the v1 impulse untouched (drone
+  re-verified at −12.82 dBFS rms, spectrum within 0.1 dB of v1). Guitar and
+  Rhodes go to a **synthesized plate**: five-band RT60 (~2.5 s, mids
+  longest), dense from the first millisecond, bright deep into the tail
+  (late-tail 3k/300 ratio +4.9 dB vs the old room's +2.2), nothing below
+  100 Hz. The rooms overlap spectrally, so instruments still share air with
+  the pad.
+- **Rhodes rebuilt** on the roadmap's own suggestion: a tonebar-style
+  harmonic recipe via `createPeriodicWave` through a lowpass that velocity
+  throws open (attack centroid grading 366 → 432 Hz) and time gently
+  closes, plus an inharmonic ~6.3× tine ping on a steep velocity curve and
+  a felt hammer thump. 21 dB velocity-to-level range, ~1.5 s decay at C4,
+  warm harmonic sustain instead of a hollow sine.
+
 ### Tier 4 — built, measured (v4)
 
 The app keeps. Tier 2/3 sound untouched (levels bit-identical to v2/v3).

@@ -714,11 +714,20 @@ function initAudio() {
   A.master = glue;
   setTone(state.tone);
 
-  // Shared reverb: synthesized stereo impulse, darkening tail.
+  // Two rooms, one space. Measured irreconcilable: the pads' verified body
+  // *is* an 8-second low wash, and that same wash is exactly what made the
+  // guitar sound cheap. So the pads and kit keep their original room
+  // untouched, and the instruments — guitar, Rhodes — get a plate: dense
+  // from the first millisecond, bright deep into the tail, no mud. They
+  // overlap spectrally, so a guitar still sits in the same air as the pad.
   A.verb = ctx.createConvolver();
   A.verb.buffer = makeImpulse(ctx, 3.1, 0.015);
   A.verbGain = ctx.createGain(); A.verbGain.gain.value = 1;
   A.verb.connect(A.verbGain); A.verbGain.connect(A.master);
+  A.plate = ctx.createConvolver();
+  A.plate.buffer = makePlate(ctx, 2.6, 0.012);
+  A.plateGain = ctx.createGain(); A.plateGain.gain.value = 1;
+  A.plate.connect(A.plateGain); A.plateGain.connect(A.master);
 
   // Pad bus: trim -> tone shaping -> master (+ generous verb send).
   // The send stays POST-fader deliberately: the pre-fader port from bed.html
@@ -742,12 +751,11 @@ function initAudio() {
   const kitSend = ctx.createGain(); kitSend.gain.value = 0.1;
   A.kitTrim.connect(kitSend); kitSend.connect(A.verb);
 
-  // Keys bus: the Rhodes. Its own gain into master, with a send into the
-  // same room the pads live in.
-  A.keysBus = ctx.createGain(); A.keysBus.gain.value = 0.42;
+  // Keys bus: the Rhodes, into the plate.
+  A.keysBus = ctx.createGain(); A.keysBus.gain.value = 0.36;
   A.keysBus.connect(A.master);
-  const keysSend = ctx.createGain(); keysSend.gain.value = 0.22;
-  A.keysBus.connect(keysSend); keysSend.connect(A.verb);
+  const keysSend = ctx.createGain(); keysSend.gain.value = 0.3;
+  A.keysBus.connect(keysSend); keysSend.connect(A.plate);
 
   // Shared noise for shaker / rim.
   const len = ctx.sampleRate * 2;
@@ -756,6 +764,9 @@ function initAudio() {
   for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
 }
 
+/* The pads' room — v1's exact impulse, untouched. Its 8-second low wash is
+   half the pad's body by measurement; it stays because the pads were
+   verified on speakers leaning on it. */
 function makeImpulse(ctx, seconds, predelay) {
   const sr = ctx.sampleRate, len = Math.floor(sr * seconds);
   const buf = ctx.createBuffer(2, len, sr);
@@ -770,6 +781,57 @@ function makeImpulse(ctx, seconds, predelay) {
       y += c * ((Math.random() * 2 - 1) - y);
       d[i] = y * Math.exp(-3.2 * t / seconds) * 0.9;
     }
+  }
+  return buf;
+}
+
+/* The instruments' room — a plate, built after a guitarist's honest A/B (the
+   app only felt worth playing with a hardware plate in the chain). Dense from
+   the first millisecond, a tail that stays bright deep into the decay, and no
+   low end in the reverb at all: per-band RT60, mids ringing longest, air
+   falling away politely, everything under ~100 Hz cut so it never muds.
+   Channels use independent noise, so the tail is properly wide. */
+function biquadRun(x, sr, type, f0, Q) {
+  const w = 2 * Math.PI * f0 / sr, cw = Math.cos(w), al = Math.sin(w) / (2 * Q);
+  let b0, b1, b2;
+  const a0 = 1 + al, a1 = -2 * cw, a2 = 1 - al;
+  if (type === 'bp') { b0 = al; b1 = 0; b2 = -al; }
+  else { b0 = (1 + cw) / 2; b1 = -(1 + cw); b2 = (1 + cw) / 2; }   // highpass
+  const y = new Float32Array(x.length);
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  for (let i = 0; i < x.length; i++) {
+    const y0 = (b0 * x[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+    x2 = x1; x1 = x[i]; y2 = y1; y1 = y0; y[i] = y0;
+  }
+  return y;
+}
+function makePlate(ctx, seconds, predelay) {
+  const sr = ctx.sampleRate, len = Math.floor(sr * seconds);
+  const buf = ctx.createBuffer(2, len, sr);
+  const pre = Math.floor(sr * predelay);
+  const N = len - pre;
+  // ConvolverNode normalizes IR energy, so only the band weights and decay
+  // times shape the sound here; send gains set the wet level.
+  const BANDS = [
+    { f: 200,  rt: 0.70, w: 0.9 },
+    { f: 500,  rt: 0.95, w: 1.1 },
+    { f: 1200, rt: 1.00, w: 1.0 },
+    { f: 2800, rt: 0.80, w: 0.85 },
+    { f: 7000, rt: 0.50, w: 0.55 },
+  ];
+  for (let ch = 0; ch < 2; ch++) {
+    const noise = new Float32Array(N);
+    for (let i = 0; i < N; i++) noise[i] = Math.random() * 2 - 1;
+    const acc = new Float32Array(N);
+    for (const b of BANDS) {
+      const band = biquadRun(noise, sr, 'bp', b.f, 0.8);
+      const tau = b.rt * seconds / 6.91;
+      for (let i = 0; i < N; i++) acc[i] += b.w * band[i] * Math.exp(-(i / sr) / tau);
+    }
+    const clean = biquadRun(acc, sr, 'hp', 100, 0.71);
+    const d = buf.getChannelData(ch);
+    const ramp = Math.floor(sr * 0.003);
+    for (let i = 0; i < N; i++) d[pre + i] = clean[i] * Math.min(1, i / ramp);
   }
   return buf;
 }
@@ -1290,13 +1352,24 @@ function onSoundConfigChanged(kind) {
 }
 
 /* ---------------- Rhodes ----------------
-   Two-op FM at 1:1 — the electric-piano spectrum — plus a seventh-partial
-   "tine" modulator whose level rises steeply with velocity, so digging in
-   hardens the attack the way the real instrument barks. The body blooms:
-   the index falls fast to a warm sustain, then re-opens slightly as the
-   note sings. Low notes ring longer. Sustain pedal honoured. */
+   Rebuilt after honest feedback ("pretty bad lol"). Bare 2-op FM reads as a
+   cheap preset; this is the roadmap's own suggestion instead — a fixed
+   harmonic recipe via createPeriodicWave (tonebar warmth: strong second
+   partial, polite uppers) played through a lowpass that velocity throws
+   open and time gently closes, the way a struck tine mellows. On top:
+   an inharmonic tine ping (~6.3x, steep velocity curve — digging in barks)
+   and a felt hammer thump. Low notes ring longer. Sustain pedal honoured. */
 
-const KEYS = { notes: new Map(), held: new Set(), sustain: false };
+const KEYS = { notes: new Map(), held: new Set(), sustain: false, wave: null };
+
+function keysWave(ctx) {
+  if (KEYS.wave) return KEYS.wave;
+  const amp = [0, 1, 0.7, 0.3, 0.15, 0.09, 0.055, 0.032, 0.02, 0.012];
+  const re = new Float32Array(amp.length), im = new Float32Array(amp.length);
+  for (let i = 1; i < amp.length; i++) im[i] = amp[i];
+  KEYS.wave = ctx.createPeriodicWave(re, im, { disableNormalization: false });
+  return KEYS.wave;
+}
 
 function keysNoteOn(note, vel) {
   initAudio();
@@ -1313,28 +1386,43 @@ function keysNoteOn(note, vel) {
   const g = ctx.createGain();
   const peak = 0.5 * Math.pow(v, 1.3);
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(peak, t + 0.002);
-  g.gain.setTargetAtTime(0.0001, t + 0.002, 0.9 + 90 / f);
+  g.gain.linearRampToValueAtTime(peak, t + 0.0015);
+  g.gain.setTargetAtTime(0.0001, t + 0.0015, 0.9 + 90 / f);
   if (ctx.createStereoPanner) {
     const p = ctx.createStereoPanner();
     p.pan.value = Math.max(-0.4, Math.min(0.4, (note - 66) / 40));
     g.connect(p); p.connect(A.keysBus);
   } else g.connect(A.keysBus);
-  const car = ctx.createOscillator(); car.type = 'sine'; car.frequency.value = f;
-  const mod = ctx.createOscillator(); mod.type = 'sine'; mod.frequency.value = f;
-  const mg = ctx.createGain();
-  mg.gain.setValueAtTime(f * (0.8 + 3.2 * Math.pow(v, 1.7)), t);
-  mg.gain.setTargetAtTime(f * 0.5, t + 0.005, 0.18);
-  mg.gain.setTargetAtTime(f * 0.62, t + 0.7, 1.2);
-  mod.connect(mg); mg.connect(car.frequency);
-  const tine = ctx.createOscillator(); tine.type = 'sine'; tine.frequency.value = f * 7;
+  // body: harmonic recipe through a filter velocity opens and time closes
+  const body = ctx.createOscillator();
+  body.setPeriodicWave(keysWave(ctx));
+  body.frequency.value = f;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.6;
+  const fOpen = Math.min(f * (1.8 + 7 * Math.pow(v, 1.6)), 11000);
+  const fSettle = Math.min(f * (1.6 + 2.2 * v), 5200);
+  lp.frequency.setValueAtTime(fOpen, t);
+  lp.frequency.setTargetAtTime(fSettle, t + 0.01, 0.35);
+  body.connect(lp); lp.connect(g);
+  // tine: inharmonic ping, steep velocity curve — the bark lives here
+  const tine = ctx.createOscillator(); tine.type = 'sine';
+  tine.frequency.value = Math.min(f * 6.27, 9000);
   const tg = ctx.createGain();
-  tg.gain.setValueAtTime(f * 4.5 * Math.pow(v, 3), t);
-  tg.gain.setTargetAtTime(0, t + 0.004, 0.012);
-  tine.connect(tg); tg.connect(car.frequency);
-  car.connect(g);
-  car.start(t); mod.start(t); tine.start(t);
-  KEYS.notes.set(note, { g, nodes: [car, mod, tine], t });
+  tg.gain.setValueAtTime(0.0001, t);
+  tg.gain.linearRampToValueAtTime(0.22 * Math.pow(v, 2.5), t + 0.0015);
+  tg.gain.setTargetAtTime(0.0001, t + 0.0015, 0.05);
+  tine.connect(tg); tg.connect(g);
+  // hammer: 8 ms of felt against the tine block
+  const th = ctx.createBufferSource(); th.buffer = A.noiseBuf;
+  th.loop = true; th.loopStart = Math.random() * 1.5; th.loopEnd = th.loopStart + 0.05;
+  const tf = ctx.createBiquadFilter(); tf.type = 'bandpass';
+  tf.frequency.value = Math.min(f * 4, 3200); tf.Q.value = 1.2;
+  const thg = ctx.createGain();
+  thg.gain.setValueAtTime(0.0001, t);
+  thg.gain.linearRampToValueAtTime(0.12 * v, t + 0.002);
+  thg.gain.setTargetAtTime(0.0001, t + 0.002, 0.009);
+  th.connect(tf); tf.connect(thg); thg.connect(g);
+  body.start(t); tine.start(t); th.start(t, th.loopStart); th.stop(t + 0.05);
+  KEYS.notes.set(note, { g, nodes: [body, tine], t });
   KEYS.held.add(note);
 }
 function keysNoteOff(note, hard) {
@@ -1410,9 +1498,9 @@ function showLatencyOnce() {
 }
 
 /* ---------------- Line in (3.3 / 3.4) ----------------
-   Guitar first, through an interface: a small channel strip into the same
-   reverb the pads use, so the instrument stops sitting on top of the drone
-   and starts sounding like it's inside it. No amp sim — no nonlinear
+   Guitar first, through an interface: a small channel strip into the plate,
+   sharing air with the pads' room, so the instrument stops sitting on top of
+   the drone and starts sounding like it's inside it. No amp sim — no nonlinear
    modelling, no cab IRs. Voice rides the identical path; whether it works
    in a room is the room's problem (headphones fine, speaker + mic squeals).
    Browsers default inputs to speech processing — echo cancellation would
@@ -1442,8 +1530,8 @@ async function ensureLineIn() {
     src.connect(hp); hp.connect(comp); comp.connect(trim); trim.connect(shelf);
     shelf.connect(A.inTrim);
     A.inTrim.connect(A.master);
-    const inSend = ctx.createGain(); inSend.gain.value = 0.3;
-    A.inTrim.connect(inSend); inSend.connect(A.verb);
+    const inSend = ctx.createGain(); inSend.gain.value = 0.35;
+    A.inTrim.connect(inSend); inSend.connect(A.plate);
     A.inStream = stream;
   } catch (err) {
     state.mix.in = 0;
