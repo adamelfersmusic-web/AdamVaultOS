@@ -187,3 +187,64 @@ fixed-key instrument, in a session that moves.**
 *(Add C as a fifth centre if the session wants a brighter room; you lose only the
 leading tone, which the drone never plays anyway — law 2 builds root, 4th, 5th,
 octave and 9th, and no 7th.)*
+
+
+---
+
+## ⚠️ Correction — Adam means the **Neotone**, a MIDI handpan
+
+Everything above assumes an **acoustic** handpan, hammered to one scale. Adam
+was describing a **Neotone MIDI handpan**, and that changes the analysis
+substantially — in Bed's favour.
+
+### What stays true
+
+**The physical layout is still fixed.** Pads are in fixed positions and you learn
+them by hand, not by name. That much is the same as acoustic.
+
+### What stops being true
+
+**The pitch of each pad is software.** So the fixed-key constraint — the entire
+reason the D Kurd arithmetic mattered — **dissolves.** You are no longer choosing
+an instrument that has to survive the whole arc; you are choosing a *layout*.
+
+### And what becomes possible, which is the interesting part
+
+> **Transpose the layout with the session and the fingering never changes.**
+
+If the pads are laid out by **scale degree** rather than by absolute pitch, then
+moving the root moves every pad together. **The root pad is still the root; the
+third pad round is still the third.** Muscle memory survives a key change
+completely.
+
+Which means the strategy above **inverts**:
+
+| | Acoustic | Neotone |
+|---|---|---|
+| Constraint | one collection, move the root inside it | **none** |
+| Key changes | avoid E and B | **all seven, freely** |
+| What moves | the root | the root **and** the instrument, together |
+
+**A MIDI handpan can play the entire arc, in every key, with identical
+fingering.** Nothing else in a sound bath room can say that.
+
+### The buildable version, and its honest limits
+
+Bed already publishes key and mode on every section change. Emitting **MIDI** on
+that same event is a small feature, not a rewrite:
+
+- **Web MIDI** (`navigator.requestMIDIAccess`) is supported in Chrome and on
+  desktop — **and not in Safari or on iOS.** A laptop leader works; an iPhone
+  leader does not. Same shape as the Lumen limitation, and it should be stated
+  the same way rather than discovered.
+- It needs the **Neotone's actual MIDI implementation** — whether transposition
+  is reachable over CC, program change, or not at all. **Nobody should design
+  this without the manual in hand.**
+
+⚠️ **And law 1 applies the moment MIDI exists.** Sending anything on a clock —
+arpeggios, timed patterns, note triggers — would be the first pulse in the
+product's history. **Bed may tell an instrument what key the room is in. It must
+never tell it when to play.**
+
+*(Filed, not built. It needs the device and an ear, and it sits behind the relay,
+the first night, and everything else already queued.)*
