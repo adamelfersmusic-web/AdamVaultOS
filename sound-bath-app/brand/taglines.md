@@ -125,6 +125,50 @@ of this was built"* — per the vocabulary law above.
 
 ---
 
+## ✅ SETTLED — the product line
+
+> ## One instrument, three surfaces.
+
+Adam pulled this out of a sentence about the rig and he's right that it's copy,
+not description. It does a job nothing else in this file does.
+
+**The problem it solves:** the moment there is an app, a sheet on eight phones,
+and lights, a buyer starts counting products — and counting products is how you
+arrive at *"that's a lot to buy and a lot to set up."* Every competitor in
+adjacent categories loses exactly there.
+
+**This sentence refuses the count before it starts.**
+
+| The surface | What it is |
+|---|---|
+| **Sound** | the floor, the drone, the motif, the place |
+| **The sheet** | every phone in the room, in that player's own kit |
+| **Light** | the section arc, in the room |
+
+**One purchase. One room code. No wizardry.** Three surfaces of one instrument,
+not five products glued together — and the claim is *true*, which is why it can
+be said plainly. They all come from the same session file, they all change on
+the same GO, and the second and third cost nothing extra.
+
+### Why it belongs beside the descriptor rather than replacing it
+
+- *"the instrument that holds you, so you can hold the room"* — **what it's
+  for.** The person, the promise, the threshold.
+- *"one instrument, three surfaces"* — **what you get.** The shape of the
+  purchase, and the answer to *"wait, how many things is this?"*
+
+Different jobs, different moments: the first opens a page, the second closes a
+question. Both use **instrument**, which is the vocabulary law doing real work —
+*"one app, three surfaces"* would sound like a feature list, and *"one
+instrument"* sounds like a thing you own.
+
+**Note the word `surface` is doing something too:** it implies the same object
+seen from different sides. *Modes*, *add-ons*, *components* and *integrations*
+all imply pieces that were assembled — which is the exact impression this
+sentence exists to prevent.
+
+---
+
 ## The five tests
 
 Derived from canon, not invented here. A line that fails 1 or 2 is dead
