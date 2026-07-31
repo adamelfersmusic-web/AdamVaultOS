@@ -125,6 +125,67 @@ speaker-tuning work matter commercially.
 
 ---
 
+## Recurring revenue — revisiting BOOK, because the product changed
+
+**BOOK argued against subscriptions:** *"Four sessions a year means packs are
+closer to buying another bowl than to a subscription. Real revenue, wrong model
+as churn."*
+
+That was correct **when the app was one device with no ongoing costs.** Nothing
+recurred, so charging recurrently would have been rent-seeking.
+
+**Sync changed it on 2026-07-31.** There is now a relay to run, a network to
+curate, calibration data to maintain, and packs to make. Those genuinely
+recur — so charging for them recurrently is honest rather than extractive. This
+is a legitimate update to BOOK, not a convenient override: the underlying fact
+it reasoned from is different now.
+
+### The churn objection is real, and the fix is precise
+
+**The problem is *monthly*, not *recurring*.** A practitioner who plays five
+times a year and pays monthly spends seven months paying for nothing, and
+cancels. The same person renewing **once a year** — around when they plan their
+season — is entirely natural. Gear, insurance and studio time all work that way.
+
+### The proposal
+
+| Tier | Price | What it is |
+|---|---|---|
+| **Solo** | **free forever** | Complete, offline, no account. The promise and the funnel. |
+| **Season** | **~$149 / year** | Rooms — sync and follower devices — **all packs included**, and the network. |
+| **Perpetual** | **~$400 one-time** | Keeps the version bought, no new packs. For people who refuse subscriptions. |
+
+**Three things make this work:**
+
+1. **Packs must be included, not sold separately.** This is the load-bearing
+   move. A subscription needs to visibly deliver something new or it reads as a
+   toll — and new curator packs each quarter is exactly that. It also converts
+   packs from lumpy transactional revenue into the reason renewal feels obvious.
+   *(This supersedes the packs row in the table above: they become the
+   subscription's payload rather than a separate line.)*
+2. **Annual matches the buyer's rhythm.** ~$30 per event, under 3% of one
+   event's gross, renewed when they're already planning the year.
+3. **Perpetual is a pressure valve, not a loss.** It is a *higher* number, and
+   it exists so the person who would otherwise walk away in disgust has
+   somewhere to land. JetBrains has run this model for years against a famously
+   subscription-hostile audience.
+
+### The risks in this version
+
+- **Two SKUs to maintain**, forever.
+- **Cannibalisation** if perpetual sits too close to the season. It needs to be
+  roughly **2.5–3× the annual** or everyone buys it once and leaves.
+- **The season must keep delivering.** A year with no new packs and no new
+  features makes non-renewal correct, and the buyer will be right.
+
+### What this does not change
+
+Solo stays free and sovereign. Follower devices stay free. The introduction is
+never charged for. Those three are load-bearing for the brand and are not
+pricing levers.
+
+---
+
 ## The honest risks
 
 **One-time pricing means revenue is new-customer driven.** Marketing never
