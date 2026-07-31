@@ -65,6 +65,55 @@ host** — a curated list is a page.
 
 ---
 
+## The numbers — a hypothesis to price against, not a decision
+
+No price survives contact with ten real conversations, so treat these as the
+starting anchor for test #2 rather than a decision.
+
+**What this buyer already spends** — the only useful reference points:
+
+| Thing | What they pay |
+|---|---|
+| A single crystal bowl | **$200–800** (BOOK: routinely up to $2000) |
+| A gong | $500–2000 |
+| A decent mallet set | $60–100 |
+| A powered speaker | $500–1500 |
+| **What one event grosses** | 40–100 people × $25–45 = **$1,000–4,500** |
+
+**The proposal:**
+
+| | Price | The reasoning |
+|---|---|---|
+| **Leader licence** | **$300** one-time | Less than one bowl. Roughly one event's profit. Permanent. |
+| **Packs** | **$25–40** each | Priced like a nice mallet or a book — an easy yes, bought occasionally. |
+| **LED pads** | **$70** each / **$400** for seven | Sold as a set, because a practitioner lights the whole arc, not one bowl. |
+| **Sub rental** | **$100** per event | BOOK's own figure. Against an event grossing thousands it isn't a decision. |
+
+### The anchoring rule, which matters more than the number
+
+**Always present the licence next to gear, never next to software.**
+
+Beside a bowl, $300 is obviously cheap — it's less than the cheapest thing in
+their kit and it doesn't need a stand. Beside an app, $300 is outrageous. Same
+number, opposite reaction, and the framing is entirely ours to choose.
+
+This is why the descriptor is *an instrument for holding space*, and why BOOK
+insists on **a rig, not an app**: *"nobody pays four figures for software they
+open on a phone; they do pay it for a system."* The corollary is the ceiling —
+software alone cannot be four figures here. **The sub is what would make a
+higher number legible**, which is the honest reason the rental and the
+speaker-tuning work matter commercially.
+
+### What would move the number
+
+- **Up:** bundling anything physical. A licence + pads + a tuned speaker
+  recommendation is a *rig*, and rigs price differently from downloads.
+- **Down, deliberately:** a founding-circle price for the first ten, in
+  exchange for their real sessions becoming seed fixtures with credit. That is
+  a cheaper way to buy the library than paying for content.
+
+---
+
 ## What is deliberately never charged for
 
 - **Solo use.** Ever. It is the brand promise and the top of the funnel.
