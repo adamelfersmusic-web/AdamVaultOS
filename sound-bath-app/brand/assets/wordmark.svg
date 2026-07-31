@@ -1,0 +1,16 @@
+<!-- BED — the wordmark as the app sets it: a didone, all caps, tracked .28em.
+     Tracking hangs a phantom space after the final letter, so the mark is
+     nudged right by half a letter-space to sit optically centred — the same
+     trick the app does with padding-left: .28em.
+     Font resolves through the app's own stack; Playfair Display is the
+     canonical didone when a file must embed a font (open licence, in-stack).
+     The tag is the interface voice: system sans, letterspaced caps. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 150" role="img" aria-label="Bed — holding space">
+  <rect width="480" height="150" fill="#0a0910"/>
+  <text x="249" y="84" text-anchor="middle"
+        font-family="Didot, 'Bodoni MT', 'Playfair Display', 'Cormorant Garamond', Georgia, serif"
+        font-size="64" font-weight="400" letter-spacing="18" fill="#e8e4f0">BED</text>
+  <text x="242" y="118" text-anchor="middle"
+        font-family="-apple-system, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+        font-size="11" font-weight="400" letter-spacing="3.3" fill="#6b6480">HOLDING SPACE</text>
+</svg>

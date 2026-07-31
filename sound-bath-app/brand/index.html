@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0910">
+<title>Bed — brand kit</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0910'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%23d9a544' stroke-width='1.5'/%3E%3C/svg%3E">
+<style>
+/* ==========================================================================
+   BED — BRAND KIT. Extracted from app/index.html, not invented.
+   The app is the source of truth; when this book and the app disagree,
+   the app wins — then fix the app.
+   Amber appears on this page only where it means sound. Everywhere it
+   appears below, check it: it is either the rule being stated, a specimen
+   defining the colour, or a depiction of something sounding.
+   ========================================================================== */
+:root {
+  --bg: #0a0910; --bg2: #0d0c14; --panel: #12111a; --panel2: #191824;
+  --line: #221f2e; --line2: #322d42;
+  --ink: #e8e4f0; --ink2: #a29ab4; --ink3: #6b6480; --ink4: #423d52;
+  --amber: #d9a544; --amber-dim: #8a6a2c; --violet: #8b7ab8; --red: #b86a5a;
+  --c-arrive: #8e99b5; --c-ground: #5d6aa8; --c-wash: #4d8b96; --c-flow: #8b7ab8;
+  --c-express: #7c86ad; --c-release: #55948b; --c-space: #4a4661; --c-bloom: #b87a93;
+  --c-return: #9a94ad;
+  --l-deep: #5d6aa8; --l-bed: #8b7ab8; --l-voice: #a68cc0; --l-air: #4d8b96;
+  --r: 4px;
+  --sans: -apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: "Didot", "Bodoni MT", "Playfair Display", "Cormorant Garamond", Georgia, serif;
+}
+/* The ember palette — what the whole app becomes once a session is live. */
+body.live {
+  --bg: #070606; --bg2: #0a0807; --panel: #0f0c09; --panel2: #16110b;
+  --line: #1e1710; --line2: #2e2417;
+  --ink: #d9c7a4; --ink2: #a68f68; --ink3: #6f5f40; --ink4: #453a26;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--sans); font-size: 15px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  transition: background .8s ease, color .8s ease;
+}
+.page { max-width: 880px; margin: 0 auto; padding: 30px 24px 120px; }
+a { color: var(--ink2); }
+p { margin: 0 0 14px; color: var(--ink2); max-width: 64ch; }
+p b, li b { color: var(--ink); font-weight: 600; }
+.serif { font-family: var(--serif); font-weight: 400; }
+.cap { font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--ink3); }
+.hint { font-size: 11.5px; color: var(--ink4); line-height: 1.7; }
+code { font-size: 12.5px; color: var(--ink2); background: var(--bg2); border: 1px solid var(--line); border-radius: 3px; padding: 1px 5px; }
+
+section { margin-top: 84px; }
+section > .cap { display: block; margin-bottom: 6px; }
+h2 { font-family: var(--serif); font-weight: 400; font-size: 30px; margin: 0 0 18px; line-height: 1.2; }
+h3 { font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--ink2); margin: 30px 0 10px; }
+
+.cover { padding: 70px 0 20px; text-align: center; }
+.cover .ring { width: 56px; height: 56px; margin: 0 auto 26px; display: block; }
+.cover .mark { font-family: var(--serif); font-size: clamp(46px, 8vw, 76px); letter-spacing: .28em; padding-left: .28em; }
+.cover .tag { font-size: 11.5px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink3); margin-top: 6px; }
+.cover .sub { margin: 40px auto 0; max-width: 52ch; color: var(--ink2); font-family: var(--serif); font-style: italic; font-size: 17px; line-height: 1.7; }
+
+.card { border: 1px solid var(--line); border-radius: 7px; background: var(--panel); padding: 20px; }
+.rulebox {
+  border: 1px solid var(--line2); border-left: 3px solid var(--amber);
+  border-radius: 7px; background: var(--panel); padding: 20px 22px; margin: 22px 0;
+}
+.rulebox .big { font-family: var(--serif); font-size: 21px; line-height: 1.45; color: var(--ink); }
+
+/* palette */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin: 14px 0 6px; }
+.sw { border: 1px solid var(--line); border-radius: 7px; overflow: hidden; background: var(--panel); }
+.sw .chip { height: 52px; }
+.sw .info { padding: 10px 12px 11px; }
+.sw .nm { font-size: 12px; font-weight: 600; color: var(--ink); }
+.sw .hx { font-size: 11px; color: var(--ink3); font-variant-numeric: tabular-nums; margin-left: 6px; }
+.sw .mn { font-size: 11.5px; color: var(--ink2); margin-top: 4px; line-height: 1.5; }
+
+/* type specimens */
+.spec { border: 1px solid var(--line); border-radius: 7px; background: var(--bg2); padding: 22px; margin: 12px 0; overflow-x: auto; }
+.spec .lbl { margin-bottom: 12px; display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; }
+.spec .lbl .cap { margin: 0; }
+.spec .lbl .hint { margin: 0; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+th { text-align: left; font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--ink3); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line2); }
+td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line); color: var(--ink2); vertical-align: top; }
+td:first-child { color: var(--ink); white-space: nowrap; }
+
+/* the arc */
+.arcstrip { display: flex; height: 7px; border-radius: 3px; overflow: hidden; gap: 1px; margin: 18px 0; }
+.arcstrip i { display: block; height: 100%; opacity: .8; }
+.fnrow { display: flex; gap: 12px; align-items: baseline; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+.fnrow:last-child { border-bottom: 0; }
+.fnrow .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; align-self: center; }
+.fnrow .fn { font-family: var(--serif); font-size: 17px; width: 92px; flex: none; }
+.fnrow .hx2 { font-size: 11px; color: var(--ink3); width: 74px; flex: none; font-variant-numeric: tabular-nums; }
+.fnrow .why { font-size: 12.5px; color: var(--ink2); }
+
+/* motion demos */
+.demos { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 14px 0; }
+.demo { border: 1px solid var(--line); border-radius: 7px; background: var(--panel); padding: 18px; text-align: center; }
+.demo .stage { height: 74px; display: grid; place-items: center; }
+.demo .cap { display: block; margin-top: 10px; }
+.dm-hold {
+  width: 58px; height: 58px; border-radius: 50%; border: 1px solid var(--amber);
+  color: var(--amber); font-size: 9px; font-weight: 700; letter-spacing: .18em;
+  text-transform: uppercase; display: grid; place-items: center; background: var(--panel);
+  animation: holdpulse 2.4s ease-in-out infinite;
+}
+@keyframes holdpulse { 0%,100% { box-shadow: 0 0 0 0 rgba(217,165,68,0) } 50% { box-shadow: 0 0 26px 0 rgba(217,165,68,.22) } }
+.dm-mig { color: var(--violet); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; animation: migpulse 1.4s ease-in-out infinite; }
+@keyframes migpulse { 0%,100% { opacity: .4 } 50% { opacity: 1 } }
+.dm-pos { position: relative; width: 100%; height: 5px; border-radius: 3px; background: var(--line); overflow: visible; }
+.dm-pos i { position: absolute; top: -3px; bottom: -3px; width: 2px; border-radius: 1px; background: var(--amber); animation: crawl 30s linear infinite; }
+@keyframes crawl { from { left: 0% } to { left: 100% } }
+.dm-band { display: inline-flex; align-items: center; gap: 7px; font-size: 9.5px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--ink2); }
+.dm-band i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--line2); animation: bandfill 8s ease-in-out infinite; }
+@keyframes bandfill { 0%, 45% { background: var(--amber); border-color: var(--amber); } 55%, 95% { background: transparent; border-color: var(--line2); } }
+
+.livebtn {
+  font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  padding: 10px 15px; border: 1px solid var(--line2); border-radius: var(--r);
+  color: var(--ink2); background: none; cursor: pointer; transition: color .12s, background .12s;
+}
+.livebtn:hover { color: var(--ink); background: var(--panel2); }
+
+ul.laws { list-style: none; padding: 0; margin: 10px 0; }
+ul.laws li { padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; color: var(--ink2); }
+ul.laws li:last-child { border-bottom: 0; }
+ul.laws li b { color: var(--ink); }
+
+.never { border-left: 3px solid var(--red); }
+blockquote { margin: 16px 0; padding: 2px 0 2px 18px; border-left: 2px solid var(--line2); font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--ink); line-height: 1.65; }
+blockquote .src { display: block; margin-top: 6px; font-family: var(--sans); font-style: normal; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink4); }
+
+.marks { display: flex; gap: 26px; align-items: flex-end; flex-wrap: wrap; margin: 16px 0; }
+.marks .mk { text-align: center; }
+.marks .mk .cap { display: block; margin-top: 8px; }
+.mk96 { width: 96px; height: 96px; } .mk32 { width: 32px; height: 32px; } .mk20 { width: 20px; height: 20px; } .mk16 { width: 16px; height: 16px; }
+
+footer { margin-top: 100px; border-top: 1px solid var(--line); padding-top: 18px; }
+@media (max-width: 620px) { .fnrow { flex-wrap: wrap; } .fnrow .why { width: 100%; padding-left: 22px; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ================================================================ COVER -->
+  <div class="cover">
+    <svg class="ring" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" fill="#0a0910"/><circle cx="16" cy="16" r="7" fill="none" stroke="#d9a544" stroke-width="1.5"/></svg>
+    <div class="mark">BED</div>
+    <div class="tag">holding space</div>
+    <div class="sub">The hero is always the person, never the software.
+      This kit exists so everything Bed touches keeps disappearing on purpose.
+      Every value below was measured out of <code style="font-style:normal">app/index.html</code> — extracted, not invented.</div>
+  </div>
+
+  <!-- ============================================================= WORDMARK -->
+  <section id="wordmark">
+    <span class="cap">01 · Wordmark</span>
+    <h2>Three letters, a lot of air</h2>
+    <p><b>BED</b>, set in a didone, all caps, tracked <b>.28em</b>. The tracking hangs a
+      phantom space after the final letter, so the app optically re-centres with
+      <code>padding-left: .28em</code> — keep that trick wherever the wordmark is centred.
+      Never bold, never tinted, never on white. Ink (<code>#e8e4f0</code>) on the ground;
+      ember ink (<code>#d9c7a4</code>) when the surface is live.</p>
+    <div class="spec">
+      <div style="font-family:var(--serif);font-size:clamp(46px,8vw,76px);letter-spacing:.28em;padding-left:.28em;text-align:center">BED</div>
+      <div style="text-align:center;font-size:11.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink3);margin-top:6px">holding space</div>
+    </div>
+    <p>The tag — <i>holding space</i> — rides 6px beneath, 11.5px, tracked .3em, uppercase,
+      in the interface voice (system sans, <code>--ink3</code>). It is optional everywhere except
+      the app masthead and the wordmark lockup file.</p>
+
+    <h3>The compact mark</h3>
+    <p>A thin ring on the dark plate: a crystal bowl seen from above, and the GO ring that
+      runs a session — the same shape doing both jobs. It is the favicon the app already
+      ships, promoted to a mark. It reads at 20px and at 16px because it is one stroke.</p>
+    <div class="marks">
+      <div class="mk"><svg class="mk96" viewBox="0 0 32 32"><rect width="32" height="32" fill="#0a0910"/><circle cx="16" cy="16" r="7" fill="none" stroke="#d9a544" stroke-width="1.5"/></svg><span class="cap">96px</span></div>
+      <div class="mk"><svg class="mk32" viewBox="0 0 32 32"><rect width="32" height="32" fill="#0a0910"/><circle cx="16" cy="16" r="7" fill="none" stroke="#d9a544" stroke-width="1.5"/></svg><span class="cap">32px</span></div>
+      <div class="mk"><svg class="mk20" viewBox="0 0 32 32"><rect width="32" height="32" fill="#0a0910"/><circle cx="16" cy="16" r="7" fill="none" stroke="#d9a544" stroke-width="1.5"/></svg><span class="cap">20px</span></div>
+      <div class="mk"><svg class="mk16" viewBox="0 0 32 32"><rect width="32" height="32" fill="#0a0910"/><circle cx="16" cy="16" r="7" fill="none" stroke="#d9a544" stroke-width="1.5"/></svg><span class="cap">16px — favicon</span></div>
+    </div>
+    <p class="hint">Construction: circle r7 in a 32 grid, stroke 1.5, amber <code>#d9a544</code> on
+      <code>#0a0910</code>. The ring is amber because the mark depicts a sounding bowl — see the rule
+      below. The dark plate travels with the mark; on a light surface, bring the plate.
+      Files: <code>assets/mark.svg</code>, <code>assets/wordmark.svg</code>.</p>
+  </section>
+
+  <!-- ============================================================== PALETTE -->
+  <section id="palette">
+    <span class="cap">02 · Palette</span>
+    <h2>Cool carries information. Warm disappears.</h2>
+    <p>The rooms Bed lives in are washed in candle and tungsten amber. Warm colours on a
+      screen vanish into that wash; cool colours survive it. So everything that must be
+      <b>read</b> is cool, and everything that must <b>recede</b> is dark or warm-and-dim.
+      The ground is near-black with a violet cast — never pure black, which reads as a
+      hole in the room, and never white, which is a flashlight.</p>
+
+    <div class="rulebox">
+      <div class="big">Amber <code style="font-style:normal">#d9a544</code> means one thing: <b>this is live and
+      making sound.</b> Nothing else may ever wear it.</div>
+      <p style="margin:12px 0 0">In the app it marks the sounding state and the single control that
+      begins sound — GO, the ring, the position line, the filled band dots, the slider thumb
+      only while your finger is changing the live sound. One amber control per screen, at most.
+      Outside the app — pages, decks, cards — amber may appear <b>only inside a depiction of the
+      product sounding</b>. Not on CTAs, not on highlights, not on headings. Amber is candle-coloured
+      on purpose: sound and flame are the two live things in Bed's rooms, and they share a colour.</p>
+    </div>
+
+    <h3>Ground &amp; ink — the violet-black room</h3>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#0a0910;border-bottom:1px solid var(--line)"></div><div class="info"><span class="nm">bg</span><span class="hx">#0a0910</span><div class="mn">The room, lights off. Violet-cast near-black — a surface, not a void.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#0d0c14"></div><div class="info"><span class="nm">bg2</span><span class="hx">#0d0c14</span><div class="mn">Recessed wells — the timeline, previews.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#12111a"></div><div class="info"><span class="nm">panel</span><span class="hx">#12111a</span><div class="mn">Cards, drawers — one step off the floor.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#191824"></div><div class="info"><span class="nm">panel2</span><span class="hx">#191824</span><div class="mn">Hover / raised.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#221f2e"></div><div class="info"><span class="nm">line</span><span class="hx">#221f2e</span><div class="mn">Hairlines, seams.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#322d42"></div><div class="info"><span class="nm">line2</span><span class="hx">#322d42</span><div class="mn">Interactive borders.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#e8e4f0"></div><div class="info"><span class="nm">ink</span><span class="hx">#e8e4f0</span><div class="mn">Primary text. Lavender-white — never #fff.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#a29ab4"></div><div class="info"><span class="nm">ink2</span><span class="hx">#a29ab4</span><div class="mn">Secondary text.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#6b6480"></div><div class="info"><span class="nm">ink3</span><span class="hx">#6b6480</span><div class="mn">Labels, caps voice.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#423d52"></div><div class="info"><span class="nm">ink4</span><span class="hx">#423d52</span><div class="mn">Hints, ghosts, placeholders.</div></div></div>
+    </div>
+
+    <h3>Meaning colours</h3>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#d9a544"></div><div class="info"><span class="nm">amber</span><span class="hx">#d9a544</span><div class="mn"><b>Sounding.</b> Live sound, or the one control that begins it. The rule above.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#8a6a2c"></div><div class="info"><span class="nm">amber-dim</span><span class="hx">#8a6a2c</span><div class="mn">Of sound, not sounding: an enabled sound setting, the section you're inside. Never a substitute for amber.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#8b7ab8"></div><div class="info"><span class="nm">violet</span><span class="hx">#8b7ab8</span><div class="mn">The shaping hand: selection, editing focus, a key mid-migration. What you are attending to.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#b86a5a"></div><div class="info"><span class="nm">red</span><span class="hx">#b86a5a</span><div class="mn">The only warning — a bowl that fights the key, an armed delete. Terracotta, spoken as a dot, never a banner.</div></div></div>
+    </div>
+
+    <h3>The ember palette — what live looks like</h3>
+    <p>Once a session begins, the whole interface drops to ember: warm, dim ink on
+      near-black, because a bright screen in that room is disrespectful and everyone
+      present knows it. Chrome joins the candlelight; only information keeps its colour —
+      the section hues stay cool, amber stays amber. Nothing needs to know: the palette
+      swaps under everything via <code>body.live</code>, over .8 seconds.</p>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#070606"></div><div class="info"><span class="nm">bg · live</span><span class="hx">#070606</span><div class="mn">Darker still — the screen almost leaves.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#0f0c09"></div><div class="info"><span class="nm">panel · live</span><span class="hx">#0f0c09</span><div class="mn">Warm-black surfaces.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#d9c7a4"></div><div class="info"><span class="nm">ink · live</span><span class="hx">#d9c7a4</span><div class="mn">Candlelit parchment — text by firelight.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#a68f68"></div><div class="info"><span class="nm">ink2 · live</span><span class="hx">#a68f68</span><div class="mn">Secondary, warmed.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#2e2417"></div><div class="info"><span class="nm">line2 · live</span><span class="hx">#2e2417</span><div class="mn">Warm hairlines.</div></div></div>
+    </div>
+    <button class="livebtn" id="goLive">See this page go live</button>
+    <p class="hint" style="margin-top:10px">The button warms this whole book over .8s — the same
+      transition the app makes when a session begins. Press it again to come back.</p>
+  </section>
+
+  <!-- ================================================================= TYPE -->
+  <section id="type">
+    <span class="cap">03 · Type</span>
+    <h2>The serif is the person. The sans is the machine.</h2>
+    <p>The pairing is semantic, not decorative. Everything a practitioner wrote or means —
+      session titles, section names, phrases, the wizard's questions, the poem — is set in
+      the didone. Everything the software does — controls, labels, numbers, data — is set
+      in the system sans. When you can't decide which face a thing takes, ask who is
+      speaking.</p>
+    <div class="spec">
+      <div class="lbl"><span class="cap">Display · didone</span><span class="hint">"Didot", "Bodoni MT", "Playfair Display", "Cormorant Garamond", Georgia, serif</span></div>
+      <div class="serif" style="font-size:34px;line-height:1.2">Full Moon in Leo</div>
+      <div class="serif" style="font-style:italic;font-size:17px;color:var(--ink2);margin-top:6px">Let it burn what it must</div>
+    </div>
+    <div class="spec">
+      <div class="lbl"><span class="cap">Interface · system sans</span><span class="hint">-apple-system, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial</span></div>
+      <div style="font-size:15px">Body at 15px, line-height 1.45. Numbers always <span style="font-variant-numeric:tabular-nums">tabular: 43:48 · 52:00</span>.</div>
+      <div class="cap" style="margin-top:12px">The caps voice — 9–12px · 600 · tracked .12–.34em</div>
+    </div>
+    <p>The app takes no webfonts: the didone resolves to Didot on Apple, Bodoni MT on
+      Windows, Georgia as the floor. Where an artefact must embed a font, the canonical
+      didone is <b>Playfair Display</b> — open licence, already in the stack.</p>
+
+    <h3>Performance sizes — chosen for four feet, not a desk</h3>
+    <p>The perform and follower screens are read from the floor: the leader at arm's
+      length with a mallet in each hand, followers at up to fifteen feet, all at oblique
+      angles, all in candlelight. These sizes are the product decision, not a style:</p>
+    <table>
+      <tr><th>Element</th><th>Size</th><th>Why</th></tr>
+      <tr><td>Countdown</td><td><code>clamp(58px, 15vw, 108px)</code> · weight 200</td><td>The biggest thing on screen is the quietest — at 108px a regular weight is a wall of lit pixels; thin keeps it legible without glare.</td></tr>
+      <tr><td>Section name</td><td><code>clamp(38px, 8.4vw, 64px)</code> · didone</td><td>One glance from four feet, mid-strike.</td></tr>
+      <tr><td>Section phrase</td><td><code>clamp(17px, 3.6vw, 24px)</code> · didone italic</td><td>The line the section carries — read between strikes, not during.</td></tr>
+      <tr><td>Follower bowls</td><td><code>clamp(40px, 11vw, 96px)</code> · tabular</td><td>A phone propped against a bowl bag across the room. Fifteen feet.</td></tr>
+      <tr><td>Follower name</td><td><code>clamp(30px, 6vw, 52px)</code> · didone</td><td>Same distance, second priority.</td></tr>
+      <tr><td>Band row / caps</td><td>9.5–12px · 600 · tracked</td><td>Glanceable state, deliberately below reading size — information for a flick of the eyes, not a paragraph.</td></tr>
+    </table>
+    <p class="hint">The bowl line carries its meaning in weight, not punctuation: the root bowl at
+      1.9em/800, free bowls 1.5em/600, sparing 1.05em, resting .82em ghosted. Visual weight IS the tier.</p>
+  </section>
+
+  <!-- ========================================================== SECTION ARC -->
+  <section id="arc">
+    <span class="cap">04 · The section colour arc</span>
+    <h2>Nine functions, one dusk</h2>
+    <p>Sections are coded by <b>function</b>, not by chakra — deliberately not the rainbow.
+      All nine hues are cool and muted so the strip reads as one dusk: no hue shouts, and
+      the arc becomes a session's fingerprint rather than a chart. It appears identically
+      at three sizes — the library card strip, the wizard summary, and the thin arc above
+      the perform screen.</p>
+    <div class="arcstrip">
+      <i style="width:8%;background:var(--c-arrive)"></i><i style="width:17%;background:var(--c-ground)"></i><i style="width:10%;background:var(--c-wash)"></i><i style="width:15%;background:var(--c-flow)"></i><i style="width:10%;background:var(--c-express)"></i><i style="width:9%;background:var(--c-release)"></i><i style="width:6%;background:var(--c-space)"></i><i style="width:17%;background:var(--c-bloom)"></i><i style="width:8%;background:var(--c-return)"></i>
+    </div>
+    <div class="card" style="padding:8px 20px">
+      <div class="fnrow"><span class="dot" style="background:var(--c-arrive)"></span><span class="fn serif">Arrive</span><span class="hx2">#8e99b5</span><span class="why">Pale slate — dusk light, the door still open.</span></div>
+      <div class="fnrow"><span class="dot" style="background:var(--c-ground)"></span><span class="fn serif">Ground</span><span class="hx2">#5d6aa8</span><span class="why">Indigo — the floor. Shares its hue with the Deep lane: ground IS the floor.</span></div>
+      <div class="fnrow"><span class="dot" style="background:var(--c-wash)"></span><span class="fn serif">Wash</span><span class="hx2">#4d8b96</span><span class="why">Teal — water. Shares its hue with the Air lane: wash is a place, not a key.</span></div>
+      <div class="fnrow"><span class="dot" style="background:var(--c-flow)"></span><span class="fn serif">Flow</span><span class="hx2">#8b7ab8</span><span class="why">Violet — where the drone carries. Shares its hue with the Bed lane.</span></div>
+      <div class="fnrow"><span class="dot" style="background:var(--c-express)"></span><span class="fn serif">Express</span><span class="hx2">#7c86ad</span><span class="why">Steel — metal in the air, gongs.</span></div>
+      <div class="fnrow"><span class="dot" style="background:var(--c-release)"></span><span class="fn serif">Release</span><span class="hx2">#55948b</span><span class="why">Sea green — rain, washing.</span></div>
+      <div class="fnrow"><span class="dot" style="background:var(--c-space)"></span><span class="fn serif">Space</span><span class="hx2">#4a4661</span><span class="why">Barely more than the background — silence drawn as almost nothing. The most literal swatch in the set.</span></div>
+      <div class="fnrow"><span class="dot" style="background:var(--c-bloom)"></span><span class="fn serif">Bloom</span><span class="hx2">#b87a93</span><span class="why">Rose — the arc's one blush, for the heart. The only hue that leans warm, and still muted enough to survive candlelight without impersonating amber.</span></div>
+      <div class="fnrow"><span class="dot" style="background:var(--c-return)"></span><span class="fn serif">Return</span><span class="hx2">#9a94ad</span><span class="why">Grey lavender — the room's own colour coming back.</span></div>
+    </div>
+    <h3>The four bands</h3>
+    <p>The lanes borrow from the arc rather than adding hues: Deep <code>#5d6aa8</code>,
+      Bed <code>#8b7ab8</code>, Voice <code>#a68cc0</code> (the drone's hue, lifted), Air
+      <code>#4d8b96</code>. In performance the bands speak as <b>SUB · DRONE · MOTIF ·
+      TEXTURE</b> — filled amber when sounding, hollow when silent — because live, the only
+      question is <i>what is sounding</i>, and that question is amber's alone to answer.</p>
+  </section>
+
+  <!-- =============================================================== MOTION -->
+  <section id="motion">
+    <span class="cap">05 · Motion</span>
+    <h2>Nothing moves that isn't time or sound</h2>
+    <p>The complete list of things that animate continuously in Bed: the position line
+      crawling the arc (time), the GO ring filling (time), the hold button breathing
+      (waiting on a human), the word <i>migrating</i> pulsing (the key literally in
+      transit), and the band dots crossfading (sound entering or leaving). That's all.
+      Everything else changes state by fading — 120–180ms, colour and border only.</p>
+    <div class="demos">
+      <div class="demo"><div class="stage"><span class="dm-hold">Hold</span></div><span class="cap">holdpulse · 2.4s breathing</span></div>
+      <div class="demo"><div class="stage"><span class="dm-mig">· migrating</span></div><span class="cap">migpulse · 1.4s</span></div>
+      <div class="demo"><div class="stage" style="padding:0 14px"><span class="dm-pos"><i></i></span></div><span class="cap">the position line · linear</span></div>
+      <div class="demo"><div class="stage"><span class="dm-band"><i></i>Drone</span></div><span class="cap">band dot · .8s crossfade</span></div>
+    </div>
+    <ul class="laws">
+      <li><b>Never faster than the sound.</b> The audio establishes over 35–45 seconds; the UI must not promise snappier physics than the room has. The one spatial move in the app — a drawer rising 12px — takes 180ms and stops.</li>
+      <li><b>The big transition is slow.</b> Going live warms the whole screen over .8s — candlelight coming up, not a mode switch.</li>
+      <li><b>Continuous motion is linear or breathing.</b> The clock crawls linearly; pulses are sinusoidal. No spring curves, no bounces, no overshoot — ever.</li>
+      <li><b>Sound is never visualised as data.</b> No waveforms, no equalisers, no audio-reactive particles — not in the app, not in marketing. The band row is filled or hollow, not a meter. The product's whole posture is that the room is the visualisation.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================ VOICE -->
+  <section id="voice">
+    <span class="cap">06 · Voice</span>
+    <h2>The settled words</h2>
+    <blockquote>You already have the love, the instruments, and the presence.
+      This is the first thing that lets you lead with them.
+      <span class="src">The promise</span></blockquote>
+    <blockquote>One violin player becomes a symphony.
+      <span class="src">The line</span></blockquote>
+    <blockquote>The sound design was never the art — leading the room is. This removes
+      what was blocking you from what you're actually good at.
+      <span class="src">Do say</span></blockquote>
+    <p>The app's own microcopy is part of the voice and may be quoted as marketing:
+      <i>"the app plays only what humans physically can't — the floor, the drone, the
+      air"</i>, <i>"a roster, not a mixer"</i>, <i>"the room owns time"</i>,
+      <i>"holding — the plan waits."</i> Write new copy in that register: short, warm,
+      certain, technically honest, second person, and always about the person.</p>
+    <div class="card never" style="margin-top:18px">
+      <span class="cap" style="color:var(--red)">Never</span>
+      <ul class="laws" style="margin-bottom:0">
+        <li><b>"Your audience can't tell the difference."</b> True, and it reads as contempt for the craft to exactly the people whose endorsement matters most.</li>
+        <li><b>"AI."</b> In this market the word signals inauthentic, extractive, machine-made spirituality. The wizard is "five questions." The engine is "the engine."</li>
+        <li><b>Anything about what a frequency does to a body.</b> Chakra names and intents are labels only. No health claims, ever.</li>
+        <li><b>Bright by default.</b> A white page is the visual version of all three.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ======================================================= JUDGMENT CALLS -->
+  <section id="calls">
+    <span class="cap">07 · Judgment calls</span>
+    <h2>Where the app hadn't settled, and what I decided</h2>
+    <table>
+      <tr><th>Call</th><th>Decision & why</th></tr>
+      <tr><td>The amber rule vs. primary buttons</td><td>The app paints "New session / Begin / GO" amber. I ruled this <b>consistent</b>: amber marks sound <i>or the single control that brings it closer</i> — at most one per screen. Evidence the app means it: the tone slider's thumb turns amber only while a finger is actively changing the live sound.</td></tr>
+      <tr><td>Wizard dots &amp; focus outlines</td><td>The wizard's progress dots and the keyboard focus ring are amber, and neither is sound. That's drift, not intent. <b>Proposed app fix (not silently applied): both go violet</b> — the shaping-hand colour. Flagged here per the "propose, don't replace" rule.</td></tr>
+      <tr><td>Two vocabularies for the four bands</td><td>Design says <i>Deep / Bed / Voice / Air</i> (the metaphor you build with); performance says <i>SUB / DRONE / MOTIF / TEXTURE</i> (what a musician parses mid-strike). I kept both on purpose: "Bed" as a lane label on the live screen would collide with the wordmark, and the acoustic names are self-explaining at a glance. Design keeps the poetry; performance keeps the physics.</td></tr>
+      <tr><td>The mark's colour</td><td>The favicon existed without a rule. I formalised it: the ring is a <b>sounding</b> bowl, so it wears amber legitimately — and therefore the mark is never used as decoration at large scale next to unrelated amber-free content. It's a signature, not a pattern.</td></tr>
+      <tr><td>No amber on marketing chrome</td><td>Nothing on a landing page is making sound, so the landing CTA is <b>not</b> amber — the only amber on the page lives inside the product frame, which depicts a live session. The rule taken seriously enough to cost us the conventional glowing button.</td></tr>
+      <tr><td>Marketing stays in the "before" palette</td><td>Pages and decks use the violet-black waiting palette, not ember — ember is earned by a session actually running. A brochure pretending to be live would be a small lie.</td></tr>
+      <tr><td>Canonical embedded didone</td><td>The app trusts the OS. When an artefact must ship a font, use Playfair Display — it's in the app's own stack and openly licensed. Didot remains the ideal; nothing may substitute a non-didone.</td></tr>
+    </table>
+  </section>
+
+  <footer>
+    <p class="hint">Bed · brand kit v1 · extracted from <code>app/index.html</code>.
+      The app is the source of truth; when this book and the app disagree, the app wins — then fix the app.<br>
+      Companion pieces: <code>../site/index.html</code> (landing page) · <code>marketing-kit.md</code> (film treatment, copy, rationale).</p>
+  </footer>
+</div>
+
+<script>
+'use strict';
+// The one interaction this book has: the app's own going-live transition.
+document.getElementById('goLive').addEventListener('click', function () {
+  const live = document.body.classList.toggle('live');
+  this.textContent = live ? 'Come back' : 'See this page go live';
+});
+</script>
+</body>
+</html>

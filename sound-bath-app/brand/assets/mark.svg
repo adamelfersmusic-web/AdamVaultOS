@@ -1,0 +1,8 @@
+<!-- BED — the compact mark. A bowl seen from above; also the GO ring.
+     It wears amber because the mark depicts a sounding bowl — the one thing
+     amber is allowed to mean. The dark plate travels with it: never set the
+     ring on white. Identical to the app's favicon on purpose. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Bed">
+  <rect width="32" height="32" fill="#0a0910"/>
+  <circle cx="16" cy="16" r="7" fill="none" stroke="#d9a544" stroke-width="1.5"/>
+</svg>
