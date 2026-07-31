@@ -1,3 +1,53 @@
+## v1.6 — lamp mode, and a wake lock that tells you the truth · 2026-07-31
+
+### A screen is a light
+
+Tap **lamp** on the follower sheet and the phone becomes a light: full-bleed
+section colour, no text, wake lock held. Face up beside a bowl, **any phone in a
+drawer is now a Lumen pad** — no hardware, no pairing, no cost, and it works
+offline exactly as well as everything else, because followers already run on
+their own data.
+
+It changes when the section changes, on the 0.8s crossfade `#followerView` has
+always had. **Nothing pulses, nothing reacts to audio, nothing moves on its
+own** — the light inherits laws 1 and 3 like everything else.
+
+**It errs dark on purpose** (law 5). The field is the section colour *darkened*,
+brightest at the centre — a glow, not a slab. The phone's own brightness slider
+is the hand that adds, which is exactly law 3's rule about who is allowed to
+change a level.
+
+A tap anywhere returns to the sheet — never out of the view, because the phone
+is on the floor beside a bowl and a stray touch must not cost anyone their cues.
+
+### The wake lock now says whether it worked
+
+`requestWake()` was fire-and-forget: `catch (e) {}` and hope. But wake lock is
+best-effort and **some phones ignore it**, which is why `DEPLOY.md` has always
+said *"say keep your screens on once, out loud."*
+
+Now it reports:
+
+| | |
+|---|---|
+| held | *screen stays on* |
+| refused or unsupported | ***screen may sleep — set it manually*** (in red) |
+| not asked yet | hidden |
+
+It also re-checks on release, because iOS drops the lock when the app
+backgrounds. **A leader shouldn't have to guess about the one thing that would
+quietly ruin a follower's night.**
+
+### Changed since v1.5
+| | |
+|---|---|
+| `toggleLamp()` | new |
+| `renderFollower()` | paints the lamp field from `fnColor(sec.function)` |
+| `requestWake()` | tracks `wakeOk`, re-checks on release, renders a chip |
+| `#followerView.lamp` | hides everything, kills padding |
+
+---
+
 # Bed — versions
 
 Frozen snapshots you can open directly in a browser, so two versions can be
