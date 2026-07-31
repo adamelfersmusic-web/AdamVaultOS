@@ -1188,6 +1188,21 @@ const FUNCTIONS = {
 };
 const fnColor = f => (FUNCTIONS[f] || FUNCTIONS.wash).color;
 
+/* ⚠️ `b` is what every follower's phone prints, and this one line decides what
+   a number MEANS. Right now it is POSITIONAL — b is the bowl's place in your
+   own set, low to high — which is why the sheet works for any kit, any tuning,
+   and no musical knowledge at all. It is also why two different kits in one
+   room hold different numbers for the same pitch: correct on each phone,
+   useless as something people say to each other.
+
+   The alternative is ABSOLUTE (1 = C always), and for a C major set the two
+   produce identical numbers — including all three cases in verifyNotation() —
+   so this is still cheap to change. It stops being cheap the moment non-C kits
+   are in the wild, because by then people have written numbers on the bowls.
+
+   Do not switch it casually, and do not switch it without reading
+   brand/numbering-and-tuning.md. What decides it is a real ensemble with a
+   non-C kit in it, not an argument. */
 function buildKit(kit) {
   const t = kit && kit.type;
   if (t === 'standard8') return STANDARD7.map((pc, i) => ({ b: i + 1, pc })).concat([{ b: 8, pc: 0, octave: true }]);
