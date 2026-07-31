@@ -1092,7 +1092,9 @@ function weaveLanes(S) {
     if (s.kind === 'pitched') {
       lanes.bed.push({ fromMin: s.fromMin, toMin: Math.min(s.toMin + 1, total), level: 0.8, fadeIn: 40, fadeOut: 45, chords: false });
       if (s.toMin - s.fromMin > 3) lanes.voice.push({ fromMin: s.fromMin + 2, toMin: s.toMin, level: 0.42, fadeIn: 30, fadeOut: 30 });
-      lanes.air.push({ fromMin: s.fromMin, toMin: s.toMin, level: 0.4, fadeIn: 45, fadeOut: 45, elements: ['crickets'] });
+      // Staggered across BOTH seams on purpose — the crickets start before
+      // the key changes and are still there after. Air never tiles to sections.
+      lanes.air.push({ fromMin: Math.max(0, s.fromMin - 1), toMin: Math.min(total, s.toMin + 1), level: 0.4, fadeIn: 45, fadeOut: 45, elements: ['crickets'] });
     } else if (s.kind === 'texture') {
       const els = textureElements(s);
       lanes.air.push({
@@ -1178,6 +1180,7 @@ function inferFunction(s, i, arr) {
 }
 
 function normalizeSession(raw) {
+  raw = JSON.parse(JSON.stringify(raw || {}));   // sessions never share block objects
   let S = raw && raw.format === 2 ? raw : upgradeFormat1(raw || {});
   S = {
     format: 2, id: raw.id || uid(),
@@ -1264,7 +1267,7 @@ function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try {
-      localStorage.setItem(SKEY, JSON.stringify({ settings: store.settings, sessions: store.sessions }));
+      localStorage.setItem(SKEY, JSON.stringify({ settings: store.settings, sessions: store.sessions, seedVersion: SEED_VERSION }));
     } catch (e) { /* storage full or blocked — the session in memory still runs */ }
   }, 250);
 }
@@ -1276,6 +1279,7 @@ function loadStore() {
     if (o && o.settings) store.settings = { ...store.settings, ...o.settings };
     if (o && Array.isArray(o.sessions) && o.sessions.length) {
       store.sessions = o.sessions.map(normalizeSession);
+      refreshSeeds(o);
       return true;
     }
   } catch (e) {}
@@ -1284,38 +1288,63 @@ function loadStore() {
 const currentSession = () => store.sessions.find(s => s.id === store.currentId) || null;
 
 /* The two real sessions, transcribed from handouts used at sold-out events.
-   Stored in format 1 (per-section bands) and upgraded on seed — the same
-   path any imported sheets.html export takes. */
+   Full Moon is hand-authored in format 2 so its lanes demonstrate the point
+   of the format: blocks deliberately cross section seams. Seeding stays in
+   format 1 (per-section bands) and is upgraded on seed — the same path any
+   imported sheets.html export takes. */
 const FIXTURES = [
   {
-    format: 1, title: 'Full Moon in Leo', subtitle: 'Let it burn what it must', refHz: 440,
+    format: 2, title: 'Full Moon in Leo', subtitle: 'Let it burn what it must', refHz: 440,
     kit: { type: 'standard7' },
     sections: [
-      { id:'root', name:'Root Chakra', phrase:'The rock', kind:'pitched', chakra:1, mode:'mixolydian', minutes:8, fadeIn:40,
-        bands:{ deep:{on:true,level:0.72}, bed:{on:true,level:0.82,chords:false}, voice:{on:true,level:0.38}, air:{on:true,level:0.42,elements:['crickets']} },
-        liveChords:['C','F','Bb'], leaderNote:'Acoustic' },
-      { id:'ocean', name:'Ocean', phrase:'What grows', kind:'texture', minutes:6, fadeIn:45,
-        bands:{ deep:{on:true,level:0.55}, bed:{on:false}, voice:{on:false}, air:{on:true,level:0.78,elements:['waves','wind']} },
-        liveChords:['D','G'], leaderNote:'Acoustic. D major — reaching for light. B minor.' },
-      { id:'sacral', name:'Sacral', phrase:'Will live', kind:'pitched', chakra:2, mode:'major', minutes:8, fadeIn:35,
-        bands:{ deep:{on:true,level:0.7}, bed:{on:true,level:0.8,chords:false}, voice:{on:true,level:0.42}, air:{on:true,level:0.35,elements:['crickets']} },
-        leaderNote:'+ Electric / E-bow' },
-      { id:'rain', name:'Rain', phrase:'And shed', kind:'texture', minutes:5, fadeIn:40,
-        bands:{ deep:{on:true,level:0.5}, bed:{on:false}, voice:{on:false}, air:{on:true,level:0.8,elements:['rain']} } },
-      { id:'gong', name:'Gong', phrase:"What's shed", kind:'texture', minutes:4, fadeIn:30,
-        bands:{ deep:{on:true,level:0.85}, bed:{on:false}, voice:{on:false}, air:{on:true,level:0.3,elements:['wind']} },
-        leaderNote:'Gong is played live — app holds the floor only' },
-      { id:'burn', name:'Flute & Shakers', phrase:'Will burn', kind:'texture', minutes:5, fadeIn:25,
-        bands:{ deep:{on:true,level:0.6}, bed:{on:false}, voice:{on:false}, air:{on:true,level:0.5,elements:['wind','crickets']} },
-        leaderNote:'Live flute + shakers. Live players mode.' },
-      { id:'space', name:'Space', phrase:'', kind:'space', minutes:3, fadeIn:50,
-        bands:{ deep:{on:true,level:0.35}, bed:{on:false}, voice:{on:false}, air:{on:false} } },
-      { id:'heart', name:'Heart Chakra', phrase:"What's left", kind:'pitched', chakra:4, mode:'major', minutes:9, fadeIn:55,
-        bands:{ deep:{on:true,level:0.7}, bed:{on:true,level:0.85,chords:false}, voice:{on:true,level:0.45}, air:{on:true,level:0.4,elements:['crickets']} } },
-      { id:'chimes', name:'Chimes', phrase:'Is Home', kind:'texture', minutes:4, fadeIn:40,
-        bands:{ deep:{on:true,level:0.4}, bed:{on:false}, voice:{on:true,level:0.5}, air:{on:true,level:0.45,elements:['crickets']} },
-        leaderNote:'Live chimes, roaming' },
+      { id:'root', function:'ground', name:'Root Chakra', phrase:'The rock', kind:'pitched', chakra:1, mode:'mixolydian',
+        fromMin:0, toMin:8, liveChords:['C','F','Bb'], leaderNote:'Acoustic' },
+      { id:'ocean', function:'wash', name:'Ocean', phrase:'What grows', kind:'texture',
+        fromMin:8, toMin:14, liveChords:['D','G'], leaderNote:'Acoustic. D major — reaching for light. B minor.' },
+      { id:'sacral', function:'flow', name:'Sacral', phrase:'Will live', kind:'pitched', chakra:2, mode:'major',
+        fromMin:14, toMin:22, leaderNote:'+ Electric / E-bow' },
+      { id:'rain', function:'release', name:'Rain', phrase:'And shed', kind:'texture', fromMin:22, toMin:27 },
+      { id:'gong', function:'wash', name:'Gong', phrase:"What's shed", kind:'texture',
+        fromMin:27, toMin:31, leaderNote:'Gong is played live — app holds the floor only' },
+      { id:'burn', function:'express', name:'Flute & Shakers', phrase:'Will burn', kind:'texture',
+        fromMin:31, toMin:36, leaderNote:'Live flute + shakers. Live players mode.' },
+      { id:'space', function:'space', name:'Space', phrase:'', kind:'space', fromMin:36, toMin:39 },
+      { id:'heart', function:'bloom', name:'Heart Chakra', phrase:"What's left", kind:'pitched', chakra:4, mode:'major',
+        fromMin:39, toMin:48 },
+      { id:'chimes', function:'return', name:'Chimes', phrase:'Is Home', kind:'texture',
+        fromMin:48, toMin:52, leaderNote:'Live chimes, roaming' },
     ],
+    /* Lanes are the point here: almost nothing is edge-aligned to a section.
+       The sections say what key the room is in; the lanes say what is
+       actually sounding, on their own timeline. */
+    lanes: {
+      deep: [
+        { fromMin:0,  toMin:22, level:0.72, fadeIn:40, fadeOut:45 },   // one floor under Root, Ocean AND Sacral
+        { fromMin:22, toMin:27, level:0.5,  fadeIn:40, fadeOut:45 },
+        { fromMin:27, toMin:31, level:0.85, fadeIn:30, fadeOut:45 },   // the gong wants a heavy floor
+        { fromMin:31, toMin:36, level:0.6,  fadeIn:35, fadeOut:45 },
+        { fromMin:36, toMin:39, level:0.35, fadeIn:45, fadeOut:50 },   // space: the floor sinks, never leaves
+        { fromMin:39, toMin:52, level:0.7,  fadeIn:45, fadeOut:60 },   // through Heart and out under the chimes
+      ],
+      bed: [
+        { fromMin:0,  toMin:9,  level:0.82, fadeIn:40, fadeOut:50, chords:false },  // hands off a minute into the Ocean
+        { fromMin:14, toMin:23, level:0.8,  fadeIn:35, fadeOut:45, chords:false },  // releases into the rain
+        { fromMin:39, toMin:49, level:0.85, fadeIn:55, fadeOut:50, chords:false },  // carries into the chimes
+      ],
+      voice: [
+        { fromMin:2,  toMin:8,  level:0.38, fadeIn:30, fadeOut:30 },
+        { fromMin:16, toMin:22, level:0.42, fadeIn:30, fadeOut:30 },
+        { fromMin:41, toMin:52, level:0.48, fadeIn:30, fadeOut:40 },   // the motif stays for the close
+      ],
+      air: [
+        { fromMin:0,  toMin:10, level:0.42, fadeIn:45, fadeOut:45, elements:['crickets'] },      // linger into the Ocean
+        { fromMin:8,  toMin:15, level:0.78, fadeIn:45, fadeOut:50, elements:['waves','wind'] },  // recede as the drone lands
+        { fromMin:17, toMin:24, level:0.4,  fadeIn:45, fadeOut:45, elements:['crickets'] },      // inside Sacral, through the Rain boundary
+        { fromMin:21, toMin:28, level:0.8,  fadeIn:40, fadeOut:45, elements:['rain'] },          // rain begins before its section
+        { fromMin:27, toMin:37, level:0.3,  fadeIn:30, fadeOut:50, elements:['wind'] },          // gong wash through the flutes into Space
+        { fromMin:38, toMin:52, level:0.42, fadeIn:50, fadeOut:60, elements:['crickets'] },      // from inside Space, before the key changes, to the end
+      ],
+    },
   },
   {
     format: 1, title: 'Seeding and Watering the Soil',
@@ -1347,7 +1376,19 @@ const FIXTURES = [
 ];
 
 function seedLibrary() {
-  store.sessions = FIXTURES.map(f => normalizeSession(upgradeFormat1(f)));
+  store.sessions = FIXTURES.map(f => normalizeSession(f));
+}
+
+/* When a shipped fixture improves, refresh the seeded copies in an existing
+   library — matched by title, so renamed copies and the user's own sessions
+   are never touched. */
+const SEED_VERSION = 2;
+function refreshSeeds(stored) {
+  if ((stored.seedVersion || 1) >= SEED_VERSION) return;
+  const seedTitles = new Set(FIXTURES.map(f => f.title));
+  store.sessions = store.sessions.filter(s => !seedTitles.has(s.title));
+  store.sessions.push(...FIXTURES.map(f => normalizeSession(f)));
+  save();
 }
 
 /* ----------------------------------------------------------------- the bus */
