@@ -9,6 +9,9 @@ reversed. **Two blockers remain — M2 and M4** — and M4 now also carries
 *where Bed gets published at all*, since `sound-bath-app/` is deliberately
 outside the repo's published surface.
 
+**Then a third pass** read the shipped artefacts against each other and added
+**M11–M12** at the bottom. **M11 is blocking, so the count is three.**
+
 ---
 
 ## App
@@ -198,3 +201,63 @@ their full floors, their poems — mute the pseudoscience without policing it.
 *Captured 2026-07-31, same session as the kit. When one of these gets decided,
 move the decision into the brand book or the app — don't let this file become
 a second source of truth.*
+
+---
+
+## Added by a later pass
+
+*Same day, third pass — after the original capture and after the BOOK
+comparison. This one read the shipped artefacts against **each other** rather
+than against the app or the strategy doc. Where the capture asks "what should
+this be" and the BOOK pass asks "was this already decided," these ask **"does
+what we wrote match what we built."** Kept separate so provenance stays
+obvious; fold them into the numbered list if that stops being useful.*
+
+**M11 · ⛔ The page already makes the claim A3 is still deciding.**
+`site/index.html` says the sheet is *"On your stand, and on any phone across
+the room, readable at fifteen feet."* Per **A3**, the follower view lives on
+the leader's own screen today — Bed is one device. A3 files this as a film
+question and leans *"don't film a lie,"* which is right; the gap is that the
+**landing page already tells it**, and copy ships months before a film does.
+The film can be reframed in an afternoon. A live page cannot un-promise
+multi-device to someone who read it.
+→ Scope the line to the stand for launch ("On your stand, readable at fifteen
+feet"), or promote networked follower view from v-next to a launch blocker?
+**Blocking: publishing the page** — so it lands on **M4**, which now owns where
+Bed gets deployed at all. M4 decides *where* the page goes; this decides whether
+that sentence can go with it. My lean: **scope the line.** It costs one clause,
+the sentence is still true and still good, and it's A3's own logic applied one
+artefact earlier. If sync ships later the line grows back for free.
+
+**M12 · Every app depiction on the landing page is a hand-built replica.**
+Sixteen `.d-*` CSS classes, zero `<img>` tags — the perform screen on the page
+is drawn in HTML, not screenshotted. It's genuinely better-looking than a
+capture: it scales, it stays crisp, it inherits the tokens. But the kit's own
+closing rule is *"the app is the source of truth; when this kit and the app
+disagree, the app wins — then fix the app,"* and a replica has **no mechanism
+to notice a disagreement.** It will drift silently the first time the perform
+screen changes, and drift in marketing is indistinguishable from lying. Note
+also that marketing-kit §3 names *the screenshot* as the lead asset, and the
+site leads with a *replica* of that screenshot.
+→ Screenshot the real app for the hero and keep the CSS mocks for the smaller
+supporting frames? Or keep the replicas and add something that fails loudly
+when they drift?
+**Lean: screenshot the hero, keep the mocks below it.** The hero is the one
+frame making a promise about what the product looks like; the rest are
+illustration. Second-best is a note in `brand/README.md` naming the replicas as
+a maintenance obligation — cheap, and better than the current silence.
+
+**M13 · Withdrawn — overtaken by the BOOK pass, except for one criterion.**
+This entry originally argued that M1's SEO framing was wrong and should merge
+into M5. The BOOK pass got there first and with better evidence (the name was
+already decided, on the reasoning that Bed sells hand-to-hand so memorability
+beats search volume). Retired as written.
+
+What survives is a **test for M1's residual open item — the URL to print.** If
+discovery is a practitioner saying the name out loud to another practitioner on
+a mat, the handle's job isn't to rank; it's to survive **being heard across a
+room and typed from memory a day later.** That rules out anything relying on
+punctuation, an unusual TLD, or a compound whose word order can flip — which is
+the same failure mode that killed `bathsound.io`. Not a blocker, but it's the
+criterion to judge candidates against rather than gut feel.
+
