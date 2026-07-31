@@ -64,6 +64,11 @@ the big dark reverb. This is what a curator pack would actually ship.</p>
   <p style="margin:0 0 10px"><b>What to listen for.</b> These all play the same notes — root, fifth, octave,
   ninth, never a third. The pack changes the <i>timbre</i>, never the harmony. A producer designs the colour;
   Bed still decides the voicing.</p>
+  <p style="margin:0 0 10px"><b>Why the choir is different.</b> Every other entry here is a wavetable — a
+  spectrum, a few hundred bytes. The choir is <b>architecture</b>: eight singers a few cents apart through
+  <i>fixed</i> formant filters, plus breath. Vowels are fixed frequencies and wavetable harmonics travel with the
+  note, so a choir built as a spectrum would chipmunk as the key migrates. Some sounds ship as data; some need
+  code. Worth knowing before commissioning one.</p>
   <p style="margin:0"><b>The honest limit.</b> A single spectrum is static — it can't evolve, and it carries no
   attack, no effects, no performance. Bed's filter breath supplies the only motion. If producer packs are worth
   doing, the extension that makes them expressive is <b>morphing between two or three spectra over 30–60 s</b> —
@@ -96,6 +101,17 @@ const TABLES = {
     h:[0,1,.14,.05,.03,.02,.01,.01] },
   brass: { nm:'Soft brass', de:'Slow build through the mid harmonics. Warm, wide, patient.',
     h:[0,1,.62,.48,.42,.36,.3,.26,.2,.15,.11,.08,.05,.03,.02] },
+  choir: { nm:'Celestial choir', de:'Formant filters + eight detuned singers + breath. Not a wavetable — architecture.',
+    h:[0,1,.5,.42,.3,.24,.2,.3,.18,.12,.09,.07,.05,.04,.03,.02], choir:true },
+};
+
+/* Vowel formants, in Hz — FIXED, never scaled with pitch. This is the whole
+   reason a choir can't be a wavetable: harmonics travel with the note, vowels
+   don't. Sing a low note and a high note on "ooh" and the vowel stays put. */
+const VOWELS = {
+  ooh: [[320,1,90],[800,.28,110],[2600,.06,180]],
+  oh:  [[450,1,95],[840,.42,120],[2700,.08,190]],
+  ah:  [[700,1,110],[1220,.5,140],[2600,.1,200]],
 };
 
 let ctx=null, cur=null, voices=[], curKey='bed';
@@ -159,8 +175,47 @@ function start(){
   const pans=[0,-.45,.4,-.3,.5];
   cur=ctx.createGain(); cur.gain.value=0; cur.gain.setTargetAtTime(1,t,1.6);
   cur.connect(ctx.destination); cur.connect(ctx.__send);
+  const isChoir = !!TABLES[curKey].choir;
   specs.forEach(([midi,lvl],i)=>{
     const f=mhz(midi);
+    const g=ctx.createGain(); g.gain.value=lvl;
+    const p=ctx.createStereoPanner(); p.pan.value=pans[i];
+    g.connect(p); p.connect(cur);
+
+    if(isChoir){
+      /* A section, not a soloist: several singers a few cents apart, through
+         FIXED formant filters so the vowel stays put as the key migrates.
+         Plus a breath of filtered noise — the thing that makes it read human. */
+      const vowel = VOWELS[['ooh','oh','ooh','ah','ooh'][i]];
+      const sum = ctx.createGain(); sum.gain.value=.9;
+      [-7,-2.5,3,6.5].forEach(cents=>{
+        const o=ctx.createOscillator(); o.setPeriodicWave(wave);
+        o.frequency.value=f; o.detune.value=cents;
+        const og=ctx.createGain(); og.gain.value=.25;
+        o.connect(og); og.connect(sum); o.start(t); voices.push(o);
+      });
+      // breath
+      const nb=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate);
+      const nd=nb.getChannelData(0);
+      for(let j=0;j<nd.length;j++) nd[j]=(Math.random()*2-1)*.5;
+      const ns=ctx.createBufferSource(); ns.buffer=nb; ns.loop=true;
+      const nf=ctx.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=1800; nf.Q.value=.7;
+      const ng=ctx.createGain(); ng.gain.value=.012;
+      ns.connect(nf); nf.connect(ng); ng.connect(sum); ns.start(t); voices.push(ns);
+
+      vowel.forEach(([hz,amp,q])=>{
+        const bp=ctx.createBiquadFilter(); bp.type='bandpass';
+        bp.frequency.value=hz; bp.Q.value=hz/q;
+        const bg=ctx.createGain(); bg.gain.value=amp;
+        sum.connect(bp); bp.connect(bg); bg.connect(g);
+        // the vowel drifts a little — a section breathing, never a wobble
+        const vl=ctx.createOscillator(); vl.frequency.value=.017+Math.random()*.02;
+        const vg=ctx.createGain(); vg.gain.value=hz*.03;
+        vl.connect(vg); vg.connect(bp.frequency); vl.start(t); voices.push(vl);
+      });
+      return;
+    }
+
     const o=ctx.createOscillator(); o.setPeriodicWave(wave); o.frequency.value=f;
     const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.Q.value=.4;
     const cut=Math.min(f*5.5,1450); lp.frequency.value=cut;
@@ -168,9 +223,7 @@ function start(){
     const lfo=ctx.createOscillator(); lfo.frequency.value=.028+Math.random()*.024;
     const lg=ctx.createGain(); lg.gain.value=cut*.17;
     lfo.connect(lg); lg.connect(lp.frequency); lfo.start(t);
-    const g=ctx.createGain(); g.gain.value=lvl;
-    const p=ctx.createStereoPanner(); p.pan.value=pans[i];
-    o.connect(lp); lp.connect(g); g.connect(p); p.connect(cur);
+    o.connect(lp); lp.connect(g);
     o.start(t); voices.push(o,lfo);
   });
   document.getElementById('status').textContent = TABLES[curKey].nm + ' — sounding.';
