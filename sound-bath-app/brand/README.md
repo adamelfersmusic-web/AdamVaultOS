@@ -31,6 +31,7 @@ unchanged.
 | **Sync is the product** — why multi-device is the business, not a feature | [`sync-is-the-product.md`](sync-is-the-product.md) |
 | Sync technical spec — wire format, join flow, seams | [`sync-spec.md`](sync-spec.md) |
 | **Distribution & saving** — deploy, storage, and the staged plan | [`distribution-and-saving.md`](distribution-and-saving.md) |
+| **Lumen** — the arc made physical: lamp mode, WLED pads, and the honest limit | [`lumen.md`](lumen.md) |
 | **Hardware strategy** — not speakers, yes lights, and why | [`hardware-strategy.md`](hardware-strategy.md) |
 | **Eye masks** — the best hardware product on the list, and why | [`eye-masks.md`](eye-masks.md) |
 | **Speaker & room tuning** — "Bed knows this speaker", in three tiers | [`speaker-and-room-tuning.md`](speaker-and-room-tuning.md) |
