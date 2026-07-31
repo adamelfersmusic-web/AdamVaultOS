@@ -776,15 +776,20 @@ body.live #goBtn .glabel { color: var(--amber); }
       <span class="rv" id="bdLevelVal"></span>
     </div>
   </div>
-  <div class="frow grid2">
-    <div>
-      <span class="cap" style="display:block;margin-bottom:7px">Fade in &middot; s</span>
-      <input type="number" id="bdFadeIn" min="1" max="120">
+  <div class="frow">
+    <div class="grid2">
+      <div>
+        <span class="cap" style="display:block;margin-bottom:7px">Arrive &middot; s</span>
+        <input type="number" id="bdFadeIn" min="1" max="120">
+      </div>
+      <div>
+        <span class="cap" style="display:block;margin-bottom:7px">Fall silent &middot; s</span>
+        <input type="number" id="bdFadeOut" min="1" max="120">
+      </div>
     </div>
-    <div>
-      <span class="cap" style="display:block;margin-bottom:7px">Fade out &middot; s</span>
-      <input type="number" id="bdFadeOut" min="1" max="120">
-    </div>
+    <div class="hint" style="margin-top:7px">Arrive is how long this block's level takes to establish &mdash; rising
+    from silence, or stepping up or down from whatever was already sounding. Fall silent runs only when nothing
+    follows; a handoff belongs to the next block's arrive.</div>
   </div>
   <div class="frow" id="bdAirRow" style="display:none">
     <span class="cap" style="display:block;margin-bottom:7px">Air &mdash; what the place sounds like</span>
