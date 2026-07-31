@@ -137,10 +137,45 @@ because the sheet was always computed from **pitches you own**, not from bowls.
 
 ### Why it's worth doing at all
 
-*"No one really uses something like that in a sound bath"* is the whole point.
-The differentiator isn't the handpan — it's that **Bed makes a fixed-key
-instrument workable in a session that moves**, which is exactly the problem that
-keeps handpans out of these rooms.
+*"No one really uses something like that in a sound bath"* is the whole point —
+but **not for the reason I first gave**, and the correction matters.
+
+### ⚠️ Correcting my own claim
+
+I wrote that *"Bed makes a fixed-key instrument workable in a session that
+moves"* is **a category nobody occupies.** Adam asked *how so*, and the answer is
+that it was an overclaim.
+
+**Bed creates that problem before it solves it.** Most sound baths don't change
+key at all — they sit in one or drift without a plan — so an acoustic handpan is
+already fine in most rooms. **There is no crowd of stranded handpan players
+waiting.** That was a growth claim wearing a product claim's clothes.
+
+### What is actually true, and it's stronger
+
+The unique thing isn't the handpan. It's what the handpan makes **visible**:
+
+> ### Bed computes, per player, per section, what that person can play right now — and nothing else does.
+
+The bracket algorithm grades every pitch you own against the current key —
+*freely / sparingly / rest, it fights the key.* A 7-bowl player and an 8-bowl
+player read the same session and get different sheets. A handpan player gets a
+third. **Nobody added "handpan support"**; it fell out of a design that always
+computed from *pitches you own* rather than from bowls.
+
+Why that's defensible, stated as a test rather than a boast:
+
+| | Can it tell each player what to do now? |
+|---|---|
+| A backing track | ❌ fixed audio, no idea what you're holding |
+| A drone app | ❌ anyone can make a drone — that's a weekend |
+| A human music director | ✅ — **and that's a person, which most practitioners cannot hire** |
+
+**The sound is not the moat. The sheet is.** The handpan is simply the case where
+the guidance is most obviously load-bearing.
+
+> **The claim that survives: Bed is the only thing that tells every player in the
+> room what to do right now, in their own instrument.**
 
 ### One collection, five roots — and it's *F* major, not C
 
