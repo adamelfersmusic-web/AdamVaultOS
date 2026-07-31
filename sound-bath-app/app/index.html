@@ -101,7 +101,8 @@ main > section { display: none; }
 body[data-screen="library"]  #scr-library,
 body[data-screen="wizard"]   #scr-wizard,
 body[data-screen="design"]   #scr-design,
-body[data-screen="ensemble"] #scr-ensemble { display: block; }
+body[data-screen="ensemble"] #scr-ensemble,
+body[data-screen="join"]     #scr-join { display: block; }
 body[data-screen="perform"]  #scr-perform { display: flex; }
 
 .page { max-width: 1060px; margin: 0 auto; padding: 26px 22px 110px; }
@@ -397,6 +398,19 @@ body.live #goBtn .glabel { color: var(--amber); }
 .flegend { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom)); left: 0; right: 0; font-size: 10px; color: var(--ink4); letter-spacing: .06em; }
 .fnext { position: absolute; top: 16px; left: 0; right: 0; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink4); }
 
+.sharecode { font-family: var(--serif); font-size: clamp(46px,13vw,72px); letter-spacing: .22em; padding-left: .22em; color: var(--ink); }
+.fstale { position: absolute; bottom: calc(38px + env(safe-area-inset-bottom)); left: 0; right: 0; font-size: 10px; letter-spacing: .1em; color: var(--ink4); display: none; }
+#followerView.stale .fstale { display: block; }
+.fafter { display: none; text-align: center; }
+#followerView.after .fafter { display: block; }
+#followerView.after .fkey, #followerView.after .fname, #followerView.after .fphrase,
+#followerView.after .fbowls, #followerView.after .fnote, #followerView.after .flegend,
+#followerView.after .fnext { display: none; }
+.fafter .cword { font-size: 11px; letter-spacing: .34em; text-transform: uppercase; color: var(--ink3); margin-bottom: 22px; }
+.fafter .cpoem { font-family: var(--serif); font-style: italic; font-size: clamp(19px,4vw,27px); color: var(--ink2); line-height: 1.9; max-width: 520px; margin: 0 auto; }
+.fafter .cwhat { margin-top: 40px; font-size: 12.5px; color: var(--ink4); line-height: 1.8; }
+.fafter .cwhat b { color: var(--ink3); font-weight: 600; }
+
 /* overlays: jump + session utility */
 .ovl { position: fixed; inset: 0; z-index: 80; background: rgba(5,4,6,.88); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: none; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
 .ovl.open { display: flex; }
@@ -580,6 +594,25 @@ body.live #goBtn .glabel { color: var(--amber); }
     </div>
   </section>
 
+  <!-- =============================================================== JOIN -->
+  <section id="scr-join">
+    <div class="wwrap" style="max-width:520px;margin:0 auto;padding:34px 22px 90px;min-height:100dvh;display:flex;flex-direction:column;justify-content:center">
+      <div class="mast" style="padding:0 0 30px">
+        <div class="mark">BED</div>
+        <div class="tag">holding space</div>
+      </div>
+      <div class="wq serif" style="font-size:26px">Which bowls are in front of you?</div>
+      <div class="wsub">Asked once. Your sheet is worked out from your own kit.</div>
+      <div class="wopts" id="joinKit"></div>
+      <div class="frow" style="margin-top:22px">
+        <span class="cap" style="display:block;margin-bottom:7px">Room code</span>
+        <input type="text" id="joinCode" placeholder="ABCD" autocapitalize="characters" autocomplete="off" style="text-align:center;font-size:26px;letter-spacing:.3em;font-variant-numeric:tabular-nums">
+      </div>
+      <div class="wnav"><button class="btn primary" id="joinGo">Join the session</button>
+        <span class="hint" id="joinMsg"></span></div>
+    </div>
+  </section>
+
   <!-- ============================================================ PERFORM -->
   <section id="scr-perform">
     <div class="pcol">
@@ -629,6 +662,7 @@ body.live #goBtn .glabel { color: var(--amber); }
 
       <div class="pfoot">
         <button id="pSheet">Sheet &middot; follower view</button>
+        <button id="pShare">Share the sheet</button>
       </div>
     </div>
   </section>
@@ -643,7 +677,29 @@ body.live #goBtn .glabel { color: var(--amber); }
   <div class="fphrase" id="fPhrase"></div>
   <div class="bowls fbowls" id="fBowls"></div>
   <div class="fnote" id="fNote"></div>
+  <div class="fafter">
+    <div class="cword">The room is yours</div>
+    <div class="cpoem" id="faPoem"></div>
+    <div class="cwhat">You were reading this from <b>Bed</b> &mdash; an instrument for holding space.<br>
+    The person leading tonight built the structure; the room did the rest.</div>
+  </div>
+  <div class="fstale">not receiving &mdash; showing the last cue</div>
   <div class="flegend">big &mdash; freely, the largest is the root &nbsp;&middot;&nbsp; (mid) &mdash; sparingly &nbsp;&middot;&nbsp; [small] &mdash; rest, it fights the key</div>
+</div>
+
+<!-- share the sheet: room code for follower devices -->
+<div class="ovl" id="shareOvl">
+  <div class="obox" style="text-align:center">
+    <div class="dhd"><span class="t">Share the sheet</span><span class="flexspace"></span><button class="xbtn" data-close="shareOvl">&times;</button></div>
+    <div class="sharecode" id="shareCode">&mdash;&mdash;&mdash;&mdash;</div>
+    <div class="hint" style="margin-top:10px">Open <b id="shareUrl"></b> on any phone and enter this code.
+    One device makes the sound; the rest are the sheet.</div>
+    <div id="shareQR" style="margin:18px auto 4px"></div>
+    <div class="hint" id="shareCount" style="margin-top:12px"></div>
+    <div class="drawacts" style="justify-content:center">
+      <button class="btn ghost" data-close="shareOvl">Done</button>
+    </div>
+  </div>
 </div>
 
 <!-- jump anywhere, out of order -->
@@ -2229,6 +2285,8 @@ function tick() {
     T.pos += dt / 60;
     evaluate(false);
   }
+  // the heartbeat — a follower is correct within one of these of hearing anything
+  if (L.net && Date.now() - L.lastPub > 2000) publishState();
   updatePerformClock();
 }
 
@@ -2338,6 +2396,7 @@ function exitPerform() {
   T.air = {};
   for (const k of ['deep', 'bed', 'voice']) T.bands[k] = 0;
   if (A.trim.deep) for (const k of LANE_KEYS) A.trim[k].gain.setTargetAtTime(0, t, 0.4);
+  stopSharing();
   releaseWake();
   document.body.classList.remove('live');
   $('followerView').classList.remove('open');
@@ -3168,7 +3227,14 @@ function wire() {
     $('utilOvl').classList.add('open');
   };
   $('pSheet').onclick = () => { renderFollower(); $('followerView').classList.add('open'); };
-  $('followerView').onclick = () => $('followerView').classList.remove('open');
+  $('pShare').onclick = startSharing;
+  $('joinGo').onclick = () => {
+    const code = ($('joinCode').value || '').trim().toUpperCase();
+    if (code.length < 3) { $('joinMsg').textContent = 'Enter the code shown on the leader’s screen.'; return; }
+    followerJoin(code);
+  };
+  $('joinCode').onkeydown = e => { if (e.key === 'Enter') $('joinGo').click(); };
+  $('followerView').onclick = () => { if (!isFollower()) $('followerView').classList.remove('open'); };
   $('cHome').onclick = exitPerform;
 
   $('uTilt').oninput = e => { setTilt(+e.target.value / 100); save(); };
@@ -3207,7 +3273,7 @@ function wire() {
       $('followerView').classList.remove('open');
       return;
     }
-    if (!onPerform) return;
+    if (!onPerform || isFollower()) return;
     if (e.code === 'Space') { e.preventDefault(); goNext(); }
     if (e.code === 'KeyH') toggleHold();
     if (e.code === 'KeyJ' && T.live && !T.ended) openJump();
@@ -3244,12 +3310,205 @@ function openJump() {
   $('jumpOvl').classList.add('open');
 }
 
+/* ==========================================================================
+   SYNC — one device makes the sound, every other is the sheet.
+
+   The wire carries STATE, never events: a snapshot of where we are, published
+   on every change plus a 2 s heartbeat. That single decision collapses late
+   joiners, dropped packets and reconnects into the same solved problem — a
+   follower is correct within one heartbeat of hearing anything at all.
+
+   Followers are strictly read-only: no engine, no audio context, no transport.
+   A follower that loses the connection freezes on the current section, which
+   is exactly the printed handout it replaced. The failure mode is the paper.
+
+   Transport is behind Net.join() — swap BroadcastChannel for a relay and
+   nothing above this line changes.
+   ========================================================================== */
+
+const SYNC_V = 1;
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // no 0/O, no 1/I/L
+const roomCode = () => Array.from({ length: 4 }, () =>
+  CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]).join('');
+
+/* A 24-bit hash of the session — cache validity, and detects a leader
+   switching sessions. Cheap on purpose; this is not a security boundary. */
+function sessionHash(S) {
+  const str = JSON.stringify(S);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 8).toString(16).padStart(6, '0');
+}
+
+/* The only vendor-aware code in the app. BroadcastChannel syncs tabs and
+   windows on one machine with no infrastructure at all; a relay swaps in here
+   for real cross-device, same wire format either way. */
+const Net = {
+  join(code, onMsg) {
+    let ch = null;
+    try { ch = new BroadcastChannel('bed-room-' + code); } catch (e) { return null; }
+    ch.onmessage = e => { try { onMsg(e.data); } catch (err) { console.error(err); } };
+    return {
+      send(obj) { try { ch.postMessage(obj); } catch (e) {} },
+      leave() { try { ch.close(); } catch (e) {} },
+    };
+  },
+};
+
+/* ---- leader ---- */
+
+const L = { net: null, code: null, lid: null, seq: 0, lastPub: 0, sh: null, seen: new Set() };
+
+function publishState(force) {
+  if (!L.net || !T.S) return;
+  const sec = sectionAt(T.S, T.pos);
+  L.lastPub = Date.now();
+  L.net.send({
+    v: SYNC_V, t: 'state', lid: L.lid, seq: ++L.seq, sh: L.sh,
+    sec: sec ? sec.id : null,
+    pos: +T.pos.toFixed(3),
+    hold: !!T.holding, live: !!T.live, end: !!T.ended,
+  });
+}
+
+function publishSession() {
+  if (!L.net || !T.S) return;
+  L.net.send({ v: SYNC_V, t: 'session', sh: L.sh, session: T.S });
+}
+
+function startSharing() {
+  if (L.net) { showShare(); return; }
+  L.code = roomCode();
+  L.lid = 'l' + Math.random().toString(36).slice(2, 8);
+  L.sh = sessionHash(T.S);
+  L.seq = 0; L.seen = new Set();
+  L.net = Net.join(L.code, msg => {
+    if (!msg || msg.v !== SYNC_V) return;
+    if (msg.t === 'need') { publishSession(); publishState(true); }
+    if (msg.t === 'here' && msg.fid) { L.seen.add(msg.fid); paintShareCount(); }
+  });
+  bus.emit('sync:open', { code: L.code });
+  publishSession();
+  publishState(true);
+  showShare();
+}
+
+function stopSharing() {
+  if (!L.net) return;
+  publishState(true);
+  L.net.leave();
+  L.net = null; L.code = null;
+}
+
+function paintShareCount() {
+  const n = L.seen.size;
+  const el = $('shareCount');
+  if (el) el.textContent = n ? `${n} ${n === 1 ? 'device is' : 'devices are'} reading the sheet.` : 'Waiting for the first device.';
+}
+
+function showShare() {
+  $('shareCode').textContent = L.code || '————';
+  const u = location.href.split('?')[0].split('#')[0];
+  $('shareUrl').textContent = u.replace(/^https?:\/\//, '');
+  paintShareCount();
+  $('shareOvl').classList.add('open');
+}
+
+/* ---- follower ---- */
+
+const F = { net: null, code: null, lid: null, lastSeq: -1, sh: null, last: 0, staleTimer: null, fid: null };
+
+function followerApply(msg) {
+  if (!F.sh || F.sh !== msg.sh || !T.S) {                 // don't have this session yet
+    F.net.send({ v: SYNC_V, t: 'need', sh: msg.sh });
+    return;
+  }
+  T.pos = msg.pos;
+  document.body.classList.toggle('live', !!msg.live);
+  const fv = $('followerView');
+  fv.classList.toggle('after', !!msg.end);
+  if (msg.end) {
+    const poem = T.S.sections.map(x => x.phrase).filter(Boolean).join(' / ');
+    $('faPoem').textContent = poem || T.S.subtitle || T.S.title || '';
+  } else {
+    renderFollower();                                      // the existing renderer, untouched
+  }
+}
+
+function followerJoin(code) {
+  F.code = code;
+  F.fid = 'f' + Math.random().toString(36).slice(2, 8);
+  document.body.dataset.screen = 'perform';                // host the fullscreen follower view
+  $('scr-perform').style.visibility = 'hidden';
+  $('followerView').classList.add('open');
+  F.net = Net.join(code, msg => {
+    if (!msg || msg.v !== SYNC_V) return;
+    if (msg.t === 'session') {
+      T.S = normalizeSession(msg.session);
+      F.sh = msg.sh;
+      return;
+    }
+    if (msg.t !== 'state') return;
+    if (F.lid && msg.lid !== F.lid && Date.now() - F.last < 60000) return;   // lock to one leader
+    F.lid = msg.lid;
+    if (msg.seq <= F.lastSeq) return;                       // out-of-order
+    F.lastSeq = msg.seq;
+    F.last = Date.now();
+    $('followerView').classList.remove('stale');
+    followerApply(msg);
+  });
+  if (!F.net) { alert('This browser can’t join a session.'); return; }
+  F.net.send({ v: SYNC_V, t: 'need', sh: null });
+  F.net.send({ v: SYNC_V, t: 'here', fid: F.fid });
+  requestWake();
+  clearInterval(F.staleTimer);
+  F.staleTimer = setInterval(() => {
+    if (F.last && Date.now() - F.last > 30000) $('followerView').classList.add('stale');
+  }, 5000);
+}
+
+const isFollower = () => !!F.net;
+
+function renderJoin() {
+  const kits = [
+    { v: 'standard7', o1: 'Standard seven', o2: 'C D E F G A B — one per chakra' },
+    { v: 'standard8', o1: 'Standard eight', o2: 'Plus the octave C' },
+    { v: 'custom',    o1: 'Something else', o2: 'Name the pitches, in arc order' },
+  ];
+  const cur = store.settings.kit.type || 'standard7';
+  $('joinKit').innerHTML = kits.map(k =>
+    `<button class="wopt ${k.v === cur ? 'on' : ''}" data-jkit="${k.v}">
+       <span class="o1">${k.o1}</span><span class="o2">${k.o2}</span></button>`).join('') +
+    `<input type="text" id="joinKitCustom" placeholder="C D E F G A B" value="${esc(store.settings.kit.custom || '')}"
+      style="display:${cur === 'custom' ? '' : 'none'};margin-top:4px">`;
+  $('joinKit').querySelectorAll('[data-jkit]').forEach(el => el.onclick = () => {
+    store.settings.kit.type = el.dataset.jkit; save(); renderJoin();
+  });
+  const ci = $('joinKitCustom');
+  if (ci) ci.oninput = e => { store.settings.kit.custom = e.target.value; save(); };
+}
+
 /* ---------------------------------------------------------------- boot */
 
 verifyNotation();
 if (!loadStore()) { seedLibrary(); save(); }
 wire();
-nav('library');
+
+/* The cue bus was an event broadcaster from day one — the leader side is a
+   subscription, not a rewrite. Every moment that matters already emits. */
+['section:change', 'hold', 'hold:release', 'session:start', 'session:end']
+  .forEach(ev => bus.on(ev, () => publishState(true)));
+
+/* A follower never seeds a library, never touches the engine, never ticks. */
+const joinParam = new URLSearchParams(location.search).get('join');
+if (joinParam !== null) {
+  nav('join');
+  renderJoin();
+  const pre = joinParam.trim().toUpperCase();
+  if (pre) $('joinCode').value = pre;
+} else {
+  nav('library');
+}
 </script>
 </body>
 </html>
