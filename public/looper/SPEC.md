@@ -214,6 +214,11 @@ two-stage shaker.
 
 ## 6. What to build next, in order
 
+> **This section is the backlog. `ROADMAP-TIERS.md` is the plan.** That document
+> sequences the work into frozen tiers and is what a build session should be
+> handed; this section is the reasoning behind the items in it, plus the ones
+> that didn't make a tier.
+
 ### 1. Whatever the listen turns up
 
 Priority zero. Every item below is worth less than a good-sounding pad.
