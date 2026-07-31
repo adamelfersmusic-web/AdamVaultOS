@@ -1,220 +1,250 @@
 # The business model
 
-Converged in conversation 2026-07-31. The shape was Adam's: *build the
-community for free, monetise the product.* This is what that means concretely,
-and where it breaks.
+Rewritten 2026-07-31 around Adam's paywall line, which is better than the one
+this note originally proposed. What changed and why is recorded at the bottom.
 
 ---
 
 ## The one line
 
-> **Solo is free forever. You pay to lead a room.**
+> **Watching is free. Making is paid.**
 
-Everything else is a consequence of that.
-
----
-
-## Why it fits this product exactly
-
-- **The free tier is complete, not crippled.** Sovereign, offline, no account,
-  works forever. The instrument's promise — *files you own* — survives intact
-  for anyone working alone.
-- **The paid moment is when they're earning.** Nobody resents paying for the
-  thing they charge sixty people to attend.
-- **It's gear-priced, not a subscription.** BOOK: *packs are closer to buying
-  another bowl than to a subscription — real revenue, wrong model as churn.* A
-  leader licence is an instrument purchase, and this buyer spends $800 on a
-  single bowl without blinking.
-- **The followers are free, so nothing throttles growth.** Every follower
-  device is a demo held through a peak experience.
+You can follow a session forever without an account. The moment you build and
+keep your own sessions, you're a practitioner — and practitioners pay.
 
 ---
 
-## The flywheel — mechanical, not hopeful
+## Where the paywall sits, and why there
+
+**At authorship — not at sync.**
+
+Creating a session *is* the product. It's where the fifteen minutes happen,
+where the arc and the keys and the poem get decided, and where every hour of
+engineering in this app has been spent. Charging there is charging for the
+thing.
+
+| Paywall at | Who pays | When revenue starts |
+|---|---|---|
+| Rooms / sync | only people running groups | after sync ships and gets adopted |
+| **Authoring** | **everyone who leads** | **today** |
+
+Free-to-consume, paid-to-create is a well-understood shape — Figma, Canva,
+Ableton. Followers stay free either way, so the growth loop is untouched.
+
+---
+
+## Why recurring, not one-time
+
+The market is small and finite. That is what decides it.
+
+Assume ~3,000 serious practitioners and 20% conversion over five years — 600
+customers.
+
+| Model | Five years | Year six |
+|---|---|---|
+| One-time at $300 | **$180k total** | **$0.** The market is sold. |
+| Annual at $149 | ~$89k/yr, growing | **still ~$89k/yr** |
+
+**In a finite market, one-time is a ceiling and recurring is an annuity.**
+
+That inverts BOOK's instinct, and the inversion is legitimate: BOOK reasoned
+from a product with no ongoing costs. There is now a relay to run, a network to
+curate, calibration data to maintain and packs to make. **Charging recurrently
+for things that genuinely recur is honest; charging recurrently for a file you
+own is not.**
+
+**The churn objection is about *monthly*, not about *recurring*.** Someone who
+plays five times a year and pays monthly spends seven months paying for
+nothing, and cancels correctly. The same person renewing once a year — around
+when they plan their season — is entirely natural. Gear, insurance and studio
+time already work that way.
+
+---
+
+## The tiers
+
+| Tier | Price | What it is |
+|---|---|---|
+| **Follow** | **free, no account** | The follower sheet, forever. Plus enough authoring to feel it — one saved session. |
+| **Season** | **$149/yr** (or $19/mo) | Unlimited sessions. Rooms — sync and follower devices. **All packs included.** The network. |
+| **Perpetual** | **$400 one-time** | The instrument, kept: author, save and perform solo, forever, on the version you bought. No rooms, no new packs. |
+
+**The Season/Perpetual split is honest rather than arbitrary.** Rooms need a
+relay and packs need making, so those are a *service* and recur. Authoring
+locally needs nothing from us ever again, so it can be owned. **Perpetual is
+the instrument; Season is the instrument plus the service.**
+
+Perpetual is a **pressure valve, not a concession** — a higher number that
+gives a subscription-hostile buyer somewhere to land instead of walking away.
+It must sit at **2.5–3× the annual**, or everyone buys once and leaves.
+
+---
+
+## The retention mechanism is the same thing as the paywall
+
+This is what makes the model unusually sturdy.
+
+**A practitioner with twelve sessions built over three years does not cancel.**
+Not because of features — because their work lives there. The thing you charge
+for (authoring and keeping sessions) is the same thing that makes renewal
+obvious. Those are normally two different problems.
+
+### The condition that keeps it ethical
+
+**First, what export actually is.** A session file — a few kilobytes of JSON:
+sections, phrases, chakras, minutes, lane blocks. Not audio. The app already
+says it: *"a few kilobytes of parameters, never audio."* Export must always be
+free, always work, and never be degraded, including on the free tier.
+
+**But export alone is a weak guarantee, and it shouldn't be oversold.** A JSON
+file with no Bed to open it is a record, not a working instrument. You'd keep
+your *work* but not your *tool*.
+
+**The genuinely fair version is a perpetual fallback.** After twelve months
+paid, the practitioner keeps the right to author, save and perform **locally,
+forever, on the version they had.** Rooms stop — that's a relay we pay to run.
+New packs stop — we have to make them. The instrument they paid for does not
+stop.
+
+| If they stop paying | They keep | They lose |
+|---|---|---|
+| Before 12 months | Export of everything; the free tier | authoring beyond one session |
+| **After 12 months paid** | **Author, save, perform — forever, that version** | rooms, new packs, the network |
+
+This costs less than it's worth. For a buyer who spends $800 on a bowl and
+expects to own it, **it changes a subscription from renting into buying** —
+which for this audience is close to load-bearing. It is also the JetBrains
+model, which has held for years against a famously subscription-hostile
+professional audience.
+
+Retention through accumulated value is legitimate; retention through
+hostage-taking is not, and the difference is whether the door is open.
+**People who can leave mostly don't.**
+
+### Audio export — a considered no
+
+A WAV or MP3 render of a session **is the playlist we're competing with.** It
+can't hold, can't jump, can't respond to the room — a strictly worse version of
+our own product, infinitely shareable, and it would quietly become the thing
+people pass around instead of buying. BOOK refused audio in packs for the
+adjacent reason: *it would break key migration on first purchase.*
+
+*(A microphone recording of the actual night — real bowls, real room, real
+people — is a different thing entirely and is fine. That's a memento, not a
+substitute.)*
+
+---
+
+## The flywheel
 
 ```
 the network makes sessions happen
         ↓
 each session puts Bed in ten hands, for fifty minutes, in candlelight
         ↓
-some fraction of those hands want to lead their own
+some fraction of those hands want to make their own
         ↓
-more practitioners → more sessions
+they hit the authoring paywall — at the exact moment they want to lead
 ```
 
 Every step is a physical event in a room, not a marketing assumption. BOOK saw
 the middle of it: *"nine practitioners experience the app from the inside every
-session, and some fraction will want to lead their own."* The network is what
-makes the first step happen more often, in cities nobody has visited.
+session, and some fraction will want to lead their own."*
 
-**The free community is the top of the funnel and it costs almost nothing to
-host** — a curated list is a page.
-
----
-
-## What is actually paid for
-
-| | What | Shape | Notes |
-|---|---|---|---|
-| **1** | **Leader licence** | one-time, gear-priced | Unlocks rooms — sync, follower devices. The core. |
-| **2** | **Packs** | occasional | Curator sections, kilobytes of JSON. Repeat revenue without a subscription. |
-| **3** | **Lights** | hardware margin | LED bowl pads. Ships anywhere, real margin, only Bed can make a good one. |
-| **4** | **Sub rental** | local only | BOOK: the point is *"whoever rents twice is a real customer"* — research with a price tag, not a revenue line. |
-
-**1 is the engine. 2 and 3 are how an existing customer spends again.**
+**The paywall lands at the moment of highest intent**, which is the only place
+a paywall ever works.
 
 ---
 
-## The numbers — a hypothesis to price against, not a decision
+## Never charged for
 
-No price survives contact with ten real conversations, so treat these as the
-starting anchor for test #2 rather than a decision.
+- **Following.** Follower devices are the marketing. Charging per seat would be
+  charging for your own distribution.
+- **Export**, and **the perpetual fallback after twelve months paid.** Together
+  they are what make the retention honest.
+- **The introduction.** Charge for the instrument, never for the connection.
+  Couchsurfing's asset was trust and it damaged itself monetising that trust
+  directly; this is the same asset and the same trap.
 
-**What this buyer already spends** — the only useful reference points:
+---
 
-| Thing | What they pay |
-|---|---|
-| A single crystal bowl | **$200–800** (BOOK: routinely up to $2000) |
-| A gong | $500–2000 |
-| A decent mallet set | $60–100 |
-| A powered speaker | $500–1500 |
-| **What one event grosses** | 40–100 people × $25–45 = **$1,000–4,500** |
+## The numbers, and the anchoring rule
 
-**The proposal:**
+Treat these as the anchor for test #2, not a decision. No price survives ten
+real conversations.
 
-| | Price | The reasoning |
-|---|---|---|
-| **Leader licence** | **$300** one-time | Less than one bowl. Roughly one event's profit. Permanent. |
-| **Packs** | **$25–40** each | Priced like a nice mallet or a book — an easy yes, bought occasionally. |
-| **LED pads** | **$70** each / **$400** for seven | Sold as a set, because a practitioner lights the whole arc, not one bowl. |
-| **Sub rental** | **$100** per event | BOOK's own figure. Against an event grossing thousands it isn't a decision. |
+**What this buyer already spends:** a crystal bowl $200–800 (BOOK: up to
+$2000) · a gong $500–2000 · a mallet set $60–100 · a powered speaker
+$500–1500. **One event grosses 40–100 × $25–45 = $1,000–4,500.**
 
-### The anchoring rule, which matters more than the number
+At $149/yr, a practitioner playing five times a year pays **~$30 per event —
+under 3% of one event's gross**, and less per year than a mallet set.
 
-**Always present the licence next to gear, never next to software.**
+### The rule that matters more than the number
 
-Beside a bowl, $300 is obviously cheap — it's less than the cheapest thing in
-their kit and it doesn't need a stand. Beside an app, $300 is outrageous. Same
-number, opposite reaction, and the framing is entirely ours to choose.
+**Always present it next to gear, never next to software.**
 
+Beside a bowl, $149 a year is obviously cheap. Beside an app, it's expensive.
+Same number, opposite reaction, and the framing is entirely ours to choose.
 This is why the descriptor is *an instrument for holding space*, and why BOOK
 insists on **a rig, not an app**: *"nobody pays four figures for software they
-open on a phone; they do pay it for a system."* The corollary is the ceiling —
-software alone cannot be four figures here. **The sub is what would make a
-higher number legible**, which is the honest reason the rental and the
-speaker-tuning work matter commercially.
+open on a phone; they do pay it for a system."*
 
-### What would move the number
+The corollary is the ceiling — **software alone cannot be four figures here.**
+The sub is what would make a bigger number legible, which is the honest
+commercial reason the rental and speaker-tuning work matter.
 
-- **Up:** bundling anything physical. A licence + pads + a tuned speaker
-  recommendation is a *rig*, and rigs price differently from downloads.
-- **Down, deliberately:** a founding-circle price for the first ten, in
-  exchange for their real sessions becoming seed fixtures with credit. That is
-  a cheaper way to buy the library than paying for content.
+### Other lines
 
----
-
-## What is deliberately never charged for
-
-- **Solo use.** Ever. It is the brand promise and the top of the funnel.
-- **Follower devices.** They are the marketing. Charging per seat would be
-  charging for your own distribution.
-- **The network — the introduction.** Charge for the instrument, never for the
-  introduction. Couchsurfing's asset was trust and it damaged itself monetising
-  that trust directly; this is the same asset and the same trap.
+- **LED pads** — $70 each, $400 for seven. Sold as a set; practitioners light
+  the whole arc, not one bowl. Real hardware margin, ships anywhere.
+- **Sub rental** — $100/event, local only. BOOK's figure. The point was never
+  revenue: *"whoever rents twice is a real customer."*
 
 ---
 
-## Recurring revenue — revisiting BOOK, because the product changed
+## The risks, stated plainly
 
-**BOOK argued against subscriptions:** *"Four sessions a year means packs are
-closer to buying another bowl than to a subscription. Real revenue, wrong model
-as churn."*
-
-That was correct **when the app was one device with no ongoing costs.** Nothing
-recurred, so charging recurrently would have been rent-seeking.
-
-**Sync changed it on 2026-07-31.** There is now a relay to run, a network to
-curate, calibration data to maintain, and packs to make. Those genuinely
-recur — so charging for them recurrently is honest rather than extractive. This
-is a legitimate update to BOOK, not a convenient override: the underlying fact
-it reasoned from is different now.
-
-### The churn objection is real, and the fix is precise
-
-**The problem is *monthly*, not *recurring*.** A practitioner who plays five
-times a year and pays monthly spends seven months paying for nothing, and
-cancels. The same person renewing **once a year** — around when they plan their
-season — is entirely natural. Gear, insurance and studio time all work that way.
-
-### The proposal
-
-| Tier | Price | What it is |
-|---|---|---|
-| **Solo** | **free forever** | Complete, offline, no account. The promise and the funnel. |
-| **Season** | **~$149 / year** | Rooms — sync and follower devices — **all packs included**, and the network. |
-| **Perpetual** | **~$400 one-time** | Keeps the version bought, no new packs. For people who refuse subscriptions. |
-
-**Three things make this work:**
-
-1. **Packs must be included, not sold separately.** This is the load-bearing
-   move. A subscription needs to visibly deliver something new or it reads as a
-   toll — and new curator packs each quarter is exactly that. It also converts
-   packs from lumpy transactional revenue into the reason renewal feels obvious.
-   *(This supersedes the packs row in the table above: they become the
-   subscription's payload rather than a separate line.)*
-2. **Annual matches the buyer's rhythm.** ~$30 per event, under 3% of one
-   event's gross, renewed when they're already planning the year.
-3. **Perpetual is a pressure valve, not a loss.** It is a *higher* number, and
-   it exists so the person who would otherwise walk away in disgust has
-   somewhere to land. JetBrains has run this model for years against a famously
-   subscription-hostile audience.
-
-### The risks in this version
-
-- **Two SKUs to maintain**, forever.
-- **Cannibalisation** if perpetual sits too close to the season. It needs to be
-  roughly **2.5–3× the annual** or everyone buys it once and leaves.
-- **The season must keep delivering.** A year with no new packs and no new
-  features makes non-renewal correct, and the buyer will be right.
-
-### What this does not change
-
-Solo stays free and sovereign. Follower devices stay free. The introduction is
-never charged for. Those three are load-bearing for the brand and are not
-pricing levers.
+- **The free tier may be too thin.** Follow-plus-one-session might not be
+  enough to evaluate. Watch it closely; a 14-day full trial is the fallback.
+- **The Season must keep delivering.** A year with no new packs and no new
+  features makes non-renewal *correct*, and the buyer will be right.
+- **Two SKUs forever**, and Perpetual cannibalises if priced too close.
+- **Marketing never stops** — but far less than under one-time, which is the
+  point of the change.
+- **A small market caps the ceiling.** BOOK: *"a few thousand practitioners at
+  a few hundred dollars is a genuinely good business and a genuinely terrible
+  venture business."* Still the reason not to raise. Recurring makes it a
+  better small business; it does not make it a venture business.
 
 ---
 
-## The honest risks
+## What to test, in order
 
-**One-time pricing means revenue is new-customer driven.** Marketing never
-stops. Packs and lights are the counterweight, and they only work once there is
-an installed base to sell into — so they are year two, not year one.
-
-**The flywheel needs a seed.** A directory nobody uses generates no sessions.
-The first sessions have to be real, which is why the founding circle and the
-local legends are the *same work* as the network — not a separate initiative.
-
-**The community is free to host, not free to run.** Vetting, introductions, and
-deciding who is on the list is Adam's time, and it is substantial. It is also
-the thing only he can do, so it is the right place to spend it — but it should
-be counted as a cost rather than assumed away.
-
-**"A few thousand practitioners at a few hundred dollars is a genuinely good
-business and a genuinely terrible venture business."** BOOK's line, and it is
-the reason not to raise. The model above is designed to be profitable small,
-not to be venture-scale.
+1. **Can a first-timer reach a runnable 50-minute structure in fifteen
+   minutes?** BOOK calls it a hard spec — if not, the positioning collapses.
+   Costs nothing and settles the most load-bearing claim in the product.
+2. **Will ten practitioners pay $149/yr?** Not a survey. A price.
+3. **Does a follower become an author?** The one number the flywheel rests on.
+   Visible the first time a session runs with real follower devices.
+4. **Buyer eleven.** *"Ten warm sales validate your relationships, not a
+   market."*
 
 ---
 
-## What to test first, in order
+## Superseded — what this rewrite changed
 
-1. **Does a first-timer reach a runnable 50-minute structure in fifteen
-   minutes?** BOOK calls this a hard spec: if not, the positioning collapses.
-   Costs nothing and settles the most load-bearing claim.
-2. **Will a practitioner pay to lead a room?** Ask ten. Not a survey — a price.
-3. **Does a follower become a leader?** The one number the whole flywheel rests
-   on. It shows up the first time a session runs with real follower devices.
-4. **Buyer eleven.** BOOK: ten warm sales validate your relationships, not a
-   market — the signal is someone who found it cold and paid anyway.
+- **"Solo is free forever" is withdrawn.** It was a growth argument dressed as
+  a brand argument. The brand promise is *"files you own, no account"* — that
+  is about **sovereignty, not price**. Ableton costs $750 and your files are
+  still yours. Free authoring was never required by the brand.
+- **The paywall moved from sync to authorship.** Bigger paying population,
+  revenue that doesn't wait on sync adoption, and it lands at the moment of
+  highest intent.
+- **Packs are included in the Season rather than sold separately.** A
+  subscription has to visibly deliver something new or it reads as a toll, and
+  quarterly curator packs are that. It also converts packs from lumpy
+  transactional revenue into the reason renewal feels obvious.
+- **One-time-only is withdrawn** as the primary model, on the finite-market
+  math above. It survives as Perpetual — deliberately priced as the expensive
+  option.
