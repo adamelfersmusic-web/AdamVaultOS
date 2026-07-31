@@ -6,6 +6,7 @@ A drone-first practice tool for improvising musicians.
 **Source:** `public/looper/index.html` — one self-contained file. No
 dependencies, no build step, no network, works offline.
 **Status:** shipped and **verified on real speakers.** v1 frozen at `/looper/v1/` for A/B.
+Tier 2 (see `ROADMAP-TIERS.md`) built and measured headlessly; frozen at `/looper/v2/`, awaiting a speaker listen.
 
 > **A separate product from the sound bath app** (`/sound-bath-app/`).
 > Different user, different room, different problem. They share a synthesis
@@ -210,6 +211,42 @@ The fix is not new patterns. It is velocity life and micro-timing across *all*
 grooves rather than only the lo-fi one, ghost notes on the kick, and a real
 two-stage shaker.
 
+### Tier 2 — built, measured (v2)
+
+All four diagnoses above are addressed, plus roadmap items 2.2–2.7. Headless
+measurements (Playwright + AudioWorklet capture, deterministic seeded runs):
+
+1. **Sub limiter.** The master safety stage is band-split at 150 Hz (LR4,
+   sums flat within 0.6 dB): lows get a limiter with a 50 ms attack — longer
+   than one cycle at 40 Hz — highs keep the fast brick. Nonlinear residual on
+   kick-like 50 Hz hits: **−36.3 dB → −46.2 dB**, mid-band grit component
+   −63 → −78 dB. Two Web Audio traps found on the way, both handled in code:
+   DynamicsCompressor's spec-mandated makeup gain, and lowpass/highpass `Q`
+   being specified in dB.
+2. **Kick.** Velocity now shapes pitch drop and decay; a 30 ms lowpassed
+   noise breath adds the felt contact. Spectral centroid unchanged
+   (116.8 → 116.7 Hz) — character, not punch. Peak 1 dB lower than v1's.
+3. **Shaker.** Two-gesture envelope (strike, then the beads settling),
+   band Q 0.9 → 3.0. Per-hit −6 dB bandwidth **3.8 kHz → 2.0 kHz**.
+4. **Grooves played, not stamped.** Per-slot repeat velocity variation
+   2% → 5–8% (Dust wider), gaussian micro-timing ~±3 ms, per-voice feel
+   (bossa shaker rides ~3 ms ahead, backbeat rim lays back ~4 ms),
+   probabilistic ghost kicks. Patterns untouched. Click is exempt — a click
+   that drifts is broken. Downbeats carry +12–16% weight (roadmap 2.2).
+
+Also: root changes quantise to the next bar line while a groove runs
+(portamento untouched; immediate when free), a `5` chord quality, three-state
+kit chips (off → soft → full), MIDI note-on sets the drone root, drone-only
+default raised ~2 dB (peak −6.5 → −4.7 dBFS) with every groove still peaking
+below −0.49 dBFS at default faders.
+
+**One deliberate deviation from the roadmap:** the pre-fader reverb send port
+from `bed.html` was built and measured — and it made fader-position timbre
+drift *worse* here (0.45% → 2.8% centroid shift), because this reverb darkens
+rather than being high-passed: constant wet under a moving dry *is* a timbre
+change. Sends stay post-fader; the softened glue (the other half of that fix)
+stayed and cut kick-rate pumping from +4.1 dB to +3.1 dB.
+
 ---
 
 ## 6. What to build next, in order
@@ -332,6 +369,7 @@ sound change.
 |---|---|
 | **Current / evolving** | `/AdamVaultOS/looper/` |
 | **v1 — verified on speakers** | `/AdamVaultOS/looper/v1/` |
+| **v2 — tier 2, measured, awaiting listen** | `/AdamVaultOS/looper/v2/` |
 
 `v1/index.html` is a frozen copy and must never be edited. Freeze another
 snapshot the same way before any change big enough to need comparing.
