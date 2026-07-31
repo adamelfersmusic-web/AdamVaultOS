@@ -28,6 +28,7 @@ unchanged.
 | Open questions | [`audit-questions.md`](audit-questions.md) |
 | BOOK comparison pass | [`book-comparison.md`](book-comparison.md) |
 | **Structural language audit** — is the sound bath taxonomy our own words? | [`structure-language-audit.md`](structure-language-audit.md) |
+| **Voicing** — spreading players across the set, and the line it crosses | [`voicing.md`](voicing.md) |
 | **Sync is the product** — why multi-device is the business, not a feature | [`sync-is-the-product.md`](sync-is-the-product.md) |
 | Sync technical spec — wire format, join flow, seams | [`sync-spec.md`](sync-spec.md) |
 | **Distribution & saving** — deploy, storage, and the staged plan | [`distribution-and-saving.md`](distribution-and-saving.md) |
