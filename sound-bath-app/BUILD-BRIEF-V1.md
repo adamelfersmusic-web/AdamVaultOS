@@ -125,9 +125,18 @@ For a section with root R, mode M, and a declared kit K:
   bowl immediately after its same-pitch partner.
 
   Then demote to RESTRICTED any bowl forming a minor 2nd, major 7th or tritone
-  against ANY chord the section will sound. Bowls ring for 20+ seconds, so a
-  tension that would pass on a piano becomes permanent.
+  against any pitch THE APP SUSTAINS in that section. Bowls ring for 20+
+  seconds, so a tension that would pass on a piano becomes permanent.
 ```
+
+> **Scope of the demotion rule — do not widen this.** It applies only to
+> material the *app* holds, never to the leader's `liveChords`. Live chords
+> move; a bowl and a sustained drone do not, which is the entire reason the rule
+> exists. Widening it to `liveChords` provably breaks real data: in the Root
+> section the live progression passes through F, bowl 3 is E, and E against F is
+> a minor 2nd — so the rule would bracket a bowl the actual practitioner placed
+> in the *free* tier. The three verified outputs in the table below are the test;
+> if a change to this rule alters any of them, the change is wrong.
 
 Scale degrees, for the avoidance of doubt:
 
