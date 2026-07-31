@@ -41,7 +41,9 @@ per-model and the recommendation stops being generic advice and becomes *"Bed
 is tuned for this one."* That's a software moat on a hardware problem — it
 ships as a few numbers, works in every city simultaneously, and makes an
 affiliate link legitimate rather than a tax. **"Bed knows this speaker" is more
-defensible than "Bed makes this speaker."**
+defensible than "Bed makes this speaker."** Worked out in three tiers —
+pitch-scaled (shipped), speaker profiles, and letting the app listen to the
+room — in [`speaker-and-room-tuning.md`](speaker-and-room-tuning.md).
 
 ---
 
