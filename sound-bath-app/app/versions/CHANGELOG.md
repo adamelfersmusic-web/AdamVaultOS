@@ -9,6 +9,46 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.7 — the join path, and a silent failure made loud · 2026-07-31
+
+Found by Adam trying to do the obvious thing: share a code on a laptop, join
+from a phone. **Three problems, and each one alone was enough to stop it.**
+
+### 1 · The join screen had no door
+
+`#scr-join` was reachable **only** via `?join=` or `?c=` in the URL. So the share
+dialog's own instruction — *"open this and enter the code"* — led to the library,
+where there was nothing to enter a code into.
+
+**Library now has "Join a session"** next to "New session."
+
+### 2 · The link didn't carry the code
+
+The dialog printed the bare app URL and asked you to type four characters into a
+screen you couldn't reach. It now prints `…/?c=VXZF` — **one tap, no typing, in
+a dark room.**
+
+### 3 · ⚠️ The silent one, and the reason for this release
+
+`RELAY_URL` is `''`, so `Net.join()` falls back to **BroadcastChannel — same
+device, across tabs, and nothing else.** A leader on a laptop sharing to a phone
+would sit in front of *"Waiting for the first device"* **forever**, with nothing
+anywhere saying why.
+
+That is the worst kind of failure this product can have: it happens in the dark,
+minutes before a session, to someone who has just told a room it will work.
+
+The share dialog now says so, in red, before it can waste anyone's evening:
+
+> **Same device only.** No relay is configured, so this code works across tabs on
+> *this* machine and nowhere else — another phone will never appear below.
+
+**None of this is a fix for the relay.** It's a fix for not being told. Deploying
+`relay/` and setting `RELAY_URL` is still `DEPLOY.md` step 2, ten minutes, and it
+remains the one thing standing between the app and everything downstream of it.
+
+---
+
 ## v1.6 — lamp mode, and a wake lock that tells you the truth · 2026-07-31
 
 ### A screen is a light
