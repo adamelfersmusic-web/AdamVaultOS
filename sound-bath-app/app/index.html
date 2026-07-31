@@ -1083,7 +1083,8 @@ function weaveLanes(S) {
       if (s.toMin <= firstPitched.fromMin) continue;
       const lvl = s.kind === 'space' ? 0.35 : (/gong/i.test(s.name) ? 0.85 : 0.72);
       if (cur && Math.abs(cur.level - lvl) < 0.01) { cur.toMin = s.toMin; continue; }
-      cur = { fromMin: Math.max(s.fromMin, firstPitched.fromMin), toMin: s.toMin, level: lvl, fadeIn: 40, fadeOut: 45 };
+      // First block establishes from silence; the rest are handoffs — steps.
+      cur = { fromMin: Math.max(s.fromMin, firstPitched.fromMin), toMin: s.toMin, level: lvl, fadeIn: lanes.deep.length ? 6 : 40, fadeOut: 45 };
       lanes.deep.push(cur);
     }
   }
@@ -1146,10 +1147,16 @@ function upgradeFormat1(f1) {
   (f1.sections || []).forEach((s, i) => {
     const sec = sections[i], b = s.bands || {};
     for (const k of ['deep', 'bed', 'voice']) {
-      if (b[k] && b[k].on) lanes[k].push({
-        fromMin: sec.fromMin, toMin: sec.toMin, level: b[k].level ?? 0.6,
-        fadeIn: s.fadeIn || 35, fadeOut: 40, ...(k === 'bed' ? { chords: !!b[k].chords } : {}),
-      });
+      if (b[k] && b[k].on) {
+        // A block continuing straight out of the previous section is a
+        // handoff — its entry is a level step, not a fade from silence.
+        const handoff = i > 0 && !!(f1.sections[i - 1].bands || {})[k]?.on;
+        lanes[k].push({
+          fromMin: sec.fromMin, toMin: sec.toMin, level: b[k].level ?? 0.6,
+          fadeIn: handoff ? 6 : (s.fadeIn || 35), fadeOut: 40,
+          ...(k === 'bed' ? { chords: !!b[k].chords } : {}),
+        });
+      }
     }
     if (b.air && b.air.on) lanes.air.push({
       fromMin: sec.fromMin, toMin: sec.toMin, level: b.air.level ?? 0.5,
@@ -1319,12 +1326,18 @@ const FIXTURES = [
        actually sounding, on their own timeline. */
     lanes: {
       deep: [
+        /* fadeIn under its real meaning: time for the level to establish.
+           The first block rises from silence over 40 s; the rest are
+           handoffs from a floor already sounding, and a level STEP is an
+           arrangement event humans can play against — a deliberate 6 s, not
+           a creeping crescendo. fadeOut is the contract for falling to
+           silence (jumps, endings) and stays long. */
         { fromMin:0,  toMin:22, level:0.72, fadeIn:40, fadeOut:45 },   // one floor under Root, Ocean AND Sacral
-        { fromMin:22, toMin:27, level:0.5,  fadeIn:40, fadeOut:45 },
-        { fromMin:27, toMin:31, level:0.85, fadeIn:30, fadeOut:45 },   // the gong wants a heavy floor
-        { fromMin:31, toMin:36, level:0.6,  fadeIn:35, fadeOut:45 },
-        { fromMin:36, toMin:39, level:0.35, fadeIn:45, fadeOut:50 },   // space: the floor sinks, never leaves
-        { fromMin:39, toMin:52, level:0.7,  fadeIn:45, fadeOut:60 },   // through Heart and out under the chimes
+        { fromMin:22, toMin:27, level:0.5,  fadeIn:6,  fadeOut:45 },
+        { fromMin:27, toMin:31, level:0.85, fadeIn:6,  fadeOut:45 },   // the gong wants a heavy floor
+        { fromMin:31, toMin:36, level:0.6,  fadeIn:6,  fadeOut:45 },
+        { fromMin:36, toMin:39, level:0.35, fadeIn:6,  fadeOut:50 },   // space: the floor sinks, never leaves
+        { fromMin:39, toMin:52, level:0.7,  fadeIn:6,  fadeOut:60 },   // through Heart and out under the chimes
       ],
       bed: [
         { fromMin:0,  toMin:9,  level:0.82, fadeIn:40, fadeOut:50, chords:false },  // hands off a minute into the Ocean
@@ -1382,7 +1395,7 @@ function seedLibrary() {
 /* When a shipped fixture improves, refresh the seeded copies in an existing
    library — matched by title, so renamed copies and the user's own sessions
    are never touched. */
-const SEED_VERSION = 2;
+const SEED_VERSION = 3;
 function refreshSeeds(stored) {
   if ((stored.seedVersion || 1) >= SEED_VERSION) return;
   const seedTitles = new Set(FIXTURES.map(f => f.title));
@@ -2042,6 +2055,22 @@ function rampBand(k, level, ramp) {
   if (A.send[k]) A.send[k].gain.setTargetAtTime(level > 0.001 ? A.send[k].__base : 0, t, Math.max(ramp, 0.5) / 3);
 }
 
+/* Fade semantics — field notes, so nobody re-derives these at 1am:
+
+   - fadeIn has ONE meaning: how long this block's level takes to establish,
+     whether the band was silent (session start, re-entry, a jump in from a
+     bed-less section) or already sounding (a handoff seam, an overlap).
+     Unspecified: 35 s from silence, a 6 s step between levels.
+   - fadeOut fires only when the band falls to SILENCE. At a handoff seam it
+     never fires — the next block takes over and there is nothing to fade.
+   - On a JUMP OUT, the fadeOut used is the block you were IN, not anything
+     at the destination. The departing sound owns its own exit.
+   - Air: overlapping blocks sharing an element drive ONE instance. The
+     governing (loudest) block's fadeIn shapes level changes and its fadeOut
+     owns the exit; a covered block's fades never fire while it is covered.
+   - Deep/Bed/Voice are single-instrument gates — overlapping blocks resolve
+     to the loudest level, never to two drones. Air is the only lane where
+     overlap layers, and only across DIFFERENT elements. */
 function evaluate(jumped) {
   const S = T.S, p = T.pos, total = totalMin(S);
   if (p >= total && !T.ended) { endSession(false); return; }
@@ -2051,21 +2080,28 @@ function evaluate(jumped) {
   if (sec && sec.id !== T.curSecId) sectionChange(sec, jumped);
 
   // Deep / Bed / Voice: the trim follows the loudest covering block.
+  // fadeIn means one thing everywhere: how long this block's level takes to
+  // ESTABLISH — from silence or from whatever the band was already doing (a
+  // handoff seam, a jump). Unspecified falls back to the stock: 35 s from
+  // silence, a 6 s step between levels. fadeOut fires only falling to silence.
   for (const k of ['deep', 'bed', 'voice']) {
     const blocks = activeBlocks(k, p);
-    let level = blocks.reduce((m, b) => Math.max(m, b.level ?? 0.6), 0);
+    let gov = null;                    // the governing block — loudest active
+    for (const b of blocks) if (!gov || (b.level ?? 0.6) > (gov.level ?? 0.6)) gov = b;
+    let level = gov ? (gov.level ?? 0.6) : 0;
     if (k === 'voice' && (store.settings.livePlayers || rosterMutes('voice'))) level = 0;   // law 4
     if (Math.abs(level - T.bands[k]) > 0.004) {
       const entering = T.bands[k] < 0.001 && level > 0;
       const leaving = level < 0.001 && T.bands[k] > 0;
-      const ramp = entering ? (blocks[0]?.fadeIn ?? 35)
-        : leaving ? ((T.lastBlocks?.[k]?.[0]?.fadeOut) ?? 40) : 6;
+      const ramp = leaving ? ((T.lastGov?.[k]?.fadeOut) ?? 40)
+        : gov && gov.fadeIn != null ? gov.fadeIn
+        : entering ? 35 : 6;
       if (entering || leaving) bus.emit('fade:start', { lane: k, dir: entering ? 'in' : 'out', seconds: ramp });
       rampBand(k, level, ramp);
     }
     if (k === 'voice' && T.inst.voice) T.inst.voice.setActive(level > 0.001);
     if (k === 'bed' && T.inst.bed) T.inst.bed.setChords(blocks.some(b => b.chords), now());
-    (T.lastBlocks = T.lastBlocks || {})[k] = blocks;
+    (T.lastGov = T.lastGov || {})[k] = gov;
   }
 
   // Air: elements live in their own wrapper gains so they can coexist at
@@ -2076,7 +2112,7 @@ function evaluate(jumped) {
     for (const el of b.elements || []) {
       if (el === 'rain' && rosterMutes('rain')) continue;   // the roster, not a mixer
       if (!desired[el] || desired[el].level < (b.level ?? 0.5)) {
-        desired[el] = { level: b.level ?? 0.5, fadeIn: b.fadeIn ?? 35, fadeOut: b.fadeOut ?? 40 };
+        desired[el] = { level: b.level ?? 0.5, fadeIn: b.fadeIn, fadeOut: b.fadeOut ?? 40 };
       }
     }
   }
@@ -2087,13 +2123,17 @@ function evaluate(jumped) {
       const g = A.ctx.createGain(); g.gain.value = 0;
       g.connect(A.bus.air);
       const inst = new AIR_CLASSES[el](t, g);
-      T.air[el] = { inst, gain: g, level: 0 };
-      g.gain.setTargetAtTime(d.level, t, Math.max(d.fadeIn, 1) / 3);
-      T.air[el].level = d.level;
-      bus.emit('fade:start', { lane: 'air', element: el, dir: 'in', seconds: d.fadeIn });
-    } else if (Math.abs(T.air[el].level - d.level) > 0.004) {
-      T.air[el].level = d.level;
-      T.air[el].gain.gain.setTargetAtTime(d.level, t, 2.5);
+      T.air[el] = { inst, gain: g, level: d.level, fadeOut: d.fadeOut };
+      g.gain.setTargetAtTime(d.level, t, Math.max(d.fadeIn ?? 35, 1) / 3);
+      bus.emit('fade:start', { lane: 'air', element: el, dir: 'in', seconds: d.fadeIn ?? 35 });
+    } else {
+      T.air[el].fadeOut = d.fadeOut;         // the current governing block owns the exit
+      if (Math.abs(T.air[el].level - d.level) > 0.004) {
+        T.air[el].level = d.level;
+        // Same semantics as the band lanes: the governing block's fadeIn is
+        // how long its level takes to establish over what's already sounding.
+        T.air[el].gain.gain.setTargetAtTime(d.level, t, Math.max(d.fadeIn ?? 6, 1) / 3);
+      }
     }
   }
   for (const el of Object.keys(T.air)) {
@@ -2148,7 +2188,7 @@ function tick() {
 function startPerform(S, pos, from) {
   T.S = S; T.pos = pos || 0; T.from = from || 'design';
   T.live = false; T.holding = false; T.ended = false;
-  T.curSecId = null; T.curPc = 0; T.air = {}; T.lastBlocks = null;
+  T.curSecId = null; T.curPc = 0; T.air = {}; T.lastGov = null;
   T.bands = { deep: 0, bed: 0, voice: 0, air: 0 };
   T.ui = { remain: '', clock: '', ring: -1, arcIdx: -1 };
   $('scr-perform').classList.remove('done');
