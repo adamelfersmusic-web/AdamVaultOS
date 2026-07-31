@@ -545,7 +545,15 @@ body.live #goBtn .glabel { color: var(--amber); }
 /* Connected, not begun. Its own state — see followerApply. */
 .fready { display: none; text-align: center; color: var(--ink2); font-family: var(--serif); font-size: clamp(28px, 7vw, 46px); }
 .fready span { display: block; margin-top: 6px; font-size: .52em; font-style: italic; color: var(--ink3); }
-.fready em { display: block; margin-top: 18px; font-family: var(--sans); font-style: normal; font-size: 10px;
+/* The instruction. Full ink and a rule above it, because it has to survive
+   being glanced at — but never amber, which means sounding, and never red,
+   which would make silencing a phone look like an error. */
+.fready b { display: block; margin: 26px auto 0; padding-top: 22px; max-width: 15em;
+  border-top: 1px solid var(--line2); font-size: .48em; font-weight: 400; color: var(--ink); }
+.fready i { display: block; margin: 8px auto 0; max-width: 26em; font-family: var(--sans);
+  font-style: normal; font-size: 12.5px; line-height: 1.5; color: var(--ink3); }
+.fready i u { text-decoration: none; border-bottom: 1px solid var(--ink4); }
+.fready em { display: block; margin-top: 26px; font-family: var(--sans); font-style: normal; font-size: 10px;
   letter-spacing: .16em; text-transform: uppercase; color: var(--ink4); }
 #followerView.ready .fready { display: block; }
 #followerView.ready .fnext, #followerView.ready .fkey, #followerView.ready .fname,
@@ -843,7 +851,20 @@ body.live #goBtn .glabel { color: var(--amber); }
   </div>
   <div class="fstale">not receiving &mdash; showing the last cue</div>
   <div class="fwaiting" id="fWaiting">finding the session&hellip;<span>the relay may be waking &mdash; up to a minute the first time</span></div>
-  <div class="fready">You&rsquo;re in.<span id="fReadyName"></span><em>the sheet appears when the session begins</em></div>
+  <!-- ⚠️ The Do Not Disturb line is on THIS screen and no other. It is the one
+       moment a follower is connected, holding the phone, looking at it, and the
+       session has not started — the only window where the instruction is both
+       readable and still actionable. One buzz at minute 30 is the thing that
+       makes someone stop using Bed, and no code can prevent it: the web has no
+       API for Do Not Disturb. An unmissable sentence at the right second is
+       the entire mechanism available to us.
+       It needs no dismiss button. It clears itself when the session begins. -->
+  <div class="fready">You&rsquo;re in.<span id="fReadyName"></span>
+    <b>Silence your phone now.</b>
+    <i>Do&nbsp;Not&nbsp;Disturb &mdash; <u>not</u> airplane mode, which would cut your sheet off.
+    A buzz in a quiet room isn&rsquo;t yours; everyone hears it.</i>
+    <em>the sheet appears when the session begins</em>
+  </div>
   <div class="flegend">big &mdash; freely, the largest is the root &nbsp;&middot;&nbsp; (mid) &mdash; sparingly &nbsp;&middot;&nbsp; [small] &mdash; rest, it fights the key</div>
   <!-- In normal flow under the legend rather than absolutely placed: it must
        never overlap a cue, and a cue must never overlap it. -->
@@ -877,6 +898,12 @@ body.live #goBtn .glabel { color: var(--amber); }
       Set <code>RELAY_URL</code> in the app to the relay's address (see <code>DEPLOY.md</code>)
       and phones in the room will join.
     </div>
+    <!-- ⚠️ Worse for the leader than for anyone in the room: on iOS an incoming
+         call doesn't just ring, it PAUSES the audio context. The floor drops
+         out of a room of forty people. Said here because this is the dialog
+         every leader opens before they begin. -->
+    <div class="hint" style="margin-top:12px;color:var(--ink2)"><b>Silence this phone too</b> &mdash;
+    a call will stop the sound, not just interrupt it.</div>
     <div class="hint relaystate" id="shareRelay" style="margin-top:12px;display:none"></div>
     <div class="hint" id="shareCount" style="margin-top:6px"></div>
     <div class="drawacts" style="justify-content:center">
@@ -1090,7 +1117,7 @@ body.live #goBtn .glabel { color: var(--amber); }
 
 <script>
 'use strict';
-const BED_VERSION = '1.17a';
+const BED_VERSION = '1.18';
 
 /* ==========================================================================
    BED — exploratory full build.

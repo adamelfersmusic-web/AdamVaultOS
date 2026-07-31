@@ -315,6 +315,44 @@ See [`the-monthly.md`](the-monthly.md). Two changes, both improvements:
 
 ---
 
+## ⚠️ The guide says the unprofitable true thing, on purpose
+
+2026-07-31, writing `site/guide.html`. Adam, unprompted, about follower phones:
+
+> *"You don't have to use the other phones. You just need one device running it.
+> It does help keep people in sync — which is honestly better for us. But the
+> phone goes off, and once someone wants to cancel Bed, just remove it and go
+> back to being a Neanderthal."*
+
+**He named our own incentive and then wrote against it, and he was right to.**
+
+More phones in the room is the retention mechanism — it's the thing on this
+page called *the paywall and the retention mechanism are the same thing*. A
+room of eight people whose phones are all reading your sheet is a room that
+notices if you cancel.
+
+Which is exactly why the guide must not imply the phones are required. They
+aren't. One device is a complete session.
+
+> ### A practitioner who later discovers we oversold the requirement never trusts the next sentence we write.
+
+And they will discover it, because they'll run a night without phones and it
+will work fine. The overclaim has a guaranteed expiry date and no upside — the
+phones sell themselves the first time a room of eight stays together without
+anyone counting.
+
+**So the guide says it plainly:** *"if you'd rather have no phones in that room,
+don't use them… it is a help, not a requirement, and anyone who tells you
+otherwise is selling you something."*
+
+The general form, worth keeping for every future piece of copy:
+
+> **When the profitable claim and the true claim differ, ship the true one and
+> let the product make the case.** If it can't, the claim was doing work the
+> product should have been doing.
+
+---
+
 ## Superseded — what this rewrite changed
 
 - **"Solo is free forever" is withdrawn.** It was a growth argument dressed as

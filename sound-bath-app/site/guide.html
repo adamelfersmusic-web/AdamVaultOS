@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0910">
+<title>Bed — running a night</title>
+<meta name="description" content="How to run a session with Bed: the kit, getting the room in, and the two minutes before you begin.">
+<style>
+/* ==========================================================================
+   BED — THE GUIDE.
+   Deliberately short. Someone reads this once, standing up, twenty minutes
+   before a room arrives — not at a desk. Everything here is a thing that
+   decides whether the night works; nothing here is a feature tour.
+
+   ⚠️ ON "YOU ONLY NEED ONE DEVICE": more phones in the room is better for us —
+   it is the thing people would miss if they cancelled. It is also not true
+   that you need them, and the guide says the true thing. A practitioner who
+   finds out later that we oversold the requirement never trusts the next
+   sentence we write. See brand/business-model.md.
+   ========================================================================== */
+:root {
+  --bg: #0a0910; --panel: #12111a; --line: #221f2e; --line2: #322d42;
+  --ink: #e8e4f0; --ink2: #a29ab4; --ink3: #6b6480; --ink4: #423d52;
+  --violet: #8b7ab8; --red: #b86a5a;
+  --sans: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --serif: "Didot", "Bodoni MT", "Playfair Display", "Cormorant Garamond", Georgia, serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink2); font-family: var(--sans);
+  font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 660px; margin: 0 auto; padding: 60px 24px 110px; }
+a { color: var(--ink); }
+
+.cap { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--ink4); }
+h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(40px, 9vw, 64px);
+  color: var(--ink); margin: 8px 0 6px; line-height: 1.02; }
+.sub { font-family: var(--serif); font-style: italic; font-size: clamp(19px, 4vw, 25px); color: var(--ink3); margin: 0; }
+h2 { font-family: var(--serif); font-weight: 400; font-size: 28px; color: var(--ink);
+  margin: 62px 0 6px; line-height: 1.15; }
+h2 .n { color: var(--ink4); font-size: .62em; margin-right: .5em; }
+h3 { font-size: 15px; font-weight: 600; color: var(--ink); margin: 28px 0 4px; }
+p { margin: 10px 0; max-width: 60ch; }
+b { color: var(--ink); font-weight: 600; }
+ul { padding-left: 20px; margin: 10px 0; }
+li { margin: 6px 0; }
+hr { border: none; border-top: 1px solid var(--line); margin: 0; }
+
+.big { font-family: var(--serif); font-size: 27px; line-height: 1.25; color: var(--ink); margin: 18px 0; }
+.card { background: var(--panel); border: 1px solid var(--line2); border-radius: 10px; padding: 22px 26px; margin: 22px 0; }
+.card.warn { border-left: 3px solid var(--red); }
+.card.key { border-left: 3px solid var(--violet); }
+.card p:first-child { margin-top: 0; }
+.card p:last-child { margin-bottom: 0; }
+.sheet { font-family: var(--serif); font-size: 30px; color: var(--ink); letter-spacing: .06em; }
+.sheet .sm { font-size: .62em; color: var(--ink3); }
+.foot { margin-top: 80px; padding-top: 22px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink4); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="cap">Bed</span>
+  <h1>Running a night</h1>
+  <p class="sub">Everything that decides whether it works. Nothing else.</p>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2><span class="n">1</span>You only need one device</h2>
+
+  <p><b>Bed runs on one phone, tablet or laptop.</b> That device plays the sound and
+  you hold it, or set it down by the speaker. That's a complete session. Nothing else
+  is required — not another phone, not a single one.</p>
+
+  <p>The other phones are the sheet. When people in the room join, Bed tells
+  <i>each of them</i> which of their bowls to play right now:</p>
+
+  <p class="sheet">2&nbsp;6&nbsp;<span class="sm">(3 5 7)&nbsp;[1, 4]</span></p>
+
+  <p>Big — play freely. (Brackets) — sparingly. [Small] — rest, it fights the key.
+  It's the thing that keeps eight people in one key without anyone counting.</p>
+
+  <div class="card key">
+    <p><b>But if you'd rather have no phones in that room, don't use them.</b>
+    Run Bed as one instrument and call the changes yourself, the way you always have.
+    It does keep a group together, and it's genuinely easier — but it is a help, not
+    a requirement, and anyone who tells you otherwise is selling you something.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2><span class="n">2</span>Silence the phones</h2>
+
+  <p class="big">One buzz at minute thirty is the thing people remember about your night.</p>
+
+  <p>This matters more than anything else on this page, and Bed can't do it for you —
+  no website is allowed to touch your phone's settings.</p>
+
+  <h3>Everyone: Do Not Disturb</h3>
+  <p>Before you lie down. It silences calls, texts and every app, and it keeps the
+  connection alive so your sheet keeps updating.</p>
+
+  <div class="card warn">
+    <p><b>Not airplane mode.</b> Airplane mode cuts the connection, so the sheet freezes
+    on whatever section was showing when you switched it on and never moves again.</p>
+    <p style="margin-top:10px;color:var(--ink3);font-size:14.5px">If you want the phone
+    fully off the network, that's fine — just don't expect it to follow along. Turn it off
+    completely and play from the room instead.</p>
+  </div>
+
+  <h3>⚠️ Especially the device making the sound</h3>
+  <p>An incoming call doesn't interrupt the audio — <b>it stops it.</b> The floor drops
+  out from under the whole room. Do Not Disturb on the leading device is not optional.</p>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2><span class="n">3</span>Before the room arrives</h2>
+
+  <h3>Tell Bed what bowls are here</h3>
+  <p>Ensemble → <b>The group's bowls</b>. Standard 7 (C D E F G A B) covers most sets.
+  Everything Bed says is worked out from this, so it's worth thirty seconds.</p>
+
+  <h3>And what they're tuned to</h3>
+  <p>440 is standard; 432 is common in this world. <b>Check rather than assume</b> — a
+  lot of sets sold as 432 aren't, and if this number is wrong every tone Bed plays will
+  beat against your bowls all night and it will sound like the bowls' fault.</p>
+
+  <h3>Number your bowls</h3>
+  <p><b>1 is your lowest bowl</b>, then up from there. The sheet is numbers, so the
+  numbers have to be on the bowls — a small sticker on the outer wall, facing you,
+  never on the rim.</p>
+  <div class="card">
+    <p><b>Then play them 1 → 8 in order. It should sound like a scale going up.</b></p>
+    <p style="margin-top:8px;color:var(--ink3);font-size:14.5px">If it doesn't, two are
+    swapped — and everything Bed tells that person for the rest of the night will be
+    wrong with no warning. Fifteen seconds, once, forever.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2><span class="n">4</span>Getting the room in</h2>
+
+  <p><b>Share the sheet</b> gives you a code and a QR. Tap the code to fill the screen,
+  then put the phone or iPad down by the door and let people scan it on the way in.
+  You can also send the link — it carries the code, so nobody types anything.</p>
+
+  <div class="card key">
+    <p><b>Send it out the day before if you can.</b> The link is ready as soon as the
+    session exists, it stays the same code, and people who tap it in the car park are
+    already connected before they walk in. It's the smoothest version of this by a
+    long way.</p>
+  </div>
+
+  <h3>⚠️ Test it before the room fills</h3>
+  <p>Scan your own code with a second phone. You'll see the count go up —
+  <b>"1 device is connected and holding"</b> — and the phone will say <b>You're in</b>.
+  That's the whole test, it takes twenty seconds, and it is the difference between
+  finding a problem now and finding it in front of forty people.</p>
+
+  <p style="color:var(--ink3);font-size:14.5px">The first join of the day can take up to
+  a minute while the server wakes up. The phone says so while it waits. After that
+  it's instant.</p>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2><span class="n">5</span>During</h2>
+
+  <p><b>BEGIN</b> starts it. <b>GO</b> moves to the next section — you choose when,
+  always. Bed never moves on its own, and there is no clock running the night.</p>
+
+  <p><b>Hold</b> stays where you are for as long as you want. Nothing runs out.</p>
+
+  <p>Every phone in the room follows you within a second, including the section colour
+  if someone's using a spare phone as a lamp.</p>
+
+  <div class="card">
+    <p><b>If a phone loses signal it freezes on the last cue.</b> That's deliberate —
+    it becomes the printed handout it replaced, and the person keeps playing something
+    correct. It catches up on its own when the signal comes back.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2><span class="n">6</span>The two-minute version</h2>
+  <div class="card key">
+    <ul style="margin:0">
+      <li>Bowls set in Ensemble, tuning checked</li>
+      <li>Numbers on the bowls — and they go <i>up</i></li>
+      <li>Link sent out, or the code on a screen by the door</li>
+      <li><b>One phone scanned as a test</b> — it says <i>You're in</i></li>
+      <li><b>Do Not Disturb on every phone, starting with yours</b></li>
+      <li>BEGIN</li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    Bed — the instrument that holds you, so you can hold the room.
+  </div>
+
+</div>
+</body>
+</html>

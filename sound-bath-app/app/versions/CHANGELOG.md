@@ -9,6 +9,61 @@ The live app is always `../index.html`. These are history.
 
 ---
 
+## v1.18 — silence the phones · 2026-07-31
+
+Adam: *"The moment someone gets a ping in the middle of a sound bath, that's
+the moment they stop using it."* Right, and it's the one failure Bed cannot
+engineer away — the web has no API for Do Not Disturb. What it can do is put
+an unmissable sentence at the only second where it's both readable and still
+actionable.
+
+### On the "You're in" screen, and nowhere else
+
+The connected-but-not-begun state added in v1.17 turns out to be exactly the
+right home: the follower is connected, holding the phone, looking at it, and
+nothing has started. **It needs no dismiss button — it clears itself when the
+session begins.**
+
+### ⚠️ Do Not Disturb, NOT airplane mode
+
+The instruction as originally phrased would have broken the product. **Airplane
+mode cuts the relay**, so the sheet freezes on whatever section was showing and
+never moves again — and it fails the way this app's failures always fail, with
+the person assuming it's fine. Do Not Disturb silences everything and keeps the
+connection. The screen says which, and why, in one line.
+
+The persuasion is social rather than personal, because that's what works in
+this room: *"a buzz in a quiet room isn't yours; everyone hears it."*
+
+### ⚠️ And the leading device most of all
+
+On iOS an incoming call doesn't interrupt the audio — **it stops it.** The floor
+drops out from under forty people. Said in the share dialog, which is the one
+screen every leader opens before they begin.
+
+### A guide, finally
+
+`site/guide.html` — six sections, short on purpose, written for someone reading
+it standing up twenty minutes before a room arrives. It carries the two things
+Adam asked for and the decisions already made everywhere else: the kit, the
+tuning check, numbering the bowls and proving the numbers go *up*, sending the
+link the day before, the twenty-second pre-flight, and a two-minute checklist.
+
+**Published but not linked from anywhere** — it has a URL, and surfacing it is
+a separate decision.
+
+### ⚠️ The guide says the unprofitable true thing
+
+*"You just need one device running it… it does help keep people in sync, which
+is honestly better for us."* Adam named our own retention mechanism and then
+wrote against it. More phones in the room **is** the lock-in — and the phones
+are still not required, so the guide says so plainly. A practitioner who later
+discovers we oversold the requirement never trusts the next sentence we write,
+and they *will* discover it, because they'll run a night without phones and it
+will work fine. Reasoning in `brand/business-model.md`.
+
+---
+
 ## v1.17a — the audit of v1.17 · 2026-07-31
 
 *"Is this bulletproof and finished?"* No — six defects, found by going back
