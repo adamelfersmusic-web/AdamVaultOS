@@ -4,6 +4,12 @@ Frozen snapshots, same discipline as `app/versions/`: open one in a browser and
 compare side by side. Git keeps every version regardless; these exist because a
 file you can double-click beats a command when you're judging how a page reads.
 
+**The live page is always `../index.html`. These are history.** ⚠️ Archived and
+**not published** — two live versions of the same pitch is worse than one, and
+these carry design rationale that was written to be thought with, not read by
+a visitor. Open them locally.
+
+
 The live page is always `../index.html`.
 
 ---

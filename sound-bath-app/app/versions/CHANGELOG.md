@@ -5,7 +5,26 @@ played side by side and compared **by ear**. Git already keeps every version
 forever; these exist because a file you can double-click is more useful than a
 command when the thing you're judging is sound.
 
-The live app is always `../index.html`. These are history.
+The live app is always `../index.html`. **These are history — every one of them
+is superseded, and none of them is the app.**
+
+## ⚠️ These are archived, and they are NOT published — deliberately
+
+They are excluded from the site build, and that is not tidiness. **Every
+snapshot from v1.10 onward carries the production relay address and the same
+`SYNC_V = 1`.** If they were reachable on the web, anyone could open v1.12,
+type a room code, and **join a live session** — running a build with the
+cold-start bug, no QR, a device count that never decays, and a room code that
+leaks into exported files. It would look like it was working. That is the exact
+failure class this project has a standing gate against.
+
+**And they must never be edited — not even to add an "old version" banner.** A
+frozen snapshot you have modified is no longer a frozen snapshot, and the only
+reason these exist is to be byte-exactly what shipped, so an ear comparison is
+honest. The label belongs here, in the folder, not inside the files.
+
+To compare two by ear: clone the repo and open both locally. That is the
+intended workflow and the reason these are files rather than git commands.
 
 ---
 
