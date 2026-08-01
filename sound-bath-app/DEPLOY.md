@@ -15,9 +15,13 @@ from this folder**, so everything you push stays in sync automatically.
 1. Go to Netlify → **Add new site → Import an existing project** → pick
    `adamelfersmusic-web/AdamVaultOS`.
 2. Set **Branch** to whichever branch you're working on.
-3. Leave the build command empty. Netlify reads `netlify.toml` at the repo
-   root, which already sets `publish = "sound-bath-app"`.
+3. **Leave every build field alone** — base directory, build command, publish
+   directory. Netlify reads `netlify.toml` at the repo root and overrides all
+   of them. It builds an **allowlist** into `_site/` and publishes that.
 4. Deploy.
+
+**Live:** <https://bed-holdingspace.netlify.app> — Netlify project
+`bed-holdingspace`.
 
 You get:
 
@@ -25,8 +29,13 @@ You get:
 |---|---|
 | `/` | the landing page |
 | `/app/` | the app |
-| `/brand/` | the brand book |
 | `/join?c=ABCD` | short follower link |
+| `/guide.html` | *Running a night* — the user guide (published, not linked from anywhere yet) |
+
+⚠️ **`/brand/` is NOT published, and must not be.** An earlier version of this
+table listed it, which was wrong: the brand folder holds `business-model.md`
+and the pricing strategy. The allowlist copies `site/` and `app/` only.
+Verified — `/brand/business-model.md` returns 404.
 
 **Staying in sync:** every `git push` redeploys in ~30 seconds. There is no
 second copy of the app anywhere, so it cannot drift. `index.html` is served
