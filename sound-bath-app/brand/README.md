@@ -36,6 +36,8 @@ unchanged.
 | **Distribution & saving** — deploy, storage, and the staged plan | [`distribution-and-saving.md`](distribution-and-saving.md) |
 | **Lumen** — the arc made physical: lamp mode, WLED pads, and the honest limit | [`lumen.md`](lumen.md) |
 | **Hardware strategy** — not speakers, yes lights, and why | [`hardware-strategy.md`](hardware-strategy.md) |
+| The family — app, bowl and Lumen together | [`assets/family.html`](assets/family.html) (open in a browser) |
+| Bowl illustration, for laying next to the mark | [`assets/bowl.svg`](assets/bowl.svg) |
 | Eye mask — product sheet, the object drawn | [`assets/mask.html`](assets/mask.html) (open in a browser) |
 | **Eye masks** — the best hardware product on the list, and why | [`eye-masks.md`](eye-masks.md) |
 | **Speaker & room tuning** — "Bed knows this speaker", in three tiers | [`speaker-and-room-tuning.md`](speaker-and-room-tuning.md) |

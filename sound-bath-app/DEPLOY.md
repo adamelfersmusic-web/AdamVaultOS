@@ -1,5 +1,9 @@
 # Deploying Bed
 
+<!-- ⚠️ brand/HANDOFF.md diverges between the repos for the SAME reason
+     as this file — one repo is private and one is not, so the "how to
+     hand this to another session" instructions differ. Two files are on
+     the never-mirror list now: DEPLOY.md and brand/HANDOFF.md. -->
 <!-- ⚠️ DO NOT copy this file between repos. The bed and AdamVaultOS copies
      diverge on purpose — different repo name, different Netlify setup, and
      one publishes an allowlist the other doesn't. This copy is AdamVaultOS.
@@ -37,8 +41,13 @@ table listed it, which was wrong: the brand folder holds `business-model.md`
 and the pricing strategy. The allowlist copies `site/` and `app/` only.
 Verified — `/brand/business-model.md` returns 404.
 
-**Staying in sync:** every `git push` redeploys in ~30 seconds. There is no
-second copy of the app anywhere, so it cannot drift. `index.html` is served
+**Staying in sync:** every `git push` redeploys in ~30 seconds — the site is
+built from the repo, so the deployed app can never drift from the source.
+⚠️ There IS, however, a second copy of the source: Bed lives in both
+`adamelfersmusic-web/bed` (which deploys) and `AdamVaultOS` under
+`sound-bath-app/` (which doesn't), mirrored **by hand**. That is a
+migration that was started and not finished, and it is the one real drift
+hazard in this project. Finish it by deleting `sound-bath-app/`. `index.html` is served
 `no-cache`, and the service worker is deliberately **network-first**, so an
 open device always picks up the newest build rather than a stale cache.
 
