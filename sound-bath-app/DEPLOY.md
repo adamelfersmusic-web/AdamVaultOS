@@ -36,6 +36,8 @@ You get:
 | `/join?c=ABCD` | short follower link |
 | `/guide.html` | *Running a night* — the user guide (published, not linked from anywhere yet) |
 
+**Those four URLs are the entire public surface.** Every published file is named individually in `netlify.toml` — adding an asset means adding it there. ⚠️ `site/versions/` and `app/versions/` are deliberately NOT published: they are working history and design rationale, not pages anyone should land on.
+
 ⚠️ **`/brand/` is NOT published, and must not be.** An earlier version of this
 table listed it, which was wrong: the brand folder holds `business-model.md`
 and the pricing strategy. The allowlist copies `site/` and `app/` only.

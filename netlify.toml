@@ -32,10 +32,10 @@
   command = """
     set -e
     node sound-bath-app/tools/qr-check.cjs
-    rm -rf _site && mkdir -p _site
-    cp -R sound-bath-app/site/. _site/
-    cp -R sound-bath-app/app _site/app
-    rm -rf _site/README.md _site/app/README.md _site/app/versions
+    rm -rf _site && mkdir -p _site/app
+    cp sound-bath-app/site/index.html sound-bath-app/site/guide.html _site/
+    cp sound-bath-app/app/index.html sound-bath-app/app/sw.js sound-bath-app/app/manifest.webmanifest _site/app/
+    cp sound-bath-app/app/icon-192.png sound-bath-app/app/icon-512.png _site/app/
   """
 
 # Short join link for follower phones: bed.example/join?c=ABCD
