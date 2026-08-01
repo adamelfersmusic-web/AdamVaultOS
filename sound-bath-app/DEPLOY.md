@@ -40,8 +40,7 @@ You get:
 
 ⚠️ **`/brand/` is NOT published, and must not be.** An earlier version of this
 table listed it, which was wrong: the brand folder holds `business-model.md`
-and the pricing strategy. The allowlist copies `site/` and `app/` only.
-Verified — `/brand/business-model.md` returns 404.
+and the pricing strategy. Verified — `/brand/business-model.md` returns 404.
 
 **Staying in sync:** every `git push` redeploys in ~30 seconds — the site is
 built from the repo, so the deployed app can never drift from the source.
@@ -49,9 +48,11 @@ built from the repo, so the deployed app can never drift from the source.
 `adamelfersmusic-web/bed` (which deploys) and `AdamVaultOS` under
 `sound-bath-app/` (which doesn't), mirrored **by hand**. That is a
 migration that was started and not finished, and it is the one real drift
-hazard in this project. Finish it by deleting `sound-bath-app/`. `index.html` is served
-`no-cache`, and the service worker is deliberately **network-first**, so an
-open device always picks up the newest build rather than a stale cache.
+hazard in this project. Finish it by deleting `sound-bath-app/`.
+
+**Caching:** `index.html` is served `no-cache` and the service worker is
+deliberately **network-first**, so an open device always picks up the newest
+build rather than a stale cache.
 
 **This does not touch the repo's existing GitHub Pages deploy** — that's a
 different service building `public/` via Actions for a different product.
