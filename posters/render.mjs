@@ -1,15 +1,20 @@
+// Render a built poster to PDF.   node render.mjs <name> [--theme <t>] [--bleed]
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
-const name  = process.argv[2] || 'escensus-poster';
-const bleed = process.argv[3] === 'bleed';
 
+const argv  = process.argv.slice(2);
+const name  = argv[0] && !argv[0].startsWith('-') ? argv[0] : 'escensus-poster';
+const bleed = argv.includes('--bleed') || argv.slice(1).includes('bleed');
+const ti    = argv.indexOf('--theme');
+const theme = ti >= 0 ? argv[ti + 1] : null;
+
+const stem = name + (theme ? `-${theme}` : '') + (bleed ? '-bleed' : '');
+const out  = `${name}${theme ? `-${theme}` : ''}-18x24${bleed ? '-bleed' : ''}.pdf`;
 const W = bleed ? '18.25in' : '18in', H = bleed ? '24.25in' : '24in';
 const vw = bleed ? 1752 : 1728,       vh = bleed ? 2328 : 2304;
-const src = bleed ? `${name}-bleed` : name;
-const out = bleed ? `${name}-18x24-bleed.pdf` : `${name}-18x24.pdf`;
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: vw, height: vh } });
-await page.goto(`file://${process.cwd()}/${src}.html`, { waitUntil: 'networkidle' });
+await page.goto(`file://${process.cwd()}/${stem}.html`, { waitUntil: 'networkidle' });
 await page.evaluate(() => document.fonts.ready);
 
 const m = await page.evaluate(() => {

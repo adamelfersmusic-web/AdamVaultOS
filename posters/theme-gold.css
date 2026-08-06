@@ -1,0 +1,69 @@
+/* ==========================================================================
+   THEME: gold on black
+   Loaded AFTER a poster's own stylesheet. Overrides the palette tokens plus
+   every hardcoded navy in the base sheet, so nothing cool-toned survives.
+
+   The family: gold (primary) · bone (secondary, was steel) · ember (the one
+   warning) · warm white on a warm black field.
+   ========================================================================== */
+
+:root{
+  --bg:#0A0908;
+  --bg-2:#131110;
+  --surface:#17150F;
+  --surface-2:#201C14;
+  --line:#2E2820;
+  --line-2:#423A2A;
+
+  --cream:#F4F0E6;
+  --cream-2:#DAD2BF;
+  --cream-3:#9C9482;
+
+  --gold:#C9A85E;
+  --gold-bright:#E7CB80;
+
+  /* was steel — now antique gold, so the palette stays strictly gold-on-black.
+     The loop reads as a progression that brightens toward the payoff: nodes
+     01–04 dim gold, 05–06 full gold. */
+  --steel:#9C8551;
+  --steel-deep:#4A3D24;
+
+  --navy-deep:#14110C;
+
+  /* good/stuck collapse into the warm family: gold carries "has", ember
+     carries "lacks" and the gate */
+  --good:#E7CB80;
+  --warn:#C9A85E;
+  --stuck:#C4735A;
+}
+
+/* field — warm pools instead of blue ones, and a faint gold grid */
+.poster{
+  background:
+    radial-gradient(120% 60% at 12% 0%, #241B0E80 0%, transparent 62%),
+    radial-gradient(100% 55% at 92% 100%, #1F180D66 0%, transparent 60%),
+    var(--bg);
+}
+.poster::before{
+  background-image:
+    linear-gradient(to right, #c9a85e0a 1px, transparent 1px),
+    linear-gradient(to bottom, #c9a85e0a 1px, transparent 1px);
+}
+
+/* panels */
+.panel{ background:linear-gradient(180deg, var(--bg-2) 0%, #100E0A 100%); }
+
+/* hairline rules that were baked navy */
+.own-col li,
+.tr,
+.months li{ border-bottom-color:#2E282099; }
+
+/* the loop's return arc */
+.returnbar{ background:#c9a85e0a; }
+
+/* the gate keeps its ember, just warmer */
+.gate{ background:#c4735a0d; }
+.gate-foot{ border-top-color:#c4735a33; }
+
+/* fine print */
+.fineprint{ color:#6B6353; }

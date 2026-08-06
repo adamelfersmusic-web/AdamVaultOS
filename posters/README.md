@@ -6,6 +6,7 @@ Two companion wall posters on one design system, meant to hang as a pair.
 | --- | --- | --- |
 | `escensus-poster-18x24.pdf` | **Escensus** — the first 90-day agent ramp system. The customer-facing product: the beat map, the film room, the two reports. | [`escensus-site`](https://github.com/adamelfersmusic-web/escensus-site) `index.html` |
 | `signalcraft-poster-18x24.pdf` | **SignalCraft** — the intelligence layer. The north star: the loop, the ownership model, the method, the sequence. | Parachute vault `adam`, `_priority/escensus/the-intelligence-layer` (canonical, locked 2026-08-02) + `vision/signalcraft-method-jazz-drumming-songcircles` |
+| `signalcraft-poster-gold-18x24.pdf` | The same SignalCraft poster in the **gold-on-black** theme. Same content, same layout — palette only. | ditto |
 
 The SignalCraft one is the artifact the vault has an open task for —
 `print-the-north-star-for-the-wall`. The 13-chapter vision site prints to 15+
@@ -24,6 +25,9 @@ asks for; if they don't say, send the bleed one.
 | --- | --- | --- |
 | `<name>-18x24.pdf` | 18 × 24in exactly | Shops that trim to the page, and home/large-format printing. |
 | `<name>-18x24-bleed.pdf` | 18.25 × 24.25in | Standard 0.125in bleed on all four sides. Trims down to 18 × 24. |
+
+Themed builds slot the theme name in the middle:
+`signalcraft-poster-gold-18x24-bleed.pdf`.
 
 Both are 1 page, no margins, full-bleed dark field. The bleed version has an
 identical content box — only the background grows — so the two are the same
@@ -49,7 +53,8 @@ Each poster is three files plus a shared font bundle:
 | File | What it is |
 | --- | --- |
 | `<name>.body.html` | Content and structure. Edit copy here. |
-| `<name>.css` | Layout. Edit design here. |
+| `<name>.css` | Layout and base palette. Edit design here. |
+| `theme-<t>.css` | Optional palette override, loaded *after* the base sheet. Changes color only — never layout. |
 | `_fonts.css` | Spectral / Inter / IBM Plex Mono, latin subsets, base64-inlined so the build needs no network and the PDF embeds real fonts. Shared by both. |
 | `build.py` | Concatenates the three into `<name>.html`. |
 | `render.mjs` | Renders that to `<name>-18x24.pdf`, and prints per-section heights. |
@@ -59,10 +64,17 @@ Each poster is three files plus a shared font bundle:
 
 ```sh
 cd posters
-python3 build.py  signalcraft-poster   # or escensus-poster
-node render.mjs   signalcraft-poster
-node preview.mjs  signalcraft-poster
+python3 build.py  signalcraft-poster                     # -> signalcraft-poster.html
+node render.mjs   signalcraft-poster                     # -> signalcraft-poster-18x24.pdf
+node preview.mjs  signalcraft-poster                     # -> signalcraft-poster-preview.png
+
+python3 build.py  signalcraft-poster --theme gold --bleed
+node render.mjs   signalcraft-poster --theme gold --bleed
 ```
+
+`--theme <t>` loads `theme-<t>.css`; `--bleed` switches to the 18.25 × 24.25
+page. Both flags are optional and compose. Pass the same flags to `build.py`
+and `render.mjs` — the first writes the HTML, the second reads it.
 
 `render.mjs` uses the Chromium that ships with `playwright` and prints a height
 report. Keep `contentH` at or under `posterH` (2304px) or the poster clips —
@@ -85,6 +97,19 @@ Spectral (serif headlines) · Inter (UI/body) · IBM Plex Mono (labels, data)
 
 Gold is the primary accent on both. On the SignalCraft poster steel carries the
 loop and the sequence, so the two sheets read as siblings rather than duplicates.
+
+### theme-gold — gold on black
+
+An override of the above, strictly warm: a warm-black field, gold primary,
+**antique gold** where the base sheet uses steel (so the loop reads as a
+progression that brightens toward the payoff rather than switching hue), and a
+single ember `#C4735A` reserved for the one warning — the gate. The grid behind
+the field goes gold too.
+
+It overrides the palette tokens *and* every hardcoded navy in the base sheet
+(the field gradients, the panel gradient, the baked hairlines, the fine print),
+which is why it's a real theme and not just a `:root` swap. Layout is untouched
+— both builds land at exactly 2304px.
 
 ## Notes on content
 

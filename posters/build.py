@@ -1,16 +1,27 @@
+#!/usr/bin/env python3
+"""Assemble a poster into one self-contained HTML file.
+
+    python3 build.py <name> [--theme <t>] [--bleed]
+
+Output: <name>[-<theme>][-bleed].html
+"""
 import sys
-name  = sys.argv[1] if len(sys.argv) > 1 else 'escensus-poster'
-bleed = len(sys.argv) > 2 and sys.argv[2] == 'bleed'
+
+argv  = sys.argv[1:]
+name  = argv[0] if argv and not argv[0].startswith('-') else 'escensus-poster'
+bleed = '--bleed' in argv or 'bleed' in argv[1:]
+theme = None
+if '--theme' in argv:
+    theme = argv[argv.index('--theme') + 1]
 
 titles = {
   'escensus-poster':   'Escensus &mdash; The First 90-Day Agent Ramp System',
   'signalcraft-poster':'SignalCraft &mdash; The Intelligence Layer',
 }
 
-# 0.125in bleed on all four sides. The page and the poster both grow by 0.25in,
+# 0.125in bleed on all four sides. The page and the poster both grow by 0.25in
 # and every padding grows by exactly 0.125in — so the content box is unchanged
-# and the layout is identical to the trim version, just with more background
-# around it for the cutter to eat.
+# and the bleed build is the same layout, just with more background around it.
 BLEED_CSS = """
 @page{ size:18.25in 24.25in; margin:0; }
 .poster{
@@ -19,25 +30,28 @@ BLEED_CSS = """
 }
 """
 
-body  = open(f'{name}.body.html').read()
-css   = open(f'{name}.css').read()
-fonts = open('_fonts.css').read()
-out   = f'{name}-bleed.html' if bleed else f'{name}.html'
-extra = f'<style>{BLEED_CSS}</style>' if bleed else ''
+sheets = [open('_fonts.css').read(), open(f'{name}.css').read()]
+if theme:
+    sheets.append(open(f'theme-{theme}.css').read())   # after the base sheet
+if bleed:
+    sheets.append(BLEED_CSS)
 
-open(out,'w').write(
-f"""<!doctype html>
+stem = name + (f'-{theme}' if theme else '') + ('-bleed' if bleed else '')
+open(f'{stem}.html', 'w').write(
+"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>{titles[name]}</title>
-<style>{fonts}</style>
-<style>{css}</style>
-{extra}
+<title>{title}</title>
+{styles}
 </head>
 <body>
 {body}
 </body>
 </html>
-""")
-print('built', out)
+""".format(
+    title  = titles[name],
+    styles = '\n'.join(f'<style>{s}</style>' for s in sheets),
+    body   = open(f'{name}.body.html').read(),
+))
+print('built', f'{stem}.html')
