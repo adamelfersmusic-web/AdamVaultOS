@@ -19,9 +19,15 @@ await page.evaluate(() => document.fonts.ready);
 
 const m = await page.evaluate(() => {
   const p = document.querySelector('.poster');
+  // absolutely-positioned marks bleed off the page on purpose — measure the
+  // static flow only, or the height check fires on decoration
+  const flow = [...p.children].filter(el => getComputedStyle(el).position !== 'absolute');
+  const cs = getComputedStyle(p);
+  const box = p.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
   return {
     posterH:  Math.round(p.getBoundingClientRect().height),
-    contentH: Math.round(p.scrollHeight),
+    contentH: Math.round(flow.reduce((n, el) => n + el.scrollHeight, 0)),
+    boxH:     Math.round(box),
     clipped: [...p.querySelectorAll('*')]
       .filter(el => el.scrollHeight - el.clientHeight > 2 && getComputedStyle(el).overflow !== 'visible')
       .map(el => el.className + ' +' + (el.scrollHeight - el.clientHeight)),

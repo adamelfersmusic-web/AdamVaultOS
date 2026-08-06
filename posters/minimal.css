@@ -1,0 +1,117 @@
+/* ==========================================================================
+   MINIMAL — 18×24in, gold field, black ink
+   Shared by signalcraft-minimal and escensus-minimal.
+   One idea at scale. Everything else is a whisper at the edges.
+   ========================================================================== */
+
+:root{
+  --field-1:#D9BE74;
+  --field-2:#BE9A4E;
+  --ink:#171208;
+  --ink-2:#3C3018;
+  --ink-3:#6A5730;
+  --ember:#8C3A22;
+}
+
+@page{ size:18in 24in; margin:0; }
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+
+html,body{ background:var(--field-2); }
+
+body{
+  font-family:'Inter',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+
+.poster{
+  position:relative;
+  width:18in; height:24in;
+  overflow:hidden;
+  color:var(--ink);
+  background:
+    radial-gradient(120% 80% at 18% 8%, #E3CB86 0%, transparent 58%),
+    linear-gradient(168deg, var(--field-1) 0%, var(--field-2) 100%);
+  padding:1.15in 1.15in 1.0in;
+  display:flex; flex-direction:column;
+}
+
+/* the one graphic: oversized thin-stroke geometry, bled off the edge.
+   SignalCraft gets the loop; Escensus gets the call with the break in it. */
+.mark{
+  position:absolute;
+  color:var(--ink);
+  pointer-events:none;
+}
+/* opacity lives on the SVG elements, so the break marker can sit slightly
+   more present than the ring it interrupts */
+.mark .stroke{ stroke:currentColor; stroke-opacity:.07; fill:none; }
+.mark .fill{ fill:currentColor; fill-opacity:.07; }
+.mark .breakdot{ fill:var(--ember); fill-opacity:.30; }
+.mark.ring{ right:-3.3in; bottom:-3.9in; width:13.4in; height:13.4in; }
+
+.poster > *:not(.mark){ position:relative; }
+
+/* ============ HEADER ============ */
+.top{
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:500;
+  letter-spacing:.34em; text-transform:uppercase;
+  padding-bottom:20px; border-bottom:1.5px solid var(--ink);
+}
+.top .who{ color:var(--ink); }
+.top .what{ color:var(--ink-2); letter-spacing:.22em; }
+
+/* ============ THE STATEMENT ============ */
+.middle{
+  flex:1;
+  display:flex; flex-direction:column; justify-content:center;
+  padding-bottom:0.5in;
+}
+.statement{
+  font-family:'Spectral',serif; font-weight:600;
+  font-size:236px; line-height:0.92; letter-spacing:-0.038em;
+  white-space:nowrap;
+  color:var(--ink);
+}
+.statement.tight{ font-size:198px; }
+.statement em{ font-style:italic; font-weight:500; }
+.statement .dim{ color:var(--ink-3); font-style:italic; font-weight:500; }
+
+/* ============ THE SEQUENCE ============ */
+.seq{
+  margin-top:0.62in;
+  padding-top:24px;
+  border-top:1.5px solid var(--ink);
+  display:flex; flex-wrap:wrap; align-items:baseline;
+  gap:0 16px;
+  font-family:'IBM Plex Mono',monospace; font-size:23px; font-weight:500;
+  letter-spacing:.16em; text-transform:uppercase;
+  white-space:nowrap;
+  color:var(--ink);
+}
+.seq.dense{ font-size:18px; letter-spacing:.13em; gap:0 12px; }
+.seq .sep{ color:var(--ink-3); font-weight:400; }
+.seq .broke{
+  color:var(--ember);
+  border-bottom:2px solid var(--ember);
+  padding-bottom:2px;
+}
+.seq .fade{ color:var(--ink-3); }
+
+/* ============ FOOTER ============ */
+.bottom{ display:flex; justify-content:space-between; align-items:flex-end; gap:60px; }
+.kicker{
+  font-family:'Spectral',serif; font-style:italic; font-weight:500;
+  font-size:40px; line-height:1.22; letter-spacing:-0.01em;
+  color:var(--ink); max-width:12.2in;
+}
+.credit{
+  text-align:right; flex:none;
+  font-family:'IBM Plex Mono',monospace; font-size:13px;
+  letter-spacing:.26em; text-transform:uppercase; color:var(--ink-2);
+  line-height:2;
+}
+

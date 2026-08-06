@@ -1,6 +1,25 @@
 # Posters — 18×24in, print-ready
 
-Two companion wall posters on one design system, meant to hang as a pair.
+Two projects, two treatments. Everything is 18×24, one page, full bleed.
+
+## The minimal pair — gold field, black ink
+
+The wall pieces. One idea at scale and almost nothing else. These are the ones
+to hang.
+
+| PDF | The idea |
+| --- | --- |
+| `signalcraft-minimal-18x24.pdf` | **Nobody else can run this loop.** The six stages in a single line beneath it, a closed ring bled off the corner. |
+| `escensus-minimal-18x24.pdf` | **We find the one moment the sale breaks.** The eight beats in a single line with the banking ask marked in ember, and a *broken* ring answering SignalCraft's closed one. |
+
+The two marks are the pair's whole argument: SignalCraft's ring closes,
+Escensus's ring has a gap with the break marked. Same geometry, opposite
+meaning. Hang them side by side and that reads before any of the type does.
+
+## The dense pair — navy field
+
+The full information posters. More reference sheet than wall piece — good above
+a desk you actually work at.
 
 | PDF | What it says | Built from |
 | --- | --- | --- |
@@ -9,6 +28,7 @@ Two companion wall posters on one design system, meant to hang as a pair.
 | `signalcraft-poster-gold-18x24.pdf` | The same SignalCraft poster in the **gold-on-black** theme. Same content, same layout — palette only. | ditto |
 
 The SignalCraft one is the artifact the vault has an open task for —
+
 `print-the-north-star-for-the-wall`. The 13-chapter vision site prints to 15+
 pages and isn't hangable; this is the one-page version. It follows the north
 star doc's own instruction for a cut-down: *"keep the loop and the ownership
@@ -54,6 +74,7 @@ Each poster is three files plus a shared font bundle:
 | --- | --- |
 | `<name>.body.html` | Content and structure. Edit copy here. |
 | `<name>.css` | Layout and base palette. Edit design here. |
+| `minimal.css` | Shared by both minimal posters (they're the same object with different words). `build.py` maps them to it via `SHARED_CSS`. |
 | `theme-<t>.css` | Optional palette override, loaded *after* the base sheet. Changes color only — never layout. |
 | `_fonts.css` | Spectral / Inter / IBM Plex Mono, latin subsets, base64-inlined so the build needs no network and the PDF embeds real fonts. Shared by both. |
 | `build.py` | Concatenates the three into `<name>.html`. |
@@ -110,6 +131,19 @@ It overrides the palette tokens *and* every hardcoded navy in the base sheet
 (the field gradients, the panel gradient, the baked hairlines, the fine print),
 which is why it's a real theme and not just a `:root` swap. Layout is untouched
 — both builds land at exactly 2304px.
+
+### minimal.css — gold field, black ink
+
+Its own sheet, not a theme, because it's a different object: a gold field with
+near-black ink, one statement at 236px Spectral, and a mono rule of stages. The
+statement is `white-space:nowrap` on purpose — a wrapped line would wreck the
+composition silently, so instead it overflows and the height check catches it.
+Escensus runs `.statement.tight` (198px) and `.seq.dense` because its lines are
+longer; that's the only per-poster divergence.
+
+The field is a soft gradient rather than a flat fill — large flat areas of gold
+band on a cheap press, and a gradient gives the rasteriser something to work
+with.
 
 ## Notes on content
 

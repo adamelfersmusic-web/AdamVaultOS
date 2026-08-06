@@ -15,8 +15,16 @@ if '--theme' in argv:
     theme = argv[argv.index('--theme') + 1]
 
 titles = {
-  'escensus-poster':   'Escensus &mdash; The First 90-Day Agent Ramp System',
-  'signalcraft-poster':'SignalCraft &mdash; The Intelligence Layer',
+  'escensus-poster':    'Escensus &mdash; The First 90-Day Agent Ramp System',
+  'signalcraft-poster': 'SignalCraft &mdash; The Intelligence Layer',
+  'escensus-minimal':   'Escensus &mdash; We Find the One Moment the Sale Breaks',
+  'signalcraft-minimal':'SignalCraft &mdash; Nobody Else Can Run This Loop',
+}
+
+# posters that share a stylesheet instead of owning one
+SHARED_CSS = {
+  'escensus-minimal':   'minimal.css',
+  'signalcraft-minimal':'minimal.css',
 }
 
 # 0.125in bleed on all four sides. The page and the poster both grow by 0.25in
@@ -30,7 +38,7 @@ BLEED_CSS = """
 }
 """
 
-sheets = [open('_fonts.css').read(), open(f'{name}.css').read()]
+sheets = [open('_fonts.css').read(), open(SHARED_CSS.get(name, f'{name}.css')).read()]
 if theme:
     sheets.append(open(f'theme-{theme}.css').read())   # after the base sheet
 if bleed:
