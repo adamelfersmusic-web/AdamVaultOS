@@ -77,6 +77,7 @@ body{
   color:var(--ink);
 }
 .statement.tight{ font-size:198px; }
+.statement.alt{ font-size:174px; line-height:0.97; }
 .statement em{ font-style:italic; font-weight:500; }
 .statement .dim{ color:var(--ink-3); font-style:italic; font-weight:500; }
 

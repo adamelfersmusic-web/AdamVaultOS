@@ -10,6 +10,7 @@ to hang.
 | PDF | The idea |
 | --- | --- |
 | `signalcraft-minimal-18x24.pdf` | **Nobody else can run this loop.** The six stages in a single line beneath it, a closed ring bled off the corner. |
+| `signalcraft-minimal-alt-18x24.pdf` | **Until the script is subconscious, you have no right to improvise.** Same design, the method instead of the moat — unit by unit → repetition → automatic → present → improvise. From `vision/signalcraft-method-jazz-drumming-songcircles`. |
 | `escensus-minimal-18x24.pdf` | **We find the one moment the sale breaks.** The eight beats in a single line with the banking ask marked in ember, and a *broken* ring answering SignalCraft's closed one. |
 
 The two marks are the pair's whole argument: SignalCraft's ring closes,

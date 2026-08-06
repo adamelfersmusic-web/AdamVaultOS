@@ -19,12 +19,14 @@ titles = {
   'signalcraft-poster': 'SignalCraft &mdash; The Intelligence Layer',
   'escensus-minimal':   'Escensus &mdash; We Find the One Moment the Sale Breaks',
   'signalcraft-minimal':'SignalCraft &mdash; Nobody Else Can Run This Loop',
+  'signalcraft-minimal-alt':'SignalCraft &mdash; Until the Script Is Subconscious',
 }
 
 # posters that share a stylesheet instead of owning one
 SHARED_CSS = {
   'escensus-minimal':   'minimal.css',
   'signalcraft-minimal':'minimal.css',
+  'signalcraft-minimal-alt':'minimal.css',
 }
 
 # 0.125in bleed on all four sides. The page and the poster both grow by 0.25in
