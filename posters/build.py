@@ -1,12 +1,18 @@
-body = open('escensus-poster.body.html').read()
-css  = open('escensus-poster.css').read()
-fonts= open('_fonts.css').read()
-open('escensus-poster.html','w').write(
+import sys
+name = sys.argv[1] if len(sys.argv) > 1 else 'escensus-poster'
+titles = {
+  'escensus-poster':   'Escensus &mdash; The First 90-Day Agent Ramp System',
+  'signalcraft-poster':'SignalCraft &mdash; The Intelligence Layer',
+}
+body  = open(f'{name}.body.html').read()
+css   = open(f'{name}.css').read()
+fonts = open('_fonts.css').read()
+open(f'{name}.html','w').write(
 f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Escensus &mdash; The First 90-Day Agent Ramp System</title>
+<title>{titles[name]}</title>
 <style>{fonts}</style>
 <style>{css}</style>
 </head>
@@ -15,3 +21,4 @@ f"""<!doctype html>
 </body>
 </html>
 """)
+print('built', name)
