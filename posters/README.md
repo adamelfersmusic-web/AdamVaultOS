@@ -17,13 +17,30 @@ Each preview PNG is a low-res look, not for print.
 
 ## Printing
 
-Both are 1 page, 1296×1728pt = exactly 18×24in, no margins, full-bleed dark
-field. There is **no bleed margin baked in** — the trim is 18×24 exactly. If a
-printer wants 0.125in bleed, change `@page{ size:18in 24in }` and
-`.poster{ width:18in; height:24in }` in the poster's CSS to `18.25in × 24.25in`
-and rebuild.
+Four PDFs — a trim-exact and a bleed version of each. Send whichever the shop
+asks for; if they don't say, send the bleed one.
 
-Ask for matte or satin stock — uncoated goes chalky across this much solid navy.
+| File | Page size | Use |
+| --- | --- | --- |
+| `<name>-18x24.pdf` | 18 × 24in exactly | Shops that trim to the page, and home/large-format printing. |
+| `<name>-18x24-bleed.pdf` | 18.25 × 24.25in | Standard 0.125in bleed on all four sides. Trims down to 18 × 24. |
+
+Both are 1 page, no margins, full-bleed dark field. The bleed version has an
+identical content box — only the background grows — so the two are the same
+poster, not two layouts.
+
+**Specs for the order form:** 18 × 24in · portrait · color · full bleed ·
+1 page · no crop marks (add them at the shop if they want them) · fonts
+embedded · no spot colors.
+
+**Stock:** ask for matte or satin. Uncoated goes chalky across this much solid
+navy, and gloss will mirror every lamp in the room. If they offer it, a heavier
+weight (100lb+ cover) hangs flat instead of rippling.
+
+**Color:** these are built in RGB with a dark navy field. Any shop converting to
+CMYK will shift the navy slightly and may render it a touch flatter than the
+screen. That's normal and looks fine — but if you want it exact, ask for a
+proof before the full run.
 
 ## Source
 
