@@ -171,6 +171,8 @@ rim, whatever. That is the only customisation that matters.
 | **Accounts, sync, cloud** | A URL plus localStorage covers the entire need. |
 | **More grooves** | Six curated beats twenty. A groove menu is a decision, and decisions are producer mode. Adding one means cutting one. |
 | **A mixer, effect racks, automation** | That is a DAW, which is the thing being escaped. |
+| **Overdub looping** | Drones tolerate Bluetooth latency; loops do not. Record over a playing drone and the take lands 150–200 ms behind, compounding per pass — fixable only with real round-trip calibration. And it walks into the same browser-DSP trap as §3's line in: echo cancellation ducks the instrument whenever the drone plays. Tier 4's capture covers the actual need (*"what was that thing I just played?"*) at a tenth of the work. |
+| **A master volume** | Measured — both faders at max already hits 0.1 dBFS, so it could only attenuate, which the device's hardware volume does better. |
 
 ---
 
@@ -352,65 +354,26 @@ The app keeps. Tier 2/3 sound untouched (levels bit-identical to v2/v3).
 
 ## 6. What to build next, in order
 
-### 1. Whatever the listen turns up
+### 1. Whatever the listens turn up
 
 Priority zero. Every item below is worth less than a good-sounding pad.
 
-Known from the sound bath engine and likely present here too:
-- **Level-dependent brightness.** The reverb send is post-fader into a
-  high-passed reverb, so raising a bus adds proportionally more mid-and-top
-  content and the timbre shifts as you move the fader. Fixed in `bed.html` by
-  tapping the send pre-fader and backing off the glue compressor; measured drift
-  went from audible to 0%. The same fix applies here.
-- **Sub-range limiter distortion.** The master brick-wall has a 3 ms attack;
-  one cycle at 45 Hz is 22 ms, so it tracks *inside* the waveform and adds grit
-  to low content. Fixed in `bed.html` by giving low material its own limiter
-  with an attack longer than one cycle.
+**Three listens are outstanding.** v2, v3 and v4 are built and measured, but
+only headlessly — nobody has heard them in a room. Both listens that *have*
+happened overruled a measurement (§5), which is the entire argument for doing
+these before touching anything below.
 
-### 2. Shareable state in the URL
+The two issues inherited from the sound bath engine are settled, and neither is
+a task any more:
+- **Sub-range limiter distortion** — fixed. The master safety stage is
+  band-split at 150 Hz, lows getting a 50 ms attack; nonlinear residual on
+  50 Hz hits went −36.3 → −46.2 dB.
+- **Level-dependent brightness** — the pre-fader send was ported from
+  `bed.html`, measured, and **deliberately rejected**: it made fader-position
+  drift worse here (0.45% → 2.8%), because this reverb darkens rather than
+  high-passes. Sends stay post-fader by decision, not by omission.
 
-The highest-leverage feature for distribution, and small.
-
-A teacher sends `…/looper/#A/fifth/felt/bossa/96` and the student lands on
-exactly that setup. Same for a progression. No account, no save, no backend —
-**the URL is the save file.**
-
-This targets the real risk directly. The problem was never that nobody wants it;
-it's that nobody finds it, and "sounds better" survives neither a screenshot nor
-a feature list. Every shared link is a demo arriving pre-configured from someone
-the recipient already trusts.
-
-### 3. Capture — record the session, not the loop
-
-**One button that records everything** — drone, kit and mic — to a file while
-you play. Multiple takes, saved simply, no naming, no organising.
-
-This is the flow-state feature. The value isn't fidelity, it's *"what was that
-thing I just played?"* And it has **no latency requirement at all**, because
-nothing is layered back in real time — roughly a tenth of the work of true
-looping with none of its problems.
-
-**True overdub looping is a separate, later, harder feature.** It collides with
-the one thing that makes this work on a phone: drones tolerate Bluetooth
-latency, loops do not. Record over a playing drone and what you heard arrived
-150–200 ms late, so the take lands that far behind, and every overdub compounds
-it. Fixable only with real calibration — play an impulse, capture it back,
-subtract the measured round trip — which must exist before the feature is usable
-on anything but wired headphones.
-
-Two more phone-specific traps for whenever that gets built:
-- **Browsers default `getUserMedia` to speech processing.** Echo cancellation
-  actively ducks your instrument whenever the drone plays, noise suppression
-  eats sustained tones, AGC pumps. All three must be explicitly disabled, and
-  some phones apply processing you cannot turn off.
-- **Internal mic plus speaker is a feedback loop**, and a sustaining drone is
-  the worst possible case.
-
-So looping ships as a mode you *enter*, with a stated setup (headphones or an
-interface) and a calibration tap — never as something that changes the front
-door. The front door stays "open it, press play."
-
-### 4. Wavetable pads
+### 2. Wavetable pads
 
 Web Audio's `createPeriodicWave()` takes harmonic amplitudes and builds a
 band-limited oscillator playable at any pitch. That means **sampled character
@@ -420,18 +383,23 @@ extract its harmonic spectrum, and that becomes the oscillator.
 A wavetable is a few hundred bytes. Unlimited timbre, no file size, no loop
 points, full pitch freedom.
 
-### 5. Count-in and section markers for loop mode
+The Rhodes already runs this way (§5, second listen) — a tonebar harmonic
+recipe through a velocity-opened lowpass. **The pads are the part still
+unbuilt**, and they are the harder case: a pad has to hold for an hour, so the
+spectrum has to survive sustain, not just an attack.
+
+### 3. Count-in and section markers for loop mode
 
 For long forms, knowing where you are matters more than the chord name. A 32-bar
 form needs visible A / B / bridge structure, not 32 identical blocks.
 
-### 6. A fourth pad, darker
+### 4. A fourth pad, darker
 
 Felt is the workhorse; Glass and Vox are both fairly bright. Something with more
 low-mid weight — closer to a bowed string pad — covers the hour-long practice
 case where someone wants less air.
 
-### 7. Progression import
+### 5. Progression import
 
 Not a chart library. But **paste a chord line** — `Dm7 G7 Cmaj7 | Am7 D7 Gmaj7`
 — and parse it. Turns a two-minute entry job into five seconds without
