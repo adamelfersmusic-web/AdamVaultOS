@@ -353,3 +353,32 @@ test('a board opens centred on its content, not jammed against the left edge', a
   })
   expect(offset).toBeLessThan(half * 0.5)
 })
+
+test('a new node stays on screen however deep you Tab', async ({ page }) => {
+  await connectViaStorage(page)
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.getByRole('button', { name: 'New canvas' }).first().click()
+  await page.getByTestId('mode-map').click()
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 200, y: 200 } })
+  await expect(page.getByTestId('map-node-input')).toBeVisible()
+
+  // Five levels deep — the tree grows rightward, so without scrolling the last
+  // node would be well past the viewport edge and you'd be typing blind.
+  await page.keyboard.type('level 0')
+  for (let i = 1; i <= 5; i++) {
+    await page.keyboard.press('Tab')
+    await page.keyboard.type(`level ${i}`)
+  }
+  await page.keyboard.press('Escape')
+  await waitForLabels(page, ['level 0', 'level 5'])
+
+  const deepest = nodeByLabel(page, 'level 5')
+  await expect(deepest).toBeVisible()
+  const box = await deepest.boundingBox()
+  const view = page.viewportSize()!
+  expect(box, 'the deepest node has a box').toBeTruthy()
+  expect(box!.x).toBeGreaterThanOrEqual(0)
+  expect(box!.x + box!.width).toBeLessThanOrEqual(view.width)
+  expect(box!.y).toBeGreaterThanOrEqual(0)
+  expect(box!.y + box!.height).toBeLessThanOrEqual(view.height)
+})

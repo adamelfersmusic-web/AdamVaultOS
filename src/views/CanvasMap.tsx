@@ -363,6 +363,15 @@ export function CanvasMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoEditPath, byPath])
 
+  // Keep the node being edited on screen. The tree grows rightward, so a couple
+  // of Tabs can put the new node past the viewport edge — and typing into a node
+  // you cannot see is the flow failing quietly.
+  useEffect(() => {
+    if (!editing) return
+    const el = els.current.get(editing)
+    if (el?.isConnected) el.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [editing, placed])
+
   const wasEditing = useRef(false)
   useEffect(() => {
     const open = editing !== null

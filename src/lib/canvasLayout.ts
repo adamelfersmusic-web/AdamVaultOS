@@ -49,8 +49,8 @@ export const MAP_CARD_W = 240
 // The map starts well into the plane, not at its corner. There is no negative
 // space (card x/y are clamped at 0), so a tree laid out at the origin can never
 // be scrolled into the middle of the screen — it just sits against the edge.
-export const MAP_X0 = 640
-export const MAP_Y0 = 420
+export const MAP_X0 = 400
+export const MAP_Y0 = 300
 /** Horizontal gap between columns, vertical gap between siblings. One value
  * each: the rhythm has to be consistent or the map reads as a staircase. */
 export const MAP_H_GAP = 90
