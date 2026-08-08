@@ -6448,3 +6448,115 @@ button.task-row-due:hover {
 .mdx-mermaid { margin: 18px 0; text-align: center; overflow-x: auto; }
 .mdx-mermaid svg { max-width: 100%; height: auto; }
 .mdx-mermaid-fallback { margin: 18px 0; padding: 12px 14px; border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line); font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-2); overflow-x: auto; }
+
+/* /diagram — a Mermaid block living inside the TipTap editor. Rendered state
+   is a picture you click to edit; editing state is a plain textarea. */
+.mermaid-block {
+  margin: 14px 0;
+}
+.mermaid-render {
+  position: relative;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 4px;
+  cursor: pointer;
+  transition: 0.12s ease;
+}
+.mermaid-render:hover,
+.mermaid-render:focus-visible {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+.mermaid-block.is-selected .mermaid-render {
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+}
+.mermaid-render .mdx-mermaid {
+  margin: 6px 0;
+}
+.mermaid-edit-hint {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 2px 8px;
+  opacity: 0;
+  transition: 0.12s ease;
+  pointer-events: none;
+}
+.mermaid-render:hover .mermaid-edit-hint,
+.mermaid-render:focus-visible .mermaid-edit-hint {
+  opacity: 1;
+}
+.mermaid-edit {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  padding: 10px 12px 12px;
+}
+.mermaid-edit-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 8px;
+}
+.mermaid-edit-help {
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink-4);
+  margin-left: auto;
+}
+.mermaid-edit-help:hover {
+  color: var(--ink-2);
+}
+.mermaid-edit-x {
+  display: inline-flex;
+  color: var(--ink-4);
+  padding: 2px;
+  border-radius: 4px;
+}
+.mermaid-edit-x:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+.mermaid-input {
+  width: 100%;
+  resize: vertical;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink);
+  tab-size: 2;
+}
+.mermaid-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+}
+.mermaid-input::placeholder {
+  color: var(--ink-4);
+}
+.mermaid-edit-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--ink-4);
+}
