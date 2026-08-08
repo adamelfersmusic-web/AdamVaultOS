@@ -13,11 +13,13 @@ import type { Note } from '../lib/types'
 import {
   createCanvasBoard,
   createCanvasCard,
+  createCanvasGroup,
   deleteCanvasBoard,
   deleteCanvasCard,
   loadCanvasNotes,
   movePage,
   toast,
+  saveMapExport,
   updateCanvasNote,
 } from '../lib/store'
 import { navigate } from '../lib/router'
@@ -26,6 +28,10 @@ import { relativeTime, slugify } from '../lib/format'
 import { IconPlus, IconClose, IconBack } from '../components/Icons'
 import { CardEditor } from '../components/CardEditor'
 import { CanvasMap } from './CanvasMap'
+import { CanvasGroupBox, geomOf } from './CanvasGroupBox'
+import { groupCounts, type Placed } from '../lib/canvasGroups'
+import { toMermaid, toMermaidFence, type MermaidExport } from '../lib/canvasMermaid'
+import { Modal } from '../components/Modal'
 
 const CANVAS_PREFIX = 'canvas/'
 const GRID = 20
@@ -35,6 +41,8 @@ const MIN_W = 140
 const MIN_H = 80
 // Zoom is viewport state only — it is never written to a note.
 const ZOOM_KEY = 'adamvaultos.canvas.zoom'
+// Dismissed once, gone for good — a hint that reappears is a nag.
+const STRUCTURE_HINT_KEY = 'adamvaultos.canvas.structurehint'
 const MIN_ZOOM = 0.25
 const MAX_ZOOM = 2
 // The plane grows to fit the furthest card plus a margin. It does NOT grow
@@ -73,6 +81,11 @@ function isCard(n: Note): boolean {
  * are NOT stored — only the links a tree cannot express live as notes. */
 function isEdge(n: Note): boolean {
   return n.metadata?.['ckind'] === 'edge'
+}
+/** A titled rectangle behind the cards. What it holds is read from position,
+ * never stored, so it cannot disagree with what you can see inside it. */
+function isGroup(n: Note): boolean {
+  return n.metadata?.['ckind'] === 'group'
 }
 
 // The board you were working on — restored on return so "← Canvas" from a
@@ -138,6 +151,10 @@ export function CanvasView() {
     () => (notes ?? []).filter((n) => isEdge(n) && boardIdOf(n) === active),
     [notes, active],
   )
+  const activeGroups = useMemo<Note[]>(
+    () => (notes ?? []).filter((n) => isGroup(n) && boardIdOf(n) === active),
+    [notes, active],
+  )
   const activeBoard = boards.find((b) => b.id === active) ?? null
 
   const newCanvas = async () => {
@@ -174,6 +191,7 @@ export function CanvasView() {
         board={activeBoard}
         cards={activeCards}
         edges={activeEdges}
+        groups={activeGroups}
         onBack={() => setActive(null)}
         upsert={upsert}
         remove={remove}
@@ -232,6 +250,7 @@ function CanvasSurface({
   board,
   cards,
   edges,
+  groups,
   onBack,
   upsert,
   remove,
@@ -240,6 +259,7 @@ function CanvasSurface({
   board: BoardMeta
   cards: Note[]
   edges: Note[]
+  groups: Note[]
   onBack: () => void
   upsert: (n: Note) => void
   remove: (path: string) => void
@@ -266,6 +286,19 @@ function CanvasSurface({
     const next = clampZoom(z)
     localStorage.setItem(ZOOM_KEY, String(next))
     setZoom(next)
+  }
+
+  /** Zoom about the middle of the viewport — what the +/− buttons should do.
+   * Changing the scale without an anchor leaves the scroll where it was, so
+   * the board visibly slides off to one side as you zoom out. */
+  const zoomFromCentre = (next: number) => {
+    const el = scrollRef.current
+    if (!el) {
+      setZoomPersisted(next)
+      return
+    }
+    const r = el.getBoundingClientRect()
+    zoomAt(next, r.left + el.clientWidth / 2, r.top + el.clientHeight / 2)
   }
 
   /** Zoom about a screen point, keeping whatever is under it exactly there. */
@@ -373,6 +406,124 @@ function CanvasSurface({
     }
   }
 
+  // A free board carries no parent/child links and no arrows, so a mermaid
+  // export from it is a row of disconnected boxes — valid, but not a diagram.
+  // Say so on arrival rather than letting the Export button disappoint.
+  const [hintDismissed, setHintDismissed] = useState(
+    () => localStorage.getItem(STRUCTURE_HINT_KEY) === '1',
+  )
+  const hasStructure = useMemo(
+    () => cards.some((c) => !!c.metadata?.['parent']) || edges.length > 0,
+    [cards, edges],
+  )
+  const showStructureHint = !mapMode && !hintDismissed && cards.length > 1 && !hasStructure
+  const dismissHint = () => {
+    localStorage.setItem(STRUCTURE_HINT_KEY, '1')
+    setHintDismissed(true)
+  }
+
+  // Live offsets while a group is being dragged: the cards it carries follow
+  // it on screen before anything is written.
+  const [carry, setCarry] = useState<Record<string, { x: number; y: number }>>({})
+
+  const counts = useMemo(
+    () =>
+      groupCounts(
+        cards.map((c) => ({ path: c.path, ...geomOf(c, CARD_W, CARD_H) }) as Placed),
+        groups.map((g) => ({ path: g.path, ...geomOf(g) }) as Placed),
+      ),
+    [cards, groups],
+  )
+
+  const addGroup = async () => {
+    const el = scrollRef.current
+    const cx = ((el?.scrollLeft ?? 0) + (el?.clientWidth ?? 0) / 2) / zoom
+    const cy = ((el?.scrollTop ?? 0) + (el?.clientHeight ?? 0) / 2) / zoom
+    try {
+      const note = await createCanvasGroup(board.id, {
+        x: Math.max(0, snap(cx - 200)),
+        y: Math.max(0, snap(cy - 160)),
+        w: 400,
+        h: 320,
+        title: '',
+      })
+      upsert(note)
+    } catch (e) {
+      toast('error', `Couldn’t add group — ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
+  // ── Open in the middle ──────────────────────────────────────────────────
+  // The plane is far bigger than the viewport, so opening at scroll 0 pins
+  // everything to the top-left corner and the board reads as if it is falling
+  // off the edge. Centre the viewport on whatever is actually there instead.
+  const centredFor = useRef<string | null>(null)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || centredFor.current === board.id) return
+    let frame = 0
+    const centre = () => {
+      const nodes = el.querySelectorAll<HTMLElement>('.canvas-card, .map-node')
+      if (nodes.length === 0) {
+        // Empty board: sit in the middle of the plane, so the first
+        // double-click lands somewhere with room on every side.
+        el.scrollLeft = Math.max(0, (el.scrollWidth - el.clientWidth) / 2)
+        el.scrollTop = Math.max(0, (el.scrollHeight - el.clientHeight) / 2)
+        return
+      }
+      let l = Infinity
+      let t = Infinity
+      let r = 0
+      let b = 0
+      for (const n of nodes) {
+        l = Math.min(l, n.offsetLeft)
+        t = Math.min(t, n.offsetTop)
+        r = Math.max(r, n.offsetLeft + n.offsetWidth)
+        b = Math.max(b, n.offsetTop + n.offsetHeight)
+      }
+      // offsetLeft/Top are plane units; the viewport scrolls in scaled pixels.
+      const cx = ((l + r) / 2) * zoom
+      const cy = ((t + b) / 2) * zoom
+      el.scrollLeft = Math.max(0, cx - el.clientWidth / 2)
+      el.scrollTop = Math.max(0, cy - el.clientHeight / 2)
+      centredFor.current = board.id
+    }
+    // Wait a frame: map mode measures heights before it knows where anything is.
+    frame = requestAnimationFrame(() => requestAnimationFrame(centre))
+    return () => cancelAnimationFrame(frame)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [board.id, cards.length === 0])
+
+  // ── Mermaid export ──────────────────────────────────────────────────────
+  // Generated on demand and never stored: mermaid holds neither positions nor
+  // arrow geometry, so it can only be a view of the board, not its home.
+  const [exported, setExported] = useState<MermaidExport | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const runExport = () => {
+    setCopied(false)
+    setExported(
+      toMermaid(
+        cards.map((c, i) => ({
+          path: c.path,
+          parent:
+            typeof c.metadata?.['parent'] === 'string' && c.metadata['parent']
+              ? String(c.metadata['parent'])
+              : null,
+          order:
+            typeof c.metadata?.['order'] === 'number' ? Number(c.metadata['order']) : (i + 1) * 10,
+          label: (c.content ?? '').replace(/^\s{0,3}#{1,6}\s+/gm, ''),
+        })),
+        edges.map((e) => ({
+          from: String(e.metadata?.['from'] ?? ''),
+          to: String(e.metadata?.['to'] ?? ''),
+          label: String(e.metadata?.['label'] ?? e.content ?? ''),
+        })),
+      ),
+    )
+  }
+
   // Plane extents follow the furthest card, so the board grows as work spreads
   // instead of stopping at a hard edge.
   const { planeW, planeH } = useMemo(() => {
@@ -417,9 +568,11 @@ function CanvasSurface({
 
   const addCard = async () => {
     const el = scrollRef.current
-    // Drop the card near the top-left of what's currently in view — scroll is
-    // in screen px, the card's x/y are plane units.
-    await createAt((el?.scrollLeft ?? 0) / zoom + 48, (el?.scrollTop ?? 0) / zoom + 48)
+    // Drop it in the MIDDLE of what's in view. Scroll is in screen px, the
+    // card's x/y are plane units.
+    const cx = ((el?.scrollLeft ?? 0) + (el?.clientWidth ?? 0) / 2) / zoom
+    const cy = ((el?.scrollTop ?? 0) + (el?.clientHeight ?? 0) / 2) / zoom
+    await createAt(cx - CARD_W / 2, cy - CARD_H / 2)
   }
 
   // C1 — double-click empty canvas → a card right there, already in edit.
@@ -501,7 +654,7 @@ function CanvasSurface({
             aria-label="Zoom out"
             data-testid="zoom-out"
             disabled={zoom <= MIN_ZOOM}
-            onClick={() => setZoomPersisted(zoom / 1.25)}
+            onClick={() => zoomFromCentre(zoom / 1.25)}
           >
             −
           </button>
@@ -509,7 +662,7 @@ function CanvasSurface({
             className="canvas-zoom-level"
             title="Reset to 100%"
             data-testid="zoom-reset"
-            onClick={() => setZoomPersisted(1)}
+            onClick={() => zoomFromCentre(1)}
           >
             {Math.round(zoom * 100)}%
           </button>
@@ -518,12 +671,31 @@ function CanvasSurface({
             aria-label="Zoom in"
             data-testid="zoom-in"
             disabled={zoom >= MAX_ZOOM}
-            onClick={() => setZoomPersisted(zoom * 1.25)}
+            onClick={() => zoomFromCentre(zoom * 1.25)}
           >
             +
           </button>
         </div>
         <div className="canvas-bar-actions">
+          <button
+            className="btn btn-ghost"
+            data-testid="canvas-export"
+            disabled={cards.length === 0}
+            title="Generate a mermaid version of this board"
+            onClick={runExport}
+          >
+            Export
+          </button>
+          {!mapMode && (
+            <button
+              className="btn btn-ghost"
+              data-testid="canvas-add-group"
+              title="A titled area — drag it to move everything inside"
+              onClick={() => void addGroup()}
+            >
+              Group
+            </button>
+          )}
           <button className="btn btn-gold" onClick={() => void addCard()}>
             <IconPlus size={13} /> Add card
           </button>
@@ -532,6 +704,99 @@ function CanvasSurface({
           </button>
         </div>
       </header>
+
+      {showStructureHint && (
+        <div className="canvas-hint" data-testid="canvas-structure-hint" role="status">
+          <span>
+            <b>Free mode has no structure to export.</b> Cards here aren’t joined to each other, so
+            saving this to your vault as mermaid gives a row of separate boxes rather than a
+            diagram. Build it in <b>Map</b> mode — <kbd>Enter</kbd> for a sibling, <kbd>Tab</kbd>{' '}
+            for a child — and it exports as a real map.
+          </span>
+          <button
+            className="btn btn-gold canvas-hint-go"
+            data-testid="hint-switch-map"
+            onClick={() => {
+              dismissHint()
+              void setMode('map')
+            }}
+          >
+            Switch to Map
+          </button>
+          <button
+            className="canvas-hint-x"
+            data-testid="hint-dismiss"
+            title="Don’t show this again"
+            aria-label="Dismiss"
+            onClick={dismissHint}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {exported && (
+        <Modal onClose={() => setExported(null)} width={620} labelledBy="export-title">
+          <h2 className="modal-title" id="export-title">
+            Mermaid export — {exported.kind}
+          </h2>
+          <p className="modal-sub">{exported.reason}</p>
+          <p className="modal-sub export-warn">
+            ⚠️ Mermaid runs its own layout, so this carries the <b>graph</b> — nodes, hierarchy,
+            links — <b>not the arrangement</b> you built. Generated fresh each time, never stored,
+            so it cannot drift from the board.
+          </p>
+          <textarea
+            className="export-text"
+            data-testid="export-text"
+            readOnly
+            rows={14}
+            value={exported.text}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <div className="export-foot">
+            <span className="export-count">
+              {exported.nodeCount} {exported.nodeCount === 1 ? 'node' : 'nodes'}
+              {exported.linkCount > 0
+                ? ` · ${exported.linkCount} ${exported.linkCount === 1 ? 'link' : 'links'}`
+                : ''}
+            </span>
+            <div className="export-actions">
+              <button
+                className="btn btn-ghost"
+                data-testid="export-copy"
+                onClick={() => {
+                  void navigator.clipboard
+                    ?.writeText(toMermaidFence(exported))
+                    .then(() => setCopied(true))
+                    .catch(() => toast('error', 'Couldn’t copy — select the text instead.'))
+                }}
+              >
+                {copied ? 'Copied ✓' : 'Copy'}
+              </button>
+              <button
+                className="btn btn-gold"
+                data-testid="export-save"
+                disabled={saving}
+                onClick={() => {
+                  setSaving(true)
+                  void saveMapExport(board.title, toMermaidFence(exported))
+                    .then((note) => {
+                      setExported(null)
+                      navigate({ kind: 'pages', path: note.path })
+                    })
+                    .catch((e) =>
+                      toast('error', `Couldn’t save — ${e instanceof Error ? e.message : e}`),
+                    )
+                    .finally(() => setSaving(false))
+                }}
+              >
+                Save as a page
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       <div
         className={`canvas-scroll${spaceDown ? ' is-pannable' : ''}`}
@@ -582,20 +847,37 @@ function CanvasSurface({
               onRemove={remove}
               autoEditPath={freshPath}
               onAutoEditConsumed={() => setFreshPath(null)}
-              onOpenCard={(path) => navigate({ kind: 'pages', path })}
             />
           ) : (
-            cards.map((card) => (
-              <CanvasCard
-                key={card.path}
-                note={card}
-                zoom={zoom}
-                upsert={upsert}
-                remove={remove}
-                autoEdit={card.path === freshPath}
-                onEditClosed={() => setFreshPath((p) => (p === card.path ? null : p))}
-              />
-            ))
+            <>
+              {/* Behind the cards, always — a group is a backdrop, not a lid. */}
+              {groups.map((g) => (
+                <CanvasGroupBox
+                  key={g.path}
+                  note={g}
+                  cards={cards}
+                  groups={groups}
+                  zoom={zoom}
+                  count={counts[g.path] ?? 0}
+                  snap={snap}
+                  upsert={upsert}
+                  remove={remove}
+                  onCarry={setCarry}
+                />
+              ))}
+              {cards.map((card) => (
+                <CanvasCard
+                  key={card.path}
+                  note={card}
+                  zoom={zoom}
+                  override={carry[card.path]}
+                  upsert={upsert}
+                  remove={remove}
+                  autoEdit={card.path === freshPath}
+                  onEditClosed={() => setFreshPath((p) => (p === card.path ? null : p))}
+                />
+              ))}
+            </>
           )}
         </div>
         </div>
@@ -618,6 +900,7 @@ interface Geom {
 function CanvasCard({
   note,
   zoom,
+  override,
   upsert,
   remove,
   autoEdit = false,
@@ -627,6 +910,8 @@ function CanvasCard({
   /** Plane scale. Pointer deltas arrive in SCREEN px and must be divided by
    * it — without this a card at 50% zoom moves twice as far as the cursor. */
   zoom: number
+  /** Live position while a group is carrying this card. */
+  override?: { x: number; y: number }
   upsert: (n: Note) => void
   remove: (path: string) => void
   /** Freshly created via double-click — open straight into edit. */
@@ -655,7 +940,9 @@ function CanvasCard({
     onEditClosed?.()
   }
 
-  const geom = live ?? base
+  // A group carrying this card wins over the stored position, but never over
+  // the card's own in-progress drag.
+  const geom = live ?? (override ? { ...base, ...override } : base)
 
   const persist = async (g: Geom) => {
     const cur = latest.current
@@ -777,6 +1064,7 @@ function CanvasCard({
   return (
     <article
       className={`canvas-card${live ? ' is-live' : ''}${editing ? ' is-editing' : ''}`}
+      data-path={note.path}
       style={{ left: geom.x, top: geom.y, width: geom.w, height: geom.h }}
       onContextMenu={(e) => {
         e.preventDefault()

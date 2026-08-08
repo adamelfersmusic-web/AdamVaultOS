@@ -17,6 +17,19 @@ const SESSION_KEY = 'adamvaultos.session.v1'
 
 async function reset(page: Page) {
   await page.request.post(`${MOCK}/__test/reset`)
+  // Wait for the vault to be genuinely empty. Canvas writes are optimistic, so
+  // a previous test's creates can still be in flight when it ends and land just
+  // AFTER this reset — repopulating the board and failing whichever test runs
+  // next, for no reason of its own.
+  await expect
+    .poll(async () => {
+      const res = await page.request.get(
+        `${MOCK}/api/notes?path_prefix=${encodeURIComponent('canvas/')}`,
+        { headers: AUTH },
+      )
+      return ((await res.json()) as unknown[]).length
+    })
+    .toBe(0)
 }
 async function connectViaStorage(page: Page) {
   await page.addInitScript(
@@ -59,25 +72,6 @@ async function waitForLabels(page: Page, labels: string[]) {
       return labels.every((l) => got.has(l))
     }, { timeout: 10_000 })
     .toBe(true)
-}
-
-/** A fresh board switched into map mode, with the trunk created and selected. */
-async function mapBoardWithTrunk(page: Page, trunk = 'SIGNALCRAFT') {
-  await page.goto('http://127.0.0.1:4173/#/canvas')
-  await expect(page.locator('.db-title')).toHaveText('Canvas')
-  await page.getByRole('button', { name: 'New canvas' }).first().click()
-  await expect(page.locator('.canvas-title-input')).toBeVisible()
-  await page.getByTestId('mode-map').click()
-  await expect(page.getByTestId('mode-map')).toHaveAttribute('aria-pressed', 'true')
-
-  // The first node comes from a double-click; everything after is keyboard.
-  await page.getByTestId('canvas-plane').dblclick({ position: { x: 200, y: 200 } })
-  await expect(page.getByTestId('map-node')).toHaveCount(1)
-  await page.getByTestId('map-node').first().dblclick()
-  // Free-mode double-click navigates away; in map mode we edit in place.
-  await page.goBack().catch(() => {})
-  await expect(page.getByTestId('map-node')).toHaveCount(1)
-  return trunk
 }
 
 test.beforeEach(async ({ page }) => {
@@ -313,4 +307,91 @@ test('map-mode keys stay out of the block editor — Tab still nests todos', asy
   // And no stray map node was created by those Tabs.
   await page.locator('.canvas-title-input').click()
   await expect(page.locator('.canvas-card')).toHaveCount(1)
+})
+
+test('double-click a node edits it IN PLACE — it never leaves the canvas', async ({ page }) => {
+  await connectViaStorage(page)
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.getByRole('button', { name: 'New canvas' }).first().click()
+  await page.getByTestId('mode-map').click()
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 200, y: 200 } })
+  await expect(page.getByTestId('map-node-input')).toBeVisible()
+  await page.keyboard.type('Test')
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('map-node-input')).toHaveCount(0)
+
+  await nodeByLabel(page, 'Test').dblclick()
+
+  // Still on the canvas, with the label editor open on that node.
+  await expect(page).toHaveURL(/#\/canvas/)
+  await expect(page.getByTestId('canvas-plane')).toBeVisible()
+  const input = page.getByTestId('map-node-input')
+  await expect(input).toBeVisible()
+  await expect(input).toHaveValue('Test')
+
+  // And typing edits the existing label rather than starting a new node.
+  await input.fill('Test edited')
+  await page.keyboard.press('Escape')
+  await waitForLabels(page, ['Test edited'])
+  await expect(page.getByTestId('map-node')).toHaveCount(1)
+})
+
+test('a board opens centred on its content, not jammed against the left edge', async ({ page }) => {
+  await connectViaStorage(page)
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.getByRole('button', { name: 'New canvas' }).first().click()
+  await page.getByTestId('mode-map').click()
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 200, y: 200 } })
+  await expect(page.getByTestId('map-node-input')).toBeVisible()
+  await page.keyboard.type('root')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('child')
+  await page.keyboard.press('Escape')
+  await waitForLabels(page, ['root', 'child'])
+
+  await page.reload()
+  await expect(page.getByTestId('map-node')).toHaveCount(2)
+
+  // The content's centre sits near the middle of the viewport.
+  const { offset, half } = await page.evaluate(() => {
+    const el = document.querySelector('.canvas-scroll') as HTMLElement
+    const nodes = [...el.querySelectorAll<HTMLElement>('.map-node')]
+    const l = Math.min(...nodes.map((n) => n.offsetLeft))
+    const r = Math.max(...nodes.map((n) => n.offsetLeft + n.offsetWidth))
+    const centre = (l + r) / 2
+    return {
+      offset: Math.abs(centre - (el.scrollLeft + el.clientWidth / 2)),
+      half: el.clientWidth / 2,
+    }
+  })
+  expect(offset).toBeLessThan(half * 0.5)
+})
+
+test('a new node stays on screen however deep you Tab', async ({ page }) => {
+  await connectViaStorage(page)
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.getByRole('button', { name: 'New canvas' }).first().click()
+  await page.getByTestId('mode-map').click()
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 200, y: 200 } })
+  await expect(page.getByTestId('map-node-input')).toBeVisible()
+
+  // Five levels deep — the tree grows rightward, so without scrolling the last
+  // node would be well past the viewport edge and you'd be typing blind.
+  await page.keyboard.type('level 0')
+  for (let i = 1; i <= 5; i++) {
+    await page.keyboard.press('Tab')
+    await page.keyboard.type(`level ${i}`)
+  }
+  await page.keyboard.press('Escape')
+  await waitForLabels(page, ['level 0', 'level 5'])
+
+  const deepest = nodeByLabel(page, 'level 5')
+  await expect(deepest).toBeVisible()
+  const box = await deepest.boundingBox()
+  const view = page.viewportSize()!
+  expect(box, 'the deepest node has a box').toBeTruthy()
+  expect(box!.x).toBeGreaterThanOrEqual(0)
+  expect(box!.x + box!.width).toBeLessThanOrEqual(view.width)
+  expect(box!.y).toBeGreaterThanOrEqual(0)
+  expect(box!.y + box!.height).toBeLessThanOrEqual(view.height)
 })

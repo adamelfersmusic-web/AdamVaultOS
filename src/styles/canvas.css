@@ -573,3 +573,215 @@
 .map-link-input:focus {
   outline: none;
 }
+
+/* Mermaid export — a generated view, shown for copying or landing as a page. */
+.export-warn {
+  color: var(--ink-3);
+}
+.export-text {
+  width: 100%;
+  margin-top: 10px;
+  resize: vertical;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: pre;
+  overflow-x: auto;
+}
+.export-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+.export-count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--ink-4);
+}
+.export-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+/* ————————————————————————————————————————————————————————————————
+   Groups — a titled backdrop you drag to move everything inside.
+   Behind the cards, never over them.
+   ———————————————————————————————————————————————————————————————— */
+.canvas-group {
+  position: absolute;
+  /* NO z-index here on purpose. Setting one creates a stacking context that
+     traps the group's own header and colour menu behind the cards — the header
+     is the drag handle, so the group would become undraggable the moment a card
+     overlapped it. Groups render before cards in the DOM, which is what puts
+     them behind; the header then raises itself above. */
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--group-tone) 45%, transparent);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--group-tone) 7%, transparent);
+  --group-tone: var(--blue);
+}
+.canvas-group.tone-blue { --group-tone: var(--blue); }
+.canvas-group.tone-green { --group-tone: var(--green); }
+.canvas-group.tone-purple { --group-tone: var(--purple); }
+.canvas-group.tone-gold { --group-tone: var(--gold); }
+.canvas-group.tone-red { --group-tone: var(--red); }
+.canvas-group.tone-neutral { --group-tone: var(--neutral); }
+.canvas-group.is-live {
+  border-style: dashed;
+}
+.group-head {
+  position: absolute;
+  z-index: 3;
+  top: -13px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 20px);
+  padding: 2px 6px 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--group-tone) 45%, transparent);
+  border-radius: 999px;
+  background: var(--bg);
+  cursor: grab;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+.canvas-group.is-live .group-head {
+  cursor: grabbing;
+}
+.group-title {
+  color: color-mix(in srgb, var(--group-tone) 82%, var(--ink));
+  font-weight: 500;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.group-title em {
+  color: var(--ink-4);
+  font-weight: 400;
+}
+.group-title-input {
+  width: 170px;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+}
+.group-title-input:focus {
+  outline: none;
+}
+.group-count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  color: var(--ink-4);
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 0 6px;
+}
+.group-btn {
+  color: var(--ink-4);
+  border-radius: 999px;
+  padding: 0 3px;
+  line-height: 1;
+}
+.group-btn:hover {
+  color: var(--ink);
+}
+.group-tone {
+  width: 11px;
+  height: 11px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  background: var(--group-tone);
+}
+.group-x:hover {
+  color: var(--red);
+}
+.group-tones {
+  position: absolute;
+  z-index: 6;
+  top: 22px;
+  right: 0;
+  display: flex;
+  gap: 4px;
+  padding: 5px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-pop);
+  z-index: 5;
+}
+.group-tone-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+}
+.group-tone-swatch.tone-blue { background: var(--blue); }
+.group-tone-swatch.tone-green { background: var(--green); }
+.group-tone-swatch.tone-purple { background: var(--purple); }
+.group-tone-swatch.tone-gold { background: var(--gold); }
+.group-tone-swatch.tone-red { background: var(--red); }
+.group-tone-swatch.tone-neutral { background: var(--neutral); }
+.group-resize {
+  position: absolute;
+  z-index: 3;
+  right: -3px;
+  bottom: -3px;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  border-right: 2px solid color-mix(in srgb, var(--group-tone) 60%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--group-tone) 60%, transparent);
+  border-bottom-right-radius: 4px;
+}
+
+/* A one-time notice: this board has nothing joined up, so it won't export as
+   a diagram. Dismissed once, never shown again. */
+.canvas-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--gold) 8%, var(--surface));
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.canvas-hint b {
+  color: var(--ink);
+}
+.canvas-hint kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 5px;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+.canvas-hint-go {
+  flex: none;
+  white-space: nowrap;
+}
+.canvas-hint-x {
+  flex: none;
+  color: var(--ink-4);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.canvas-hint-x:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}

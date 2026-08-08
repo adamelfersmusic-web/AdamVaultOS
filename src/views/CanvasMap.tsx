@@ -65,7 +65,9 @@ function labelOf(n: Note): string {
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/^\s{0,3}#{1,6}\s+/gm, '')
     .replace(/^\s*[-*+]\s+\[[ xX]\]\s*/gm, '')
-    .replace(/[*_~`>#]/g, '')
+    // Emphasis and quote marks only. NOT '#' — headings are already stripped
+    // above, and a blanket strip turns "Pilot call #1" into "Pilot call 1".
+    .replace(/[*_~`>]/g, '')
     .replace(/\n{2,}/g, '\n')
     .trim()
 }
@@ -79,7 +81,6 @@ export function CanvasMap({
   onRemove,
   autoEditPath,
   onAutoEditConsumed,
-  onOpenCard,
 }: {
   boardId: string
   cards: Note[]
@@ -93,8 +94,6 @@ export function CanvasMap({
   /** A card just created on the plane — open its label editor straight away. */
   autoEditPath?: string | null
   onAutoEditConsumed?: () => void
-  /** Double-click — hand off to the full block editor in free mode. */
-  onOpenCard: (path: string) => void
 }) {
   const [selected, setSelected] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
@@ -366,6 +365,15 @@ export function CanvasMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoEditPath, byPath])
 
+  // Keep the node being edited on screen. The tree grows rightward, so a couple
+  // of Tabs can put the new node past the viewport edge — and typing into a node
+  // you cannot see is the flow failing quietly.
+  useEffect(() => {
+    if (!editing) return
+    const el = els.current.get(editing)
+    if (el?.isConnected) el.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [editing, placed])
+
   const wasEditing = useRef(false)
   useEffect(() => {
     const open = editing !== null
@@ -634,7 +642,13 @@ export function CanvasMap({
             }`}
             style={{ left: p.x, top: p.y, width: MAP_CARD_W }}
             onClick={() => setSelected(p.path)}
-            onDoubleClick={() => onOpenCard(p.path)}
+            onDoubleClick={(ev) => {
+              // 🔴 Edit HERE. This used to navigate to the page editor, which
+              // threw you out of the canvas mid-thought — the opposite of what
+              // double-clicking a node should do.
+              ev.stopPropagation()
+              startEdit(p.path)
+            }}
           >
             {p.hasChildren && (
               <button

@@ -2051,6 +2051,99 @@ export async function createCanvasCard(
   }
 }
 
+/** Groups are another card kind on the board: a titled rectangle rendered
+ * behind the cards. Membership is geometric, so a group stores nothing about
+ * what is inside it. */
+export async function createCanvasGroup(
+  boardId: string,
+  group: { x: number; y: number; w: number; h: number; title?: string; tone?: string },
+): Promise<Note> {
+  const a = requireApi()
+  const groupId = `group-${newCanvasCardId()}`
+  try {
+    const note = await a.createNote({
+      path: `${CANVAS_PREFIX}${boardId}/${groupId}`,
+      content: group.title ?? '',
+      tags: ['canvas'],
+      metadata: {
+        ckind: 'group',
+        board: boardId,
+        x: group.x,
+        y: group.y,
+        w: group.w,
+        h: group.h,
+        title: group.title ?? '',
+        tone: group.tone ?? 'blue',
+      },
+    })
+    mergeNote(note)
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+export async function deleteCanvasGroup(path: string): Promise<void> {
+  try {
+    await requireApi().deleteNote(path)
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+  const notes = { ...state.notes }
+  delete notes[path]
+  set({ notes })
+}
+
+/**
+ * Move a whole group at once.
+ *
+ * 🔴 ALL OR NOTHING. Dragging a group writes N notes; if some land and some
+ * fail, the group ends up torn — half of it moved, half where it was, and no
+ * way to tell which. So every write is attempted, and if ANY fails the ones
+ * that succeeded are put back. A failed drag costs you one gesture rather than
+ * a scrambled cluster.
+ *
+ * Only x/y is ever written. No path changes, so the wikilink hazard that parks
+ * move/rename in the file browser does not apply here at all.
+ */
+export async function moveCanvasNotes(
+  moves: { path: string; updatedAt: string; metadata: NoteMetadata; x: number; y: number }[],
+): Promise<{ ok: Note[]; failed: number }> {
+  const a = requireApi()
+  const done: { note: Note; from: { x: unknown; y: unknown } }[] = []
+  let failed = 0
+  for (const m of moves) {
+    try {
+      const note = await a.updateNote(m.path, {
+        metadata: { ...m.metadata, x: m.x, y: m.y },
+        ifUpdatedAt: m.updatedAt,
+      })
+      done.push({ note, from: { x: m.metadata['x'], y: m.metadata['y'] } })
+    } catch (e) {
+      handleAuthFailure(e)
+      failed++
+    }
+  }
+  if (failed > 0) {
+    // Put the successful ones back, so the group stays coherent.
+    for (const d of done) {
+      try {
+        await a.updateNote(d.note.path, {
+          metadata: { ...d.note.metadata, x: d.from.x, y: d.from.y },
+          ifUpdatedAt: d.note.updatedAt,
+        })
+      } catch {
+        /* nothing more we can safely do — the toast reports the failure */
+      }
+    }
+    return { ok: [], failed }
+  }
+  for (const d of done) mergeNote(d.note)
+  return { ok: done.map((d) => d.note), failed: 0 }
+}
+
 /** A fresh edge id, so the caller can open the label input before the write. */
 export function newCanvasEdgeId(): string {
   return `edge-${newCanvasCardId()}`
@@ -2059,6 +2152,31 @@ export function newCanvasEdgeId(): string {
 /** Cross-link edges are their own notes on the board — one per edge, so each
  * is independently writable and deletable, and every canvas thing stays a vault
  * note. Tree edges are NOT stored: those are derived from a card's `parent`. */
+/** Land a generated mermaid export as a normal page note. The canvas stays the
+ * source of truth — this is a snapshot you asked for, not a second home. */
+export async function saveMapExport(title: string, fence: string): Promise<Note> {
+  const a = requireApi()
+  const base = `pages/${slugify(title) || 'canvas'}-map`
+  let path = base
+  for (let n = 2; (await a.getNote(path)) !== null; n++) {
+    path = `${base}-${n}`
+    if (n > 30) throw new Error('Could not find a free path for this export')
+  }
+  try {
+    const note = await a.createNote({
+      path,
+      content: `# ${title} — map\n\n${fence}\n`,
+      tags: ['canvas'],
+      metadata: { exported_from: 'canvas' },
+    })
+    mergeNote(note)
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
 export async function createCanvasEdge(
   boardId: string,
   edge: { from: string; to: string; label?: string; edgeId?: string },
