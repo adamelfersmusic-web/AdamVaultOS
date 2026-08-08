@@ -28,6 +28,7 @@ import {
   IconPage,
   IconSpark,
   IconMic,
+  IconGraph,
 } from '../../components/Icons'
 
 export interface SlashCommandOptions {
@@ -246,6 +247,30 @@ function buildItems(options: SlashCommandOptions): SlashItem[] {
               ],
             },
           })
+          .run(),
+    },
+    {
+      id: 'mermaid',
+      title: 'Diagram — Mermaid',
+      subtitle: 'Flowchart, mind map, sequence — renders in place',
+      icon: <IconGraph size={15} />,
+      keywords: [
+        'diagram',
+        'mermaid',
+        'chart',
+        'flowchart',
+        'graph',
+        'mindmap',
+        'mind map',
+        'sequence',
+        'visual',
+      ],
+      run: ({ editor, range }) =>
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({ type: 'mermaidBlock', attrs: { code: '' } })
           .run(),
     },
     {

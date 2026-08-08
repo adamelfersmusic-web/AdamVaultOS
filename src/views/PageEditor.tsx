@@ -63,6 +63,7 @@ import { AiBlock } from '../editor/extensions/AiBlock'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
 import { BoardEmbed, convertBoardEmbeds } from '../editor/extensions/BoardEmbed'
 import { Kanban } from '../editor/extensions/Kanban'
+import { MermaidBlock, convertMermaidBlocks } from '../editor/extensions/MermaidBlock'
 import { ColorText } from '../editor/extensions/ColorText'
 import { MarkSpanParser, RichHighlight } from '../editor/extensions/RichHighlight'
 import {
@@ -178,6 +179,9 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
       // PR3 — /kanban: a standalone in-page board, stored as <!--kanban--> +
       // a GFM pipe table (renders as a plain table everywhere else).
       Kanban,
+      // A ```mermaid fence, rendered in place and editable — so a diagram no
+      // longer costs you an editable note (the .md/.mdx either/or).
+      MermaidBlock,
       VaultImage, // resolves /api/storage vault paths (auth-safe); no base64
       Markdown,
       MarkdownLiteral,
@@ -320,7 +324,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
     const apply = (content: string, updatedAt: string) => {
       setContentSilently(editor, content, { contentType: 'markdown' })
       const page = convertPageLinks(editor.getJSON())
-      const wiki = convertWikiLinks(convertBoardEmbeds(page.doc).doc)
+      const wiki = convertWikiLinks(convertMermaidBlocks(convertBoardEmbeds(page.doc).doc).doc)
       if (page.changed || wiki.changed) setContentSilently(editor, wiki.doc)
       const md = editor.getMarkdown()
       baseRef.current = { content: md, updatedAt }
@@ -587,7 +591,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
     if (!draftStash || !editor || !baseRef.current) return
     setContentSilently(editor, draftStash.content, { contentType: 'markdown' })
     const page = convertPageLinks(editor.getJSON())
-    const wiki = convertWikiLinks(convertBoardEmbeds(page.doc).doc)
+    const wiki = convertWikiLinks(convertMermaidBlocks(convertBoardEmbeds(page.doc).doc).doc)
     if (page.changed || wiki.changed) setContentSilently(editor, wiki.doc)
     setDraftStash(null)
     // The buffer is now dirty against the loaded base — the normal debounced
@@ -606,7 +610,7 @@ export function PageEditor({ path, inPeek = false }: { path: string; inPeek?: bo
     loadingRef.current = true
     setContentSilently(editor, conflict.content ?? '', { contentType: 'markdown' })
     const page = convertPageLinks(editor.getJSON())
-    const wiki = convertWikiLinks(convertBoardEmbeds(page.doc).doc)
+    const wiki = convertWikiLinks(convertMermaidBlocks(convertBoardEmbeds(page.doc).doc).doc)
     if (page.changed || wiki.changed) setContentSilently(editor, wiki.doc)
     const md = editor.getMarkdown()
     baseRef.current = { content: md, updatedAt: conflict.updatedAt }
