@@ -15,6 +15,10 @@ const TOKEN = 'atelier-test-token'
 const AUTH = { Authorization: `Bearer ${TOKEN}` }
 const SESSION_KEY = 'adamvaultos.session.v1'
 
+/** The export minus the %%{init}%% directive, so assertions about labels don't
+ * trip over the directive's own quoting. */
+const body = (text: string) => text.split('\n').filter((l) => !l.startsWith('%%{')).join('\n')
+
 const card = (path: string, parent: string | null, order: number, label: string): MermaidCard => ({
   path,
   parent,
@@ -31,37 +35,39 @@ const tree: MermaidCard[] = [
   card('b', 'root', 20, 'B · SCORE CALLS'),
 ]
 
-test('one trunk with no cross-links exports as a mindmap', () => {
+test('even a pure tree exports as a left-to-right flowchart, never a mindmap', () => {
   const exp = toMermaid(tree, [])
-  expect(exp.kind).toBe('mindmap')
-  expect(exp.text.split('\n')[0]).toBe('mindmap')
+  // 🔴 A mermaid mindmap renders RADIALLY — the exact layout the brief says
+  // failed. A flowchart LR renders the same tree as a readable spine.
+  expect(exp.kind).toBe('flowchart')
+  expect(exp.text).toContain('flowchart LR')
+  expect(exp.text).not.toContain('mindmap')
+  // Right angles, not beziers.
+  expect(exp.text).toContain('"curve": "stepBefore"')
   expect(exp.nodeCount).toBe(5)
 
   // Reading order matches the map: trunk, then A and its children, then B.
-  const labels = exp.text.match(/"([^"]+)"/g)!.map((s) => s.slice(1, -1))
+  const labels = body(exp.text).match(/"([^"]+)"/g)!.map((s) => s.slice(1, -1))
   expect(labels[0]).toBe('SIGNALCRAFT')
   expect(labels[1]).toBe('A · MAKE A RUBRIC')
   expect(labels[labels.length - 1]).toBe('B · SCORE CALLS')
 
-  // Depth shows up as indentation.
-  const line = (needle: string) => exp.text.split('\n').find((l) => l.includes(needle))!
-  const indent = (l: string) => l.length - l.trimStart().length
-  expect(indent(line('SIGNALCRAFT'))).toBeLessThan(indent(line('A · MAKE A RUBRIC')))
-  expect(indent(line('A · MAKE A RUBRIC'))).toBeLessThan(indent(line('slot two')))
+  // Depth shows up as edges, which is what a flowchart has instead of indent.
+  expect(exp.text).toMatch(/n0 --> n1/)
+  expect(exp.text).toMatch(/n1 --> n2/)
 })
 
-test('a cross-link forces a flowchart — a mindmap cannot hold one', () => {
+test('a cross-link is drawn dotted and labelled, on top of the tree', () => {
   const exp = toMermaid(tree, [{ from: 'b', to: 'a1', label: 'feeds into' }])
   expect(exp.kind).toBe('flowchart')
-  expect(exp.text.startsWith('flowchart LR')).toBe(true)
+  expect(exp.text).toContain('flowchart LR')
   expect(exp.linkCount).toBe(1)
-  expect(exp.reason).toContain('strictly a tree')
   // Tree edges are solid, the cross-link dotted and labelled.
   expect(exp.text).toMatch(/n0 --> n1/)
   expect(exp.text).toMatch(/-\.->\|"feeds into"\|/)
 })
 
-test('two trunks force a flowchart — a mindmap has exactly one root', () => {
+test('two bare trunks are reported as structureless', () => {
   const exp = toMermaid([card('r1', null, 10, 'One'), card('r2', null, 20, 'Two')], [])
   expect(exp.kind).toBe('flowchart')
   // Two bare trunks means nothing is joined to anything, so the message says
@@ -90,7 +96,7 @@ test('labels that would break mermaid are neutralised', () => {
     [],
   )
   // Quotes cannot survive inside a quoted mermaid string.
-  expect(exp.text).not.toMatch(/[^\\]"[^"\n]*"[^"\n]*"/)
+  expect(body(exp.text)).not.toMatch(/[^\\]"[^"\n]*"[^"\n]*"/)
   expect(exp.text).toContain("Quote ' and (parens) [brackets] and a newline")
   expect(exp.text).not.toContain('\n and a newline')
 })
@@ -105,6 +111,15 @@ test('a collapsed branch is still exported — collapse is a view, not content',
   const exp = toMermaid(tree, [])
   expect(exp.nodeCount).toBe(5)
   expect(exp.text).toContain('slot two')
+})
+
+test('the export renders as a SPINE, not a radial burst', () => {
+  // Every node hangs off the trunk by an explicit edge, left to right. This is
+  // the property that makes a 150-node map readable; a mindmap loses it.
+  const exp = toMermaid(tree, [])
+  const edges = exp.text.split('\n').filter((l) => l.includes('-->'))
+  expect(edges.length).toBe(4) // one per non-root node
+  expect(exp.text.indexOf('flowchart LR')).toBeGreaterThan(-1)
 })
 
 test('an unlabelled cross-link exports without an empty label box', () => {
@@ -149,14 +164,14 @@ async function connectViaStorage(page: Page) {
   )
 }
 
-test('both dialects actually render — not just look plausible', async ({ page }) => {
+test('the generated text actually renders — not just looks plausible', async ({ page }) => {
   await page.request.post(`${MOCK}/__test/reset`)
-  const mindmap = toMermaid(tree, [])
-  const flowchart = toMermaid(tree, [{ from: 'b', to: 'a1', label: 'feeds into' }])
+  const plain = toMermaid(tree, [])
+  const linked = toMermaid(tree, [{ from: 'b', to: 'a1', label: 'feeds into' }])
 
   for (const [slug, exp] of [
-    ['mm', mindmap],
-    ['fc', flowchart],
+    ['mm', plain],
+    ['fc', linked],
   ] as const) {
     const res = await page.request.post(`${MOCK}/api/notes`, {
       headers: AUTH,
@@ -206,11 +221,11 @@ test('Export a real board, land it as a page, and see it render', async ({ page 
   await page.keyboard.press('Escape')
   await expect(page.getByTestId('map-node')).toHaveCount(3)
 
-  // With no cross-links this is a tree, so it exports as a mindmap.
+  // A tree still exports as a flowchart — a mindmap would render radially.
   await page.getByTestId('canvas-export').click()
   const text = page.getByTestId('export-text')
   await expect(text).toBeVisible()
-  await expect(text).toHaveValue(/^mindmap/)
+  await expect(text).toHaveValue(/flowchart LR/)
   await expect(text).toHaveValue(/SIGNALCRAFT/)
   await expect(text).toHaveValue(/B · SCORE CALLS/)
 
@@ -261,7 +276,7 @@ test('a board with a cross-link exports as a flowchart instead', async ({ page }
 
   await page.getByTestId('canvas-export').click()
   const text = page.getByTestId('export-text')
-  await expect(text).toHaveValue(/^flowchart LR/)
+  await expect(text).toHaveValue(/flowchart LR/)
   await expect(text).toHaveValue(/-\.->\|"blocks"\|/)
 })
 

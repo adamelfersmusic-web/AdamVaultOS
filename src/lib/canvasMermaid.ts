@@ -9,11 +9,18 @@
 // carries the GRAPH — nodes, hierarchy, links, labels — not the picture. The
 // arrangement you built is not what comes out the other side.
 //
-// Which dialect depends on what the board contains:
-//   one trunk, no cross-links  → mindmap    (a tree)
-//   anything else              → flowchart  (a graph: loops allowed)
-// A mermaid `mindmap` is STRICTLY a tree: it can express neither a cross-link
-// nor a second trunk, so those must promote the output to a flowchart.
+// 🔴 ALWAYS `flowchart LR`, NEVER `mindmap` — even for a pure tree.
+//
+// The spec originally said a tree should export as a mindmap. Rendering a real
+// 33-node map proved that wrong: mermaid's mindmap renderer lays out RADIALLY,
+// branching in every direction, which is the exact shape the map-mode brief
+// names as having failed ("~120 nodes, radial, branching every direction —
+// unreadable, abandoned"; "anti-goals: radial / spider layouts").
+//
+// `flowchart LR` renders the same data as a left-to-right spine — one trunk,
+// sections in a column, depth to the right — which is what the canvas shows and
+// what is actually readable. The init directive makes the edges step at right
+// angles rather than curve: "vertical and horizontal, nothing insane".
 
 export interface MermaidCard {
   path: string
@@ -29,7 +36,8 @@ export interface MermaidEdge {
 
 export interface MermaidExport {
   text: string
-  kind: 'mindmap' | 'flowchart'
+  /** Always 'flowchart' — a mindmap renders radially, which is unreadable. */
+  kind: 'flowchart'
   /** Why this dialect was chosen — shown to the user, not a debug string. */
   reason: string
   nodeCount: number
@@ -98,41 +106,25 @@ export function toMermaid(cards: MermaidCard[], edges: MermaidEdge[]): MermaidEx
   }
   roots.forEach(collect)
 
-  const asTree = links.length === 0 && roots.length === 1
+  // Kept as a fact about the data, not a dialect switch — see the note above.
+  const isTree = links.length === 0 && roots.length === 1
   // Nothing joined to anything: every card is its own trunk. Valid mermaid,
   // but a row of disconnected boxes rather than a diagram — say so plainly
   // instead of reporting the technically-true "more than one trunk".
   const structureless = links.length === 0 && roots.length === cards.length && cards.length > 1
-  const reason = asTree
-    ? 'One trunk and no cross-links, so this exports as a mindmap.'
+  const reason = isTree
+    ? 'One trunk and no cross-links — a tree, exported as a left-to-right flowchart so it reads as a spine rather than a radial burst.'
     : structureless
       ? 'Nothing on this board is connected to anything, so this exports as a row of separate boxes rather than a diagram. Build it in Map mode — Enter for a sibling, Tab for a child — and the export becomes a real tree.'
       : links.length > 0
         ? 'This board has cross-links, and a mindmap is strictly a tree — so it exports as a flowchart, which can hold them.'
         : 'This board has more than one trunk, which a mindmap cannot express — so it exports as a flowchart.'
 
-  if (asTree) {
-    const out: string[] = ['mindmap']
-    const walk = (n: Node, depth: number) => {
-      const pad = '  '.repeat(depth + 1)
-      // The trunk gets the circle shape; everything else a plain box. Both are
-      // written with explicit ids and quoted text so punctuation in a label
-      // can never be parsed as mermaid syntax.
-      out.push(depth === 0 ? `${pad}${n.id}(("${esc(n.label)}"))` : `${pad}${n.id}["${esc(n.label)}"]`)
-      n.children.forEach((c) => walk(c, depth + 1))
-    }
-    walk(roots[0], 0)
-    return {
-      text: out.join('\n'),
-      kind: 'mindmap',
-      reason,
-      nodeCount: idOf.size,
-      linkCount: 0,
-      structureless: false,
-    }
-  }
-
-  const out: string[] = ['flowchart LR']
+  const out: string[] = [
+    // Right-angle edges. Mermaid's default curve is a bezier.
+    '%%{init: {"flowchart": {"curve": "stepBefore"}} }%%',
+    'flowchart LR',
+  ]
   const decls: string[] = []
   const treeLinks: string[] = []
   const walk = (n: Node) => {
