@@ -1568,6 +1568,29 @@ body.is-dragging .card {
   background: var(--surface-3);
   color: var(--ink);
 }
+/* tags ⇄ paths, in the rail head. Styled like .sort-toggle but deliberately its
+   own class — sharing the class would make every `.sort-toggle button.is-on`
+   selector in the app ambiguous. */
+.rail-mode {
+  display: flex;
+  width: 100%;
+  gap: 2px;
+  margin-top: 8px;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 2px;
+}
+.rail-mode button {
+  flex: 1 1 0;
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  color: var(--ink-3);
+}
+.rail-mode button.is-on {
+  background: var(--surface-3);
+  color: var(--ink);
+}
 
 .browser-list {
   overflow-y: auto;
