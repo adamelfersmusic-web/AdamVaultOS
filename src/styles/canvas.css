@@ -130,14 +130,56 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  background:
-    radial-gradient(circle, var(--line-2) 1px, transparent 1.5px) 0 0 / 20px 20px,
-    var(--bg);
+  background: var(--bg);
 }
+/* Space held → the whole board is grabbable. */
+.canvas-scroll.is-pannable,
+.canvas-scroll.is-pannable * {
+  cursor: grab;
+}
+/* Carries the SCALED extents so the scrollbars describe the zoomed board — a
+   CSS transform doesn't change layout size. Width/height set inline. */
+.canvas-sizer {
+  position: relative;
+}
+/* The dot grid lives HERE, not on the scroller, so it scales with the plane
+   and the dots stay locked to the cards at every zoom level. */
 .canvas-plane {
   position: relative;
-  width: 3000px;
-  height: 2200px;
+  background: radial-gradient(circle, var(--line-2) 1px, transparent 1.5px) 0 0 / 20px 20px;
+}
+
+/* zoom control — − / level / +, the level doubling as reset-to-100% */
+.canvas-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 2px;
+}
+.canvas-zoom button {
+  min-width: 24px;
+  height: 22px;
+  border-radius: 5px;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1;
+}
+.canvas-zoom button:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+.canvas-zoom button:disabled {
+  color: var(--ink-4);
+  cursor: default;
+}
+.canvas-zoom-level {
+  min-width: 46px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
 }
 .canvas-empty-hint {
   position: absolute;
