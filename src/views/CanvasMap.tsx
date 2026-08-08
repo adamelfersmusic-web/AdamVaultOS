@@ -33,6 +33,8 @@ import {
   MAP_CARD_W,
   type LayoutInput,
 } from '../lib/canvasLayout'
+import { refOf, resolveRef, type RefLookup } from '../lib/canvasRefs'
+import { navigate } from '../lib/router'
 
 /** Height assumed before a card has been measured — one frame, then corrected. */
 const EST_HEIGHT = 84
@@ -79,6 +81,7 @@ export function CanvasMap({
   zoom,
   upsert,
   onRemove,
+  refIndex,
   autoEditPath,
   onAutoEditConsumed,
 }: {
@@ -91,6 +94,8 @@ export function CanvasMap({
   upsert: (n: Note) => void
   /** Drop a deleted note (an edge) from the board's local state. */
   onRemove: (path: string) => void
+  /** Vault notes by id, for resolving ref nodes. null = not loaded yet. */
+  refIndex?: Map<string, RefLookup> | null
   /** A card just created on the plane — open its label editor straight away. */
   autoEditPath?: string | null
   onAutoEditConsumed?: () => void
@@ -348,7 +353,14 @@ export function CanvasMap({
   }
 
   const startEdit = (path: string) => {
-    setDraft(byPath.get(path)?.content ?? '')
+    const note = byPath.get(path)
+    // A ref node has no text of its own — its label is the note it points at.
+    // Letting F2 open an editor over it would offer an edit that cannot stick.
+    if (note && refOf(note.metadata)) {
+      setSelected(path)
+      return
+    }
+    setDraft(note?.content ?? '')
     setSelected(path)
     setEditing(path)
   }
@@ -631,6 +643,10 @@ export function CanvasMap({
         if (!note) return null
         const isEditing = editing === p.path
         const label = labelOf(note)
+        // A ref node shows the note it points at, live. Its stored label is
+        // only the fallback the layout engine measured; the vault is the truth.
+        const ref = refOf(note.metadata)
+        const resolved = ref ? resolveRef(ref, refIndex ?? null) : null
         return (
           <div
             key={p.path}
@@ -639,14 +655,26 @@ export function CanvasMap({
             data-testid="map-node"
             className={`map-node${selected === p.path ? ' is-selected' : ''}${
               isEditing ? ' is-editing' : ''
-            }`}
+            }${resolved ? ' is-ref' : ''}`}
             style={{ left: p.x, top: p.y, width: MAP_CARD_W }}
             onClick={() => setSelected(p.path)}
             onDoubleClick={(ev) => {
-              // 🔴 Edit HERE. This used to navigate to the page editor, which
-              // threw you out of the canvas mid-thought — the opposite of what
-              // double-clicking a node should do.
               ev.stopPropagation()
+              // 🔴 A plain node edits HERE. This used to navigate to the page
+              // editor, which threw you out of the canvas mid-thought.
+              // A REF node is the one case where leaving IS the point: it has
+              // no text of its own, so double-click opens the note it names.
+              if (resolved) {
+                const target = resolved.status === 'ok' ? resolved.path : ''
+                if (target) {
+                  navigate(
+                    target.startsWith('pages/')
+                      ? { kind: 'pages', path: target }
+                      : { kind: 'note', path: target },
+                  )
+                }
+                return
+              }
               startEdit(p.path)
             }}
           >
@@ -665,7 +693,18 @@ export function CanvasMap({
               </button>
             )}
             <div className="map-node-label">
-              {label || <span className="map-node-empty">Untitled</span>}
+              {resolved ? (
+                <span className="map-node-ref" data-testid="map-ref" data-ref-status={resolved.status}>
+                  <span className="map-node-ref-title">{resolved.title}</span>
+                  {resolved.status === 'missing' && (
+                    <span className="map-node-ref-gone" data-testid="map-ref-gone">
+                      gone from the vault
+                    </span>
+                  )}
+                </span>
+              ) : (
+                label || <span className="map-node-empty">Untitled</span>
+              )}
             </div>
             {p.collapsedWithChildren && <span className="map-node-badge">…</span>}
             <span

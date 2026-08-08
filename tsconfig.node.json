@@ -22,6 +22,8 @@
     // the e2e project should not be able to reach into the app at large.
     "src/lib/canvasLayout.ts",
     "src/lib/canvasMermaid.ts",
-    "src/lib/canvasGroups.ts"
+    "src/lib/canvasGroups.ts",
+    "src/lib/canvasParts.ts",
+    "src/lib/canvasRefs.ts"
   ]
 }
