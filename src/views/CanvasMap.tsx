@@ -65,7 +65,9 @@ function labelOf(n: Note): string {
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/^\s{0,3}#{1,6}\s+/gm, '')
     .replace(/^\s*[-*+]\s+\[[ xX]\]\s*/gm, '')
-    .replace(/[*_~`>#]/g, '')
+    // Emphasis and quote marks only. NOT '#' — headings are already stripped
+    // above, and a blanket strip turns "Pilot call #1" into "Pilot call 1".
+    .replace(/[*_~`>]/g, '')
     .replace(/\n{2,}/g, '\n')
     .trim()
 }

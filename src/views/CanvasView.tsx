@@ -288,6 +288,19 @@ function CanvasSurface({
     setZoom(next)
   }
 
+  /** Zoom about the middle of the viewport — what the +/− buttons should do.
+   * Changing the scale without an anchor leaves the scroll where it was, so
+   * the board visibly slides off to one side as you zoom out. */
+  const zoomFromCentre = (next: number) => {
+    const el = scrollRef.current
+    if (!el) {
+      setZoomPersisted(next)
+      return
+    }
+    const r = el.getBoundingClientRect()
+    zoomAt(next, r.left + el.clientWidth / 2, r.top + el.clientHeight / 2)
+  }
+
   /** Zoom about a screen point, keeping whatever is under it exactly there. */
   const zoomAt = (nextRaw: number, clientX: number, clientY: number) => {
     const el = scrollRef.current
@@ -641,7 +654,7 @@ function CanvasSurface({
             aria-label="Zoom out"
             data-testid="zoom-out"
             disabled={zoom <= MIN_ZOOM}
-            onClick={() => setZoomPersisted(zoom / 1.25)}
+            onClick={() => zoomFromCentre(zoom / 1.25)}
           >
             −
           </button>
@@ -649,7 +662,7 @@ function CanvasSurface({
             className="canvas-zoom-level"
             title="Reset to 100%"
             data-testid="zoom-reset"
-            onClick={() => setZoomPersisted(1)}
+            onClick={() => zoomFromCentre(1)}
           >
             {Math.round(zoom * 100)}%
           </button>
@@ -658,7 +671,7 @@ function CanvasSurface({
             aria-label="Zoom in"
             data-testid="zoom-in"
             disabled={zoom >= MAX_ZOOM}
-            onClick={() => setZoomPersisted(zoom * 1.25)}
+            onClick={() => zoomFromCentre(zoom * 1.25)}
           >
             +
           </button>
