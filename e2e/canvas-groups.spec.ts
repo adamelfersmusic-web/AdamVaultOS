@@ -64,8 +64,25 @@ async function dragBy(page: Page, locator: ReturnType<Page['locator']>, dx: numb
   await page.mouse.up()
 }
 
-test.beforeEach(async ({ page }) => {
+async function reset(page: Page) {
   await page.request.post(`${MOCK}/__test/reset`)
+  // Wait for the vault to be genuinely empty. Canvas writes are optimistic, so
+  // a previous test's creates can still be in flight when it ends and land just
+  // AFTER this reset — repopulating the board and failing whichever test runs
+  // next, for no reason of its own.
+  await expect
+    .poll(async () => {
+      const res = await page.request.get(
+        `${MOCK}/api/notes?path_prefix=${encodeURIComponent('canvas/')}`,
+        { headers: AUTH },
+      )
+      return ((await res.json()) as unknown[]).length
+    })
+    .toBe(0)
+}
+
+test.beforeEach(async ({ page }) => {
+  await reset(page)
 })
 
 test('a group is a note, titled and coloured in place', async ({ page }) => {
