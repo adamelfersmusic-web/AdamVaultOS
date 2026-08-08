@@ -16,8 +16,12 @@ import { isProtectedNote } from '../domain/scripts'
 import { inferNoteType, summaryOf, TYPE_META } from '../domain/noteType'
 import { IconPlus, IconShield } from '../components/Icons'
 import { NotePage } from './NotePage'
+import { buildPathTree, noteInPath, PathTreeRow } from './PathTree'
 
 type Sort = 'recent' | 'alpha'
+/** Which hierarchy the left rail is showing. Tags is the default. */
+type RailMode = 'tags' | 'paths'
+const RAIL_MODE_KEY = 'adamvaultos.library.rail.mode'
 
 /** Updated-at as epoch ms (0 when missing/invalid) for sorting. */
 function ts(n: Note): number {
@@ -108,6 +112,12 @@ export function LibraryView() {
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  // The rail shows tags or paths — never both. Persisted, so the choice is made
+  // once and never again.
+  const [railMode, setRailMode] = useState<RailMode>(() =>
+    localStorage.getItem(RAIL_MODE_KEY) === 'paths' ? 'paths' : 'tags',
+  )
+  const [activePath, setActivePath] = useState<string | null>(null)
   const [sort, setSort] = useState<Sort>('recent')
   const [selected, setSelected] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -129,6 +139,15 @@ export function LibraryView() {
       localStorage.setItem('adamvaultos.library.list.collapsed', c ? '0' : '1')
       return !c
     })
+  // Switching hierarchies drops the other one's filter, so the list can never
+  // show a filter whose rail isn't on screen.
+  const switchMode = (mode: RailMode) => {
+    if (mode === railMode) return
+    localStorage.setItem(RAIL_MODE_KEY, mode)
+    setRailMode(mode)
+    setActiveTag(null)
+    setActivePath(null)
+  }
   const seq = useRef(0)
 
   // ＋ New note born IN CONTEXT (L1): the page inherits the tag you're
@@ -194,6 +213,27 @@ export function LibraryView() {
     return out.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
   }, [tagQuery, tagTree])
 
+  // Path rail: the same tree over folders instead of tags. Its own filter box
+  // and its own expand state, so the two rails never disturb each other.
+  const [pathQuery, setPathQuery] = useState('')
+  const [pathExpanded, setPathExpanded] = useState<Set<string>>(() => new Set())
+
+  const pathTree = useMemo(() => buildPathTree(all), [all])
+
+  const pathMatches = useMemo(() => {
+    const q = pathQuery.trim().toLowerCase()
+    if (!q) return null
+    const out: { name: string; count: number }[] = []
+    const walk = (nodes: typeof pathTree) => {
+      for (const n of nodes) {
+        if (n.full.toLowerCase().includes(q)) out.push({ name: n.full, count: n.total })
+        walk(n.children)
+      }
+    }
+    walk(pathTree)
+    return out.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+  }, [pathQuery, pathTree])
+
   // Right pane: client-side full-text search (ranked) OR tag filter, then sort.
   // Ranking lives in lib/search.ts — shared with the Pages sidebar so "good
   // search" means the same thing everywhere.
@@ -213,24 +253,33 @@ export function LibraryView() {
     }
     const list = activeTag
       ? all.filter((n) => hasTagDeep(n, activeTag)) // parent tag ⊇ descendants
-      : [...all]
+      : activePath
+        ? all.filter((n) => noteInPath(n, activePath)) // folder ⊇ subfolders
+        : [...all]
     if (sort === 'alpha') {
       list.sort((a, b) => noteTitle(a).localeCompare(noteTitle(b)))
     } else {
       list.sort((a, b) => ts(b) - ts(a))
     }
     return list
-  }, [all, query, activeTag, sort])
+  }, [all, query, activeTag, activePath, sort])
 
   const selectTag = (tag: string | null) => {
     setActiveTag(tag)
     setQuery('')
   }
+  const selectPath = (path: string | null) => {
+    setActivePath(path)
+    setQuery('')
+  }
   const onSearch = (text: string) => {
     setQuery(text)
-    if (text.trim()) setActiveTag(null)
+    if (text.trim()) {
+      setActiveTag(null)
+      setActivePath(null)
+    }
   }
-  const allActive = !activeTag && !query.trim()
+  const allActive = !activeTag && !activePath && !query.trim()
 
   // The list sliver only makes sense with a note open beside it — with
   // nothing selected the browser IS the content, so it stays expanded.
@@ -252,7 +301,7 @@ export function LibraryView() {
           >
             »
           </button>
-          <span className="panel-collapsed-label">tags</span>
+          <span className="panel-collapsed-label">{railMode === 'paths' ? 'paths' : 'tags'}</span>
         </aside>
       ) : (
       <aside className="tag-rail">
@@ -274,6 +323,72 @@ export function LibraryView() {
             «
           </button>
         </div>
+        <div className="rail-mode" role="group" aria-label="Rail mode">
+          <button
+            className={railMode === 'tags' ? 'is-on' : ''}
+            data-testid="rail-mode-tags"
+            title="Browse by tag"
+            onClick={() => switchMode('tags')}
+          >
+            Tags
+          </button>
+          <button
+            className={railMode === 'paths' ? 'is-on' : ''}
+            data-testid="rail-mode-paths"
+            title="Browse by folder path"
+            onClick={() => switchMode('paths')}
+          >
+            Paths
+          </button>
+        </div>
+        {railMode === 'paths' ? (
+          <>
+            <input
+              className="tag-rail-search"
+              placeholder="Filter paths…"
+              value={pathQuery}
+              onChange={(e) => setPathQuery(e.target.value)}
+            />
+            <div className="tag-rail-list" data-testid="path-tree">
+              {pathMatches ? (
+                pathMatches.length === 0 ? (
+                  <p className="tag-rail-empty">No path matches</p>
+                ) : (
+                  pathMatches.map((p) => (
+                    <button
+                      key={p.name}
+                      className={`tag-rail-item${activePath === p.name ? ' is-active' : ''}`}
+                      onClick={() => selectPath(activePath === p.name ? null : p.name)}
+                    >
+                      <span className="tag-rail-name">{p.name}</span>
+                      <span className="tag-rail-count">{p.count}</span>
+                    </button>
+                  ))
+                )
+              ) : (
+                pathTree.map((node) => (
+                  <PathTreeRow
+                    key={node.full}
+                    node={node}
+                    depth={0}
+                    activePath={activePath}
+                    expanded={pathExpanded}
+                    onToggle={(full) =>
+                      setPathExpanded((prev) => {
+                        const next = new Set(prev)
+                        if (next.has(full)) next.delete(full)
+                        else next.add(full)
+                        return next
+                      })
+                    }
+                    onSelect={(full) => selectPath(activePath === full ? null : full)}
+                  />
+                ))
+              )}
+            </div>
+          </>
+        ) : (
+          <>
         <input
           className="tag-rail-search"
           placeholder="Filter tags…"
@@ -318,6 +433,8 @@ export function LibraryView() {
             ))
           )}
         </div>
+          </>
+        )}
       </aside>
       )}
 
@@ -347,7 +464,7 @@ export function LibraryView() {
           <div className="browser-toolbar">
             <span className="browser-count">
               {rows.length} {rows.length === 1 ? 'note' : 'notes'}
-              {activeTag ? ` · #${activeTag}` : ''}
+              {activeTag ? ` · #${activeTag}` : activePath ? ` · ${activePath}` : ''}
             </span>
             <button
               className="browser-new"
