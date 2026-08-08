@@ -2051,6 +2051,53 @@ export async function createCanvasCard(
   }
 }
 
+/** A fresh edge id, so the caller can open the label input before the write. */
+export function newCanvasEdgeId(): string {
+  return `edge-${newCanvasCardId()}`
+}
+
+/** Cross-link edges are their own notes on the board — one per edge, so each
+ * is independently writable and deletable, and every canvas thing stays a vault
+ * note. Tree edges are NOT stored: those are derived from a card's `parent`. */
+export async function createCanvasEdge(
+  boardId: string,
+  edge: { from: string; to: string; label?: string; edgeId?: string },
+): Promise<Note> {
+  const a = requireApi()
+  const edgeId = edge.edgeId ?? newCanvasEdgeId()
+  try {
+    const note = await a.createNote({
+      path: `${CANVAS_PREFIX}${boardId}/${edgeId}`,
+      content: edge.label ?? '',
+      tags: ['canvas'],
+      metadata: {
+        ckind: 'edge',
+        board: boardId,
+        from: edge.from,
+        to: edge.to,
+        label: edge.label ?? '',
+      },
+    })
+    mergeNote(note)
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+export async function deleteCanvasEdge(path: string): Promise<void> {
+  try {
+    await requireApi().deleteNote(path)
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+  const notes = { ...state.notes }
+  delete notes[path]
+  set({ notes })
+}
+
 export async function updateCanvasNote(
   path: string,
   ifUpdatedAt: string,

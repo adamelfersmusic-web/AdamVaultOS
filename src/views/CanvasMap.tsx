@@ -20,6 +20,9 @@ import type { Note } from '../lib/types'
 import {
   canvasCardPath,
   createCanvasCard,
+  createCanvasEdge,
+  deleteCanvasEdge,
+  newCanvasEdgeId,
   newCanvasCardId,
   toast,
   updateCanvasNote,
@@ -70,14 +73,23 @@ function labelOf(n: Note): string {
 export function CanvasMap({
   boardId,
   cards,
+  edges,
+  zoom,
   upsert,
+  onRemove,
   autoEditPath,
   onAutoEditConsumed,
   onOpenCard,
 }: {
   boardId: string
   cards: Note[]
+  /** Cross-link notes on this board — the links a tree cannot express. */
+  edges: Note[]
+  /** Plane scale, so a pointer position can be read back in plane units. */
+  zoom: number
   upsert: (n: Note) => void
+  /** Drop a deleted note (an edge) from the board's local state. */
+  onRemove: (path: string) => void
   /** A card just created on the plane — open its label editor straight away. */
   autoEditPath?: string | null
   onAutoEditConsumed?: () => void
@@ -88,6 +100,13 @@ export function CanvasMap({
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [heights, setHeights] = useState<Record<string, number>>({})
+  // Dragging a new link: the source node, and where the pointer is in PLANE
+  // units so the preview line tracks under any zoom.
+  const [linking, setLinking] = useState<{ from: string; x: number; y: number } | null>(null)
+  const [edgeEditing, setEdgeEditing] = useState<string | null>(null)
+  const [edgeDraft, setEdgeDraft] = useState('')
+  const edgeInputRef = useRef<HTMLInputElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
   const busy = useRef(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -413,6 +432,127 @@ export function CanvasMap({
     return () => window.removeEventListener('keydown', onKey)
   })
 
+  // ── Cross-links ─────────────────────────────────────────────────────────
+  /** Pointer position in PLANE units, so the preview tracks under any zoom. */
+  const planePoint = (clientX: number, clientY: number) => {
+    const host = rootRef.current?.parentElement
+    if (!host) return { x: 0, y: 0 }
+    const r = host.getBoundingClientRect()
+    return { x: (clientX - r.left) / zoom, y: (clientY - r.top) / zoom }
+  }
+
+  const beginLink = (from: string) => (e: React.PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const start = planePoint(e.clientX, e.clientY)
+    setLinking({ from, ...start })
+    const move = (ev: PointerEvent) => setLinking({ from, ...planePoint(ev.clientX, ev.clientY) })
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      setLinking(null)
+      const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null
+      const to = el?.closest<HTMLElement>('[data-path]')?.dataset['path']
+      if (!to || to === from) return
+      addEdge(from, to)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
+
+  /**
+   * Create the link, then open its label input AT ONCE.
+   *
+   * 🔑 That auto-open is the whole design. An unlabelled arrow only says
+   * "related somehow", which the tree already says by being a tree. Labelling
+   * has to be the default and skipping it has to take effort — every tool does
+   * the reverse, which is why boards fill up with meaningless lines.
+   */
+  const addEdge = (from: string, to: string) => {
+    // Optimistic, for the same reason node creation is: the input has to be
+    // ready for the very next keystroke. Waiting for the write means the first
+    // few characters of the label are typed into nothing — which would quietly
+    // defeat the one behaviour this feature exists to encourage.
+    const edgeId = newCanvasEdgeId()
+    const path = canvasCardPath(boardId, edgeId)
+    const now = new Date(0).toISOString()
+    remember({
+      id: path,
+      path,
+      content: '',
+      tags: ['canvas'],
+      metadata: { ckind: 'edge', board: boardId, from, to, label: '' },
+      createdAt: now,
+      updatedAt: now,
+    } as Note)
+    setEdgeDraft('')
+    setEdgeEditing(path)
+
+    const p: Promise<Note> = createCanvasEdge(boardId, { from, to, edgeId })
+      .then((note) => {
+        remember(note)
+        return note
+      })
+      .catch((e) => {
+        toast('error', `Couldn’t link — ${e instanceof Error ? e.message : e}`)
+        throw e
+      })
+    queues.current.set(
+      path,
+      p.catch(() => undefined),
+    )
+  }
+
+  const saveEdgeLabel = (path: string, label: string) =>
+    enqueue(path, async () => {
+      const cur = latest.current.get(path) ?? edges.find((x) => x.path === path)
+      if (!cur) return
+      try {
+        const updated = await updateCanvasNote(cur.path, cur.updatedAt, {
+          content: label.trim(),
+          metadata: { ...cur.metadata, label: label.trim() },
+        })
+        remember(updated)
+      } catch (e) {
+        toast('error', `Couldn’t label link — ${e instanceof Error ? e.message : e}`)
+      }
+    })
+
+  const removeEdge = async (path: string) => {
+    setEdgeEditing((p) => (p === path ? null : p))
+    try {
+      await deleteCanvasEdge(path)
+      onRemove(path)
+    } catch (e) {
+      toast('error', `Couldn’t remove link — ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
+  useEffect(() => {
+    if (edgeEditing) edgeInputRef.current?.focus()
+  }, [edgeEditing])
+
+  /** A straight-sided elbow between two nodes: out, one turn, in. No routing,
+   * no curves. Crossings are allowed — untangling them is a different tool. */
+  const linkGeom = (from: string, to: string) => {
+    const a = posOf.get(from)
+    const b = posOf.get(to)
+    if (!a || !b) return null
+    const ah = heightOf(from)
+    const bh = heightOf(to)
+    const rightward = b.x >= a.x
+    const sx = rightward ? a.x + MAP_CARD_W : a.x
+    const ex = rightward ? b.x : b.x + MAP_CARD_W
+    const sy = a.y + ah / 2
+    const ey = b.y + bh / 2
+    const mid = sx + (ex - sx) / 2
+    const d =
+      Math.abs(sy - ey) < 0.5
+        ? `M ${sx} ${sy} H ${ex}`
+        : `M ${sx} ${sy} H ${mid} V ${ey} H ${ex}`
+    return { d, lx: mid, ly: (sy + ey) / 2 }
+  }
+
   // Edges: right edge of the parent, into the left edge of the child. Out
   // horizontal, turn, in horizontal — no diagonals, no curves.
   const edgePath = (from: string, to: string): string | null => {
@@ -429,12 +569,53 @@ export function CanvasMap({
   }
 
   return (
-    <>
+    <div className="map-layer" ref={rootRef}>
       <svg className="map-edges" data-testid="map-edges" aria-hidden="true">
+        <defs>
+          <marker
+            id="map-arrowhead"
+            viewBox="0 0 8 8"
+            refX="7"
+            refY="4"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M 0 1 L 7 4 L 0 7 z" fill="var(--gold)" />
+          </marker>
+        </defs>
         {links.map((l) => {
           const d = edgePath(l.from, l.to)
           return d ? <path key={`${l.from}->${l.to}`} d={d} className="map-edge" /> : null
         })}
+        {edges.map((e) => {
+          const from = String(e.metadata?.['from'] ?? '')
+          const to = String(e.metadata?.['to'] ?? '')
+          const g = linkGeom(from, to)
+          return g ? (
+            <path
+              key={e.path}
+              d={g.d}
+              className="map-link"
+              data-testid="map-link"
+              markerEnd="url(#map-arrowhead)"
+            />
+          ) : null
+        })}
+        {linking &&
+          (() => {
+            const a = posOf.get(linking.from)
+            if (!a) return null
+            const sx = a.x + MAP_CARD_W
+            const sy = a.y + heightOf(linking.from) / 2
+            return (
+              <path
+                className="map-link is-preview"
+                data-testid="map-link-preview"
+                d={`M ${sx} ${sy} H ${(sx + linking.x) / 2} V ${linking.y} H ${linking.x}`}
+              />
+            )
+          })()}
       </svg>
 
       {placed.map((p) => {
@@ -473,6 +654,72 @@ export function CanvasMap({
               {label || <span className="map-node-empty">Untitled</span>}
             </div>
             {p.collapsedWithChildren && <span className="map-node-badge">…</span>}
+            <span
+              className="map-node-port"
+              data-testid="map-port"
+              title="Drag to another node to link them"
+              onPointerDown={beginLink(p.path)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )
+      })}
+
+      {/* Cross-link labels — a small box at the midpoint, editable in place. */}
+      {edges.map((e) => {
+        const g = linkGeom(String(e.metadata?.['from'] ?? ''), String(e.metadata?.['to'] ?? ''))
+        if (!g) return null
+        const label = String(e.metadata?.['label'] ?? e.content ?? '')
+        const isEditing = edgeEditing === e.path
+        return (
+          <div
+            key={`label:${e.path}`}
+            className={`map-link-label${isEditing ? ' is-editing' : ''}`}
+            data-testid="map-link-label"
+            style={{ left: g.lx, top: g.ly }}
+          >
+            {isEditing ? (
+              <input
+                ref={edgeInputRef}
+                className="map-link-input"
+                data-testid="map-link-input"
+                placeholder="how are they related?"
+                value={edgeDraft}
+                onChange={(ev) => setEdgeDraft(ev.target.value)}
+                onBlur={() => {
+                  setEdgeEditing(null)
+                  void saveEdgeLabel(e.path, edgeDraft)
+                }}
+                onKeyDown={(ev) => {
+                  if (ev.key === 'Enter' || ev.key === 'Escape') {
+                    ev.preventDefault()
+                    setEdgeEditing(null)
+                    void saveEdgeLabel(e.path, edgeDraft)
+                  }
+                }}
+              />
+            ) : (
+              <>
+                <button
+                  className="map-link-text"
+                  onClick={() => {
+                    setEdgeDraft(label)
+                    setEdgeEditing(e.path)
+                  }}
+                >
+                  {label || <em>unlabelled</em>}
+                </button>
+                <button
+                  className="map-link-x"
+                  data-testid="map-link-remove"
+                  title="Remove link"
+                  aria-label="Remove link"
+                  onClick={() => void removeEdge(e.path)}
+                >
+                  ×
+                </button>
+              </>
+            )}
           </div>
         )
       })}
@@ -516,6 +763,6 @@ export function CanvasMap({
           />
         </div>
       )}
-    </>
+    </div>
   )
 }

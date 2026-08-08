@@ -69,6 +69,11 @@ function isBoard(n: Note): boolean {
 function isCard(n: Note): boolean {
   return n.metadata?.['ckind'] === 'card'
 }
+/** A cross-link between two cards. Tree edges are derived from `parent` and
+ * are NOT stored — only the links a tree cannot express live as notes. */
+function isEdge(n: Note): boolean {
+  return n.metadata?.['ckind'] === 'edge'
+}
 
 // The board you were working on — restored on return so "← Canvas" from a
 // card's full page drops you back INTO the board, not at the gallery.
@@ -129,6 +134,10 @@ export function CanvasView() {
     () => (notes ?? []).filter((n) => isCard(n) && boardIdOf(n) === active),
     [notes, active],
   )
+  const activeEdges = useMemo<Note[]>(
+    () => (notes ?? []).filter((n) => isEdge(n) && boardIdOf(n) === active),
+    [notes, active],
+  )
   const activeBoard = boards.find((b) => b.id === active) ?? null
 
   const newCanvas = async () => {
@@ -164,6 +173,7 @@ export function CanvasView() {
       <CanvasSurface
         board={activeBoard}
         cards={activeCards}
+        edges={activeEdges}
         onBack={() => setActive(null)}
         upsert={upsert}
         remove={remove}
@@ -221,6 +231,7 @@ export function CanvasView() {
 function CanvasSurface({
   board,
   cards,
+  edges,
   onBack,
   upsert,
   remove,
@@ -228,6 +239,7 @@ function CanvasSurface({
 }: {
   board: BoardMeta
   cards: Note[]
+  edges: Note[]
   onBack: () => void
   upsert: (n: Note) => void
   remove: (path: string) => void
@@ -564,7 +576,10 @@ function CanvasSurface({
             <CanvasMap
               boardId={board.id}
               cards={cards}
+              edges={edges}
+              zoom={zoom}
               upsert={upsert}
+              onRemove={remove}
               autoEditPath={freshPath}
               onAutoEditConsumed={() => setFreshPath(null)}
               onOpenCard={(path) => navigate({ kind: 'pages', path })}
