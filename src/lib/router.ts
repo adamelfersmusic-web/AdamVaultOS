@@ -19,6 +19,7 @@ export type Route =
   | { kind: 'project'; path: string }
   | { kind: 'note'; path: string }
   | { kind: 'library' }
+  | { kind: 'files' }
   | { kind: 'graph' }
   | { kind: 'explore' }
   | { kind: 'explore-tag'; tag: string }
@@ -58,6 +59,8 @@ export function parseHash(hash: string): Route {
     }
     case 'library':
       return { kind: 'library' }
+    case 'files':
+      return { kind: 'files' }
     case 'canvas':
       return { kind: 'canvas' }
     case 'projects':
@@ -134,6 +137,8 @@ export function hrefFor(route: Route): string {
       return '#/time'
     case 'library':
       return '#/library'
+    case 'files':
+      return '#/files'
     case 'canvas':
       return '#/canvas'
     case 'projects':

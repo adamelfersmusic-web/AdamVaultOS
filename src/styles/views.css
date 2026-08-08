@@ -6560,3 +6560,245 @@ button.task-row-due:hover {
   font-size: 11px;
   color: var(--ink-4);
 }
+
+/* ————————————————————————————————————————————————————————————————
+   Files — the full-screen Finder over vault paths (#/files).
+   Information design lifted from the prototype, palette entirely from
+   tokens.css: --blue for folders, muted ink for files, teal (--gold) as
+   the single accent on breadcrumb / active segment / selection.
+   Classes are namespaced `files-` so nothing here can collide with an
+   existing selector elsewhere in the app.
+   ———————————————————————————————————————————————————————————————— */
+.files {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.files-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+  flex-wrap: wrap;
+}
+.files-spacer {
+  flex: 1 1 auto;
+}
+.files-nav {
+  display: inline-flex;
+  gap: 2px;
+  flex: none;
+}
+.files-nav button {
+  width: 28px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1;
+}
+.files-nav button:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.files-nav button:disabled {
+  color: var(--ink-4);
+  cursor: default;
+}
+
+/* breadcrumb — the one place the accent earns its keep */
+.files-crumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12.5px;
+}
+.files-crumb-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.files-crumb {
+  padding: 3px 6px;
+  border-radius: 5px;
+  color: var(--gold);
+  font-size: 12.5px;
+}
+.files-crumb:hover {
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  color: var(--gold-bright);
+}
+.files-crumb-here {
+  padding: 3px 6px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.files-crumb-sep {
+  color: var(--ink-4);
+  user-select: none;
+}
+
+/* segmented controls — state visible, one click, never a dropdown */
+.files-seg {
+  display: inline-flex;
+  gap: 2px;
+  flex: none;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 2px;
+}
+.files-seg button {
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  color: var(--ink-3);
+}
+.files-seg button:hover {
+  color: var(--ink-2);
+}
+.files-seg button.is-on {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+.files-pane {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 14px 40px;
+}
+.files-empty {
+  color: var(--ink-4);
+  font-size: 13px;
+  padding: 28px 4px;
+}
+
+/* icons: kind is read BEFORE the name — this does more than anything else */
+.files-ico {
+  width: 26px;
+  height: 26px;
+  flex: none;
+}
+.files-ico-folder {
+  color: var(--blue);
+}
+.files-ico-file {
+  color: var(--ink-4);
+}
+
+/* grid — cards big enough to hit, small enough to see ~30 at once */
+.files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 8px;
+}
+.files-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  text-align: center;
+  transition: 0.12s ease;
+}
+.files-card:hover {
+  background: var(--surface);
+  border-color: var(--line);
+}
+.files-card.is-selected {
+  background: color-mix(in srgb, var(--gold) 13%, transparent);
+  border-color: color-mix(in srgb, var(--gold) 40%, transparent);
+}
+.files-card-name {
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.files-card-meta {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+  color: var(--ink-4);
+}
+
+/* list — dense rows, digits in columns that don't jitter */
+.files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.files-list-head,
+.files-row {
+  display: grid;
+  grid-template-columns: 26px 1fr 130px 92px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+.files-list-head {
+  padding: 0 10px 7px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 5px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.files-row {
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  transition: 0.12s ease;
+}
+.files-row:hover {
+  background: var(--surface);
+  border-color: var(--line);
+}
+.files-row.is-selected {
+  background: color-mix(in srgb, var(--gold) 13%, transparent);
+  border-color: color-mix(in srgb, var(--gold) 40%, transparent);
+}
+.files-row .files-ico {
+  width: 18px;
+  height: 18px;
+}
+.files-row-name {
+  font-size: 12.5px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.files-row-cell {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--ink-4);
+}
+.files-r {
+  text-align: right;
+}
+
+/* the status line — tells you the size of what you're standing in */
+.files-status {
+  flex: none;
+  padding: 8px 14px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--ink-4);
+}
