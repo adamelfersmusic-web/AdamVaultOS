@@ -199,3 +199,80 @@ test('invalid syntax degrades to readable text instead of crashing the note', as
   await expect(page.locator('.page-prose')).toContainText('tail')
   expect(errors, errors.join('\n')).toEqual([])
 })
+
+// ── The other two surfaces ───────────────────────────────────────────────────
+// A note is rendered in three places. Pages (TipTap) is covered above; these
+// cover the read view — which is also the Library's preview pane — and the
+// inline editor that its Edit button opens.
+
+test('the read view renders diagrams too (it is the Library preview pane)', async ({ page }) => {
+  await seed(
+    page,
+    'atelier/diag-read',
+    '# Read view\n\nProse above.\n\n```mermaid\ngraph TD\n  A[Start] --> B[Next]\n```\n\nProse below.\n',
+  )
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('http://127.0.0.1:4173/#/note/' + encodeURIComponent('atelier/diag-read'))
+  const body = page.getByTestId('note-body')
+  await expect(body).toBeVisible()
+
+  // The fence became a diagram, not a <pre> of grey code.
+  await expect(body.locator('.mdx-mermaid svg')).toBeVisible()
+  await expect(body.locator('code.language-mermaid')).toHaveCount(0)
+  await expect(body).toContainText('Prose below.')
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
+
+test('a note with no diagram loads mermaid not at all', async ({ page }) => {
+  await seed(page, 'atelier/plain', '# Plain\n\nJust words, no diagram.\n')
+  await connectViaStorage(page)
+
+  const requested: string[] = []
+  page.on('request', (r) => {
+    if (/mermaid/i.test(r.url())) requested.push(r.url())
+  })
+
+  await page.goto('http://127.0.0.1:4173/#/note/' + encodeURIComponent('atelier/plain'))
+  await expect(page.getByTestId('note-body')).toContainText('Just words')
+  await page.waitForTimeout(1200)
+
+  // The whole point of the cheap querySelectorAll guard: zero network cost on
+  // the notes that have no diagram, which is nearly all of them.
+  expect(requested, requested.join('\n')).toEqual([])
+})
+
+test('the inline editor keeps a diagram as a plain fence, byte-stable', async ({ page }) => {
+  const original = '# Inline\n\nProse above.\n\n```mermaid\ngraph LR\n  A --> B\n```\n\nProse below.'
+  await seed(page, 'atelier/diag-edit', original)
+  await connectViaStorage(page)
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('http://127.0.0.1:4173/#/note/' + encodeURIComponent('atelier/diag-edit'))
+  await expect(page.getByTestId('note-body')).toBeVisible()
+  await page.getByRole('button', { name: /edit/i }).first().click()
+
+  // In the inline editor it is the same live block as in Pages.
+  await expect(page.getByTestId('mermaid-render')).toBeVisible()
+  await expect(page.getByTestId('mermaid-render').locator('.mdx-mermaid svg')).toBeVisible()
+
+  // Edit a paragraph far from the diagram and save. Everything except that one
+  // character must come back byte-identical — including the fence.
+  await page.locator('.ProseMirror').getByText('Prose below.').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type('X')
+  await page.getByTestId('savebar').getByRole('button', { name: /save/i }).click()
+
+  await expect.poll(() => savedContent(page, 'atelier/diag-edit')).toContain('Prose below.X')
+  expect(await savedContent(page, 'atelier/diag-edit')).toBe(
+    original.replace('Prose below.', 'Prose below.X'),
+  )
+
+  expect(errors, errors.join('\n')).toEqual([])
+})
