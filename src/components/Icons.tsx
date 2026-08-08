@@ -60,6 +60,10 @@ export const IconLibrary = (p: IconProps = {}) =>
     p,
   )
 
+/** Nav-rail folder — the Files screen. */
+export const IconFolderRail = (p: IconProps = {}) =>
+  svg(<path d="M2 4.5a1 1 0 0 1 1-1h2.6a1 1 0 0 1 .8.4l.8 1.1H13a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-7.5Z" />, p)
+
 export const IconPlus = (p: IconProps = {}) =>
   svg(<path d="M8 3.2v9.6M3.2 8h9.6" />, p)
 

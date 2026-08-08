@@ -13,6 +13,7 @@ import {
   IconGem,
   IconGraph,
   IconLibrary,
+  IconFolderRail,
   IconMoon,
   IconPage,
   IconSpark,
@@ -144,6 +145,13 @@ const RAIL_TABS: RailTab[] = [
     href: '#/explore',
     icon: <IconGem size={15} />,
     active: (r) => r.kind === 'explore' || r.kind === 'explore-tag',
+  },
+  {
+    key: 'files',
+    label: 'Files',
+    href: '#/files',
+    icon: <IconFolderRail size={15} />,
+    active: (r) => r.kind === 'files',
   },
   {
     key: 'library',

@@ -10,6 +10,7 @@ import { ConnectView } from './views/ConnectView'
 import { DatabaseView } from './views/DatabaseView'
 import { NotePage } from './views/NotePage'
 import { LibraryView } from './views/LibraryView'
+import { FilesView } from './views/FilesView'
 import { CanvasView } from './views/CanvasView'
 import { ProjectsView } from './views/ProjectsView'
 import { TasksView } from './views/TasksView'
@@ -183,6 +184,7 @@ export default function App() {
         {route.kind === 'time' && <TimeView />}
         {route.kind === 'note' && <NotePage path={route.path} key={route.path} />}
         {route.kind === 'library' && <LibraryView />}
+        {route.kind === 'files' && <FilesView />}
         {(route.kind === 'explore' || route.kind === 'explore-tag') && (
           <Suspense fallback={null}>
             <ExploreView tag={route.kind === 'explore-tag' ? route.tag : undefined} />
