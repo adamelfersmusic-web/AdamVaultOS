@@ -16,6 +16,7 @@ import {
   createCanvasGroup,
   deleteCanvasBoard,
   deleteCanvasCard,
+  fetchLinkTargets,
   loadCanvasNotes,
   movePage,
   toast,
@@ -31,6 +32,15 @@ import { CanvasMap } from './CanvasMap'
 import { CanvasGroupBox, geomOf } from './CanvasGroupBox'
 import { groupCounts, type Placed } from '../lib/canvasGroups'
 import { toMermaid, toMermaidFence, type MermaidExport } from '../lib/canvasMermaid'
+import {
+  indexById,
+  refOf,
+  resolveRef,
+  titleForPath,
+  type RefLookup,
+} from '../lib/canvasRefs'
+import { fuzzyScore, tokenPrefixScore } from '../lib/fuzzy'
+import { isCanvasPart } from '../lib/canvasParts'
 import { Modal } from '../components/Modal'
 
 const CANVAS_PREFIX = 'canvas/'
@@ -270,6 +280,30 @@ function CanvasSurface({
   // The card that should open straight into edit mode (just created).
   const [freshPath, setFreshPath] = useState<string | null>(null)
   useEffect(() => setTitle(board.title), [board.title, board.path])
+
+  // ── Ref cards ───────────────────────────────────────────────────────────
+  // Every ref on the board resolves against ONE index, built from the vault
+  // list the [[ menu already caches — so a map of fifty linked notes costs a
+  // single (usually already-warm) request, not fifty. Fetched only when the
+  // board actually holds a ref; a board of plain cards asks for nothing.
+  const hasRefs = useMemo(() => cards.some((c) => refOf(c.metadata) !== null), [cards])
+  const [refIndex, setRefIndex] = useState<Map<string, RefLookup> | null>(null)
+  const [picking, setPicking] = useState(false)
+  useEffect(() => {
+    if (!hasRefs) return
+    let alive = true
+    void fetchLinkTargets()
+      .then((all) => {
+        if (alive) setRefIndex(indexById(all))
+      })
+      // A failed index leaves every ref 'loading', which reads as "not known
+      // yet" — never as "your note is gone".
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasRefs, board.id])
 
   // ── Zoom ────────────────────────────────────────────────────────────────
   // The plane is scaled with a CSS transform; everything stored stays in PLANE
@@ -575,6 +609,45 @@ function CanvasSurface({
     await createAt(cx - CARD_W / 2, cy - CARD_H / 2)
   }
 
+  /** Link an existing note onto the board as a ref card.
+   *
+   * The card's BODY is the target's title. That is not duplication for its own
+   * sake — it is the label mermaid export reads, the text map mode measures,
+   * and the only thing left to read if the note is later deleted. Everything
+   * live (the path, the summary, whether it moved) is resolved from the vault
+   * at render, never stored. */
+  const linkNote = async (target: Note) => {
+    setPicking(false)
+    const el = scrollRef.current
+    const cx = ((el?.scrollLeft ?? 0) + (el?.clientWidth ?? 0) / 2) / zoom
+    const cy = ((el?.scrollTop ?? 0) + (el?.clientHeight ?? 0) / 2) / zoom
+    const trunkOrder = mapMode
+      ? Math.max(
+          0,
+          ...cards
+            .filter((c) => !c.metadata?.['parent'])
+            .map((c) => Number(c.metadata?.['order']) || 0),
+        ) + 10
+      : undefined
+    try {
+      const note = await createCanvasCard(board.id, {
+        x: Math.max(0, snap(cx - CARD_W / 2)),
+        y: Math.max(0, snap(cy - CARD_H / 2)),
+        w: CARD_W,
+        h: CARD_H,
+        content: titleForPath(target.path),
+        ref: { id: target.id, path: target.path },
+        ...(mapMode ? { parent: null, order: trunkOrder } : {}),
+      })
+      upsert(note)
+      // The index may predate this note (a fresh page linked seconds after it
+      // was made), so fold the target in rather than leaving it 'missing'.
+      setRefIndex((prev) => (prev ? new Map(prev).set(target.id, target) : prev))
+    } catch (e) {
+      toast('error', `Couldn’t link note — ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
   // C1 — double-click empty canvas → a card right there, already in edit.
   const onPlaneDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.canvas-card')) return
@@ -696,6 +769,14 @@ function CanvasSurface({
               Group
             </button>
           )}
+          <button
+            className="btn btn-ghost"
+            data-testid="canvas-link-note"
+            title="Put an existing note on the board — it stays one note, in one place"
+            onClick={() => setPicking(true)}
+          >
+            Link note
+          </button>
           <button className="btn btn-gold" onClick={() => void addCard()}>
             <IconPlus size={13} /> Add card
           </button>
@@ -733,6 +814,10 @@ function CanvasSurface({
             ✕
           </button>
         </div>
+      )}
+
+      {picking && (
+        <RefPicker onClose={() => setPicking(false)} onPick={(n) => void linkNote(n)} />
       )}
 
       {exported && (
@@ -845,6 +930,7 @@ function CanvasSurface({
               zoom={zoom}
               upsert={upsert}
               onRemove={remove}
+              refIndex={refIndex}
               autoEditPath={freshPath}
               onAutoEditConsumed={() => setFreshPath(null)}
             />
@@ -873,6 +959,7 @@ function CanvasSurface({
                   override={carry[card.path]}
                   upsert={upsert}
                   remove={remove}
+                  refIndex={refIndex}
                   autoEdit={card.path === freshPath}
                   onEditClosed={() => setFreshPath((p) => (p === card.path ? null : p))}
                 />
@@ -883,6 +970,101 @@ function CanvasSurface({
         </div>
       </div>
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Pick a note to put on the board.
+//
+// Returns the whole Note, not a path, because the card must store the note's
+// ID — the point of the feature. A picker that handed back a path would make
+// the caller look the id up again, and the first time that lookup missed you
+// would get a path-keyed card with none of the durability.
+// ---------------------------------------------------------------------------
+
+function RefPicker({
+  onClose,
+  onPick,
+}: {
+  onClose: () => void
+  onPick: (n: Note) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [all, setAll] = useState<Note[] | null>(null)
+
+  useEffect(() => {
+    void fetchLinkTargets()
+      .then(setAll)
+      .catch(() => setAll([]))
+  }, [])
+
+  const q = query.trim()
+  const matches = useMemo(() => {
+    // Canvas cards are not link targets — offering a board's own nodes here
+    // would rebuild the clutter this feature is meant to avoid.
+    const list = (all ?? []).filter((n) => !isCanvasPart(n))
+    if (!q) return [...list].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)).slice(0, 24)
+    return list
+      .map((n) => {
+        const title = titleForPath(n.path)
+        return {
+          n,
+          s: Math.max(
+            fuzzyScore(q, title) ?? -Infinity,
+            (fuzzyScore(q, n.path) ?? -Infinity) - 1, // title beats path
+            tokenPrefixScore(q, title, n.path) ?? -Infinity,
+          ),
+        }
+      })
+      .filter((x) => x.s !== -Infinity)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 24)
+      .map((x) => x.n)
+  }, [q, all])
+
+  return (
+    <Modal onClose={onClose} width={460} labelledBy="refpicker-title">
+      <div className="subpage-picker" data-testid="ref-picker">
+        <h2 id="refpicker-title" className="subpage-picker-title">
+          Link a note
+        </h2>
+        <p className="modal-sub">
+          The note stays where it is — the card is a window onto it, not a copy.
+        </p>
+        <input
+          autoFocus
+          className="subpage-search"
+          placeholder="Search every note in the vault…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && matches[0]) {
+              e.preventDefault()
+              onPick(matches[0])
+            }
+          }}
+        />
+        <div className="subpage-list">
+          {all === null ? (
+            <p className="subpage-empty">Loading the vault…</p>
+          ) : matches.length === 0 ? (
+            <p className="subpage-empty">No notes match.</p>
+          ) : (
+            matches.map((n) => (
+              <button
+                key={n.path}
+                className="subpage-row"
+                data-testid="ref-picker-row"
+                onClick={() => onPick(n)}
+              >
+                <span className="subpage-row-title">{titleForPath(n.path)}</span>
+                <span className="subpage-row-meta">{n.path}</span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </Modal>
   )
 }
 
@@ -903,6 +1085,7 @@ function CanvasCard({
   override,
   upsert,
   remove,
+  refIndex,
   autoEdit = false,
   onEditClosed,
 }: {
@@ -914,6 +1097,8 @@ function CanvasCard({
   override?: { x: number; y: number }
   upsert: (n: Note) => void
   remove: (path: string) => void
+  /** Vault notes by id, for resolving a ref card. null = not loaded yet. */
+  refIndex?: Map<string, RefLookup> | null
   /** Freshly created via double-click — open straight into edit. */
   autoEdit?: boolean
   onEditClosed?: () => void
@@ -1028,6 +1213,18 @@ function CanvasCard({
 
   const empty = !(note.content ?? '').trim()
 
+  // A ref card is a window onto a note, not a copy of it. It has no body of
+  // its own to edit — everything it shows is resolved live — so editing is off
+  // and double-click opens the real note instead.
+  const ref = refOf(note.metadata)
+  const resolved = ref ? resolveRef(ref, refIndex ?? null) : null
+  const openTarget = () => {
+    if (!resolved) return
+    const path = resolved.path
+    if (!path) return
+    navigate(path.startsWith('pages/') ? { kind: 'pages', path } : { kind: 'note', path })
+  }
+
   // Right-click → promote menu. A card is a canvas thing until YOU choose:
   // open it as a full page (stays on the canvas) or move it into Pages.
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
@@ -1063,13 +1260,16 @@ function CanvasCard({
 
   return (
     <article
-      className={`canvas-card${live ? ' is-live' : ''}${editing ? ' is-editing' : ''}`}
+      className={`canvas-card${live ? ' is-live' : ''}${editing ? ' is-editing' : ''}${ref ? ' is-ref' : ''}`}
       data-path={note.path}
       style={{ left: geom.x, top: geom.y, width: geom.w, height: geom.h }}
       onContextMenu={(e) => {
         e.preventDefault()
         e.stopPropagation()
-        setMenu({ x: e.clientX, y: e.clientY })
+        // The promote menu moves the CARD's own note. On a ref that would
+        // re-file the little pointer and leave the real note where it was —
+        // the opposite of what "turn into a page" reads as.
+        if (!ref) setMenu({ x: e.clientX, y: e.clientY })
       }}
     >
       {menu && (
@@ -1104,18 +1304,62 @@ function CanvasCard({
       <header className="canvas-card-head" onPointerDown={beginDrag('move')}>
         <span className="canvas-card-grip" aria-hidden="true">⠿</span>
         <div className="canvas-card-tools">
-          {!editing && (
-            <button className="canvas-card-btn" title="Edit" onClick={() => setEditing(true)}>
-              ✎
+          {ref ? (
+            <button
+              className="canvas-card-btn"
+              data-testid="ref-open"
+              title="Open the note"
+              onClick={openTarget}
+            >
+              ↗
             </button>
+          ) : (
+            !editing && (
+              <button className="canvas-card-btn" title="Edit" onClick={() => setEditing(true)}>
+                ✎
+              </button>
+            )
           )}
-          <button className="canvas-card-btn" title="Delete card" onClick={() => void del()}>
+          <button
+            className="canvas-card-btn"
+            title={ref ? 'Remove from board (the note itself is untouched)' : 'Delete card'}
+            onClick={() => void del()}
+          >
             <IconClose size={11} />
           </button>
         </div>
       </header>
 
-      {editing ? (
+      {resolved ? (
+        <div
+          className="canvas-card-body canvas-ref-body"
+          data-testid="ref-body"
+          data-ref-status={resolved.status}
+          onDoubleClick={openTarget}
+          title={resolved.status === 'ok' ? `Double-click to open ${resolved.path}` : undefined}
+        >
+          <span className="canvas-ref-title">{resolved.title}</span>
+          {resolved.status === 'ok' ? (
+            <>
+              <span className="canvas-ref-path">{resolved.path}</span>
+              {resolved.summary && (
+                <span className="canvas-ref-summary">{resolved.summary}</span>
+              )}
+              {resolved.moved && (
+                <span className="canvas-ref-moved" data-testid="ref-moved">
+                  moved — followed it here
+                </span>
+              )}
+            </>
+          ) : resolved.status === 'loading' ? (
+            <span className="canvas-ref-path">finding it…</span>
+          ) : (
+            <span className="canvas-ref-gone" data-testid="ref-gone">
+              This note is gone from the vault{resolved.path ? ` (${resolved.path})` : ''}
+            </span>
+          )}
+        </div>
+      ) : editing ? (
         <div className="canvas-card-edit">
           <CardEditor
             value={note.content ?? ''}

@@ -23,6 +23,7 @@
     "src/lib/canvasLayout.ts",
     "src/lib/canvasMermaid.ts",
     "src/lib/canvasGroups.ts",
-    "src/lib/canvasParts.ts"
+    "src/lib/canvasParts.ts",
+    "src/lib/canvasRefs.ts"
   ]
 }
