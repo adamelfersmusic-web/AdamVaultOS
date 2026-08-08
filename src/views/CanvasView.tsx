@@ -25,6 +25,7 @@ import { renderMarkdown } from '../lib/markdown'
 import { relativeTime, slugify } from '../lib/format'
 import { IconPlus, IconClose, IconBack } from '../components/Icons'
 import { CardEditor } from '../components/CardEditor'
+import { CanvasMap } from './CanvasMap'
 
 const CANVAS_PREFIX = 'canvas/'
 const GRID = 20
@@ -32,6 +33,18 @@ const CARD_W = 240
 const CARD_H = 150
 const MIN_W = 140
 const MIN_H = 80
+// Zoom is viewport state only — it is never written to a note.
+const ZOOM_KEY = 'adamvaultos.canvas.zoom'
+const MIN_ZOOM = 0.25
+const MAX_ZOOM = 2
+// The plane grows to fit the furthest card plus a margin. It does NOT grow
+// up or left: card x/y stay clamped at 0, so this is a big zoomable board,
+// not an infinite one — negative space would be a viewport rewrite.
+const PLANE_MIN_W = 3000
+const PLANE_MIN_H = 2200
+const PLANE_MARGIN = 600
+
+const clampZoom = (z: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(z * 100) / 100))
 
 const snap = (v: number) => Math.round(v / GRID) * GRID
 const num = (v: unknown, fallback: number) =>
@@ -43,6 +56,8 @@ interface BoardMeta {
   path: string
   updatedAt: string
   count: number
+  /** 'map' auto-places from structure; 'free' (default) uses stored x/y. */
+  mode: 'map' | 'free'
 }
 
 function boardIdOf(note: Note): string {
@@ -53,6 +68,11 @@ function isBoard(n: Note): boolean {
 }
 function isCard(n: Note): boolean {
   return n.metadata?.['ckind'] === 'card'
+}
+/** A cross-link between two cards. Tree edges are derived from `parent` and
+ * are NOT stored — only the links a tree cannot express live as notes. */
+function isEdge(n: Note): boolean {
+  return n.metadata?.['ckind'] === 'edge'
 }
 
 // The board you were working on — restored on return so "← Canvas" from a
@@ -105,12 +125,17 @@ export function CanvasView() {
         path: n.path,
         updatedAt: n.updatedAt,
         count: counts.get(boardIdOf(n)) ?? 0,
+        mode: (n.metadata?.['mode'] === 'map' ? 'map' : 'free') as 'map' | 'free',
       }))
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
   }, [notes])
 
   const activeCards = useMemo<Note[]>(
     () => (notes ?? []).filter((n) => isCard(n) && boardIdOf(n) === active),
+    [notes, active],
+  )
+  const activeEdges = useMemo<Note[]>(
+    () => (notes ?? []).filter((n) => isEdge(n) && boardIdOf(n) === active),
     [notes, active],
   )
   const activeBoard = boards.find((b) => b.id === active) ?? null
@@ -148,6 +173,7 @@ export function CanvasView() {
       <CanvasSurface
         board={activeBoard}
         cards={activeCards}
+        edges={activeEdges}
         onBack={() => setActive(null)}
         upsert={upsert}
         remove={remove}
@@ -205,6 +231,7 @@ export function CanvasView() {
 function CanvasSurface({
   board,
   cards,
+  edges,
   onBack,
   upsert,
   remove,
@@ -212,6 +239,7 @@ function CanvasSurface({
 }: {
   board: BoardMeta
   cards: Note[]
+  edges: Note[]
   onBack: () => void
   upsert: (n: Note) => void
   remove: (path: string) => void
@@ -223,13 +251,162 @@ function CanvasSurface({
   const [freshPath, setFreshPath] = useState<string | null>(null)
   useEffect(() => setTitle(board.title), [board.title, board.path])
 
+  // ── Zoom ────────────────────────────────────────────────────────────────
+  // The plane is scaled with a CSS transform; everything stored stays in PLANE
+  // units, so zoom is pure viewport state and never reaches the vault. Every
+  // screen→plane conversion below divides by `zoom` — miss one and a card
+  // lands somewhere you didn't drop it.
+  const [zoom, setZoom] = useState<number>(() => {
+    const v = Number(localStorage.getItem(ZOOM_KEY))
+    return Number.isFinite(v) && v >= MIN_ZOOM && v <= MAX_ZOOM ? v : 1
+  })
+  const zoomRef = useRef(zoom)
+  zoomRef.current = zoom
+  const setZoomPersisted = (z: number) => {
+    const next = clampZoom(z)
+    localStorage.setItem(ZOOM_KEY, String(next))
+    setZoom(next)
+  }
+
+  /** Zoom about a screen point, keeping whatever is under it exactly there. */
+  const zoomAt = (nextRaw: number, clientX: number, clientY: number) => {
+    const el = scrollRef.current
+    const z0 = zoomRef.current
+    const z1 = clampZoom(nextRaw)
+    if (z1 === z0 || !el) {
+      setZoomPersisted(z1)
+      return
+    }
+    const rect = el.getBoundingClientRect()
+    // Where the cursor sits in PLANE units — invariant across the zoom.
+    const px = (el.scrollLeft + clientX - rect.left) / z0
+    const py = (el.scrollTop + clientY - rect.top) / z0
+    setZoomPersisted(z1)
+    // Re-anchor after the new scale has been laid out.
+    requestAnimationFrame(() => {
+      const s = scrollRef.current
+      if (!s) return
+      s.scrollLeft = px * z1 - (clientX - rect.left)
+      s.scrollTop = py * z1 - (clientY - rect.top)
+    })
+  }
+
+  // ⌘/ctrl + wheel zooms. A bare wheel keeps scrolling the board, as it does
+  // today. Non-passive so the browser's own page zoom can be prevented.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      zoomAt(zoomRef.current * (e.deltaY < 0 ? 1.1 : 1 / 1.1), e.clientX, e.clientY)
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Pan ─────────────────────────────────────────────────────────────────
+  // Hold space (or use the middle button) and drag the board around. Space is
+  // ignored while typing, so it can't hijack the space bar inside a card.
+  const [spaceDown, setSpaceDown] = useState(false)
+  useEffect(() => {
+    const typing = (t: EventTarget | null) => {
+      const el = t as HTMLElement | null
+      return !!el?.closest?.('input, textarea, [contenteditable="true"], .ProseMirror')
+    }
+    const down = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !typing(e.target)) {
+        e.preventDefault()
+        setSpaceDown(true)
+      }
+    }
+    const up = (e: KeyboardEvent) => {
+      if (e.code === 'Space') setSpaceDown(false)
+    }
+    const blur = () => setSpaceDown(false)
+    window.addEventListener('keydown', down)
+    window.addEventListener('keyup', up)
+    window.addEventListener('blur', blur)
+    return () => {
+      window.removeEventListener('keydown', down)
+      window.removeEventListener('keyup', up)
+      window.removeEventListener('blur', blur)
+    }
+  }, [])
+
+  const beginPan = (e: React.PointerEvent<HTMLDivElement>) => {
+    const middle = e.button === 1
+    if (!middle && !spaceDown) return
+    e.preventDefault()
+    const el = scrollRef.current
+    if (!el) return
+    const sx = e.clientX
+    const sy = e.clientY
+    const left = el.scrollLeft
+    const top = el.scrollTop
+    const move = (ev: PointerEvent) => {
+      el.scrollLeft = left - (ev.clientX - sx)
+      el.scrollTop = top - (ev.clientY - sy)
+    }
+    const end = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', end)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', end)
+  }
+
+  // Map vs free. Stored on the board note, so the board reopens the way you
+  // left it. Map mode computes positions; free mode owns the stored x/y and
+  // map mode never overwrites them — the toggle is lossless both ways.
+  const mapMode = board.mode === 'map'
+  const setMode = async (mode: 'map' | 'free') => {
+    if (mode === (board.mode ?? 'free')) return
+    try {
+      const note = await updateCanvasNote(board.path, board.updatedAt, {
+        metadata: { ckind: 'board', title: board.title, mode },
+      })
+      onRenamed(note)
+    } catch (e) {
+      toast('error', `Couldn’t switch mode — ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
+  // Plane extents follow the furthest card, so the board grows as work spreads
+  // instead of stopping at a hard edge.
+  const { planeW, planeH } = useMemo(() => {
+    let right = 0
+    let bottom = 0
+    for (const c of cards) {
+      right = Math.max(right, num(c.metadata?.['x'], 0) + num(c.metadata?.['w'], CARD_W))
+      bottom = Math.max(bottom, num(c.metadata?.['y'], 0) + num(c.metadata?.['h'], CARD_H))
+    }
+    return {
+      planeW: Math.max(PLANE_MIN_W, right + PLANE_MARGIN),
+      planeH: Math.max(PLANE_MIN_H, bottom + PLANE_MARGIN),
+    }
+  }, [cards])
+
   const createAt = async (x: number, y: number) => {
     try {
+      // In map mode a card dropped on empty plane is a new trunk: it needs a
+      // parent (none) and a place among the other trunks, or the layout engine
+      // has nothing to read.
+      const trunkOrder = mapMode
+        ? Math.max(
+            0,
+            ...cards
+              .filter((c) => !c.metadata?.['parent'])
+              .map((c) => Number(c.metadata?.['order']) || 0),
+          ) + 10
+        : undefined
       const note = await createCanvasCard(board.id, {
         x: Math.max(0, snap(x)),
         y: Math.max(0, snap(y)),
         w: CARD_W,
         h: CARD_H,
+        ...(mapMode ? { parent: null, order: trunkOrder } : {}),
       })
       upsert(note)
       setFreshPath(note.path) // open it in edit immediately
@@ -240,15 +417,17 @@ function CanvasSurface({
 
   const addCard = async () => {
     const el = scrollRef.current
-    // Drop the card near the top-left of what's currently in view.
-    await createAt((el?.scrollLeft ?? 0) + 48, (el?.scrollTop ?? 0) + 48)
+    // Drop the card near the top-left of what's currently in view — scroll is
+    // in screen px, the card's x/y are plane units.
+    await createAt((el?.scrollLeft ?? 0) / zoom + 48, (el?.scrollTop ?? 0) / zoom + 48)
   }
 
   // C1 — double-click empty canvas → a card right there, already in edit.
   const onPlaneDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.canvas-card')) return
+    // The plane's rect is already scaled, so the offset within it is screen px.
     const rect = e.currentTarget.getBoundingClientRect()
-    void createAt(e.clientX - rect.left, e.clientY - rect.top)
+    void createAt((e.clientX - rect.left) / zoom, (e.clientY - rect.top) / zoom)
   }
 
   const commitTitle = async () => {
@@ -296,6 +475,54 @@ function CanvasSurface({
         <span className="canvas-bar-count">
           {cards.length} {cards.length === 1 ? 'card' : 'cards'}
         </span>
+        <div className="canvas-mode" role="group" aria-label="Layout" data-testid="canvas-mode">
+          <button
+            className={!mapMode ? 'is-on' : ''}
+            aria-pressed={!mapMode}
+            data-testid="mode-free"
+            title="Free canvas — you place the cards"
+            onClick={() => void setMode('free')}
+          >
+            Free
+          </button>
+          <button
+            className={mapMode ? 'is-on' : ''}
+            aria-pressed={mapMode}
+            data-testid="mode-map"
+            title="Map — Enter for a sibling, Tab for a child; placement is automatic"
+            onClick={() => void setMode('map')}
+          >
+            Map
+          </button>
+        </div>
+        <div className="canvas-zoom" role="group" aria-label="Zoom" data-testid="canvas-zoom">
+          <button
+            title="Zoom out"
+            aria-label="Zoom out"
+            data-testid="zoom-out"
+            disabled={zoom <= MIN_ZOOM}
+            onClick={() => setZoomPersisted(zoom / 1.25)}
+          >
+            −
+          </button>
+          <button
+            className="canvas-zoom-level"
+            title="Reset to 100%"
+            data-testid="zoom-reset"
+            onClick={() => setZoomPersisted(1)}
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            title="Zoom in"
+            aria-label="Zoom in"
+            data-testid="zoom-in"
+            disabled={zoom >= MAX_ZOOM}
+            onClick={() => setZoomPersisted(zoom * 1.25)}
+          >
+            +
+          </button>
+        </div>
         <div className="canvas-bar-actions">
           <button className="btn btn-gold" onClick={() => void addCard()}>
             <IconPlus size={13} /> Add card
@@ -306,24 +533,71 @@ function CanvasSurface({
         </div>
       </header>
 
-      <div className="canvas-scroll" ref={scrollRef}>
-        <div className="canvas-plane" onDoubleClick={onPlaneDoubleClick} data-testid="canvas-plane">
+      <div
+        className={`canvas-scroll${spaceDown ? ' is-pannable' : ''}`}
+        ref={scrollRef}
+        onPointerDown={beginPan}
+      >
+        {/* The sizer carries the SCALED extents — a CSS transform doesn't
+            change layout size, so without it the scrollbars would describe the
+            un-zoomed plane and half the board would be unreachable. */}
+        <div
+          className="canvas-sizer"
+          style={{ width: planeW * zoom, height: planeH * zoom }}
+        >
+        <div
+          className="canvas-plane"
+          onDoubleClick={onPlaneDoubleClick}
+          data-testid="canvas-plane"
+          style={{
+            width: planeW,
+            height: planeH,
+            transform: `scale(${zoom})`,
+            transformOrigin: '0 0',
+          }}
+        >
           {cards.length === 0 && (
             <div className="canvas-empty-hint">
-              <b>Double-click anywhere</b> to drop a card. Drag the header to move · drag the
-              corner to resize · <code>/todo</code> for checkboxes, Tab to nest.
+              {mapMode ? (
+                <>
+                  <b>Double-click anywhere</b> to start the trunk. Then <kbd>Enter</kbd> for a
+                  sibling, <kbd>Tab</kbd> for a child, <kbd>⇧Tab</kbd> to outdent — placement is
+                  automatic.
+                </>
+              ) : (
+                <>
+                  <b>Double-click anywhere</b> to drop a card. Drag the header to move · drag the
+                  corner to resize · <code>/todo</code> for checkboxes, Tab to nest.
+                </>
+              )}
             </div>
           )}
-          {cards.map((card) => (
-            <CanvasCard
-              key={card.path}
-              note={card}
+          {mapMode ? (
+            <CanvasMap
+              boardId={board.id}
+              cards={cards}
+              edges={edges}
+              zoom={zoom}
               upsert={upsert}
-              remove={remove}
-              autoEdit={card.path === freshPath}
-              onEditClosed={() => setFreshPath((p) => (p === card.path ? null : p))}
+              onRemove={remove}
+              autoEditPath={freshPath}
+              onAutoEditConsumed={() => setFreshPath(null)}
+              onOpenCard={(path) => navigate({ kind: 'pages', path })}
             />
-          ))}
+          ) : (
+            cards.map((card) => (
+              <CanvasCard
+                key={card.path}
+                note={card}
+                zoom={zoom}
+                upsert={upsert}
+                remove={remove}
+                autoEdit={card.path === freshPath}
+                onEditClosed={() => setFreshPath((p) => (p === card.path ? null : p))}
+              />
+            ))
+          )}
+        </div>
         </div>
       </div>
     </div>
@@ -343,12 +617,16 @@ interface Geom {
 
 function CanvasCard({
   note,
+  zoom,
   upsert,
   remove,
   autoEdit = false,
   onEditClosed,
 }: {
   note: Note
+  /** Plane scale. Pointer deltas arrive in SCREEN px and must be divided by
+   * it — without this a card at 50% zoom moves twice as far as the cursor. */
+  zoom: number
   upsert: (n: Note) => void
   remove: (path: string) => void
   /** Freshly created via double-click — open straight into edit. */
@@ -367,6 +645,10 @@ function CanvasCard({
   const drag = useRef<{ mode: 'move' | 'resize'; sx: number; sy: number; start: Geom } | null>(null)
   const latest = useRef<Note>(note)
   latest.current = note
+  // The pointermove listener lives on window, so it would close over a stale
+  // zoom. Read it through a ref that tracks the prop instead.
+  const zoomRef = useRef(zoom)
+  zoomRef.current = zoom
 
   const closeEdit = () => {
     setEditing(false)
@@ -392,8 +674,8 @@ function CanvasCard({
   const onPointerMove = (e: PointerEvent) => {
     const d = drag.current
     if (!d) return
-    const dx = e.clientX - d.sx
-    const dy = e.clientY - d.sy
+    const dx = (e.clientX - d.sx) / zoomRef.current
+    const dy = (e.clientY - d.sy) / zoomRef.current
     if (d.mode === 'move') {
       setLive({ ...d.start, x: Math.max(0, d.start.x + dx), y: Math.max(0, d.start.y + dy) })
     } else {

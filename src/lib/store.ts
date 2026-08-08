@@ -1996,18 +1996,52 @@ export async function createCanvasBoard(title: string): Promise<Note> {
   }
 }
 
+/** A fresh card id. Exposed so a caller can know the path up front. */
+export function newCanvasCardId(): string {
+  return `${slugStamp()}-${Math.random().toString(36).slice(2, 6)}`
+}
+
+/** The vault path a card with this id will occupy on `boardId`. */
+export function canvasCardPath(boardId: string, cardId: string): string {
+  return `${CANVAS_PREFIX}${boardId}/${cardId}`
+}
+
 export async function createCanvasCard(
   boardId: string,
-  card: { x: number; y: number; w: number; h: number; content?: string },
+  card: {
+    x: number
+    y: number
+    w: number
+    h: number
+    content?: string
+    /** Map mode: the parent card's path, and this card's place among siblings.
+     * Structure lives on the card, so map mode is a layout engine over the
+     * existing card notes rather than a second storage format. */
+    parent?: string | null
+    order?: number
+    /** Supply the id so the caller can build the path BEFORE the round-trip —
+     * map mode renders the node optimistically and cannot wait for the server
+     * without dropping keystrokes. */
+    cardId?: string
+  },
 ): Promise<Note> {
   const a = requireApi()
-  const cardId = `${slugStamp()}-${Math.random().toString(36).slice(2, 6)}`
+  const cardId = card.cardId ?? newCanvasCardId()
   try {
     const note = await a.createNote({
       path: `${CANVAS_PREFIX}${boardId}/${cardId}`,
       content: card.content ?? '',
       tags: ['canvas'],
-      metadata: { ckind: 'card', board: boardId, x: card.x, y: card.y, w: card.w, h: card.h },
+      metadata: {
+        ckind: 'card',
+        board: boardId,
+        x: card.x,
+        y: card.y,
+        w: card.w,
+        h: card.h,
+        ...(card.parent !== undefined ? { parent: card.parent } : {}),
+        ...(card.order !== undefined ? { order: card.order } : {}),
+      },
     })
     mergeNote(note)
     return note
@@ -2015,6 +2049,53 @@ export async function createCanvasCard(
     handleAuthFailure(e)
     throw e
   }
+}
+
+/** A fresh edge id, so the caller can open the label input before the write. */
+export function newCanvasEdgeId(): string {
+  return `edge-${newCanvasCardId()}`
+}
+
+/** Cross-link edges are their own notes on the board — one per edge, so each
+ * is independently writable and deletable, and every canvas thing stays a vault
+ * note. Tree edges are NOT stored: those are derived from a card's `parent`. */
+export async function createCanvasEdge(
+  boardId: string,
+  edge: { from: string; to: string; label?: string; edgeId?: string },
+): Promise<Note> {
+  const a = requireApi()
+  const edgeId = edge.edgeId ?? newCanvasEdgeId()
+  try {
+    const note = await a.createNote({
+      path: `${CANVAS_PREFIX}${boardId}/${edgeId}`,
+      content: edge.label ?? '',
+      tags: ['canvas'],
+      metadata: {
+        ckind: 'edge',
+        board: boardId,
+        from: edge.from,
+        to: edge.to,
+        label: edge.label ?? '',
+      },
+    })
+    mergeNote(note)
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
+export async function deleteCanvasEdge(path: string): Promise<void> {
+  try {
+    await requireApi().deleteNote(path)
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+  const notes = { ...state.notes }
+  delete notes[path]
+  set({ notes })
 }
 
 export async function updateCanvasNote(
