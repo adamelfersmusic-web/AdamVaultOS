@@ -61,25 +61,6 @@ async function waitForLabels(page: Page, labels: string[]) {
     .toBe(true)
 }
 
-/** A fresh board switched into map mode, with the trunk created and selected. */
-async function mapBoardWithTrunk(page: Page, trunk = 'SIGNALCRAFT') {
-  await page.goto('http://127.0.0.1:4173/#/canvas')
-  await expect(page.locator('.db-title')).toHaveText('Canvas')
-  await page.getByRole('button', { name: 'New canvas' }).first().click()
-  await expect(page.locator('.canvas-title-input')).toBeVisible()
-  await page.getByTestId('mode-map').click()
-  await expect(page.getByTestId('mode-map')).toHaveAttribute('aria-pressed', 'true')
-
-  // The first node comes from a double-click; everything after is keyboard.
-  await page.getByTestId('canvas-plane').dblclick({ position: { x: 200, y: 200 } })
-  await expect(page.getByTestId('map-node')).toHaveCount(1)
-  await page.getByTestId('map-node').first().dblclick()
-  // Free-mode double-click navigates away; in map mode we edit in place.
-  await page.goBack().catch(() => {})
-  await expect(page.getByTestId('map-node')).toHaveCount(1)
-  return trunk
-}
-
 test.beforeEach(async ({ page }) => {
   await reset(page)
 })
@@ -313,4 +294,62 @@ test('map-mode keys stay out of the block editor — Tab still nests todos', asy
   // And no stray map node was created by those Tabs.
   await page.locator('.canvas-title-input').click()
   await expect(page.locator('.canvas-card')).toHaveCount(1)
+})
+
+test('double-click a node edits it IN PLACE — it never leaves the canvas', async ({ page }) => {
+  await connectViaStorage(page)
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.getByRole('button', { name: 'New canvas' }).first().click()
+  await page.getByTestId('mode-map').click()
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 200, y: 200 } })
+  await expect(page.getByTestId('map-node-input')).toBeVisible()
+  await page.keyboard.type('Test')
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('map-node-input')).toHaveCount(0)
+
+  await nodeByLabel(page, 'Test').dblclick()
+
+  // Still on the canvas, with the label editor open on that node.
+  await expect(page).toHaveURL(/#\/canvas/)
+  await expect(page.getByTestId('canvas-plane')).toBeVisible()
+  const input = page.getByTestId('map-node-input')
+  await expect(input).toBeVisible()
+  await expect(input).toHaveValue('Test')
+
+  // And typing edits the existing label rather than starting a new node.
+  await input.fill('Test edited')
+  await page.keyboard.press('Escape')
+  await waitForLabels(page, ['Test edited'])
+  await expect(page.getByTestId('map-node')).toHaveCount(1)
+})
+
+test('a board opens centred on its content, not jammed against the left edge', async ({ page }) => {
+  await connectViaStorage(page)
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.getByRole('button', { name: 'New canvas' }).first().click()
+  await page.getByTestId('mode-map').click()
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 200, y: 200 } })
+  await expect(page.getByTestId('map-node-input')).toBeVisible()
+  await page.keyboard.type('root')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('child')
+  await page.keyboard.press('Escape')
+  await waitForLabels(page, ['root', 'child'])
+
+  await page.reload()
+  await expect(page.getByTestId('map-node')).toHaveCount(2)
+
+  // The content's centre sits near the middle of the viewport.
+  const { offset, half } = await page.evaluate(() => {
+    const el = document.querySelector('.canvas-scroll') as HTMLElement
+    const nodes = [...el.querySelectorAll<HTMLElement>('.map-node')]
+    const l = Math.min(...nodes.map((n) => n.offsetLeft))
+    const r = Math.max(...nodes.map((n) => n.offsetLeft + n.offsetWidth))
+    const centre = (l + r) / 2
+    return {
+      offset: Math.abs(centre - (el.scrollLeft + el.clientWidth / 2)),
+      half: el.clientWidth / 2,
+    }
+  })
+  expect(offset).toBeLessThan(half * 0.5)
 })

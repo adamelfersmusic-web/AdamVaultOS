@@ -79,7 +79,6 @@ export function CanvasMap({
   onRemove,
   autoEditPath,
   onAutoEditConsumed,
-  onOpenCard,
 }: {
   boardId: string
   cards: Note[]
@@ -93,8 +92,6 @@ export function CanvasMap({
   /** A card just created on the plane — open its label editor straight away. */
   autoEditPath?: string | null
   onAutoEditConsumed?: () => void
-  /** Double-click — hand off to the full block editor in free mode. */
-  onOpenCard: (path: string) => void
 }) {
   const [selected, setSelected] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
@@ -634,7 +631,13 @@ export function CanvasMap({
             }`}
             style={{ left: p.x, top: p.y, width: MAP_CARD_W }}
             onClick={() => setSelected(p.path)}
-            onDoubleClick={() => onOpenCard(p.path)}
+            onDoubleClick={(ev) => {
+              // 🔴 Edit HERE. This used to navigate to the page editor, which
+              // threw you out of the canvas mid-thought — the opposite of what
+              // double-clicking a node should do.
+              ev.stopPropagation()
+              startEdit(p.path)
+            }}
           >
             {p.hasChildren && (
               <button

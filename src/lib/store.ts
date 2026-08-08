@@ -2059,6 +2059,31 @@ export function newCanvasEdgeId(): string {
 /** Cross-link edges are their own notes on the board — one per edge, so each
  * is independently writable and deletable, and every canvas thing stays a vault
  * note. Tree edges are NOT stored: those are derived from a card's `parent`. */
+/** Land a generated mermaid export as a normal page note. The canvas stays the
+ * source of truth — this is a snapshot you asked for, not a second home. */
+export async function saveMapExport(title: string, fence: string): Promise<Note> {
+  const a = requireApi()
+  const base = `pages/${slugify(title) || 'canvas'}-map`
+  let path = base
+  for (let n = 2; (await a.getNote(path)) !== null; n++) {
+    path = `${base}-${n}`
+    if (n > 30) throw new Error('Could not find a free path for this export')
+  }
+  try {
+    const note = await a.createNote({
+      path,
+      content: `# ${title} — map\n\n${fence}\n`,
+      tags: ['canvas'],
+      metadata: { exported_from: 'canvas' },
+    })
+    mergeNote(note)
+    return note
+  } catch (e) {
+    handleAuthFailure(e)
+    throw e
+  }
+}
+
 export async function createCanvasEdge(
   boardId: string,
   edge: { from: string; to: string; label?: string; edgeId?: string },

@@ -573,3 +573,40 @@
 .map-link-input:focus {
   outline: none;
 }
+
+/* Mermaid export — a generated view, shown for copying or landing as a page. */
+.export-warn {
+  color: var(--ink-3);
+}
+.export-text {
+  width: 100%;
+  margin-top: 10px;
+  resize: vertical;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: pre;
+  overflow-x: auto;
+}
+.export-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+.export-count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--ink-4);
+}
+.export-actions {
+  display: inline-flex;
+  gap: 8px;
+}
