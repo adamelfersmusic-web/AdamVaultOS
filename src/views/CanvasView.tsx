@@ -13,6 +13,7 @@ import type { Note } from '../lib/types'
 import {
   createCanvasBoard,
   createCanvasCard,
+  createCanvasGroup,
   deleteCanvasBoard,
   deleteCanvasCard,
   loadCanvasNotes,
@@ -27,6 +28,8 @@ import { relativeTime, slugify } from '../lib/format'
 import { IconPlus, IconClose, IconBack } from '../components/Icons'
 import { CardEditor } from '../components/CardEditor'
 import { CanvasMap } from './CanvasMap'
+import { CanvasGroupBox, geomOf } from './CanvasGroupBox'
+import { groupCounts, type Placed } from '../lib/canvasGroups'
 import { toMermaid, toMermaidFence, type MermaidExport } from '../lib/canvasMermaid'
 import { Modal } from '../components/Modal'
 
@@ -76,6 +79,11 @@ function isCard(n: Note): boolean {
  * are NOT stored — only the links a tree cannot express live as notes. */
 function isEdge(n: Note): boolean {
   return n.metadata?.['ckind'] === 'edge'
+}
+/** A titled rectangle behind the cards. What it holds is read from position,
+ * never stored, so it cannot disagree with what you can see inside it. */
+function isGroup(n: Note): boolean {
+  return n.metadata?.['ckind'] === 'group'
 }
 
 // The board you were working on — restored on return so "← Canvas" from a
@@ -141,6 +149,10 @@ export function CanvasView() {
     () => (notes ?? []).filter((n) => isEdge(n) && boardIdOf(n) === active),
     [notes, active],
   )
+  const activeGroups = useMemo<Note[]>(
+    () => (notes ?? []).filter((n) => isGroup(n) && boardIdOf(n) === active),
+    [notes, active],
+  )
   const activeBoard = boards.find((b) => b.id === active) ?? null
 
   const newCanvas = async () => {
@@ -177,6 +189,7 @@ export function CanvasView() {
         board={activeBoard}
         cards={activeCards}
         edges={activeEdges}
+        groups={activeGroups}
         onBack={() => setActive(null)}
         upsert={upsert}
         remove={remove}
@@ -235,6 +248,7 @@ function CanvasSurface({
   board,
   cards,
   edges,
+  groups,
   onBack,
   upsert,
   remove,
@@ -243,6 +257,7 @@ function CanvasSurface({
   board: BoardMeta
   cards: Note[]
   edges: Note[]
+  groups: Note[]
   onBack: () => void
   upsert: (n: Note) => void
   remove: (path: string) => void
@@ -373,6 +388,37 @@ function CanvasSurface({
       onRenamed(note)
     } catch (e) {
       toast('error', `Couldn’t switch mode — ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
+  // Live offsets while a group is being dragged: the cards it carries follow
+  // it on screen before anything is written.
+  const [carry, setCarry] = useState<Record<string, { x: number; y: number }>>({})
+
+  const counts = useMemo(
+    () =>
+      groupCounts(
+        cards.map((c) => ({ path: c.path, ...geomOf(c, CARD_W, CARD_H) }) as Placed),
+        groups.map((g) => ({ path: g.path, ...geomOf(g) }) as Placed),
+      ),
+    [cards, groups],
+  )
+
+  const addGroup = async () => {
+    const el = scrollRef.current
+    const cx = ((el?.scrollLeft ?? 0) + (el?.clientWidth ?? 0) / 2) / zoom
+    const cy = ((el?.scrollTop ?? 0) + (el?.clientHeight ?? 0) / 2) / zoom
+    try {
+      const note = await createCanvasGroup(board.id, {
+        x: Math.max(0, snap(cx - 200)),
+        y: Math.max(0, snap(cy - 160)),
+        w: 400,
+        h: 320,
+        title: '',
+      })
+      upsert(note)
+    } catch (e) {
+      toast('error', `Couldn’t add group — ${e instanceof Error ? e.message : e}`)
     }
   }
 
@@ -609,6 +655,16 @@ function CanvasSurface({
           >
             Export
           </button>
+          {!mapMode && (
+            <button
+              className="btn btn-ghost"
+              data-testid="canvas-add-group"
+              title="A titled area — drag it to move everything inside"
+              onClick={() => void addGroup()}
+            >
+              Group
+            </button>
+          )}
           <button className="btn btn-gold" onClick={() => void addCard()}>
             <IconPlus size={13} /> Add card
           </button>
@@ -732,17 +788,35 @@ function CanvasSurface({
               onAutoEditConsumed={() => setFreshPath(null)}
             />
           ) : (
-            cards.map((card) => (
-              <CanvasCard
-                key={card.path}
-                note={card}
-                zoom={zoom}
-                upsert={upsert}
-                remove={remove}
-                autoEdit={card.path === freshPath}
-                onEditClosed={() => setFreshPath((p) => (p === card.path ? null : p))}
-              />
-            ))
+            <>
+              {/* Behind the cards, always — a group is a backdrop, not a lid. */}
+              {groups.map((g) => (
+                <CanvasGroupBox
+                  key={g.path}
+                  note={g}
+                  cards={cards}
+                  groups={groups}
+                  zoom={zoom}
+                  count={counts[g.path] ?? 0}
+                  snap={snap}
+                  upsert={upsert}
+                  remove={remove}
+                  onCarry={setCarry}
+                />
+              ))}
+              {cards.map((card) => (
+                <CanvasCard
+                  key={card.path}
+                  note={card}
+                  zoom={zoom}
+                  override={carry[card.path]}
+                  upsert={upsert}
+                  remove={remove}
+                  autoEdit={card.path === freshPath}
+                  onEditClosed={() => setFreshPath((p) => (p === card.path ? null : p))}
+                />
+              ))}
+            </>
           )}
         </div>
         </div>
@@ -765,6 +839,7 @@ interface Geom {
 function CanvasCard({
   note,
   zoom,
+  override,
   upsert,
   remove,
   autoEdit = false,
@@ -774,6 +849,8 @@ function CanvasCard({
   /** Plane scale. Pointer deltas arrive in SCREEN px and must be divided by
    * it — without this a card at 50% zoom moves twice as far as the cursor. */
   zoom: number
+  /** Live position while a group is carrying this card. */
+  override?: { x: number; y: number }
   upsert: (n: Note) => void
   remove: (path: string) => void
   /** Freshly created via double-click — open straight into edit. */
@@ -802,7 +879,9 @@ function CanvasCard({
     onEditClosed?.()
   }
 
-  const geom = live ?? base
+  // A group carrying this card wins over the stored position, but never over
+  // the card's own in-progress drag.
+  const geom = live ?? (override ? { ...base, ...override } : base)
 
   const persist = async (g: Geom) => {
     const cur = latest.current
@@ -924,6 +1003,7 @@ function CanvasCard({
   return (
     <article
       className={`canvas-card${live ? ' is-live' : ''}${editing ? ' is-editing' : ''}`}
+      data-path={note.path}
       style={{ left: geom.x, top: geom.y, width: geom.w, height: geom.h }}
       onContextMenu={(e) => {
         e.preventDefault()
