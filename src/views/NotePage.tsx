@@ -13,6 +13,7 @@ import {
 import { setRouteGuard } from '../lib/router'
 import { fullTime, relativeTime, titleFromPath } from '../lib/format'
 import { renderMarkdown } from '../lib/markdown'
+import { useMermaidFences } from '../lib/mdx/Mermaid'
 
 // The MDX runtime compiler is a heavy dependency tree; load it only when an
 // `mdx` note is actually opened so the markdown path (nearly every note) pays
@@ -68,6 +69,10 @@ export function NotePage({ path }: { path: string }) {
 
   // Resolve vault image attachments in the rendered body (read mode only).
   useVaultImages(bodyRef, editing ? null : note?.content)
+  // ```mermaid fences render as diagrams here too, not just in the Pages
+  // editor — this view IS the Library's preview pane. Costs nothing on a note
+  // that has no diagram in it.
+  useMermaidFences(bodyRef, [editing ? null : note?.content, note?.extension])
 
   useEffect(() => {
     let cancelled = false

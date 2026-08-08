@@ -29,6 +29,7 @@ import {
 import { Kanban } from '../editor/extensions/Kanban'
 import { BoardEmbed, convertBoardEmbeds } from '../editor/extensions/BoardEmbed'
 import { WikiLink, convertWikiLinks } from '../editor/extensions/WikiLink'
+import { MermaidBlock, convertMermaidBlocks } from '../editor/extensions/MermaidBlock'
 import { WikiLinkSuggest, setContentSilently } from '../editor/extensions/WikiLinkSuggest'
 import { SlashCommand } from '../editor/extensions/SlashCommand'
 import { BlockTypeGuard } from '../editor/extensions/BlockTypeGuard'
@@ -83,6 +84,9 @@ export function NoteBodyEditor({
       // use the chip variants; storage is byte-identical either way).
       Kanban,
       BoardEmbed,
+      // Same diagram block as the Pages editor — a ```mermaid fence stays a
+      // fence, so switching surfaces can never change what a note stores.
+      MermaidBlock,
       Markdown,
       MarkdownLiteral,
       WikiLink,
@@ -125,7 +129,7 @@ export function NoteBodyEditor({
     loadingRef.current = true
     setContentSilently(editor, value, { contentType: 'markdown' })
     // Same order as the other editors: board markers first, then wikilinks.
-    const wiki = convertWikiLinks(convertBoardEmbeds(editor.getJSON()).doc)
+    const wiki = convertWikiLinks(convertMermaidBlocks(convertBoardEmbeds(editor.getJSON()).doc).doc)
     if (wiki.changed) setContentSilently(editor, wiki.doc)
     loadingRef.current = false
     editor.commands.focus('start')
