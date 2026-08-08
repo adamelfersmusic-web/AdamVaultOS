@@ -41,6 +41,8 @@ const MIN_W = 140
 const MIN_H = 80
 // Zoom is viewport state only — it is never written to a note.
 const ZOOM_KEY = 'adamvaultos.canvas.zoom'
+// Dismissed once, gone for good — a hint that reappears is a nag.
+const STRUCTURE_HINT_KEY = 'adamvaultos.canvas.structurehint'
 const MIN_ZOOM = 0.25
 const MAX_ZOOM = 2
 // The plane grows to fit the furthest card plus a margin. It does NOT grow
@@ -391,6 +393,22 @@ function CanvasSurface({
     }
   }
 
+  // A free board carries no parent/child links and no arrows, so a mermaid
+  // export from it is a row of disconnected boxes — valid, but not a diagram.
+  // Say so on arrival rather than letting the Export button disappoint.
+  const [hintDismissed, setHintDismissed] = useState(
+    () => localStorage.getItem(STRUCTURE_HINT_KEY) === '1',
+  )
+  const hasStructure = useMemo(
+    () => cards.some((c) => !!c.metadata?.['parent']) || edges.length > 0,
+    [cards, edges],
+  )
+  const showStructureHint = !mapMode && !hintDismissed && cards.length > 1 && !hasStructure
+  const dismissHint = () => {
+    localStorage.setItem(STRUCTURE_HINT_KEY, '1')
+    setHintDismissed(true)
+  }
+
   // Live offsets while a group is being dragged: the cards it carries follow
   // it on screen before anything is written.
   const [carry, setCarry] = useState<Record<string, { x: number; y: number }>>({})
@@ -673,6 +691,36 @@ function CanvasSurface({
           </button>
         </div>
       </header>
+
+      {showStructureHint && (
+        <div className="canvas-hint" data-testid="canvas-structure-hint" role="status">
+          <span>
+            <b>Free mode has no structure to export.</b> Cards here aren’t joined to each other, so
+            saving this to your vault as mermaid gives a row of separate boxes rather than a
+            diagram. Build it in <b>Map</b> mode — <kbd>Enter</kbd> for a sibling, <kbd>Tab</kbd>{' '}
+            for a child — and it exports as a real map.
+          </span>
+          <button
+            className="btn btn-gold canvas-hint-go"
+            data-testid="hint-switch-map"
+            onClick={() => {
+              dismissHint()
+              void setMode('map')
+            }}
+          >
+            Switch to Map
+          </button>
+          <button
+            className="canvas-hint-x"
+            data-testid="hint-dismiss"
+            title="Don’t show this again"
+            aria-label="Dismiss"
+            onClick={dismissHint}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {exported && (
         <Modal onClose={() => setExported(null)} width={620} labelledBy="export-title">

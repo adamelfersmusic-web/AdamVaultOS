@@ -64,6 +64,23 @@ test('a cross-link forces a flowchart — a mindmap cannot hold one', () => {
 test('two trunks force a flowchart — a mindmap has exactly one root', () => {
   const exp = toMermaid([card('r1', null, 10, 'One'), card('r2', null, 20, 'Two')], [])
   expect(exp.kind).toBe('flowchart')
+  // Two bare trunks means nothing is joined to anything, so the message says
+  // that rather than the technically-true "more than one trunk".
+  expect(exp.structureless).toBe(true)
+  expect(exp.reason).toContain('Nothing on this board is connected')
+})
+
+test('multiple trunks WITH children is not structureless', () => {
+  const exp = toMermaid(
+    [
+      card('r1', null, 10, 'One'),
+      card('a', 'r1', 10, 'child'),
+      card('r2', null, 20, 'Two'),
+    ],
+    [],
+  )
+  expect(exp.kind).toBe('flowchart')
+  expect(exp.structureless).toBe(false)
   expect(exp.reason).toContain('more than one trunk')
 })
 
@@ -97,6 +114,28 @@ test('an unlabelled cross-link exports without an empty label box', () => {
 })
 
 // ── The one that proves it, by rendering it ─────────────────────────────────
+
+
+/**
+ * Reset and WAIT until the vault is actually empty.
+ *
+ * Writes are optimistic, so a previous test's creates can still be in flight
+ * when it ends and land just after the next reset — repopulating the board and
+ * failing a later test for no reason of its own. Polling for empty makes each
+ * test start from a slate that is genuinely clean.
+ */
+async function freshVault(page: Page) {
+  await page.request.post(`${MOCK}/__test/reset`)
+  await expect
+    .poll(async () => {
+      const res = await page.request.get(
+        `${MOCK}/api/notes?path_prefix=${encodeURIComponent('canvas/')}`,
+        { headers: AUTH },
+      )
+      return ((await res.json()) as unknown[]).length
+    })
+    .toBe(0)
+}
 
 async function connectViaStorage(page: Page) {
   await page.addInitScript(
@@ -148,7 +187,7 @@ test('both dialects actually render — not just look plausible', async ({ page 
 // ── The export button, end to end ───────────────────────────────────────────
 
 test('Export a real board, land it as a page, and see it render', async ({ page }) => {
-  await page.request.post(`${MOCK}/__test/reset`)
+  await freshVault(page)
   await connectViaStorage(page)
 
   const errors: string[] = []
@@ -193,7 +232,7 @@ test('Export a real board, land it as a page, and see it render', async ({ page 
 })
 
 test('a board with a cross-link exports as a flowchart instead', async ({ page }) => {
-  await page.request.post(`${MOCK}/__test/reset`)
+  await freshVault(page)
   await connectViaStorage(page)
   await page.goto('http://127.0.0.1:4173/#/canvas')
   await page.getByRole('button', { name: 'New canvas' }).first().click()
@@ -224,4 +263,64 @@ test('a board with a cross-link exports as a flowchart instead', async ({ page }
   const text = page.getByTestId('export-text')
   await expect(text).toHaveValue(/^flowchart LR/)
   await expect(text).toHaveValue(/-\.->\|"blocks"\|/)
+})
+
+// ── The notice on a board with nothing joined up ────────────────────────────
+
+test('a free board with no structure says so, once, and offers Map mode', async ({ page }) => {
+  await freshVault(page)
+  await connectViaStorage(page)
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.getByRole('button', { name: 'New canvas' }).first().click()
+
+  // One card is not yet a board worth warning about.
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 300, y: 240 } })
+  await page.locator('.canvas-title-input').click()
+  await expect(page.getByTestId('canvas-structure-hint')).toHaveCount(0)
+
+  // Two unconnected cards: a mermaid export here would be a row of boxes.
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 800, y: 500 } })
+  await page.locator('.canvas-title-input').click()
+  const hint = page.getByTestId('canvas-structure-hint')
+  await expect(hint).toBeVisible()
+  await expect(hint).toContainText('no structure to export')
+
+  // The export modal agrees, rather than reporting a technicality.
+  await page.getByTestId('canvas-export').click()
+  await expect(page.locator('.export-warn').first()).toBeVisible()
+  await expect(page.locator('.modal-sub').first()).toContainText('Nothing on this board is connected')
+  await page.keyboard.press('Escape')
+
+  // Taking the offer switches modes and clears the notice.
+  await page.getByTestId('hint-switch-map').click()
+  await expect(page.getByTestId('mode-map')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByTestId('canvas-structure-hint')).toHaveCount(0)
+
+  // Back in free mode it stays gone — a hint that reappears is a nag.
+  await page.getByTestId('mode-free').click()
+  await expect(page.getByTestId('canvas-structure-hint')).toHaveCount(0)
+  await page.reload()
+  await expect(page.locator('.canvas-card')).toHaveCount(2)
+  await expect(page.getByTestId('canvas-structure-hint')).toHaveCount(0)
+})
+
+test('a board that IS joined up never shows the notice', async ({ page }) => {
+  await freshVault(page)
+  await connectViaStorage(page)
+  await page.goto('http://127.0.0.1:4173/#/canvas')
+  await page.getByRole('button', { name: 'New canvas' }).first().click()
+  await page.getByTestId('mode-map').click()
+  await page.getByTestId('canvas-plane').dblclick({ position: { x: 200, y: 200 } })
+  await expect(page.getByTestId('map-node-input')).toBeVisible()
+  await page.keyboard.type('root')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('child')
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('map-node')).toHaveCount(2)
+
+  // These cards have a parent/child relationship, so free mode has something
+  // real to export and there is nothing to warn about.
+  await page.getByTestId('mode-free').click()
+  await expect(page.locator('.canvas-card')).toHaveCount(2)
+  await expect(page.getByTestId('canvas-structure-hint')).toHaveCount(0)
 })

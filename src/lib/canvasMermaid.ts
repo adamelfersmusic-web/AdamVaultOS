@@ -34,6 +34,8 @@ export interface MermaidExport {
   reason: string
   nodeCount: number
   linkCount: number
+  /** True when nothing is joined to anything — the export is boxes, not a map. */
+  structureless: boolean
 }
 
 /** Mermaid node text: one line, no quotes that would end the string early. */
@@ -97,11 +99,17 @@ export function toMermaid(cards: MermaidCard[], edges: MermaidEdge[]): MermaidEx
   roots.forEach(collect)
 
   const asTree = links.length === 0 && roots.length === 1
+  // Nothing joined to anything: every card is its own trunk. Valid mermaid,
+  // but a row of disconnected boxes rather than a diagram — say so plainly
+  // instead of reporting the technically-true "more than one trunk".
+  const structureless = links.length === 0 && roots.length === cards.length && cards.length > 1
   const reason = asTree
     ? 'One trunk and no cross-links, so this exports as a mindmap.'
-    : links.length > 0
-      ? 'This board has cross-links, and a mindmap is strictly a tree — so it exports as a flowchart, which can hold them.'
-      : 'This board has more than one trunk, which a mindmap cannot express — so it exports as a flowchart.'
+    : structureless
+      ? 'Nothing on this board is connected to anything, so this exports as a row of separate boxes rather than a diagram. Build it in Map mode — Enter for a sibling, Tab for a child — and the export becomes a real tree.'
+      : links.length > 0
+        ? 'This board has cross-links, and a mindmap is strictly a tree — so it exports as a flowchart, which can hold them.'
+        : 'This board has more than one trunk, which a mindmap cannot express — so it exports as a flowchart.'
 
   if (asTree) {
     const out: string[] = ['mindmap']
@@ -120,6 +128,7 @@ export function toMermaid(cards: MermaidCard[], edges: MermaidEdge[]): MermaidEx
       reason,
       nodeCount: idOf.size,
       linkCount: 0,
+      structureless: false,
     }
   }
 
@@ -148,6 +157,7 @@ export function toMermaid(cards: MermaidCard[], edges: MermaidEdge[]): MermaidEx
     reason,
     nodeCount: idOf.size,
     linkCount: links.length,
+    structureless,
   }
 }
 

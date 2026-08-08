@@ -745,3 +745,43 @@
   border-bottom: 2px solid color-mix(in srgb, var(--group-tone) 60%, transparent);
   border-bottom-right-radius: 4px;
 }
+
+/* A one-time notice: this board has nothing joined up, so it won't export as
+   a diagram. Dismissed once, never shown again. */
+.canvas-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--gold) 8%, var(--surface));
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.canvas-hint b {
+  color: var(--ink);
+}
+.canvas-hint kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 5px;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+.canvas-hint-go {
+  flex: none;
+  white-space: nowrap;
+}
+.canvas-hint-x {
+  flex: none;
+  color: var(--ink-4);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.canvas-hint-x:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
