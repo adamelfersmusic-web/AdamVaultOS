@@ -1996,18 +1996,52 @@ export async function createCanvasBoard(title: string): Promise<Note> {
   }
 }
 
+/** A fresh card id. Exposed so a caller can know the path up front. */
+export function newCanvasCardId(): string {
+  return `${slugStamp()}-${Math.random().toString(36).slice(2, 6)}`
+}
+
+/** The vault path a card with this id will occupy on `boardId`. */
+export function canvasCardPath(boardId: string, cardId: string): string {
+  return `${CANVAS_PREFIX}${boardId}/${cardId}`
+}
+
 export async function createCanvasCard(
   boardId: string,
-  card: { x: number; y: number; w: number; h: number; content?: string },
+  card: {
+    x: number
+    y: number
+    w: number
+    h: number
+    content?: string
+    /** Map mode: the parent card's path, and this card's place among siblings.
+     * Structure lives on the card, so map mode is a layout engine over the
+     * existing card notes rather than a second storage format. */
+    parent?: string | null
+    order?: number
+    /** Supply the id so the caller can build the path BEFORE the round-trip —
+     * map mode renders the node optimistically and cannot wait for the server
+     * without dropping keystrokes. */
+    cardId?: string
+  },
 ): Promise<Note> {
   const a = requireApi()
-  const cardId = `${slugStamp()}-${Math.random().toString(36).slice(2, 6)}`
+  const cardId = card.cardId ?? newCanvasCardId()
   try {
     const note = await a.createNote({
       path: `${CANVAS_PREFIX}${boardId}/${cardId}`,
       content: card.content ?? '',
       tags: ['canvas'],
-      metadata: { ckind: 'card', board: boardId, x: card.x, y: card.y, w: card.w, h: card.h },
+      metadata: {
+        ckind: 'card',
+        board: boardId,
+        x: card.x,
+        y: card.y,
+        w: card.w,
+        h: card.h,
+        ...(card.parent !== undefined ? { parent: card.parent } : {}),
+        ...(card.order !== undefined ? { order: card.order } : {}),
+      },
     })
     mergeNote(note)
     return note

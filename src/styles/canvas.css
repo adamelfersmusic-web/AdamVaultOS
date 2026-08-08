@@ -360,3 +360,123 @@
   margin-top: 0.3em;
   padding-left: 20px;
 }
+
+/* ————————————————————————————————————————————————————————————————
+   Map mode — auto-placed nodes, orthogonal edges, one accent.
+   Calm means: uniform columns, one rhythm, right angles only. Nothing
+   here animates: movement nobody asked for is disorienting.
+   ———————————————————————————————————————————————————————————————— */
+.canvas-mode {
+  display: inline-flex;
+  gap: 2px;
+  flex: none;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 2px;
+}
+.canvas-mode button {
+  font-size: 11.5px;
+  padding: 4px 12px;
+  border-radius: 5px;
+  color: var(--ink-3);
+}
+.canvas-mode button:hover {
+  color: var(--ink-2);
+}
+.canvas-mode button.is-on {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+/* Edges sit behind every node; the SVG spans the plane and never eats a click. */
+.map-edges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+}
+.map-edge {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.map-node {
+  position: absolute;
+  z-index: 1;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.45;
+  cursor: default;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.map-node:hover {
+  border-color: var(--line-strong);
+}
+.map-node.is-selected {
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+  background: color-mix(in srgb, var(--gold) 10%, var(--surface));
+}
+.map-node.is-editing {
+  border-color: var(--gold);
+}
+/* Labels wrap and the card grows — a forty-word node next to a three-word one
+   is the real data, and the layout measures whatever height results. */
+.map-node-label {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.map-node-empty {
+  color: var(--ink-4);
+}
+.map-node-input {
+  width: 100%;
+  resize: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--ink);
+  font: inherit;
+  line-height: inherit;
+}
+.map-node-input:focus {
+  outline: none;
+}
+.map-node-chevron {
+  position: absolute;
+  left: -18px;
+  top: 8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  color: var(--ink-4);
+  font-size: 10px;
+  line-height: 1;
+}
+.map-node-chevron:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+.map-node-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+  color: var(--ink-4);
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* The single roving editor sits over the node being edited. */
+.map-node-editor {
+  z-index: 3;
+  background: var(--surface-2);
+}
