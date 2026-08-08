@@ -19,6 +19,7 @@ import {
   searchVaultContext,
   toast,
 } from './store'
+import { asksForCanvas, isCanvasPart } from './canvasParts'
 import { cachedCorpus, corpusFresh, refreshCorpus } from './corpus'
 import {
   hasFreeText,
@@ -252,7 +253,13 @@ async function execSearchVault(query: string): Promise<string> {
 
   const parsed = parseQuery(query)
   const rankQ = [...parsed.terms, ...parsed.phrases].join(' ')
-  const pool = corpus.filter((n) => noteMatchesFilters(n, parsed, toolNoteTitle))
+  // Same rule the Omnibar follows: board machinery is out unless asked for by
+  // path, so the tool's few result slots go to notes worth reading.
+  const wantsCanvas = asksForCanvas(parsed.paths)
+  const pool = corpus.filter(
+    (n) =>
+      (wantsCanvas || !isCanvasPart(n)) && noteMatchesFilters(n, parsed, toolNoteTitle),
+  )
   const ranked = hasFreeText(parsed)
     ? rankNotes(rankQ, pool, toolNoteTitle)
     : [...pool].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))

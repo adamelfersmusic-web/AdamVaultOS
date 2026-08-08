@@ -25,6 +25,7 @@ import {
   toast,
   useStore,
 } from '../lib/store'
+import { asksForCanvas, isCanvasPart } from '../lib/canvasParts'
 import { cachedCorpus, corpusFresh, refreshCorpus } from '../lib/corpus'
 import {
   semanticSearch,
@@ -483,7 +484,13 @@ export function Omnibar() {
       const notesVisible =
         (parsed.is === null || parsed.is === 'note' || parsed.is === 'page') && !taskScoped
       if (notesVisible && corpus && (free || constrained)) {
-        let pool = corpus.filter((n) => !isTaskNote(n))
+        // Canvas cards/groups/arrows are board machinery, not notes — they'd
+        // otherwise fill the Notes group with one-word fragments. `path:canvas`
+        // asks for them explicitly and gets them.
+        const wantsCanvas = asksForCanvas(parsed.paths)
+        let pool = corpus.filter(
+          (n) => !isTaskNote(n) && (wantsCanvas || !isCanvasPart(n)),
+        )
         if (parsed.is === 'page') {
           pool = pool.filter(
             (n) => (n.tags ?? []).includes(PAGE_TAG) || n.path.startsWith('pages/'),
@@ -732,12 +739,17 @@ export function Omnibar() {
       parsed.when === null &&
       parsed.done === null
     if (!scopeOk) return { items: base, markTerms }
+    // ✨ Related reaches the corpus by its own route, so it needs the canvas
+    // rule stated again here — filtering the Notes pool alone let cards back in
+    // through this door.
+    const wantsCanvas = asksForCanvas(parsed.paths)
     const rows: OmniItem[] = []
     for (const hit of related) {
       if (rows.length >= RELATED_CAP) break
       if (keywordPaths.has(hit.path)) continue
       const n = corpusByPath.get(hit.path)
       if (!n) continue
+      if (!wantsCanvas && isCanvasPart(n)) continue
       if (!noteMatchesFilters(n, parsed, noteTitle)) continue
       const summary = n.metadata?.['summary']
       rows.push({

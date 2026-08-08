@@ -18,6 +18,7 @@ import {
 } from 'd3-force'
 import { select } from 'd3-selection'
 import { zoom, zoomIdentity, zoomTransform, type ZoomBehavior } from 'd3-zoom'
+import { withoutCanvasParts } from '../lib/canvasParts'
 import { fetchGraphNotes } from '../lib/store'
 import { navigate } from '../lib/router'
 import { titleFromPath } from '../lib/format'
@@ -150,7 +151,10 @@ export function GraphView() {
     setError(null)
     fetchGraphNotes()
       .then((notes) => {
-        const graph = buildGraph(notes)
+        // Canvas cards are near-linkless, so they'd land as a halo of unlit
+        // dots around the constellation — and each one costs a slot from the
+        // graph's node budget. The boards stay.
+        const graph = buildGraph(withoutCanvasParts(notes))
         settle(graph)
         setData(graph)
         setStatus('ready')

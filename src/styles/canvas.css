@@ -283,6 +283,75 @@
 .canvas-card-body ol { margin: 0 0 6px; padding-left: 18px; }
 .canvas-card-body a { color: var(--blue); }
 
+/* ── Ref cards ─────────────────────────────────────────────────────────────
+   A window onto a note, not a note. It reads differently on purpose: you
+   should be able to tell at a glance which nodes on a map are real notes you
+   can walk into, and which are thoughts that live only on the board. */
+.canvas-card.is-ref {
+  border-color: var(--blue);
+}
+.canvas-card.is-ref .canvas-card-head {
+  background: color-mix(in srgb, var(--blue) 12%, var(--surface-2));
+}
+.canvas-ref-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+.canvas-ref-title {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.canvas-ref-path {
+  font-size: 11px;
+  color: var(--ink-4);
+  word-break: break-all;
+}
+.canvas-ref-summary {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-3);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.canvas-ref-moved,
+.canvas-ref-gone {
+  font-size: 11px;
+  align-self: flex-start;
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+}
+.canvas-ref-moved {
+  color: var(--ink-3);
+  background: var(--surface-3);
+}
+/* A dead pointer is stated, not silent — a card that just goes blank tells
+   you nothing about what you lost. */
+.canvas-ref-gone {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+}
+.map-node.is-ref {
+  border-color: var(--blue);
+}
+.map-node-ref {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.map-node-ref-title {
+  font-weight: 600;
+}
+.map-node-ref-gone {
+  font-size: 10.5px;
+  color: var(--red);
+}
+
 .canvas-card-textarea {
   flex: 1 1 auto;
   resize: none;

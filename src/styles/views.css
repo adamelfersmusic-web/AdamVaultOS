@@ -1591,6 +1591,29 @@ body.is-dragging .card {
   background: var(--surface-3);
   color: var(--ink);
 }
+/* The canvas-parts escape hatch. Quiet by default — it reports something the
+   list is NOT showing, which should read as a footnote, not a control. Its own
+   class for the same reason .rail-mode has one. */
+.parts-toggle {
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-4);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.12s ease;
+}
+.parts-toggle:hover {
+  color: var(--ink);
+  border-color: var(--line-2);
+}
+.parts-toggle.is-on {
+  background: var(--surface-3);
+  color: var(--ink);
+  border-color: transparent;
+}
 
 .browser-list {
   overflow-y: auto;

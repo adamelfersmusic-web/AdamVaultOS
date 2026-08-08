@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Note } from '../lib/types'
 import { createPage, fetchAllNotes, toast } from '../lib/store'
 import { hasConstraints, noteMatchesFilters, parseQuery, rankNotes } from '../lib/search'
+import { isCanvasPart } from '../lib/canvasParts'
 import { navigate } from '../lib/router'
 import { relativeTime, titleFromPath } from '../lib/format'
 import { isProtectedNote } from '../domain/scripts'
@@ -22,6 +23,11 @@ type Sort = 'recent' | 'alpha'
 /** Which hierarchy the left rail is showing. Tags is the default. */
 type RailMode = 'tags' | 'paths'
 const RAIL_MODE_KEY = 'adamvaultos.library.rail.mode'
+/** Show canvas cards/groups/arrows in the browser anyway. Off by default. */
+const SHOW_PARTS_KEY = 'adamvaultos.library.canvasParts'
+
+/** Stable empty list — a fresh `[]` each render would re-run every memo below. */
+const NO_NOTES: Note[] = []
 
 /** Updated-at as epoch ms (0 when missing/invalid) for sorting. */
 function ts(n: Note): number {
@@ -139,6 +145,17 @@ export function LibraryView() {
       localStorage.setItem('adamvaultos.library.list.collapsed', c ? '0' : '1')
       return !c
     })
+  // Canvas cards/groups/arrows are hidden by default — one 40-node mind map
+  // otherwise adds 40 rows here. Hidden, never gone: the toolbar toggle brings
+  // them back, and it only appears when there's something behind it.
+  const [showParts, setShowParts] = useState(
+    () => localStorage.getItem(SHOW_PARTS_KEY) === '1',
+  )
+  const toggleParts = () =>
+    setShowParts((s) => {
+      localStorage.setItem(SHOW_PARTS_KEY, s ? '0' : '1')
+      return !s
+    })
   // Switching hierarchies drops the other one's filter, so the list can never
   // show a filter whose rail isn't on screen.
   const switchMode = (mode: RailMode) => {
@@ -187,7 +204,15 @@ export function LibraryView() {
       })
   }, [])
 
-  const all = notes ?? []
+  // ONE list feeds the rails' counts AND the note list, so dropping the canvas
+  // parts here drops them everywhere in the browser at once — the #canvas tag
+  // and the canvas/ folder then count the boards you made, not their nodes.
+  const loaded = notes ?? NO_NOTES
+  const hiddenParts = useMemo(() => loaded.filter(isCanvasPart).length, [loaded])
+  const all = useMemo(
+    () => (showParts ? loaded : loaded.filter((n) => !isCanvasPart(n))),
+    [loaded, showParts],
+  )
 
   // Tag rail: a HIERARCHICAL tree (N4). The vault's tags are already nested
   // (escensus/strategy, health/labs, capture/voice…) — the rail renders that
@@ -480,6 +505,20 @@ export function LibraryView() {
               <IconPlus size={13} />
               New note{activeTag ? ` in #${activeTag}` : ''}
             </button>
+            {(hiddenParts > 0 || showParts) && (
+              <button
+                className={`parts-toggle${showParts ? ' is-on' : ''}`}
+                data-testid="canvas-parts-toggle"
+                title={
+                  showParts
+                    ? 'Hide canvas cards, groups and arrows again'
+                    : 'Canvas cards, groups and arrows are hidden here — they live on their boards'
+                }
+                onClick={toggleParts}
+              >
+                {showParts ? 'Hide canvas parts' : `＋${hiddenParts} canvas`}
+              </button>
+            )}
             {!query.trim() && (
               <div className="sort-toggle" role="group" aria-label="Sort">
                 <button

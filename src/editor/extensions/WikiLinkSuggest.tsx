@@ -17,6 +17,7 @@ import { ReactRenderer } from '@tiptap/react'
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion'
 import { fetchLinkTargets } from '../../lib/store'
+import { withoutCanvasParts } from '../../lib/canvasParts'
 import { cachedCorpus, corpusFresh, refreshCorpus } from '../../lib/corpus'
 import { fuzzyScore, tokenPrefixScore } from '../../lib/fuzzy'
 import { titleFromPath } from '../../lib/format'
@@ -92,7 +93,7 @@ async function contentMatches(q: string, exclude: Set<string>): Promise<Note[]> 
     .split(/\s+/)
     .filter(Boolean)
     .map((t) => new RegExp(`(^|[^a-z0-9])${escapeRegExp(t)}([^a-z0-9]|$)`))
-  const pool = corpus.filter((n) => {
+  const pool = withoutCanvasParts(corpus).filter((n) => {
     if (exclude.has(n.path)) return false
     const body = (n.content ?? '').toLowerCase()
     return wordRes.every((re) => re.test(body))
@@ -110,7 +111,9 @@ let wikiItemsSeq = 0
 async function wikiItems(query: string): Promise<WikiItem[]> {
   const seq = ++wikiItemsSeq
   const q = query.trim()
-  const all = await fetchLinkTargets()
+  // A canvas card is not a link target — [[a-3]] pointing at a node inside a
+  // board is noise in this menu, and the board itself stays offered.
+  const all = withoutCanvasParts(await fetchLinkTargets())
   let list: WikiItem[]
   if (!q) {
     // Nothing typed yet: most recently touched notes.

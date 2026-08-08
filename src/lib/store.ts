@@ -2023,6 +2023,18 @@ export async function createCanvasCard(
      * map mode renders the node optimistically and cannot wait for the server
      * without dropping keystrokes. */
     cardId?: string
+    /** Point this card at an existing note instead of holding its own text.
+     *
+     * BY ID, never by path. A path is where a note is today; an id is which
+     * note it is. Re-file the target in the Files browser and a path-keyed
+     * card goes quietly dead — you'd find out weeks later, opening the map.
+     * `path` rides along for one job only: naming the target if it is ever
+     * deleted, when there is no note left to ask.
+     *
+     * A ref is still `ckind: 'card'`, so groups, map layout, mermaid export,
+     * plane extents and the clutter filter all keep working untouched. Only
+     * the rendering differs. */
+    ref?: { id: string; path: string }
   },
 ): Promise<Note> {
   const a = requireApi()
@@ -2041,6 +2053,7 @@ export async function createCanvasCard(
         h: card.h,
         ...(card.parent !== undefined ? { parent: card.parent } : {}),
         ...(card.order !== undefined ? { order: card.order } : {}),
+        ...(card.ref ? { ref: card.ref.id, refPath: card.ref.path } : {}),
       },
     })
     mergeNote(note)
