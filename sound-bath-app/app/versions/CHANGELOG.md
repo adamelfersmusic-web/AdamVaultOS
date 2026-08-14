@@ -28,6 +28,57 @@ intended workflow and the reason these are files rather than git commands.
 
 ---
 
+## v1.24 — tell people their work isn't backed up · 2026-08-01
+
+Adam is handing Bed to a first outside tester. That surfaced the largest silent
+failure left in the product, and it is not ours to lose — **it's theirs.**
+
+### ⚠️ Two ways someone loses an evening's work and never learns why
+
+1. **Nothing is backed up anywhere.** No server, no account, by design. If the
+   browser's data is cleared or the laptop dies, the sessions die with it.
+   `Export` is the only copy that exists.
+2. **⚠️ Safari deletes site data after 7 days without a visit.** That is Apple's
+   tracking prevention, not a bug in Bed, and it applies to every uninstalled
+   site. A practitioner builds a session on Monday, doesn't open Bed for a
+   week, and it is simply gone. **Adding the site to the Home Screen or Dock
+   exempts it.** Chrome and Firefox don't do this.
+
+The library footer already said *"Everything lives in this browser."* True, and
+far too gentle to carry either of those.
+
+### What ships
+
+A line that **only speaks when something is actually at risk**, and says what to
+do about it:
+
+> *2 sessions have never been exported. Nothing here is backed up — **Export**
+> is the only copy.*
+
+and on Safari, when the site isn't installed:
+
+> *⚠️ Safari deletes site data after 7 days without a visit. Add Bed to your
+> Home Screen or Dock and it stops doing that.*
+
+"At risk" is measured, not guessed: `exportSession` stamps a content
+fingerprint, so a session counts as backed up only while it is **unchanged
+since its last export**. Edit it again and it is at risk again, which is the
+truth. Verified across Chrome and Safari in all three states — never exported,
+just exported, edited after export.
+
+### ⚠️ A bug in the fix, worth recording
+
+The first version never cleared the warning. `seedSig` hashed the whole session
+*including the stamp it had just written*, so writing `exportSig` changed the
+value being compared against. A fingerprint that includes its own fingerprint
+is always different from itself.
+
+**Same shape as everything else tonight** — it looked right, it ran clean, and
+it silently always said "at risk." Caught only by testing the *transition*
+(export it, then look) rather than the initial state.
+
+---
+
 ## v1.23 — HEAR / HELD, and tapping a section stops playing it · 2026-08-01
 
 Adam, an hour after asking for the opposite: *"Maybe it is nice that it just

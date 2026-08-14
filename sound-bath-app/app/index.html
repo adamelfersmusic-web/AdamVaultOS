@@ -1141,7 +1141,7 @@ body.live #goBtn .glabel { color: var(--amber); }
 
 <script>
 'use strict';
-const BED_VERSION = '1.23';
+const BED_VERSION = '1.24';
 
 /* ==========================================================================
    BED — exploratory full build.
@@ -1596,6 +1596,7 @@ function normalizeSession(raw) {
        cold-relay wait for the whole room. */
     room: S.room && typeof S.room.code === 'string' ? S.room : null,
     ...(raw.seedSig ? { seedSig: raw.seedSig } : {}),
+    ...(raw.exportSig ? { exportSig: raw.exportSig } : {}),
   };
   respine(S, S.sections.map(s => Math.max(1, (s.toMin - s.fromMin) || 5)));
   return S;
@@ -1798,7 +1799,7 @@ function seedLibrary() {
    are supposed to differ between two copies of the same session: its id, and
    the room code, which is minted per person. */
 function seedSig(S) {
-  const { id, room, seedSig: _s, ...rest } = S;
+  const { id, room, seedSig: _s, exportSig: _e, ...rest } = S;   // the stamps are not content
   const str = JSON.stringify(rest);
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
@@ -3316,9 +3317,30 @@ function renderLibrary() {
   }).join('') || `<div class="dempty"><span class="serif">Nothing here yet.</span>Five questions and you have a session you can run.</div>`;
 
   const check = window.__sheetCheck;
+  /* ⚠️ THE HONEST LINE ABOUT WHERE SOMEONE'S WORK ACTUALLY LIVES.
+     "Everything lives in this browser" was true and far too gentle: nothing
+     here is backed up anywhere, and Safari DELETES site data after 7 days
+     without a visit unless the site is installed. Someone can lose an evening's
+     work and never learn why — the same silent class as everything else fixed
+     tonight, except the thing destroyed is theirs, not ours.
+     It only speaks when there is something at risk, and it says what to do. */
+  const atRisk = store.sessions.filter(S => !S.exportSig || S.exportSig !== seedSig(S));
+  const installed = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isSafari = /^((?!chrome|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent);
+  const n = atRisk.length;
+  let risk = '';
+  if (n) {
+    risk = `<br><span style="color:var(--ink2)">${n === 1 ? 'One session has' : n + ' sessions have'} never been exported. `
+         + `Nothing here is backed up — <b>Export</b> is the only copy.</span>`;
+    if (isSafari && !installed) {
+      risk += `<br><span style="color:var(--red)">⚠️ Safari deletes site data after 7 days without a visit. `
+            + `Add Bed to your Home Screen or Dock and it stops doing that.</span>`;
+    }
+  }
   $('libFoot').innerHTML =
     `${check && check.ok ? '<b>Bowl notation verified</b> against the three real sections on load.' : '<b style="color:var(--red)">Bowl notation check FAILED — see console.</b>'}<br>` +
     `Everything lives in this browser. Export a session to keep or share it — it's a few kilobytes of parameters, never audio.` +
+    risk +
     `<br><span style="color:var(--ink4)">v${BED_VERSION}</span>`;
 }
 
@@ -3333,6 +3355,12 @@ function exportSession(S) {
      a file means two leaders in two cities silently share one relay room and
      overwrite each other's followers. The recipient mints their own. */
   delete out.room;
+  delete out.exportSig;
+  /* Stamped so the library can tell "this is backed up" from "an evening's
+     work exists in exactly one place." Stores the fingerprint, not a flag, so
+     editing it afterwards makes it unbacked again — which is the truth. */
+  S.exportSig = seedSig(S);
+  save();
   const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
