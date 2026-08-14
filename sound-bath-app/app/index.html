@@ -1117,7 +1117,7 @@ body.live #goBtn .glabel { color: var(--amber); }
 
 <script>
 'use strict';
-const BED_VERSION = '1.18';
+const BED_VERSION = '1.19';
 
 /* ==========================================================================
    BED — exploratory full build.
@@ -1200,6 +1200,10 @@ const STANDARD7 = [0,2,4,5,7,9,11];
      wash also conflates Ocean and Gong — and textureElements() sounds a
      "wash" gong as WIND, so the label and the sound already disagree.
      "Trust, Buried" is a function word from a real sheet with no slot here.
+   ⚠️ The seeded poems were rewritten 2026-08-01 and no longer contain those
+   quoted phrases. The audit stands — it rests on the HANDOUTS, whose text is
+   preserved verbatim in brand/structure-language-audit.md. Do not treat the
+   app's current poems as evidence for or against these names.
    The fix is gated on reviewing the 2024–25 sessions, not on taste. Renaming
    early would bake a two-session fit into the product's brain. */
 const FUNCTIONS = {
@@ -1676,21 +1680,21 @@ const FIXTURES = [
     format: 2, title: 'Full Moon in Leo', subtitle: 'Let it burn what it must', refHz: 440,
     kit: { type: 'standard7' },
     sections: [
-      { id:'root', function:'ground', name:'Root Chakra', phrase:'The rock', kind:'pitched', chakra:1, mode:'mixolydian',
+      { id:'root', function:'ground', name:'Root Chakra', phrase:'The ember', kind:'pitched', chakra:1, mode:'mixolydian',
         fromMin:0, toMin:8, liveChords:['C','F','Bb'], leaderNote:'Acoustic' },
-      { id:'ocean', function:'wash', name:'Ocean', phrase:'What grows', kind:'texture',
+      { id:'ocean', function:'wash', name:'Ocean', phrase:'What holds', kind:'texture',
         fromMin:8, toMin:14, liveChords:['D','G'], leaderNote:'Acoustic. D major — reaching for light. B minor.' },
-      { id:'sacral', function:'flow', name:'Sacral', phrase:'Will live', kind:'pitched', chakra:2, mode:'major',
+      { id:'sacral', function:'flow', name:'Sacral', phrase:'Will loosen', kind:'pitched', chakra:2, mode:'major',
         fromMin:14, toMin:22, leaderNote:'+ Electric / E-bow' },
-      { id:'rain', function:'release', name:'Rain', phrase:'And shed', kind:'texture', fromMin:22, toMin:27 },
-      { id:'gong', function:'wash', name:'Gong', phrase:"What's shed", kind:'texture',
+      { id:'rain', function:'release', name:'Rain', phrase:'And fall', kind:'texture', fromMin:22, toMin:27 },
+      { id:'gong', function:'wash', name:'Gong', phrase:'What falls', kind:'texture',
         fromMin:27, toMin:31, leaderNote:'Gong is played live — app holds the floor only' },
-      { id:'burn', function:'express', name:'Flute & Shakers', phrase:'Will burn', kind:'texture',
+      { id:'burn', function:'express', name:'Flute & Shakers', phrase:'Will feed', kind:'texture',
         fromMin:31, toMin:36, leaderNote:'Live flute + shakers. Live players mode.' },
       { id:'space', function:'space', name:'Space', phrase:'', kind:'space', fromMin:36, toMin:39 },
-      { id:'heart', function:'bloom', name:'Heart Chakra', phrase:"What's left", kind:'pitched', chakra:4, mode:'major',
+      { id:'heart', function:'bloom', name:'Heart Chakra', phrase:'What stays', kind:'pitched', chakra:4, mode:'major',
         fromMin:39, toMin:48 },
-      { id:'chimes', function:'return', name:'Chimes', phrase:'Is Home', kind:'texture',
+      { id:'chimes', function:'return', name:'Chimes', phrase:'Is enough', kind:'texture',
         fromMin:48, toMin:52, leaderNote:'Live chimes, roaming' },
     ],
     /* Lanes are the point here: almost nothing is edge-aligned to a section.
@@ -1739,22 +1743,22 @@ const FIXTURES = [
       { id:'arrival', name:'Insects, Big Stick & Poem', phrase:'', kind:'texture', minutes:5, fadeIn:30,
         bands:{ deep:{on:false}, bed:{on:false}, voice:{on:false}, air:{on:true,level:0.6,elements:['crickets','wind']} },
         leaderNote:'Spoken poem. Into chiming bowls.' },
-      { id:'root', name:'Root', phrase:'Earth, Seeding', kind:'pitched', chakra:1, mode:'major', minutes:9, fadeIn:45,
+      { id:'root', name:'Root', phrase:'Earth, a seed', kind:'pitched', chakra:1, mode:'major', minutes:9, fadeIn:45,
         bands:{ deep:{on:true,level:0.75}, bed:{on:true,level:0.82,chords:false}, voice:{on:true,level:0.4}, air:{on:true,level:0.4,elements:['crickets']} },
         followerNote:'2nd half — some walk and chime' },
-      { id:'gongs', name:'Gongs', phrase:'Trust, Buried', kind:'texture', minutes:5, fadeIn:35,
+      { id:'gongs', name:'Gongs', phrase:'Dark, the waiting', kind:'texture', minutes:5, fadeIn:35,
         bands:{ deep:{on:true,level:0.85}, bed:{on:false}, voice:{on:false}, air:{on:true,level:0.28,elements:['wind']} } },
-      { id:'ocean', name:'Ocean', phrase:'Water, Watering the soil', kind:'texture', minutes:6, fadeIn:45,
+      { id:'ocean', name:'Ocean', phrase:'Water, the first rain', kind:'texture', minutes:6, fadeIn:45,
         bands:{ deep:{on:true,level:0.55}, bed:{on:false}, voice:{on:false}, air:{on:true,level:0.8,elements:['waves']} },
         leaderNote:'Keys in halfway through — D major' },
-      { id:'sacral', name:'Sacral', phrase:'Flow, The blood of my life', kind:'pitched', chakra:2, mode:'major', minutes:8, fadeIn:40,
+      { id:'sacral', name:'Sacral', phrase:'Flow, the green thread', kind:'pitched', chakra:2, mode:'major', minutes:8, fadeIn:40,
         bands:{ deep:{on:true,level:0.7}, bed:{on:true,level:0.8,chords:false}, voice:{on:true,level:0.42}, air:{on:true,level:0.35,elements:['waves']} } },
-      { id:'express', name:'Drone & Flute', phrase:'Express, from the seed', kind:'texture', minutes:6, fadeIn:30,
+      { id:'express', name:'Drone & Flute', phrase:'Reach, toward the light', kind:'texture', minutes:6, fadeIn:30,
         bands:{ deep:{on:true,level:0.6}, bed:{on:true,level:0.65,chords:false}, voice:{on:false}, air:{on:true,level:0.35,elements:['wind']} },
         leaderNote:'Live flute + shakers. Live players mode.' },
-      { id:'release', name:'Rain', phrase:'Release and Receive, Wash away and fill me new', kind:'texture', minutes:5, fadeIn:40,
+      { id:'release', name:'Rain', phrase:'Release, what the soil keeps', kind:'texture', minutes:5, fadeIn:40,
         bands:{ deep:{on:true,level:0.5}, bed:{on:false}, voice:{on:false}, air:{on:true,level:0.82,elements:['rain']} } },
-      { id:'heart', name:'Heart', phrase:'Bloom, from the soil I grow', kind:'pitched', chakra:4, mode:'major', minutes:10, fadeIn:55,
+      { id:'heart', name:'Heart', phrase:'Bloom, and be seen', kind:'pitched', chakra:4, mode:'major', minutes:10, fadeIn:55,
         bands:{ deep:{on:true,level:0.7}, bed:{on:true,level:0.85,chords:false}, voice:{on:true,level:0.45}, air:{on:true,level:0.4,elements:['crickets']} } },
     ],
   },
@@ -1767,7 +1771,7 @@ function seedLibrary() {
 /* When a shipped fixture improves, refresh the seeded copies in an existing
    library — matched by title, so renamed copies and the user's own sessions
    are never touched. */
-const SEED_VERSION = 3;
+const SEED_VERSION = 4;
 function refreshSeeds(stored) {
   if ((stored.seedVersion || 1) >= SEED_VERSION) return;
   const seedTitles = new Set(FIXTURES.map(f => f.title));

@@ -28,6 +28,48 @@ intended workflow and the reason these are files rather than git commands.
 
 ---
 
+## v1.19 — new words for both poems · 2026-08-01
+
+Adam asked for both seeded poems rewritten — same spirit, same shape, new
+words, kept short and minimal.
+
+**Full Moon in Leo** — the original is one sentence broken across sections,
+2–3 words a line, with a hinge repeat in the middle and a hard two-word
+landing. Same machine, new words:
+
+> The ember / What holds / Will loosen / And fall / What falls / Will feed /
+> What stays / Is enough
+
+**Seeding and Watering the Soil** — the original is "intention, image" per
+line, and some lines had grown long. Structure kept, every line tightened:
+
+> Earth, a seed / Dark, the waiting / Water, the first rain / Flow, the green
+> thread / Reach, toward the light / Release, what the soil keeps / Bloom, and
+> be seen
+
+Section names, chakras, keys, timings and bowl sheets are untouched — a phrase
+is a label and nothing computes from it. `SEED_VERSION` 3 → 4 so existing
+installs pick the new text up.
+
+### ⚠️ What this overwrote, and where it went
+
+These two sessions are **transcriptions of real handouts from sold-out
+events**, and `brand/structure-language-audit.md` traces the whole nine-function
+taxonomy back to their phrases — "Earth, Seeding" → `ground`, "Flow, The blood
+of my life" → `flow`, and so on. Rewriting them removes that evidence from the
+app.
+
+So **both original poems are now recorded verbatim in the audit doc** before
+the change, with a note that they are the canonical record and must not be
+deleted, plus the git command to restore them. The `FUNCTIONS` comment — which
+quoted three of the phrases — now points there and warns that the app's current
+poems are not evidence for or against those names.
+
+**The audit stands. It rests on what the handouts said, not on what the app
+ships.** ⚠️ `bed/08-session-review` is still the gate on renaming anything.
+
+---
+
 ## v1.18 — silence the phones · 2026-07-31
 
 Adam: *"The moment someone gets a ping in the middle of a sound bath, that's

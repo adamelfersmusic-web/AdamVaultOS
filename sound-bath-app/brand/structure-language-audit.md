@@ -25,6 +25,30 @@ section, and **the first word of each phrase is a function name:**
 | **Release** and Receive, Wash away and fill me new | `release` ✅ exact |
 | **Bloom**, from the soil I grow | `bloom` ✅ exact |
 
+### ⚠️ The original handout text, preserved here because the app no longer ships it
+
+2026-08-01: Adam rewrote both seeded poems — same shape, new words — so the app
+now ships poems he wrote *for the app* rather than the ones he used at real
+events. **The audit above is unaffected: it rests on what the handouts said,
+and that is recorded here verbatim and in git forever.** But this is now the
+canonical record of it, so it must not be deleted.
+
+**Full Moon in Leo** — *Let it burn what it must*
+
+> The rock / What grows / Will live / And shed / What's shed / Will burn /
+> What's left / Is Home
+
+**Seeding and Watering the Soil** — *Let us hold a space for the seeding and
+watering of their soil*
+
+> Earth, Seeding / Trust, Buried / Water, Watering the soil / Flow, The blood
+> of my life / Express, from the seed / Release and Receive, Wash away and fill
+> me new / Bloom, from the soil I grow
+
+To restore either into the app: `git log -S"The rock" -- app/index.html`.
+
+---
+
 **The strongest evidence is that this convergence is accidental.** The app's
 `inferFunction()` derives a section's function from its *name* (`Root`,
 `Ocean`, `Sacral`, `Rain`, `Heart`) and never reads the phrase at all. Yet it
