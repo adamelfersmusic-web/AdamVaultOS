@@ -28,6 +28,59 @@ intended workflow and the reason these are files rather than git commands.
 
 ---
 
+## v1.22 — hear, not hold · 2026-08-01
+
+Adam, on v1.20: *"This little 'hold' chip — I don't know how intuitive that is
+to people. Should it say play? Should it be green? Do we put a little play
+symbol there? I don't want it to look cheesy. I really like the word hold, I'm
+just not sure it's intuitive."*
+
+The right question, and two of the three answers are traps.
+
+### ⚠️ Green — refused
+
+**Amber already means live and making sound.** A second colour for the same
+meaning is precisely the thing that breaks the only rule this brand has, and it
+would break it in the one place the rule is currently *working* rather than
+merely being obeyed. Green is also a cool-bright the room kills, and nothing in
+the palette is green.
+
+### ⚠️ A play triangle — refused
+
+A ▶ is **transport vocabulary**, which is what law 6 exists to keep out. And it
+says the wrong thing: a triangle promises the **horizontal** — press it and the
+thing plays *through*. This is the **vertical**: one section's balance,
+sounding now, going nowhere.
+
+> **Borrow a DAW's symbol and you get a DAW, one reasonable ticket at a time.**
+
+Both are now refused **by name, in the engine comment**, with the reasoning —
+because this is a sane suggestion that will be made again.
+
+### What was done instead
+
+- **The block is the button** (v1.20), so the chip stopped being the way in.
+- **The word says what you get, not what it's called.** `hold` → **`hear`**,
+  and **`live`** while it's running. `live` is the same width as `hear`, so it
+  can't cover the section name — the first attempt used `sounding`, which was
+  eight characters in a four-character slot and sat on top of "Root Chakra".
+  It is also the amber rule's own word: *amber means **live** and making sound.*
+- **The hint under the timeline says it in a sentence**, which is where a new
+  person actually looks — Adam's own suggestion.
+
+**HOLD stays the name of the mechanism** everywhere it's discussed — the brand
+verb is untouched. It was simply never a good label for a control a stranger
+has to guess at. *Hold* is the state; *hear* is what you get.
+
+### The drag worry, checked rather than assumed
+
+*"It becomes a little bit annoying when you want to drag."* Tested: dragging a
+section's edge to resize it does **not** start sound and does **not** open the
+drawer, while a plain click does both. `D.drag` is set on pointerdown and
+cleared 60 ms after release, and every click handler checks it. Already safe.
+
+---
+
 ## v1.21 — an update must never eat your work · 2026-08-01
 
 Adam has someone who wants to try Bed independently. Getting them access is

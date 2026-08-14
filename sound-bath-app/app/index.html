@@ -214,7 +214,28 @@ body[data-screen="perform"]  #scr-perform { display: flex; }
 .tl-sec:hover .hld { color: var(--ink2); border-color: var(--line2); }
 .tl-sec .hld:hover { color: var(--ink); border-color: var(--ink3); }
 /* Held is AMBER, and that is the rule working rather than an exception to it:
-   amber means live and making sound, and a held section is making sound. */
+   amber means live and making sound, and a held section is making sound.
+
+   ⚠️ TWO REASONABLE-SOUNDING SUGGESTIONS TO REFUSE BY NAME (Adam, 2026-08-01,
+   asking how to make this obvious to a newcomer — the right question):
+
+   · "make it green, people recognise green as play"
+     Amber ALREADY means live and making sound. A second colour for the same
+     meaning is the one thing that breaks the only rule this brand has. And
+     green is a cool-bright the room kills; nothing in the palette is green.
+
+   · "put a little play triangle on it"
+     A ▶ is transport vocabulary, which is exactly what law 6 exists to keep
+     out — and it says the wrong thing besides. A triangle promises the
+     HORIZONTAL: press it and the thing plays THROUGH. This is the VERTICAL:
+     one section's balance, sounding now, going nowhere. Borrow a DAW's symbol
+     and you get a DAW, one reasonable ticket at a time.
+
+   What was done instead: the block itself is the button (tap it, it sounds),
+   the word says what you get rather than what it's called — "hear", then
+   "sounding" while it runs — and the hint under the timeline states it in a
+   sentence. HOLD stays the name of the mechanism everywhere it's discussed;
+   it was never a good label for a control a stranger has to guess at. */
 .tl-sec.held { border-color: var(--amber); border-left-color: var(--amber); background: var(--panel2); }
 .tl-sec.held .hld, .tl-sec.held:hover .hld { color: var(--amber); border-color: var(--amber); }
 .btn.sounding { color: var(--amber); border-color: var(--amber); }
@@ -676,7 +697,8 @@ body.live #goBtn .glabel { color: var(--amber); }
       <div class="cap" id="dPoemCap" style="margin-top:7px;display:none"></div>
       <div class="dhint">
         <b>The ruler is the spine; the lanes are what sounds.</b>
-        Tap a section to shape it — name and phrase first, chakra second; the bowls are derived.
+        <b>Tap a section to hear it</b> — it plays that section's balance while you change it, and turns amber because it's sounding. Tap again to stop.
+        Tapping also opens it to shape — name and phrase first, chakra second; the bowls are derived.
         Tap a block to set its length and level; drag its edges to stretch it.
         Blocks may cross section seams on purpose — the crickets should start before the key changes
         and still be there after.
@@ -1119,7 +1141,7 @@ body.live #goBtn .glabel { color: var(--amber); }
 
 <script>
 'use strict';
-const BED_VERSION = '1.21';
+const BED_VERSION = '1.22';
 
 /* ==========================================================================
    BED — exploratory full build.
@@ -2795,7 +2817,10 @@ function holdSection(idx) {
   H.inst.bed = new Bed(H.pc, t);
   H.inst.voice = new Voice(H.pc, t);
   syncHeld();
-  document.querySelector(`.tl-sec[data-sec="${idx}"]`)?.classList.add('held');
+  const el = document.querySelector(`.tl-sec[data-sec="${idx}"]`);
+  el?.classList.add('held');
+  // the chip is baked at render time, so the word has to be moved by hand here
+  const chip = el?.querySelector('.hld'); if (chip) chip.textContent = 'live';
 }
 
 /* Re-read the section and follow it. Called from renderTimeline, so the sound
@@ -2870,7 +2895,10 @@ function releaseHeld() {
   if (H.inst.voice) { H.inst.voice.stop(); H.inst.voice = null; }
   for (const el of Object.keys(H.air)) stopHeldAir(el);
   if (A.trim.deep) for (const k of LANE_KEYS) { T.bands[k] = 0; A.trim[k].gain.setTargetAtTime(0, t, 0.25); }
-  document.querySelectorAll('.tl-sec.held').forEach(el => el.classList.remove('held'));
+  document.querySelectorAll('.tl-sec.held').forEach(el => {
+    el.classList.remove('held');
+    const c = el.querySelector('.hld'); if (c) c.textContent = 'hear';
+  });
 }
 
 /* Render's free tier stops the relay after 15 minutes with nobody connected and
@@ -3534,7 +3562,7 @@ function renderTimeline() {
       ${w > 76 ? `<span class="ph">${esc(s.phrase || '')}</span>` : ''}
       ${w > 58 ? `<span class="ks">${ks}</span>` : ''}
       ${warn ? '<span class="warn-dot" title="Fewer than two usable bowls"></span>' : ''}
-      ${canhold ? `<span class="hld" data-hold="${i}" title="Hear this section — its balance, not its arc">hold</span>` : ''}
+      ${canhold ? `<span class="hld" data-hold="${i}" title="Hear this section — its balance, not its arc">${H.secId === s.id ? 'live' : 'hear'}</span>` : ''}
       <span class="edge" data-secedge="${i}"></span>
     </button>`;
   }).join('');
