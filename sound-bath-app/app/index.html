@@ -210,12 +210,14 @@ body[data-screen="perform"]  #scr-perform { display: flex; }
   color: var(--ink4); background: var(--bg2); border: 1px solid var(--line); border-radius: 3px;
   padding: 2px 5px; transition: color .12s, border-color .12s;
 }
-.tl-sec:hover .hld { color: var(--ink3); border-color: var(--line2); }
+.tl-sec .hld { color: var(--ink3); }
+.tl-sec:hover .hld { color: var(--ink2); border-color: var(--line2); }
 .tl-sec .hld:hover { color: var(--ink); border-color: var(--ink3); }
 /* Held is AMBER, and that is the rule working rather than an exception to it:
    amber means live and making sound, and a held section is making sound. */
 .tl-sec.held { border-color: var(--amber); border-left-color: var(--amber); background: var(--panel2); }
 .tl-sec.held .hld, .tl-sec.held:hover .hld { color: var(--amber); border-color: var(--amber); }
+.btn.sounding { color: var(--amber); border-color: var(--amber); }
 .tl-sec .edge { position: absolute; right: -1px; top: 0; bottom: 0; width: 14px; cursor: ew-resize; }
 .tl-sec .edge::after { content: ""; position: absolute; right: 5px; top: 30%; bottom: 30%; width: 2px; border-radius: 1px; background: var(--line2); opacity: 0; transition: opacity .12s; }
 .tl-sec:hover .edge::after { opacity: 1; }
@@ -1117,7 +1119,7 @@ body.live #goBtn .glabel { color: var(--amber); }
 
 <script>
 'use strict';
-const BED_VERSION = '1.19';
+const BED_VERSION = '1.20';
 
 /* ==========================================================================
    BED — exploratory full build.
@@ -3501,7 +3503,7 @@ function renderTimeline() {
     const ks = s.kind === 'pitched'
       ? `<b>${esc(CHAKRAS[(s.chakra || 1) - 1].note)} ${esc((MODES[s.mode] || MODES.major).label)}</b> · ${s.toMin - s.fromMin}′`
       : `${s.kind === 'space' ? 'space' : 'texture'} · ${s.toMin - s.fromMin}′`;
-    const canhold = w > 118;     // below this the chip would eat the name; the drawer carries it
+    const canhold = w > 74;      // was 118, which hid it on every phone-width section
     return `<button class="tl-sec${H.secId === s.id ? ' held' : ''}${canhold ? ' canhold' : ''}" data-sec="${i}" style="left:${s.fromMin * D.ppm + 1}px;width:${w - 3}px;--c:${fnColor(s.function)}">
       <span class="nm">${esc(s.name)}</span>
       ${w > 76 ? `<span class="ph">${esc(s.phrase || '')}</span>` : ''}
@@ -3555,9 +3557,18 @@ function wireTimeline(host) {
     if (D.drag) return;
     holdSection(+el.dataset.hold);
   });
+  /* ⚠️ Tapping a section HOLDS it — it starts sounding — as well as opening
+     the drawer. This used to be a separate 8px chip in the corner, which meant
+     that on a phone (where the chip is suppressed under 118px) there was no
+     way at all to hear the section you were editing. Adam, 2026-08-01: "there's
+     no way to fucking hear the section you're working on, that's absolutely
+     stupid." He was right. Hearing it is the point of designing it. */
   host.querySelectorAll('[data-sec]').forEach(el => el.onclick = e => {
     if (D.drag) return;
-    openSecDrawer(+el.dataset.sec);
+    const i = +el.dataset.sec;
+    const S2 = currentSession();
+    if (S2 && S2.sections[i] && S2.sections[i].kind === 'pitched' && H.secId !== S2.sections[i].id) holdSection(i);
+    openSecDrawer(i);
   });
   host.querySelectorAll('[data-blk]').forEach(el => el.onclick = e => {
     if (D.drag) return;
@@ -3717,11 +3728,13 @@ function openSecDrawer(idx) {
   /* The drawer is the way in for narrow sections, and the discoverable one for
      every section. It stays open — the point is to hear the balance while you
      change it, so the drawer you'd change it from must not close. */
-  $('sdHold').textContent = H.secId === sec.id ? 'Release' : 'Hold';
-  $('sdHold').onclick = () => {
-    holdSection(idx);
-    $('sdHold').textContent = H.secId === sec.id ? 'Release' : 'Hold';
+  const paintHold = () => {
+    const on = H.secId === sec.id;
+    $('sdHold').textContent = on ? 'Stop the sound' : 'Hear this section';
+    $('sdHold').classList.toggle('sounding', on);
   };
+  paintHold();
+  $('sdHold').onclick = () => { holdSection(idx); paintHold(); };
 
   openDrawer('secDrawer');
 }

@@ -28,6 +28,59 @@ intended workflow and the reason these are files rather than git commands.
 
 ---
 
+## v1.20 — tap a section and hear it · 2026-08-01
+
+Adam, after the first successful phone pairing: *"There's no way to hear the
+section you're working on. That's absolutely fucking stupid. I thought we
+designed that — did it not get pushed?"*
+
+**It was pushed. It shipped in v1.5 and it has been in every build since.** He
+could not find it, and on a phone he could not have found it, because it did
+not exist there.
+
+### ⚠️ The bug was discoverability, and it was total
+
+Held sections had exactly two ways in:
+
+1. An 8px `HOLD` chip in the corner of a section block — rendered only when the
+   section was **wider than 118px**, and coloured `--ink4`, the faintest ink in
+   the palette, brightening only **on hover**.
+2. A ghost button labelled `Hold` in the section drawer, sitting between
+   `Begin here` and `Delete`.
+
+On a phone: **there is no hover, and almost no section is 118px wide.** So path
+1 did not exist at all, and path 2 was a word among other words. The most
+important thing you can do while designing — hear it — was the least visible
+thing on the screen.
+
+The original comment said the chip was deliberately quiet so it wouldn't
+"compete with the section's own name." That instinct was right and it overshot
+by so much that the feature was invisible.
+
+### The fix — his design, and it's better than the chip
+
+> **Tapping a section now sounds it.**
+
+Tap it and the drawer opens *and* Deep, Bed and Voice start playing that
+section's balance, so you adjust while it's ringing. Verified on both a 430px
+phone and a 1280px laptop: three instruments running, gold bar on the section,
+drawer button amber.
+
+Everything else follows from that:
+
+- The drawer button says **"Hear this section" / "Stop the sound"** instead of
+  `Hold`, and goes amber while it's sounding — which is the amber rule working,
+  not an exception to it. A held section *is* live and making sound.
+- The chip is legible without a hover and appears down to 74px wide.
+- Law 6 is untouched. This is still the vertical — one section's balance — and
+  never the horizontal. No playhead, no arc, no transition.
+
+**The lesson worth keeping: a feature nobody can find has not shipped.** It was
+in the code, in the changelog, and in the brand notes for fifteen versions, and
+the person who asked for it did not believe it existed.
+
+---
+
 ## v1.19 — new words for both poems · 2026-08-01
 
 Adam asked for both seeded poems rewritten — same spirit, same shape, new
