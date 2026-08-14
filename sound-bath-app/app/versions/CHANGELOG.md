@@ -28,6 +28,51 @@ intended workflow and the reason these are files rather than git commands.
 
 ---
 
+## v1.23 — HEAR / HELD, and tapping a section stops playing it · 2026-08-01
+
+Adam, an hour after asking for the opposite: *"Maybe it is nice that it just
+opens up and you can edit it, as opposed to just fucking playing — that might
+be annoying. I don't know if this is a real judgment call. What if it was
+**Hear / Held**. Two words. That is elegant."*
+
+It is a real judgment call, and the second instinct is the better one.
+
+### ⚠️ v1.20 fixed the wrong thing
+
+The v1.5 bug was never the interaction model. It was that the chip was
+**invisible** — 8px, `--ink4`, hover-only, suppressed below 118px wide, so on a
+phone it did not exist at all. Making the whole block play was a heavy fix for
+a light problem, and it bought discoverability with a real cost:
+
+> **You tap a section to rename it far more often than to hear it — and audio
+> starting unbidden is startling in exactly the room this gets used in.**
+
+Fix the chip and the block doesn't need to hijack itself. So:
+
+- **Tapping the block body opens it to edit, and makes no sound.**
+- **`HEAR` sounds it. `HELD` means it's sounding.** Adam's pair — same width, so
+  nothing shifts, and *held* is the honest name of the state rather than a
+  borrowed one. It also puts the brand's own verb back on the screen, where
+  v1.22's `live` was merely generic.
+
+Three deliberate ways to hear a section, verified at 1280px and 430px: the
+`HEAR` chip, the drawer's **Hear this section**, and tapping a held chip again
+to stop. On a phone the chip is still too narrow to render on most sections —
+the drawer button is the path there, and it is now plainly worded.
+
+### The pattern worth keeping
+
+Three versions on one control in one night: invisible (v1.5–1.19) → overcorrected
+(v1.20) → **right** (v1.23). The overcorrection was caused by treating a
+visibility bug as a design bug.
+
+> **When something can't be found, make it visible before you make it
+> automatic.** Automatic is what you reach for when visible has already failed —
+> and it charges everyone, forever, for a problem that was only ever a
+> rendering one.
+
+---
+
 ## v1.22 — hear, not hold · 2026-08-01
 
 Adam, on v1.20: *"This little 'hold' chip — I don't know how intuitive that is

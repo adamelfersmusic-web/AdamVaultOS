@@ -697,8 +697,8 @@ body.live #goBtn .glabel { color: var(--amber); }
       <div class="cap" id="dPoemCap" style="margin-top:7px;display:none"></div>
       <div class="dhint">
         <b>The ruler is the spine; the lanes are what sounds.</b>
-        <b>Tap a section to hear it</b> — it plays that section's balance while you change it, and turns amber because it's sounding. Tap again to stop.
-        Tapping also opens it to shape — name and phrase first, chakra second; the bowls are derived.
+        Tap a section to shape it — name and phrase first, chakra second; the bowls are derived.
+        <b>Tap HEAR to listen to it</b> while you change it — it turns amber and reads HELD, because it's sounding. Tap again to stop.
         Tap a block to set its length and level; drag its edges to stretch it.
         Blocks may cross section seams on purpose — the crickets should start before the key changes
         and still be there after.
@@ -1141,7 +1141,7 @@ body.live #goBtn .glabel { color: var(--amber); }
 
 <script>
 'use strict';
-const BED_VERSION = '1.22';
+const BED_VERSION = '1.23';
 
 /* ==========================================================================
    BED — exploratory full build.
@@ -2820,7 +2820,7 @@ function holdSection(idx) {
   const el = document.querySelector(`.tl-sec[data-sec="${idx}"]`);
   el?.classList.add('held');
   // the chip is baked at render time, so the word has to be moved by hand here
-  const chip = el?.querySelector('.hld'); if (chip) chip.textContent = 'live';
+  const chip = el?.querySelector('.hld'); if (chip) chip.textContent = 'held';
 }
 
 /* Re-read the section and follow it. Called from renderTimeline, so the sound
@@ -3562,7 +3562,7 @@ function renderTimeline() {
       ${w > 76 ? `<span class="ph">${esc(s.phrase || '')}</span>` : ''}
       ${w > 58 ? `<span class="ks">${ks}</span>` : ''}
       ${warn ? '<span class="warn-dot" title="Fewer than two usable bowls"></span>' : ''}
-      ${canhold ? `<span class="hld" data-hold="${i}" title="Hear this section — its balance, not its arc">${H.secId === s.id ? 'live' : 'hear'}</span>` : ''}
+      ${canhold ? `<span class="hld" data-hold="${i}" title="Hear this section — its balance, not its arc">${H.secId === s.id ? 'held' : 'hear'}</span>` : ''}
       <span class="edge" data-secedge="${i}"></span>
     </button>`;
   }).join('');
@@ -3610,18 +3610,21 @@ function wireTimeline(host) {
     if (D.drag) return;
     holdSection(+el.dataset.hold);
   });
-  /* ⚠️ Tapping a section HOLDS it — it starts sounding — as well as opening
-     the drawer. This used to be a separate 8px chip in the corner, which meant
-     that on a phone (where the chip is suppressed under 118px) there was no
-     way at all to hear the section you were editing. Adam, 2026-08-01: "there's
-     no way to fucking hear the section you're working on, that's absolutely
-     stupid." He was right. Hearing it is the point of designing it. */
+  /* ⚠️ Tapping the section BODY opens it to edit and makes no sound. v1.20
+     briefly made it sound too, which was a heavy fix for a light problem: the
+     real v1.5 bug was never the interaction, it was that the chip was
+     invisible — 8px, --ink4, hover-only, and suppressed below 118px wide, so
+     on a phone it did not exist. Fix the chip and the body doesn't need to
+     hijack itself.
+     Adam, 2026-08-01: "maybe it is nice that it just opens up and you can edit
+     it, as opposed to just fucking playing — that might be annoying." Right:
+     you tap a section to rename it far more often than to hear it, and audio
+     starting unbidden is startling in exactly the room this is used in.
+     Three ways to hear a section, all of them deliberate: the HEAR chip, the
+     drawer's "Hear this section", and tapping a held section's chip again. */
   host.querySelectorAll('[data-sec]').forEach(el => el.onclick = e => {
     if (D.drag) return;
-    const i = +el.dataset.sec;
-    const S2 = currentSession();
-    if (S2 && S2.sections[i] && S2.sections[i].kind === 'pitched' && H.secId !== S2.sections[i].id) holdSection(i);
-    openSecDrawer(i);
+    openSecDrawer(+el.dataset.sec);
   });
   host.querySelectorAll('[data-blk]').forEach(el => el.onclick = e => {
     if (D.drag) return;
