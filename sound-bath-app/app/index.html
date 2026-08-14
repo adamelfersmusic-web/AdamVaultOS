@@ -1119,7 +1119,7 @@ body.live #goBtn .glabel { color: var(--amber); }
 
 <script>
 'use strict';
-const BED_VERSION = '1.20';
+const BED_VERSION = '1.21';
 
 /* ==========================================================================
    BED — exploratory full build.
@@ -1573,6 +1573,7 @@ function normalizeSession(raw) {
        it in the car park are already connected, which also happens to kill the
        cold-relay wait for the whole room. */
     room: S.room && typeof S.room.code === 'string' ? S.room : null,
+    ...(raw.seedSig ? { seedSig: raw.seedSig } : {}),
   };
   respine(S, S.sections.map(s => Math.max(1, (s.toMin - s.fromMin) || 5)));
   return S;
@@ -1767,18 +1768,42 @@ const FIXTURES = [
 ];
 
 function seedLibrary() {
-  store.sessions = FIXTURES.map(f => normalizeSession(f));
+  // stamped so a later update can tell "still as shipped" from "they made it theirs"
+  store.sessions = FIXTURES.map(f => { const S = normalizeSession(f); S.seedSig = seedSig(S); return S; });
 }
 
-/* When a shipped fixture improves, refresh the seeded copies in an existing
-   library — matched by title, so renamed copies and the user's own sessions
-   are never touched. */
+/* A fingerprint of a session's CONTENT — everything except the two things that
+   are supposed to differ between two copies of the same session: its id, and
+   the room code, which is minted per person. */
+function seedSig(S) {
+  const { id, room, seedSig: _s, ...rest } = S;
+  const str = JSON.stringify(rest);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 8).toString(16);
+}
+
+/* ⚠️ Shipping a better version of a bundled session must NEVER destroy
+   someone's work. This used to replace by TITLE, so anyone who spent an evening
+   editing "Full Moon in Leo" lost it the moment a seed update shipped —
+   silently, with nothing to undo. A new tester would hit that in their first
+   week, and it would look like the app ate their session.
+   Now a bundled session is replaced only if it is still EXACTLY as shipped.
+   Change one slider and it's yours: it stays, and updates pass it by. */
 const SEED_VERSION = 4;
 function refreshSeeds(stored) {
   if ((stored.seedVersion || 1) >= SEED_VERSION) return;
-  const seedTitles = new Set(FIXTURES.map(f => f.title));
-  store.sessions = store.sessions.filter(s => !seedTitles.has(s.title));
-  store.sessions.push(...FIXTURES.map(f => normalizeSession(f)));
+  const shipped = new Map(FIXTURES.map(f => { const S = normalizeSession(f); S.seedSig = seedSig(S); return [S.title, S]; }));
+  const kept = [];
+  for (const s of store.sessions) {
+    if (!shipped.has(s.title)) { kept.push(s); continue; }        // their own session
+    if (s.seedSig && s.seedSig === seedSig(s)) continue;          // untouched — let the new one land
+    shipped.delete(s.title);                                      // they edited it: it's theirs now
+    delete s.seedSig;
+    kept.push(s);
+  }
+  kept.push(...shipped.values());
+  store.sessions = kept;
   save();
 }
 

@@ -28,6 +28,51 @@ intended workflow and the reason these are files rather than git commands.
 
 ---
 
+## v1.21 — an update must never eat your work · 2026-08-01
+
+Adam has someone who wants to try Bed independently. Getting them access is
+nothing — send the link, no account, their sessions live in their browser. But
+handing the app to a second person surfaced a bug I shipped a few hours ago.
+
+### ⚠️ The bug
+
+`refreshSeeds` replaced the bundled sessions **by title**:
+
+```js
+store.sessions = store.sessions.filter(s => !seedTitles.has(s.title));
+store.sessions.push(...FIXTURES.map(f => normalizeSession(f)));
+```
+
+So anyone who spent an evening editing *Full Moon in Leo* — the obvious thing
+for a new person to do, since it's the example sitting in front of them — **lost
+all of it the moment a seed update shipped.** Silently. No warning, nothing to
+undo, and it would look exactly like the app ate their session.
+
+v1.19 shipped a seed bump, so this was live and armed.
+
+### The fix
+
+A bundled session is now replaced only if it is **still exactly as shipped**.
+Each one carries a content fingerprint (`seedSig`) stamped at seed time,
+excluding the two fields that legitimately differ per person — its id and its
+room code. On update:
+
+- **untouched** → replaced with the improved version, as intended
+- **edited at all** → it is theirs. It stays, keeps their changes, loses the
+  fingerprint, and every future update passes it by
+- **their own sessions** → never considered
+
+Verified end to end: a tester edits one bundled session, leaves the other, adds
+one of their own, then a seed update lands. Their edit survives, their session
+survives, the untouched one updates, and there are no duplicate titles.
+
+**The rule this belongs to is rule 11's sibling: shipping an improvement must
+never be able to destroy something a person made.** If the code can't tell the
+difference between "as we shipped it" and "they made it theirs," it has no
+business replacing anything.
+
+---
+
 ## v1.20 — tap a section and hear it · 2026-08-01
 
 Adam, after the first successful phone pairing: *"There's no way to hear the
