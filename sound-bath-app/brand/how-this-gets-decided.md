@@ -239,6 +239,57 @@ quietly wrong.
 
 ---
 
+## 11 · A feature nobody can find has not shipped
+
+Held sections — tap a section, hear its balance while you adjust it — were
+built in v1.5, documented in the changelog, and referenced in three brand
+notes. Fifteen versions later:
+
+> Adam, 2026-08-01: *"There's no way to hear the section you're working on.
+> That's absolutely fucking stupid. I thought we designed that — did it not
+> get pushed?"*
+
+**The person who asked for it did not believe it existed.** It was in his
+hands, on his screen, working.
+
+### How it happened, because the instinct was correct
+
+The control was made deliberately quiet so it wouldn't compete with the
+section's own name. That is right. It overshot: an 8px chip in `--ink4`, the
+faintest ink in the palette, that only brightened **on hover** — and only
+rendered on sections wider than 118px.
+
+**Both of those quietly assume a desktop.** On a phone there is no hover, and
+almost no section is 118px wide, so the control did not exist at all. The
+comment above it even says *"legible without a hover, because half of this is
+used on glass."* The comment knew. The code didn't.
+
+> ⚠️ **An affordance designed at a laptop is untested until it is looked for on
+> a phone, by a thumb, without a cursor.**
+
+### The test, and it costs nothing
+
+Not *"is it discoverable"* — everyone believes their own UI is discoverable.
+
+> ### Can the person who asked for it find it without being told?
+
+Adam asked for held sections, specified them in detail, approved the spec — and
+still couldn't find them. **That is as clean a failure as this test can produce**,
+and it was available at any point in fifteen versions by asking him to show me.
+
+### ⚠️ And it is the same failure as the QR bug, one layer up
+
+Nothing complained. No error, no warning, no visible symptom. The feature was
+present, correct, and tested — and the only thing that would have surfaced it
+was **watching a person go and use it**, which is the human-facing version of
+*read it back before you trust it* (§ 6b).
+
+**The gate covers machines. This is the same gate pointed at people.** A ticket
+is not done when the code works; it is done when the person it was for uses it
+without help.
+
+---
+
 ## The one underneath all of them
 
 > **Say plainly when you were wrong, correct it, and keep going.**
