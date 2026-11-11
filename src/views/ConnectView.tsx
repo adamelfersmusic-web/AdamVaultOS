@@ -11,7 +11,7 @@ import { navigate } from '../lib/router'
 // The vault this app is built for — Adam's personal vault. Editable at runtime
 // (the OAuth flow is vault-agnostic), and the last-used URL wins, but the
 // default is pinned to the adam vault so a fresh load never points at another.
-const DEFAULT_VAULT_URL = 'https://friends.parachute.computer/vault/adam'
+const DEFAULT_VAULT_URL = 'https://my.parachute.computer/vault/adam'
 
 export function ConnectView() {
   const { oauthError, approveUrl } = useStore()

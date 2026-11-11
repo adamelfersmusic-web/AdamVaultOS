@@ -188,14 +188,14 @@ test('Bug 2/3 — does not inherit AtelierVaultOS’s session from the shared or
     localStorage.setItem(
       'atelier.session.v1',
       JSON.stringify({
-        vaultUrl: 'https://friends.parachute.computer/vault/jonathan',
+        vaultUrl: 'https://my.parachute.computer/vault/jonathan',
         mode: 'token',
         token: { accessToken: 'jonathan-token' },
       }),
     )
     localStorage.setItem(
       'atelier.lastVaultUrl',
-      'https://friends.parachute.computer/vault/jonathan',
+      'https://my.parachute.computer/vault/jonathan',
     )
   })
 
